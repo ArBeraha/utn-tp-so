@@ -8,3 +8,8 @@
 
 #include "../otros/handshake.h"
 #include "../otros/sockets/cliente-servidor.h"
+
+int main()
+{
+	return 0;
+}

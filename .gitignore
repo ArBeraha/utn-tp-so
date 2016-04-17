@@ -30,3 +30,10 @@
 
 # Debug files
 *.dSYM/
+/Debug/
+/consola/
+/Release/
+/nucleo/
+/umc/
+/cpu/
+/swap/

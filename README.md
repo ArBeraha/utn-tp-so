@@ -1,12 +1,19 @@
 # tp-2016-1c-Con-16-bits-me-hago-alto-kernel
 
 ## Como compilarlo desde eclipse
-click derecho sobre el proyecto->build configurations->build all. No hacer el build all desde otro lado, ya que por alguna razon cosmica no anda.
+In the Eclipse main menu
+
+    Click derecho sobre el proyecto->build configurations->build all.
+
+No hacer el build all desde otro lado, ya que por alguna razon cosmica no anda.
+
 Los binarios quedan en workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/"UnModulo"/, donde "unModulo" es el modulo que uno busca.
+
 
 ## Como buildearlo desde consola
 Algun dia de estos va a haber un mini script para eso :p
 La idea de esto es que queden todos en la carpeta donde se haga el gitclone y no separados en distintas carpetas.
+
 
 ## Como testear desde consola uno de los modulos:
 In the Eclipse main menu

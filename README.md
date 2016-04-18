@@ -14,9 +14,12 @@ Los binarios quedan en workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/"UnM
 ## Compilar todos los modulos desde consola
 Para compilar todo por consola de una:
 
-    en workspace o donde se haga gitclone -> cd tp-2016-1c-Con-16-bits-me-hago-alto-kernel -> sh compilar
+    En workspace o donde se haga gitclone -> cd tp-2016-1c-Con-16-bits-me-hago-alto-kernel -> sh compilar
 
-Con eso van a estar los 5 ejecutables en la carpeta en cuestion. No rompe nada. Se puede correr todas las veces que uno quiera, que no rompe nada :)
+Con eso van a estar los 5 ejecutables en la carpeta en cuestion. Se puede correr todas las veces que uno quiera dentro de la misma carpeta.
+
+    ***   En linux no puede haber en el mismo directorio una carpeta y un archivo con el mismo nombre, asi que las carpetas consola, cpu, etc., son renombradas con un guion bajo al final!   ***
+
 La idea de esto es que queden todos los modulos en la carpeta donde se haga el gitclone y no separados en distintas carpetas.
 
 

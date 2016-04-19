@@ -2,31 +2,26 @@
 
 cd consola
 make
-mv consola ../temp
 make clean
 cd ..
 
 cd cpu
 make
-mv cpu ../temp
 make clean
 cd ..
 
 cd nucleo
 make
-mv nucleo ../temp
 make clean
 cd ..
 
 cd swap
 make
-mv swap ../temp
 make clean
 cd ..
 
 cd umc
 make
-mv umc ../temp
 make clean
 cd ..
 

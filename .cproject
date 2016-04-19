@@ -27,10 +27,13 @@
 							<tool command="gcc" id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1482395321" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
 								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.exe.debug.option.optimization.level.494268940" name="Optimization Level" superClass="gnu.c.compiler.exe.debug.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.exe.debug.option.debugging.level.1369082711" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
-								<option id="gnu.c.compiler.option.dialect.std.1121074185" superClass="gnu.c.compiler.option.dialect.std" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.dialect.std.1121074185" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.728091342" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.834226622" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug">
+								<option id="gnu.c.link.option.libs.1704531177" superClass="gnu.c.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="commons"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.1533643665" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -242,7 +245,23 @@
 		<project id="tp-2016-1c-Con-16-bits-me-hago-alto-kernel.cdt.managedbuild.target.gnu.exe.370883640" name="Executable" projectType="cdt.managedbuild.target.gnu.exe"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
-	<storageModule moduleId="refreshScope"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="umc">
+			<resource resourceType="PROJECT" workspacePath="/tp-2016-1c-Con-16-bits-me-hago-alto-kernel"/>
+		</configuration>
+		<configuration configurationName="consola">
+			<resource resourceType="PROJECT" workspacePath="/tp-2016-1c-Con-16-bits-me-hago-alto-kernel"/>
+		</configuration>
+		<configuration configurationName="nucleo">
+			<resource resourceType="PROJECT" workspacePath="/tp-2016-1c-Con-16-bits-me-hago-alto-kernel"/>
+		</configuration>
+		<configuration configurationName="cpu">
+			<resource resourceType="PROJECT" workspacePath="/tp-2016-1c-Con-16-bits-me-hago-alto-kernel"/>
+		</configuration>
+		<configuration configurationName="swap">
+			<resource resourceType="PROJECT" workspacePath="/tp-2016-1c-Con-16-bits-me-hago-alto-kernel"/>
+		</configuration>
+	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.530312124.1194503103;cdt.managedbuild.config.gnu.exe.debug.530312124.1194503103.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1044723369;cdt.managedbuild.tool.gnu.c.compiler.input.119362353">

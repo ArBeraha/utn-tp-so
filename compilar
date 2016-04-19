@@ -1,61 +1,34 @@
 #!usr/bin/sh
-mkdir temp
-if [[ -f consola ]]; then
-    rm -rf consola
-fi
-if [[ -f cpu ]]; then
-    rm -rf cpu
-fi
-if [[ -f nucleo ]]; then
-    rm -rf nucleo
-fi
-if [[ -f swap]]; then
-    rm -rf swap
-fi
-if [[ -f umc ]]; then
-    rm -rf umc
-fi
-mv consola_ consola
-mv cpu_ cpu
-mv nucleo_ nucleo
-mv swap_ swap
-mv umc_ umc
-
 
 cd consola
 make
 mv consola ../temp
 make clean
 cd ..
-mv consola consola_
 
 cd cpu
 make
 mv cpu ../temp
 make clean
 cd ..
-mv cpu cpu_
 
 cd nucleo
 make
 mv nucleo ../temp
 make clean
 cd ..
-mv nucleo nucleo_
 
 cd swap
 make
 mv swap ../temp
 make clean
 cd ..
-mv swap swap_
 
 cd umc
 make
 mv umc ../temp
 make clean
 cd ..
-mv umc umc_
 
-mv temp/* .
-rmdir temp
+echo ""
+echo "Se compilaron los 5 modulos."

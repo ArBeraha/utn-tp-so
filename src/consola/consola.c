@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include "../otros/handshake.h"
 #include "../otros/sockets/cliente-servidor.h"
+#include <arpa/inet.h>
+#include <sys/socket.h>
 
 struct sockaddr_in direccionServidor;
 int cliente;
@@ -20,14 +22,22 @@ void conectarANucleo()
 	connect_w(cliente, &direccionServidor);
 }
 
-int getHeader()
+int getHandshake()
 {
-	return recv_nowait_ws(cliente,sizeof(handshake_t));
+	char* handshake = recv_nowait_ws(cliente,sizeof(handshake_t));
+	return &handshake;
 }
 
 void handshakear()
 {
-
+	handshake_t hand = SOYCONSOLA;
+	send_w(cliente, (char*)&hand, sizeof(hand));
+	printf("Consola handshakeo\n");
+	if(getHandshake()!=SOYNUCLEO)
+	{
+		perror("Se esperaba que la consola se conecte con el nucleo.\n");
+	}
+	printf("COnsola recibio handshake.\n");
 }
 
 int main(int argc, char* argv[])
@@ -51,12 +61,12 @@ int main(int argc, char* argv[])
 		printf("No poner parametros o poner solo el nombre del archivo a abrir");
 		return 1;
 	}
-	programa = fopen(path,"r");
+	//programa = fopen(path,"r");
 	free(path);
 	conectarANucleo();
+	printf("Conexion al nucleo correcta :).\n");
 	handshakear();
 
-
-	fclose(programa);
+	//fclose(programa);
 	return 0;
 }

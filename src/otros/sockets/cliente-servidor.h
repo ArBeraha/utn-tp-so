@@ -17,13 +17,13 @@
 
 int socket_w();
 void send_w(int cliente, char* msg, int msgSize);
-struct sockaddr_in crearDireccionParaCliente();
+struct sockaddr_in crearDireccionParaCliente(unsigned short PORT);
 void connect_w(int cliente, struct sockaddr_in* direccionServidor);
 void permitirReutilizacion(int servidor, int* activado);
 char* recv_nowait_ws(int cliente, int msgSize);
 char* recv_waitall_ws(int cliente, int msgSize);
 void listen_w(int servidor);
-struct sockaddr_in crearDireccionParaServidor();
+struct sockaddr_in crearDireccionParaServidor(unsigned short PORT);
 void bind_ws(int servidor, struct sockaddr_in* direccionServidor);
 
 //Esta funcion es mas que nada algo interno, es mas comodo usar recv_nowait_ws() y recibir_waitall_ws(). Si se quiere usar desde fuera de este cliente-servidor.c es totalmente valido.

@@ -14,6 +14,7 @@
 struct sockaddr_in direccionServidor;
 struct sockaddr_in direccionCliente;
 int servidor, cliente;
+unsigned int tamanioDireccion;
 
 int getHandshake()
 {
@@ -39,13 +40,13 @@ void handshakear()
 int main()
 {
 	direccionServidor = crearDireccionParaServidor(8080);
-	unsigned int tamanioDireccion;
 	servidor = socket_w();
 	int activado = 1;
 	bind_ws(servidor,&direccionServidor);
 	permitirReutilizacion(servidor,&activado);
 	listen_w(servidor);
 	printf("Estoy escuchando\n");
+
 	cliente = accept(servidor, (void*)&direccionCliente,&tamanioDireccion);
 	printf("Conexion aceptada :)");
 	handshakear();

@@ -42,7 +42,7 @@ void handshakear()
 
 int main(int argc, char* argv[])
 {
-	FILE* programa;
+	/*FILE* programa;
 	char* path=NULL;
 	printf("soy consola\n");
 	if(argc==1)
@@ -63,6 +63,7 @@ int main(int argc, char* argv[])
 	}
 	//programa = fopen(path,"r");
 	free(path);
+	*/
 	conectarANucleo();
 	printf("Conexion al nucleo correcta :).\n");
 	handshakear();

@@ -11,6 +11,9 @@
 #include "../otros/sockets/cliente-servidor.h"
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <commons/string.h>
+
+enum {headerError, headerHandshake, headerScript};
 
 struct sockaddr_in direccionServidor;
 int cliente;
@@ -25,19 +28,21 @@ void conectarANucleo()
 int getHandshake()
 {
 	char* handshake = recv_nowait_ws(cliente,sizeof(handshake_t));
-	return &handshake;
+	return atoi(handshake);
 }
 
 void handshakear()
 {
-	handshake_t hand = SOYCONSOLA;
-	send_w(cliente, (char*)&hand, sizeof(hand));
+	char *hand = string_from_format("%d%d",headerHandshake, SOYCONSOLA);
+	send_w(cliente, hand, strlen(hand));
+
 	printf("Consola handshakeo\n");
 	if(getHandshake()!=SOYNUCLEO)
 	{
 		perror("Se esperaba que la consola se conecte con el nucleo.\n");
 	}
-	printf("COnsola recibio handshake.\n");
+	else
+	printf("Consola recibio handshake de Nucleo.\n");
 }
 
 int main(int argc, char* argv[])
@@ -71,3 +76,4 @@ int main(int argc, char* argv[])
 	//fclose(programa);
 	return 0;
 }
+

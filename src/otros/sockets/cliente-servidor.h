@@ -5,8 +5,28 @@
  *      Author: utnso
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/time.h>
+#include <commons/string.h>
+
+
 #ifndef CLIENTE_SERVIDOR_H_
 #define CLIENTE_SERVIDOR_H_
+
+#define MAXCLIENTS 30
+#define PUERTO 8080
+#define HEADER_SIZE 1
+
+struct sockaddr_in direccion;
+int socketNuevasConexiones, socketCliente[MAXCLIENTS], tamanioDireccion;
+fd_set socketsParaLectura;
 
 /* ¿Como funciona esto?
  * Las funciones que solo son wrappers se llaman igual que la original con _w.
@@ -29,6 +49,15 @@ void bind_ws(int servidor, struct sockaddr_in* direccionServidor);
 //Esta funcion es mas que nada algo interno, es mas comodo usar recv_nowait_ws() y recibir_waitall_ws(). Si se quiere usar desde fuera de este cliente-servidor.c es totalmente valido.
 char* recv_con_criterio_ws(int cliente, int msgSize, int msgCriterio);
 #endif /* CLIENTE_SERVIDOR_H_ */
+
+//xAriel
+void configurarServidor();
+void inicializarClientes();
+void agregarCliente(int cliente);
+void quitarCliente(int i);
+void procesarNuevasConexiones();
+int tieneLectura(int socket);
+int incorporarSockets();
 
 
 

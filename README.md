@@ -43,3 +43,8 @@ In the "Manage configurations..." window
     select "OK" again to close Project Properties
 
 Nota: Donde dice "choose Release", en vez de poner Release se selecciona el nombre del modulo que se quiere testear!
+
+## Distribución de módulos
+No es la idea que sea algo exacto para que se de tal cual a rajatabla. Solamente lo pongo para que cuando los modulos necesiten pasarse cosas, cada quien sepa con quien o quienes tiene que hablar para ponerse de acuerdo. Todos tienen permisos de edición de la planilla si se loguean con su cuenta de gmail :)
+
+    https://docs.google.com/spreadsheets/d/1_3iUmtMuKK-n50n-ggTaDyBi7pzAeRoAmYej9HYjF7k/edit#gid=0

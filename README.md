@@ -1,5 +1,7 @@
 # tp-2016-1c-Con-16-bits-me-hago-alto-kernel
 
+# Compilacion
+
 ## Compilar todos los modulos desde eclipse
 In the Eclipse main menu
 
@@ -44,7 +46,12 @@ In the "Manage configurations..." window
 
 Nota: Donde dice "choose Release", en vez de poner Release se selecciona el nombre del modulo que se quiere testear!
 
-## Distribución de módulos
+
+# Distribución de módulos
 No es la idea que sea algo exacto para que se de tal cual a rajatabla. Solamente lo pongo para que cuando los modulos necesiten pasarse cosas, cada quien sepa con quien o quienes tiene que hablar para ponerse de acuerdo. Todos tienen permisos de edición de la planilla si se loguean con su cuenta de gmail :)
 
-    https://docs.google.com/spreadsheets/d/1_3iUmtMuKK-n50n-ggTaDyBi7pzAeRoAmYej9HYjF7k/edit#gid=0
+    [![Link de la planilla :)](https://docs.google.com/spreadsheets/d/1_3iUmtMuKK-n50n-ggTaDyBi7pzAeRoAmYej9HYjF7k/edit#gid=0)]
+
+
+# Git :)
+[![asciicast](https://lh3.googleusercontent.com/-H6xZCx4HCeE/TqqR8Tp_5QI/AAAAAAAAe0w/5rpSC6gDi4A/w1565-h1124/EntendiendoGIT.png)](https://lh3.googleusercontent.com/-H6xZCx4HCeE/TqqR8Tp_5QI/AAAAAAAAe0w/5rpSC6gDi4A/w1565-h1124/EntendiendoGIT.png)

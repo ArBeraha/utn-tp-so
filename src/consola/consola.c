@@ -12,17 +12,16 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <commons/string.h>
-
-enum {headerError, headerHandshake, headerScript};
-
-struct sockaddr_in direccionServidor;
+#include "../otros/handshake.h"
+#include "../otros/header.h"
+#include "../otros/sockets/cliente-servidor.h"
 int cliente;
 
 void conectarANucleo()
 {
-	direccionServidor = crearDireccionParaCliente(8080);
+	direccion = crearDireccionParaCliente(8080);
 	cliente = socket_w();
-	connect_w(cliente, &direccionServidor);
+	connect_w(cliente, &direccion);
 }
 
 int getHandshake()
@@ -33,7 +32,7 @@ int getHandshake()
 
 void handshakear()
 {
-	char *hand = string_from_format("%d%d",headerHandshake, SOYCONSOLA);
+	char *hand = string_from_format("%d%d",HeaderHandshake, SOYCONSOLA);
 	send_w(cliente, hand, strlen(hand));
 
 	printf("Consola handshakeo\n");

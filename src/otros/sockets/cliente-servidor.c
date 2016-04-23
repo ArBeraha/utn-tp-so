@@ -4,6 +4,11 @@
 #include <sys/socket.h>
 #include "cliente-servidor.h"
 
+int getMaxClients()
+{
+	return MAXCLIENTS;
+}
+
 int socket_w()
 {
 	return socket(AF_INET, SOCK_STREAM, 0);
@@ -83,11 +88,12 @@ void bind_ws(int servidor, struct sockaddr_in* direccionServidor)
 		exit(1);
 	}
 }
+
 ///-> Definidas por Ariel en nucleo
 
-void configurarServidor(){
+void configurarServidor(unsigned short PORT){
 	// Definimos la direccion, creamos el socket, bindeamos y ponemos a escuchar nuevas conexiones
-	direccion = crearDireccionParaServidor(PUERTO);
+	direccion = crearDireccionParaServidor(PORT);
 	socketNuevasConexiones = socket_w();
 	bind_ws(socketNuevasConexiones,&direccion);
 	listen_w(socketNuevasConexiones);

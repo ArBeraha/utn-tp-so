@@ -7,8 +7,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "../otros/handshake.h"
-#include "../otros/sockets/cliente-servidor.h"
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <errno.h>
@@ -17,8 +15,11 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <commons/string.h>
+#include "../otros/handshake.h"
+#include "../otros/header.h"
+#include "../otros/sockets/cliente-servidor.h"
 
-enum {headerError, headerHandshake, headerScript};
+#define PUERTO 8080
 
 void procesarHeader(int cliente, char* header){
 	// Segun el protocolo procesamos el header del mensaje recibido
@@ -27,12 +28,12 @@ void procesarHeader(int cliente, char* header){
 
 	switch(atoi(header)) {
 
-	case headerError:
+	case HeaderError:
 		printf("Header de Error\n");
 		quitarCliente(cliente);
 		break;
 
-	case headerHandshake:
+	case HeaderHandshake:
 		printf("Llego 1\n");
 		payload_size=1;
 		payload = malloc(payload_size);
@@ -48,7 +49,7 @@ void procesarHeader(int cliente, char* header){
 		free(payload);
 		break;
 
-	case headerScript: /*A implementar*/ break;
+	case HeaderScript: /*A implementar*/ break;
 	/* Agregar futuros casos */
 
 	default: printf("Llego cualquier cosa\n"); break;
@@ -61,7 +62,7 @@ int main(void) {
 	struct timeval espera; 		// Periodo maximo de espera del select
 	espera.tv_sec = 2; 				//Segundos
 	espera.tv_usec = 500000; 		//Microsegundos
-	char header[HEADER_SIZE];
+	char header[sizeof(header_t)];
 
 	configurarServidor();
 	inicializarClientes();
@@ -74,9 +75,9 @@ int main(void) {
 		if (tieneLectura(socketNuevasConexiones))
 			procesarNuevasConexiones();
 
-		for (i = 0; i < MAXCLIENTS; i++){
+		for (i = 0; i < getMaxClients(); i++){
 			if (tieneLectura(socketCliente[i]))	{
-				if (read( socketCliente[i] , header, HEADER_SIZE) == 0)
+				if (read( socketCliente[i] , header, sizeof(header_t)) == 0)
 					quitarCliente(i);
 				else
 					procesarHeader(i,header);

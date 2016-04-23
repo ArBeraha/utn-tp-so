@@ -16,13 +16,11 @@
 #include <sys/time.h>
 #include <commons/string.h>
 
-
+#define MAXCLIENTS 30
 #ifndef CLIENTE_SERVIDOR_H_
 #define CLIENTE_SERVIDOR_H_
 
-#define MAXCLIENTS 30
-#define PUERTO 8080
-#define HEADER_SIZE 1
+
 
 struct sockaddr_in direccion;
 int socketNuevasConexiones, socketCliente[MAXCLIENTS], tamanioDireccion;
@@ -35,6 +33,7 @@ fd_set socketsParaLectura;
  * Algunas que no son wrappers o los wrappers de recv, tienen otros nombres. Siempre respetando lo de los _ que dije arriba.
  */
 
+int getMaxClients(); //retorna la cantidad maxima de clientes de un server
 int socket_w();
 void send_w(int cliente, char* msg, int msgSize);
 struct sockaddr_in crearDireccionParaCliente(unsigned short PORT);
@@ -45,19 +44,20 @@ char* recv_waitall_ws(int cliente, int msgSize);
 void listen_w(int servidor);
 struct sockaddr_in crearDireccionParaServidor(unsigned short PORT);
 void bind_ws(int servidor, struct sockaddr_in* direccionServidor);
-
 //Esta funcion es mas que nada algo interno, es mas comodo usar recv_nowait_ws() y recibir_waitall_ws(). Si se quiere usar desde fuera de este cliente-servidor.c es totalmente valido.
 char* recv_con_criterio_ws(int cliente, int msgSize, int msgCriterio);
-#endif /* CLIENTE_SERVIDOR_H_ */
+
 
 //xAriel
-void configurarServidor();
+void configurarServidor(unsigned short PORT);
 void inicializarClientes();
 void agregarCliente(int cliente);
 void quitarCliente(int i);
 void procesarNuevasConexiones();
 int tieneLectura(int socket);
 int incorporarSockets();
+
+#endif /* CLIENTE_SERVIDOR_H_ */
 
 
 

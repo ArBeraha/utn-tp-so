@@ -22,7 +22,6 @@
 
 typedef int ansisop_var_t; //TODO cambiar esto si es necesario!
 int cliente;
-bool noHayQueFinalizar;
 t_log* activeLogger,* bgLogger;
 FILE* programa;
 
@@ -133,9 +132,8 @@ void handshakear()
 
 void escucharPedidos()
 {
-	noHayQueFinalizar=true;
 	char* header;
-	while(noHayQueFinalizar)
+	while(true)
 		{
 			header = recv_waitall_ws(cliente,sizeof(char));
 			procesarHeader(header);

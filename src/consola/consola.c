@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <commons/string.h>
+#include <string.h>
 #include "../otros/handshake.h"
 #include "../otros/header.h"
 #include "../otros/sockets/cliente-servidor.h"
@@ -46,7 +47,7 @@ void handshakear()
 
 int main(int argc, char* argv[])
 {
-	/*FILE* programa;
+	FILE* programa;
 	char* path=NULL;
 	printf("soy consola\n");
 	if(argc==1)
@@ -65,14 +66,14 @@ int main(int argc, char* argv[])
 		printf("No poner parametros o poner solo el nombre del archivo a abrir");
 		return 1;
 	}
-	//programa = fopen(path,"r");
+	programa = fopen(path,"r");
 	free(path);
-	*/
+
 	conectarANucleo();
 	printf("Conexion al nucleo correcta :).\n");
 	handshakear();
-
-	//fclose(programa);
+	printf("Fin exitoso");
+	fclose(programa);
 	return 0;
 }
 

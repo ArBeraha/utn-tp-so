@@ -23,7 +23,7 @@
 
 
 struct sockaddr_in direccion;
-int socketNuevasConexiones, socketCliente[MAXCLIENTS], tamanioDireccion;
+int socketNuevasConexiones, socketCliente[MAXCLIENTS], tamanioDireccion, activado;
 fd_set socketsParaLectura;
 
 /* ¿Como funciona esto?

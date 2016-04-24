@@ -37,13 +37,18 @@ void destruirLogs()
 	log_destroy(bgLogger);
 }
 
+void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el navegador xD
+{
+	//Lee y termina por \n y \0, entonces si hay un \n lo piso con \0, y si hay un \0 lo piso con \0 (lease, no hago nada xD)
+	texto[strcspn(buffer, "\n")]='\0';
+}
 void imprimirVariable()
 {
 	char* msgValue = recv_waitall_ws(cliente,sizeof(ansisop_var_t));
 	int value = charToInt(msgValue);
 	char* name = recv_waitall_ws(cliente,sizeof(char));
-	printf("Variable %s: %d.\n",name,value);
-	log_debug(bgLogger,"Variable %s: %d.",name,value);
+	sacarSaltoDeLinea(name);
+	log_info(activeLogger,"Variable %s: %d.",name,value);
 	free(msgValue);
 	free(name);
 }
@@ -53,8 +58,8 @@ void imprimirTexto()
 	char* msgSize = recv_waitall_ws(cliente,sizeof(int));
 	int size = charToInt(msgSize);
 	char* texto = recv_waitall_ws(cliente,size);
-	printf("%s\n",texto); //TODO si me lo mandan con \n, sacar el \n de aca!
-	log_debug(bgLogger,"%s",texto);
+	sacarSaltoDeLinea(name);
+	log_info(activeLogger,"%s",texto);
 	free (msgSize);
 	free (texto);
 }

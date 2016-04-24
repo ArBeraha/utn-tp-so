@@ -56,6 +56,8 @@ void quitarCliente(int i);
 void procesarNuevasConexiones();
 int tieneLectura(int socket);
 int incorporarSockets();
+int charToInt(char *c);
+char* intToChar(int i);
 
 #endif /* CLIENTE_SERVIDOR_H_ */
 

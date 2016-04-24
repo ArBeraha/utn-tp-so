@@ -21,12 +21,13 @@
 
 #define PUERTO 8080
 
-void procesarHeader(int cliente, char* header){
+void procesarHeader(int cliente, char *header){
 	// Segun el protocolo procesamos el header del mensaje recibido
-	int payload_size;
 	char* payload;
+	int payload_size;
+	printf("Llego un mensaje con header %d\n",charToInt(header));
 
-	switch(atoi(header)) {
+	switch(charToInt(header)) {
 
 	case HeaderError:
 		printf("Header de Error\n");
@@ -34,13 +35,14 @@ void procesarHeader(int cliente, char* header){
 		break;
 
 	case HeaderHandshake:
-		printf("Llego 1\n");
+		printf("Llego un handshake\n");
 		payload_size=1;
 		payload = malloc(payload_size);
 		read(socketCliente[cliente] , payload, payload_size);
-		if ((atoi(payload)==SOYCONSOLA) || (atoi(payload)==SOYCPU)){
+		printf("Llego un mensaje con payload %d\n",charToInt(payload));
+		if ((charToInt(payload)==SOYCONSOLA) || (charToInt(payload)==SOYCPU)){
 			printf("Es un cliente apropiado! Respondiendo handshake\n");
-			send(socketCliente[cliente], string_itoa(SOYNUCLEO), payload_size, 0);
+			send(socketCliente[cliente], intToChar(SOYNUCLEO), 1, 0);
 		}
 		else {
 			printf("No es un cliente apropiado! rechazada la conexion\n");
@@ -52,7 +54,10 @@ void procesarHeader(int cliente, char* header){
 	case HeaderScript: /*A implementar*/ break;
 	/* Agregar futuros casos */
 
-	default: printf("Llego cualquier cosa\n"); break;
+	default:
+		printf("Llego cualquier cosa\n");
+		quitarCliente(cliente);
+		break;
 	}
 }
 
@@ -62,9 +67,9 @@ int main(void) {
 	struct timeval espera; 		// Periodo maximo de espera del select
 	espera.tv_sec = 2; 				//Segundos
 	espera.tv_usec = 500000; 		//Microsegundos
-	char header[sizeof(header_t)];
+	char header[1];
 
-	configurarServidor();
+	configurarServidor(PUERTO);
 	inicializarClientes();
 	puts("Esperando conexiones ...");
 
@@ -77,10 +82,13 @@ int main(void) {
 
 		for (i = 0; i < getMaxClients(); i++){
 			if (tieneLectura(socketCliente[i]))	{
-				if (read( socketCliente[i] , header, sizeof(header_t)) == 0)
+				if (read( socketCliente[i] , header, 1) == 0)
 					quitarCliente(i);
 				else
+				{
+					//printf("LLEGO main %c\n",header);
 					procesarHeader(i,header);
+				}
 			}
 		}
 	}

@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include "cliente-servidor.h"
+#include <commons/string.h>
 
 int getMaxClients()
 {
@@ -155,5 +156,12 @@ int incorporarSockets(){
 			max_filedes=filedes;
 	}
 	return max_filedes;
+}
+
+int charToInt(char *c){
+	return ((int)(*c));
+}
+char* intToChar(int i){
+	return string_from_format("%c",i);
 }
 

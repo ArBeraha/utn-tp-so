@@ -26,14 +26,14 @@ void conectarANucleo()
 
 int getHandshake()
 {
-	char* handshake = recv_nowait_ws(cliente,sizeof(handshake_t));
-	return atoi(handshake);
+	char* handshake = recv_nowait_ws(cliente,1);
+	return charToInt(handshake);
 }
 
 void handshakear()
 {
-	char *hand = string_from_format("%d%d",HeaderHandshake, SOYCONSOLA);
-	send_w(cliente, hand, strlen(hand));
+	char *hand = string_from_format("%c%c",HeaderHandshake,SOYCONSOLA);
+	send_w(cliente, hand, 2);
 
 	printf("Consola handshakeo\n");
 	if(getHandshake()!=SOYNUCLEO)

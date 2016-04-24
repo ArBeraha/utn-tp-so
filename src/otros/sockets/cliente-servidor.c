@@ -95,6 +95,7 @@ void configurarServidor(unsigned short PORT){
 	// Definimos la direccion, creamos el socket, bindeamos y ponemos a escuchar nuevas conexiones
 	direccion = crearDireccionParaServidor(PORT);
 	socketNuevasConexiones = socket_w();
+	activado=1;
 	permitirReutilizacion(socketNuevasConexiones,&activado);
 	bind_ws(socketNuevasConexiones,&direccion);
 	listen_w(socketNuevasConexiones);

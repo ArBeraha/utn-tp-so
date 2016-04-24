@@ -4,13 +4,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/otros/handshake.c 
+../src/otros/handshake.c \
+../src/otros/header.c 
 
 OBJS += \
-./src/otros/handshake.o 
+./src/otros/handshake.o \
+./src/otros/header.o 
 
 C_DEPS += \
-./src/otros/handshake.d 
+./src/otros/handshake.d \
+./src/otros/header.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

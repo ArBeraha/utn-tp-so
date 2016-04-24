@@ -27,7 +27,7 @@ void procesarHeader(int cliente, char* header){
 	char* payload;
 
 	switch(atoi(header)) {
-
+	printf("el header fue %d", atoi(header));
 	case HeaderError:
 		printf("Header de Error\n");
 		quitarCliente(cliente);
@@ -64,7 +64,7 @@ int main(void) {
 	espera.tv_usec = 500000; 		//Microsegundos
 	char header[sizeof(header_t)];
 
-	configurarServidor();
+	configurarServidor(PUERTO);
 	inicializarClientes();
 	puts("Esperando conexiones ...");
 

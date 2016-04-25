@@ -20,9 +20,9 @@
 #define PATHSIZE 2048
 #define DEBUG true
 
-typedef int ansisop_var_t; //TODO cambiar esto si es necesario!
+typedef int ansisop_var_t;
 int cliente;
-t_log* activeLogger,* bgLogger;
+t_log *activeLogger, *bgLogger;
 FILE* programa;
 
 void crearLogs()

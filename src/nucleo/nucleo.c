@@ -15,47 +15,64 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <commons/string.h>
+#include <commons/log.h>
 #include "../otros/handshake.h"
 #include "../otros/header.h"
 #include "../otros/sockets/cliente-servidor.h"
 
 #define PUERTO 8080
 
+t_log *activeLogger, *bgLogger;
+void crearLogs()
+{
+	activeLogger = log_create("nucleo.log","Nucleo",true,LOG_LEVEL_INFO);
+	bgLogger = log_create("nucleo.log","Nucleo",false,LOG_LEVEL_DEBUG);
+}
+
+void destruirLogs()
+{
+	log_destroy(activeLogger);
+	log_destroy(bgLogger);
+}
+
 void procesarHeader(int cliente, char *header){
 	// Segun el protocolo procesamos el header del mensaje recibido
 	char* payload;
 	int payload_size;
-	printf("Llego un mensaje con header %d\n",charToInt(header));
+	log_debug(bgLogger,"Llego un mensaje con header %d\n",charToInt(header));
 
 	switch(charToInt(header)) {
 
 	case HeaderError:
-		printf("Header de Error\n");
+		log_error(activeLogger,"Header de Error\n");
 		quitarCliente(cliente);
 		break;
 
 	case HeaderHandshake:
-		printf("Llego un handshake\n");
+		log_debug(bgLogger,"Llego un handshake\n");
 		payload_size=1;
 		payload = malloc(payload_size);
 		read(socketCliente[cliente] , payload, payload_size);
-		printf("Llego un mensaje con payload %d\n",charToInt(payload));
+		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
 		if ((charToInt(payload)==SOYCONSOLA) || (charToInt(payload)==SOYCPU)){
-			printf("Es un cliente apropiado! Respondiendo handshake\n");
+			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
 			send(socketCliente[cliente], intToChar(SOYNUCLEO), 1, 0);
 		}
 		else {
-			printf("No es un cliente apropiado! rechazada la conexion\n");
+			log_error(activeLogger,"No es un cliente apropiado! rechazada la conexion\n");
+			log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
 			quitarCliente(cliente);
 		}
 		free(payload);
 		break;
 
-	case HeaderScript: /*A implementar*/ break;
+	case HeaderScript: /*A implementar*/ break; //TODO
 	/* Agregar futuros casos */
 
 	default:
-		printf("Llego cualquier cosa\n");
+		log_error(activeLogger,"Llego cualquier cosa.");
+		log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
+		log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
 		quitarCliente(cliente);
 		break;
 	}
@@ -69,9 +86,10 @@ int main(void) {
 	espera.tv_usec = 500000; 		//Microsegundos
 	char header[1];
 
+	crearLogs();
 	configurarServidor(PUERTO);
 	inicializarClientes();
-	puts("Esperando conexiones ...");
+	log_info(activeLogger,"Esperando conexiones ...");
 
 	while(1){
 		mayorDescriptor = incorporarSockets();
@@ -86,11 +104,12 @@ int main(void) {
 					quitarCliente(i);
 				else
 				{
-					//printf("LLEGO main %c\n",header);
+					log_debug(bgLogger,"LLEGO main %c\n",header);
 					procesarHeader(i,header);
 				}
 			}
 		}
 	}
+	destruirLogs();
 	return EXIT_SUCCESS;
 }

@@ -19,21 +19,10 @@
 #include "../otros/handshake.h"
 #include "../otros/header.h"
 #include "../otros/sockets/cliente-servidor.h"
+#include "../otros/log.h"
 
 #define PUERTO 8080
 
-t_log *activeLogger, *bgLogger;
-void crearLogs()
-{
-	activeLogger = log_create("nucleo.log","Nucleo",true,LOG_LEVEL_INFO);
-	bgLogger = log_create("nucleo.log","Nucleo",false,LOG_LEVEL_DEBUG);
-}
-
-void destruirLogs()
-{
-	log_destroy(activeLogger);
-	log_destroy(bgLogger);
-}
 
 void procesarHeader(int cliente, char *header){
 	// Segun el protocolo procesamos el header del mensaje recibido
@@ -78,15 +67,21 @@ void procesarHeader(int cliente, char *header){
 	}
 }
 
+struct timeval newEspera()
+{
+	struct timeval espera;
+	espera.tv_sec = 2; 				//Segundos
+	espera.tv_usec = 500000; 		//Microsegundos
+	return espera;
+}
+
 int main(void) {
 
 	int mayorDescriptor, i;
-	struct timeval espera; 		// Periodo maximo de espera del select
-	espera.tv_sec = 2; 				//Segundos
-	espera.tv_usec = 500000; 		//Microsegundos
+	struct timeval espera = newEspera(); 		// Periodo maximo de espera del select
 	char header[1];
 
-	crearLogs();
+	crearLogs("Nucleo","Nucleo");
 	configurarServidor(PUERTO);
 	inicializarClientes();
 	log_info(activeLogger,"Esperando conexiones ...");
@@ -110,6 +105,7 @@ int main(void) {
 			}
 		}
 	}
+
 	destruirLogs();
 	return EXIT_SUCCESS;
 }

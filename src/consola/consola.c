@@ -11,11 +11,13 @@
 #include <sys/socket.h>
 #include <commons/string.h>
 #include <string.h>
+#include <commons/log.h>
+#include <unistd.h>
 #include "../otros/handshake.h"
 #include "../otros/header.h"
 #include "../otros/sockets/cliente-servidor.h"
-#include <commons/log.h>
-#include <unistd.h>
+#include "../otros/log.h"
+
 
 #define PATHSIZE 2048
 #define DEBUG true
@@ -24,18 +26,6 @@ typedef int ansisop_var_t;
 int cliente;
 t_log *activeLogger, *bgLogger;
 FILE* programa;
-
-void crearLogs()
-{
-	activeLogger = log_create(string_from_format("consola_%d.log",getpid()),"Consola",true,LOG_LEVEL_INFO);
-	bgLogger = log_create(string_from_format("consola_%d.log",getpid()),"Consola",false,LOG_LEVEL_DEBUG);
-}
-
-void destruirLogs()
-{
-	log_destroy(activeLogger);
-	log_destroy(bgLogger);
-}
 
 void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el navegador xD
 {
@@ -175,7 +165,7 @@ int main(int argc, char* argv[])
 {
 	//TODO lo de pasar los handshakes como un byte por meter el numero en un caracter, va barbaro! total son 5
 	// ahora... con los headers que hacemos? cuando lleguemos al header 10 explota todo.
-	crearLogs();
+	crearLogs(string_from_format("consola_%d",getpid()),"Consola");
 	char* path = malloc(PATHSIZE);
 	log_info(activeLogger,"Soy consola de process ID %d.", getpid());
 

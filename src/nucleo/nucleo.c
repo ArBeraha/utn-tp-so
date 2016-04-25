@@ -16,6 +16,7 @@
 #include <sys/time.h>
 #include <commons/string.h>
 #include <commons/log.h>
+#include <commons/config.h>
 #include "../otros/handshake.h"
 #include "../otros/header.h"
 #include "../otros/sockets/cliente-servidor.h"
@@ -23,6 +24,34 @@
 
 #define PUERTO 8080
 
+//typedef struct customConfig {
+//	int puertoConsola;
+//	int puertoCPU;
+//	int quantum;
+//	int queantum_sleep;
+//	char** sem_ids;
+//	int* semInit;
+//	char** io_ids;
+//	int* ioSleep;
+//	char** sharedVars;
+//} customConfig_t;
+
+//struct customConfig_t config;
+//t_config* configNucleo;
+
+//void cargarCFG()
+//{
+//	configNucleo = config_create("archivoConfigNucleo");
+//	config.puertoConsola = config_get_int_value(configNucleo,"PUERTO_PROG");
+//	config.puertoCPU = config_get_int_value(configNucleo,"PUERTO_CPU");
+//	config.quantum = config_get_int_value(configNucleo,"QUANTUM");
+//	config.queantum_sleep = config_get_int_value(configNucleo,"QUANTUM_SLEEP");
+//	config.sem_ids = config_get_array_value(configNucleo,"SEM_IDS");
+//	config.semInit = config_get_array_value(configNucleo,"SEM_INIT");
+//	config.io_ids = config_get_array_value(configNucleo,"IO_IDS");
+//	config.ioSleep = config_get_array_value(configNucleo,"IO_SLEEP");
+//	config.sharedVars = config_get_array_value(configNucleo,"SHARED_VARS");
+//}
 
 void procesarHeader(int cliente, char *header){
 	// Segun el protocolo procesamos el header del mensaje recibido

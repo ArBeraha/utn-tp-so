@@ -40,7 +40,7 @@ void destruirLogs()
 void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el navegador xD
 {
 	//Lee y termina por \n y \0, entonces si hay un \n lo piso con \0, y si hay un \0 lo piso con \0 (lease, no hago nada xD)
-	texto[strcspn(buffer, "\n")]='\0';
+	texto[strcspn(texto, "\n")]='\0';
 }
 void imprimirVariable()
 {
@@ -58,7 +58,7 @@ void imprimirTexto()
 	char* msgSize = recv_waitall_ws(cliente,sizeof(int));
 	int size = charToInt(msgSize);
 	char* texto = recv_waitall_ws(cliente,size);
-	sacarSaltoDeLinea(name);
+	sacarSaltoDeLinea(texto);
 	log_info(activeLogger,"%s",texto);
 	free (msgSize);
 	free (texto);

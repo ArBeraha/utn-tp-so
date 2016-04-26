@@ -51,5 +51,10 @@ No es la idea que sea algo exacto para que se de tal cual a rajatabla. Solamente
 [![Link de la planilla :)](https://docs.google.com/spreadsheets/d/1_3iUmtMuKK-n50n-ggTaDyBi7pzAeRoAmYej9HYjF7k/edit#gid=0)](https://docs.google.com/spreadsheets/d/1_3iUmtMuKK-n50n-ggTaDyBi7pzAeRoAmYej9HYjF7k/edit#gid=0)
 
 
-# Git :)
+# Links de interés sobre las herramientas y la teoría
+
+## Git :)
 [![asciicast](https://lh3.googleusercontent.com/-H6xZCx4HCeE/TqqR8Tp_5QI/AAAAAAAAe0w/5rpSC6gDi4A/w1565-h1124/EntendiendoGIT.png)](https://lh3.googleusercontent.com/-H6xZCx4HCeE/TqqR8Tp_5QI/AAAAAAAAe0w/5rpSC6gDi4A/w1565-h1124/EntendiendoGIT.png)
+
+## Paginacion por demanda en 5 minutos
+https://www.youtube.com/watch?v=dOVrEbZVeoU

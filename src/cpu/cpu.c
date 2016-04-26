@@ -17,6 +17,7 @@
 #include "../otros/sockets/cliente-servidor.h"
 #include "../otros/log.h"
 
+// VARIABLES GLOBALES
 int cliente_cpu; //cpu es cliente del nucleo
 int cliente_umc; //cpu es cliente de umc
 
@@ -33,7 +34,7 @@ int getHandshake(int cli)
 }
 
 void conectar_nucleo(){
-	direccionNucleo = crearDireccionParaCliente(8080);
+	direccionNucleo = crearDireccionParaCliente(8088);
 	cliente_cpu = socket_w();
 	connect_w(cliente_cpu,&direccionNucleo); //conecto cpu a la direccion 'direccionNucleo'
 
@@ -53,11 +54,10 @@ void hacer_handshake_nucleo(){
 	}
 }
 
-
 void conectar_umc(){
 	direccionUmc = crearDireccionParaCliente(8081);
 	cliente_umc = socket_w();
-	connect_w(cliente_umc,&direccionUmc); //conecto cpu a la direccion 'direccion'
+	connect_w(cliente_umc,&direccionUmc); //conecto cpu a la direccion 'direccionUmc'
 
 	log_info(activeLogger,"Éxito al conectar con UMC!!");
 }
@@ -74,6 +74,64 @@ void hacer_handshake_umc(){
 		}
 }
 
+
+void hacer_handshake(int clienteid,handshake_t id){
+
+	char *hand = string_from_format("%c%c",HeaderHandshake,id);
+	send_w(clienteid,hand,2);
+
+	if(getHandshake(clienteid)!= id){
+		perror("Handshake incorrecto");
+	}
+	else{
+			log_info(activeLogger,"Exito al hacer handshake");
+		}
+}
+
+void procesarHeader(char *header){
+	// Segun el protocolo procesamos el header del mensaje recibido
+	log_debug(bgLogger,"Llego un mensaje con header %d.",charToInt(header));
+
+	switch(charToInt(header)) {
+
+	case HeaderError:
+		log_error(activeLogger,"Header de Error.");
+		break;
+
+	case HeaderHandshake:
+		log_error(activeLogger,"Segunda vez que se recibe un headerHandshake acá.");
+		exit(EXIT_FAILURE);
+		break;
+	/*case desconectar
+	 * case headerPCB
+	 * case finalizar
+	*/
+
+	default:
+		log_error(activeLogger,"Llego cualquier cosa.");
+		log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
+		exit(EXIT_FAILURE);
+		break;
+	}
+}
+
+void esperar_programas(){
+	log_debug(bgLogger,"Esperando programas de nucleo %d.");
+	char* header;
+	while(1){
+		header = recv_waitall_ws(cliente_cpu,sizeof(char));
+		procesarHeader(header);    //TODO implementar - nuevos headers?
+		free(header);
+	}
+}
+
+void pedir_sentencia(){
+	//pedir al UMC la proxima sentencia a ejecutar
+}
+
+void incrementarPCB();
+void parsear();
+
 int main()
 {
 
@@ -85,12 +143,12 @@ int main()
 	hacer_handshake_nucleo();
 	//TODO corregir error al conectar con nucleo
 
-
 	//conectarse a umc
 	conectar_umc();
 	hacer_handshake_umc();
 
-
+	//CPU se pone a esperar que nucleo le envie PCB
+	esperar_programas();
 
 	/*incrementar_pcb();
 	 *
@@ -106,6 +164,7 @@ int main()
 	//Actualizar Program Counter
 
 	//Notificar fin de quantum
+	destruirLogs(); //TODO cambiar de lugar
 
 	return 0;
 }

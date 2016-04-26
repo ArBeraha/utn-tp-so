@@ -10,8 +10,14 @@
 #include "../otros/sockets/cliente-servidor.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <commons/log.h>
 #include <commons/string.h>
 #include <commons/config.h>
+#include <commons/temporal.h>
+#include <commons/process.h>
+#include <commons/txt.h>
+#include <commons/collections/list.h>
+
 
 /* la estructura que de cada proceso de procese(? */
 typedef struct infoProcesos {
@@ -20,18 +26,21 @@ typedef struct infoProcesos {
 	int posPagina;
 } t_infoProcesos;
 
-/*asignemos el archivo de configuracion "vamo' a asignarlo"*/
-archSwap = config_create("archivoConfigSwap");
-/*vamo' a leerlo*/
-char* puertoEscucha = config_get_string_value(configSwap, "PUERTO_ESCUCHA");
-char* nomSwap = config_get_string_value(configSwap, "NOMBRE_SWAP");
-int cantPaginasSwap = config_get_int_value(configSwap, "CANTIDAD_PAGINAS");
-int tamPag = config_get_int_value(configSwap, "TAMANIO_PAGINA");
-int retCompactacion = config_get_int_value(configSwap,"RETARDO_COMPACTACION");
+typedef struct disponibles {
+	int marcoInicial;
+	int totalMarcos;
+} t_disponibles;
+
+t_config* archSwap; //archivo de configuracion
+t_log* logSwap; //archivo de logs
+t_list* espacioUtilizado; //lista de paginas usadas
+t_list* espacioDisponible; //lista de paginas no usadas
 
 
 
-int tamTot = cantPaginasSwap * tamPag; /* tamaño total en bytes de mi swap*/
+
+
+
 
 
 
@@ -39,6 +48,79 @@ int tamTot = cantPaginasSwap * tamPag; /* tamaño total en bytes de mi swap*/
 
 int main()
 {
+	/*asignemos el archivo de configuracion "vamo' a asignarlo"*/
+	archSwap = config_create("archivoConfigSwap");
+	/*vamo' a leerlo*/
+	char* puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
+	char* nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");
+	int cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
+	int tamPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
+	int retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
+
+	/*logs*/
+	logSwap = log_create("logSwap", "TP", 0, LOG_LEVEL_TRACE);
+
+	/* listas manejo de paginas */
+	espacioUtilizado = list_create();
+	espacioDisponible = list_create();
+
+	t_disponibles* disponibles = malloc(sizeof(t_disponibles));
+	disponibles.marcoInicial = 0; //primer marco
+	disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
+	list_add(espacioDisponible, disponibles);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	/* crear archivo de tamaño configurable en bytes que representa particion de swap
 	 * quedarse a la espera de conexion del proceso umc (ver comando dd para creacion de archivos)
 	 * el archi swap se llena con '/0' para inicializar particion

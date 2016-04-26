@@ -175,7 +175,7 @@ void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned
 	// Definimos la direccion, creamos el socket, bindeamos y ponemos a escuchar nuevas conexiones
 	(*dire) = crearDireccionParaServidor(PORT);
 	(*socket) = socket_w();
-	permitirReutilizacion((*socket),&activado);
+	permitirReutilizacion((*socket),activado);
 	bind_ws((*socket),dire);
 	listen_w((*socket));
 	(*tamanio)=sizeof(*dire);

@@ -27,6 +27,22 @@
 #define MARCO_SIZE 100 //en bytes
 #define DEBUG true
 #define PUERTO_SWAP 8082
+#define ENTRADAS_TLB 10
+
+typedef struct tlbStruct{
+	int pid,
+		pagina;
+	char* direccion;
+}tlb_t;
+
+typedef struct pedidoAUmc{
+	 int idPrograma,
+		 paginasRequeridas,
+		 nroPagina,
+		 offset,
+		 tamanio,
+		 buffer;
+}pedidoAUmc_t;
 
 int tamanioMemoria = MARCO * MARCO_SIZE;
 
@@ -34,16 +50,8 @@ typedef int ansisop_var_t;
 int cliente;
 t_log *activeLogger, *bgLogger;
 char* memoria;
-
-struct pedidoAUmc{
-	//idPrograma
-	int paginasRequeridas;
-	int nroPagina;
-	int offset;
-	int tamanio;
-	int buffer;
-};
-
+tlb_t tlb[ENTRADAS_TLB];
+tlb_t* ptlb;
 
 struct timeval newEspera()
 {
@@ -102,9 +110,10 @@ void procesarHeader(int cliente, char *header){
 	}
 }
 
+
 //1. Funciones principales de UMC
 
-void inicializarPrograma(int paginasRequeridas){ //Y FALTA ID DE PROGRAMA COMO PARAMETRO, ES UN INT??
+void inicializarPrograma(int idPrograma, int paginasRequeridas){
 }
 
 void devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanio){
@@ -113,7 +122,7 @@ void devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanio){
 void almacenarBytesEnUnaPagina(int nroPagina, int offset, int tamanio, int buffer){
 }
 
-void finalizarPrograma(){//ID DE POGRAMA como parametro
+void finalizarPrograma(int idPrograma){
 }
 
 
@@ -153,7 +162,7 @@ void recibirComandos(){
 // FIN 2
 
 
-//Server de los cpu y de nucleo
+// 3.Server de los cpu y de nucleo
 void servidorCPUyNucleo(){
 
 	int mayorDescriptor, i;
@@ -185,7 +194,10 @@ void servidorCPUyNucleo(){
 	}
 	destruirLogs();
 }
+// FIN 3
 
+
+// 4. Conexion a Swap
 void handshakearASwap(){
 	char *hand = string_from_format("%c%c",HeaderHandshake,SOYUMC);
 	send_w(cliente, hand, 2);
@@ -217,20 +229,27 @@ void realizarConexionASwap()
 }
 
 void escucharPedidosDeSwap(){
-
 	char* header;
-	while(true)
-		{
+	while(true){
 			header = recv_waitall_ws(cliente,sizeof(char));
 			procesarHeader(cliente,header);
 			free(header);
-		}
+	}
 }
+// FIN 4
 
-void crearMemoria(){
+void crearMemoriaYTlb(){
 	memoria = (char*)malloc(tamanioMemoria);
-	memset(memoria,0,tamanioMemoria);
-	log_info(activeLogger,"Creada la memoria y rellenada con ceros (0).");
+	memset(memoria,'\0',tamanioMemoria);
+	log_info(activeLogger,"Creada la memoria y rellenada con \0.");
+
+	int i;
+	for(i = 0; i<ENTRADAS_TLB; i++){
+		tlb[i].pid=0;
+		tlb[i].pagina=0;
+		tlb[i].direccion=NULL;
+	}
+	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).");
 }
 
 int main(void) {
@@ -238,7 +257,7 @@ int main(void) {
 	crearLogs(string_from_format("umc_%d",getpid()),"Umc");
 	log_info(activeLogger,"Soy umc de process ID %d.", getpid());
 
-	crearMemoria();
+	crearMemoriaYTlb();
 
 	//CAMBIAR, yo hice que umc sea cliente de nucleo, pero deberia ser servidor de nucleo!
 	// Y FALTARIA QUE umc sea cliente de Swap

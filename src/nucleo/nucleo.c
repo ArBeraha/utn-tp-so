@@ -24,7 +24,13 @@
 #include "../otros/sockets/cliente-servidor.h"
 #include "../otros/log.h"
 
-#define PUERTO 8080
+// Globales de servidor
+int socketConsola, socketCPU, mayorDescriptor;
+struct sockaddr_in direccionConsola, direccionCPU;
+unsigned int tamanioDireccionConsola, tamanioDireccionCPU;
+#define PUERTOCONSOLA 8080
+#define PUERTOCPU 8088
+
 #define UMC_PORT 8081
 
 struct sockaddr_in direccionParaUMC;
@@ -169,25 +175,40 @@ void manejarUMC()
 
 int main(void) {
 
-	int mayorDescriptor, i;
+	int i;
 	struct timeval espera = newEspera(); 		// Periodo maximo de espera del select
 	char header[1];
 
 	crearLogs("Nucleo","Nucleo");
-	configurarServidor(PUERTO);
+
+	configurarServidorExtendido(&socketConsola,&direccionConsola,PUERTOCONSOLA,&tamanioDireccionConsola);
+	configurarServidorExtendido(&socketCPU,&direccionCPU,PUERTOCPU,&tamanioDireccionCPU);
+
 	inicializarClientes();
 	log_info(activeLogger,"Esperando conexiones ...");
 
 	// Me conecto a la umc y hago el handshake
-	pthread_t UMC; //hilo para UMC. Asi si UMC tarda, Nucleo puede seguir manejando CPUs y consolas sin bloquearse.
-	pthread_create(&UMC, NULL, (void*)manejarUMC, NULL);
+	//pthread_t UMC; //hilo para UMC. Asi si UMC tarda, Nucleo puede seguir manejando CPUs y consolas sin bloquearse.
+	//pthread_create(&UMC, NULL, (void*)manejarUMC, NULL);
 
 	while(1){
-		mayorDescriptor = incorporarSockets();
+		FD_ZERO(&socketsParaLectura);
+		FD_SET(socketConsola, &socketsParaLectura);
+		FD_SET(socketCPU, &socketsParaLectura);
+
+		if (socketConsola>socketCPU)
+			mayorDescriptor = socketConsola;
+		else
+			mayorDescriptor = socketCPU;
+
+		mayorDescriptor = incorporarClientes();
 		select( mayorDescriptor + 1 , &socketsParaLectura , NULL , NULL , &espera);
 
-		if (tieneLectura(socketNuevasConexiones))
-			procesarNuevasConexiones();
+		if (tieneLectura(socketConsola))
+			procesarNuevasConexionesExtendido(&socketConsola);
+
+		if (tieneLectura(socketCPU))
+			procesarNuevasConexionesExtendido(&socketCPU);
 
 		for (i = 0; i < getMaxClients(); i++){
 			if (tieneLectura(socketCliente[i]))	{

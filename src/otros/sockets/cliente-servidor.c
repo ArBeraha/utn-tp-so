@@ -125,17 +125,21 @@ void agregarCliente(int cliente){
 
 void quitarCliente(int i){
 	// Liberamos del array al cliente y cerramos su socket
-	getpeername(socketCliente[i] , (struct sockaddr*)&direccion , (socklen_t*)&tamanioDireccion);
-	printf("Invitado desconectado , ip %s , puerto %d \n" , inet_ntoa(direccion.sin_addr) , ntohs(direccion.sin_port));
+	struct sockaddr_in clienteDir;
+	unsigned int clienteLen = sizeof(clienteDir);
+	getpeername(socketCliente[i] , (struct sockaddr*)&clienteDir , (socklen_t*)&clienteLen);
+	printf("Invitado desconectado , ip %s , puerto %d \n" , inet_ntoa(clienteDir.sin_addr) , ntohs(clienteDir.sin_port));
 	close(socketCliente[i]);
 	socketCliente[i] = 0;
 }
 
 void procesarNuevasConexiones(){
 	// Aceptamos nueva conexion
+	struct sockaddr_in clienteDir;
+	unsigned int clienteLen = sizeof(clienteDir);
 	int socketNuevoCliente;
-	socketNuevoCliente = accept(socketNuevasConexiones, (struct sockaddr *)&direccion, (socklen_t*)&tamanioDireccion);
-	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , socketNuevoCliente , inet_ntoa(direccion.sin_addr) , ntohs(direccion.sin_port));
+	socketNuevoCliente = accept(socketNuevasConexiones, (struct sockaddr *)&clienteDir, (socklen_t*)&clienteLen);
+	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , socketNuevoCliente , inet_ntoa(clienteDir.sin_addr) , ntohs(clienteDir.sin_port));
 	agregarCliente(socketNuevoCliente);
 }
 
@@ -167,3 +171,37 @@ char* intToChar(int i){
 	return string_from_format("%c",i);
 }
 
+void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned short PORT, unsigned int* tamanio){
+	// Definimos la direccion, creamos el socket, bindeamos y ponemos a escuchar nuevas conexiones
+	(*dire) = crearDireccionParaServidor(PORT);
+	(*socket) = socket_w();
+	activado=1;
+	//permitirReutilizacion((*socket),&activado);
+	bind_ws((*socket),dire);
+	listen_w((*socket));
+	(*tamanio)=sizeof(*dire);
+}
+
+int incorporarClientes(){
+	// Reseteamos y añadimos al set los sockets disponibles
+	int i,filedes,max_filedes;
+	for (i = 0; i < MAXCLIENTS; i++){
+		filedes=socketCliente[i];
+		if (filedes>0)
+			FD_SET(socketCliente[i],&socketsParaLectura);
+
+		if (filedes>max_filedes)
+			max_filedes=filedes;
+	}
+	return max_filedes;
+}
+
+void procesarNuevasConexionesExtendido(int* socket){
+	// Aceptamos nueva conexion
+	struct sockaddr_in clienteDir;
+	unsigned int clienteLen = sizeof(clienteDir);
+	int socketNuevoCliente;
+	socketNuevoCliente = accept((*socket), (struct sockaddr *)&clienteDir, (socklen_t*)&clienteLen);
+	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , socketNuevoCliente , inet_ntoa(clienteDir.sin_addr) , ntohs(clienteDir.sin_port));
+	agregarCliente(socketNuevoCliente);
+}

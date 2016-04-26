@@ -58,6 +58,10 @@ int tieneLectura(int socket);
 int incorporarSockets();
 int charToInt(char *c);
 char* intToChar(int i);
+// Funciones extendidas para mayor control
+int incorporarClientes();
+void procesarNuevasConexionesExtendido(int* socket);
+void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned short PORT, unsigned int* tamanio);
 
 #endif /* CLIENTE_SERVIDOR_H_ */
 

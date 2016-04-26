@@ -23,6 +23,41 @@
 #include "../otros/log.h"
 
 #define PUERTO 8081
+#define MARCO 10
+#define MARCO_SIZE 100 //en bytes
+#define DEBUG true
+#define PUERTO_SWAP 8082
+
+int tamanioMemoria = MARCO * MARCO_SIZE;
+
+typedef int ansisop_var_t;
+int cliente;
+t_log *activeLogger, *bgLogger;
+char* memoria;
+
+struct pedidoAUmc{
+	//idPrograma
+	int paginasRequeridas;
+	int nroPagina;
+	int offset;
+	int tamanio;
+	int buffer;
+};
+
+
+struct timeval newEspera()
+{
+	struct timeval espera;
+	espera.tv_sec = 2; 				//Segundos
+	espera.tv_usec = 500000; 		//Microsegundos
+	return espera;
+}
+
+int getHandshake()
+{
+	char* handshake = recv_nowait_ws(cliente,1);
+	return charToInt(handshake);
+}
 
 void procesarHeader(int cliente, char *header){
 	// Segun el protocolo procesamos el header del mensaje recibido
@@ -43,7 +78,7 @@ void procesarHeader(int cliente, char *header){
 		payload = malloc(payload_size);
 		read(socketCliente[cliente] , payload, payload_size);
 		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
-		if (charToInt(payload)==SOYCPU){
+		if ( (charToInt(payload)==SOYCPU) || (charToInt(payload)==SOYNUCLEO) ){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
 			send(socketCliente[cliente], intToChar(SOYUMC), 1, 0);
 		}
@@ -67,15 +102,24 @@ void procesarHeader(int cliente, char *header){
 	}
 }
 
-struct timeval newEspera()
-{
-	struct timeval espera;
-	espera.tv_sec = 2; 				//Segundos
-	espera.tv_usec = 500000; 		//Microsegundos
-	return espera;
+//1. Funciones principales de UMC
+
+void inicializarPrograma(int paginasRequeridas){ //Y FALTA ID DE PROGRAMA COMO PARAMETRO, ES UN INT??
 }
 
-//Funciones que se mandan por consola
+void devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanio){
+}
+
+void almacenarBytesEnUnaPagina(int nroPagina, int offset, int tamanio, int buffer){
+}
+
+void finalizarPrograma(){//ID DE POGRAMA como parametro
+}
+
+
+//FIN 1
+
+//2. Funciones que se mandan por consola
 
 void retardo(){
 }
@@ -106,46 +150,107 @@ void recibirComandos(){
 	}
 	while(funcion!=0);
 }
+// FIN 2
 
-//Server de los cpu
-void servidorCPU(){
+
+//Server de los cpu y de nucleo
+void servidorCPUyNucleo(){
+
 	int mayorDescriptor, i;
-		struct timeval espera = newEspera(); 		// Periodo maximo de espera del select
-		char header[1];
+	struct timeval espera = newEspera(); 		// Periodo maximo de espera del select
+	char header[1];
 
-		crearLogs("Umc","Umc");
-		configurarServidor(PUERTO);
-		inicializarClientes();
-		log_info(activeLogger,"Esperando conexiones ...");
+	crearLogs("Umc","Umc");
+	configurarServidor(PUERTO);
+	inicializarClientes();
+	log_info(activeLogger,"Esperando conexiones ...");
 
-		while(1){
-			mayorDescriptor = incorporarSockets();
-			select( mayorDescriptor + 1 , &socketsParaLectura , NULL , NULL , &espera);
+	while(1){
+		mayorDescriptor = incorporarSockets();
+		select( mayorDescriptor + 1 , &socketsParaLectura , NULL , NULL , &espera);
 
-			if (tieneLectura(socketNuevasConexiones))
-				procesarNuevasConexiones();
+		if (tieneLectura(socketNuevasConexiones))
+			procesarNuevasConexiones();
 
-			for (i = 0; i < getMaxClients(); i++){
-				if (tieneLectura(socketCliente[i]))	{
-					if (read( socketCliente[i] , header, 1) == 0)
-						quitarCliente(i);
-					else
-					{
-						log_debug(bgLogger,"LLEGO main %c\n",header);
-						procesarHeader(i,header);
-					}
+		for (i = 0; i < getMaxClients(); i++){
+			if (tieneLectura(socketCliente[i]))	{
+				if (read( socketCliente[i] , header, 1) == 0)
+					quitarCliente(i);
+				else{
+					log_debug(bgLogger,"LLEGO main %c\n",header);
+					procesarHeader(i,header);
 				}
 			}
 		}
+	}
+	destruirLogs();
+}
 
-		destruirLogs();
+void handshakearASwap(){
+	char *hand = string_from_format("%c%c",HeaderHandshake,SOYUMC);
+	send_w(cliente, hand, 2);
+
+	log_debug(bgLogger,"Umc handshakeo.");
+	if(getHandshake()!=SOYSWAP)
+	{
+		perror("Se esperaba que la umc se conecte con el swap.");
+	}
+	else
+		log_debug(bgLogger,"Umc recibio handshake de Swap.");
+}
+
+void conectarASwap(){
+	direccion = crearDireccionParaCliente(PUERTO_SWAP);
+	cliente = socket_w();
+	connect_w(cliente, &direccion);
+
+	handshakearASwap();
+}
+
+void realizarConexionASwap()
+{
+	conectarASwap();
+	log_info(activeLogger,"Conexion a swap correcta :).");
+	handshakearASwap();
+	log_info(activeLogger,"Handshake finalizado exitosamente.");
+	log_debug(bgLogger,"Esperando algo para imprimir en pantalla.");
+}
+
+void escucharPedidosDeSwap(){
+
+	char* header;
+	while(true)
+		{
+			header = recv_waitall_ws(cliente,sizeof(char));
+			procesarHeader(cliente,header);
+			free(header);
+		}
+}
+
+void crearMemoria(){
+	memoria = (char*)malloc(tamanioMemoria);
+	memset(memoria,0,tamanioMemoria);
+	log_info(activeLogger,"Creada la memoria y rellenada con ceros (0).");
 }
 
 int main(void) {
 
-	servidorCPU();
+	crearLogs(string_from_format("umc_%d",getpid()),"Umc");
+	log_info(activeLogger,"Soy umc de process ID %d.", getpid());
 
-	recibirComandos();
+	crearMemoria();
+
+	//CAMBIAR, yo hice que umc sea cliente de nucleo, pero deberia ser servidor de nucleo!
+	// Y FALTARIA QUE umc sea cliente de Swap
+
+	servidorCPUyNucleo(); //Deberia manejarlo un hilo para que no se quede en espera activa..
+
+	realizarConexionASwap();
+	escucharPedidosDeSwap();
+
+	recibirComandos(); //Otro hilo?
+
+	free(memoria);
 
 	return 0;
 }

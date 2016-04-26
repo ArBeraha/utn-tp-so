@@ -61,7 +61,7 @@ char* intToChar(int i);
 // Funciones extendidas para mayor control
 int incorporarClientes();
 void procesarNuevasConexionesExtendido(int* socket);
-void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned short PORT, unsigned int* tamanio);
+void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned short PORT, unsigned int* tamanio, int* activado);
 
 #endif /* CLIENTE_SERVIDOR_H_ */
 

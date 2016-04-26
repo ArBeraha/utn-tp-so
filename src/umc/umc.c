@@ -44,6 +44,14 @@ typedef struct pedidoAUmc{
 		 buffer;
 }pedidoAUmc_t;
 
+typedef struct tablaPag{ //No hace falta indicar el numero de la pagina, es la posicion
+	int pid;
+	int marcoUtilizado;
+	char bitPresencia;
+	char bitModificacion;
+	char bitUso;
+}tablaPagina_t;
+
 int tamanioMemoria = MARCO * MARCO_SIZE;
 
 typedef int ansisop_var_t;
@@ -52,6 +60,7 @@ t_log *activeLogger, *bgLogger;
 char* memoria;
 tlb_t tlb[ENTRADAS_TLB];
 tlb_t* ptlb;
+tablaPagina_t tablaPaginas[MARCO];
 
 struct timeval newEspera()
 {
@@ -113,10 +122,22 @@ void procesarHeader(int cliente, char *header){
 
 //1. Funciones principales de UMC
 
+char existeLaPaginaYEstaEnMemoria(int nroPagina){
+	tablaPaginas[nroPagina].bitPresencia==1 && nroPagina<=MARCO?1:0;
+}
+
 void inicializarPrograma(int idPrograma, int paginasRequeridas){
 }
 
-void devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanio){
+char* devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanioALeer){
+	if(existeLaPaginaYEstaEnMemoria(nroPagina)){
+		int marco = tablaPaginas[nroPagina].marcoUtilizado;
+		int pos = (marco * MARCO_SIZE) + offset;
+		char *infoBuscada;
+		memcpy(infoBuscada,&memoria[pos],tamanioALeer);
+								//**********************************
+		return infoBuscada;   //CAMBIAR LOS CHAR* POR ANSISOP_T, POR EN REALIDAD SON INTS, NADA DE CHAR PAPA
+	}
 }
 
 void almacenarBytesEnUnaPagina(int nroPagina, int offset, int tamanio, int buffer){
@@ -238,31 +259,46 @@ void escucharPedidosDeSwap(){
 }
 // FIN 4
 
-void crearMemoriaYTlb(){
+void crearMemoriaYTlbYTablaPaginas(){
+	//Creo memoria y la relleno
 	memoria = (char*)malloc(tamanioMemoria);
 	memset(memoria,'\0',tamanioMemoria);
 	log_info(activeLogger,"Creada la memoria y rellenada con \0.");
 
+	//Relleno TLB
 	int i;
 	for(i = 0; i<ENTRADAS_TLB; i++){
-		tlb[i].pid=0;
-		tlb[i].pagina=0;
+		tlb[i].pid=-1;
+		tlb[i].pagina=-1;
 		tlb[i].direccion=NULL;
 	}
 	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).");
+
+	//Creo puntero a tabla y relleno tabla paginas
+	tablaPagina_t pTablaPaginas = (tablaPagina_t*)malloc(sizeof(tablaPagina_t*)*MARCO);
+	int j;
+	for(j=0;j<MARCO;i++){
+			tablaPaginas[i].pid = -1;
+			tablaPaginas[i].marcoUtilizado = -1;
+			tablaPaginas[i].bitPresencia = 0;
+			tablaPaginas[i].bitModificacion = 0;
+			tablaPaginas[i].bitUso = 0;
+	}
 }
+
+
 
 int main(void) {
 
 	crearLogs(string_from_format("umc_%d",getpid()),"Umc");
 	log_info(activeLogger,"Soy umc de process ID %d.", getpid());
 
-	crearMemoriaYTlb();
+	crearMemoriaYTlbYTablaPaginas();
 
 	//CAMBIAR, yo hice que umc sea cliente de nucleo, pero deberia ser servidor de nucleo!
 	// Y FALTARIA QUE umc sea cliente de Swap
 
-	servidorCPUyNucleo(); //Deberia manejarlo un hilo para que no se quede en espera activa..
+	servidorCPUyNucleo(); //OJO! A cada cpu hay que atenderla con un hilo
 
 	realizarConexionASwap();
 	escucharPedidosDeSwap();

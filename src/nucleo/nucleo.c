@@ -26,6 +26,7 @@
 
 // Globales de servidor
 int socketConsola, socketCPU, mayorDescriptor;
+int activadoCPU, activadoConsola; //No hace falta iniciarlizarlas. Lo hacer la funcion permitir reutilizacion ahora.
 struct sockaddr_in direccionConsola, direccionCPU;
 unsigned int tamanioDireccionConsola, tamanioDireccionCPU;
 #define PUERTOCONSOLA 8080
@@ -181,8 +182,8 @@ int main(void) {
 
 	crearLogs("Nucleo","Nucleo");
 
-	configurarServidorExtendido(&socketConsola,&direccionConsola,PUERTOCONSOLA,&tamanioDireccionConsola);
-	configurarServidorExtendido(&socketCPU,&direccionCPU,PUERTOCPU,&tamanioDireccionCPU);
+	configurarServidorExtendido(&socketConsola,&direccionConsola,PUERTOCONSOLA,&tamanioDireccionConsola,&activadoConsola);
+	configurarServidorExtendido(&socketCPU,&direccionCPU,PUERTOCPU,&tamanioDireccionCPU,&activadoCPU);
 
 	inicializarClientes();
 	log_info(activeLogger,"Esperando conexiones ...");

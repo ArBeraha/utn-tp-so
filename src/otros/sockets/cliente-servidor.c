@@ -40,6 +40,7 @@ void connect_w(int cliente, struct sockaddr_in* direccionServidor)
 
 void permitirReutilizacion(int servidor, int* activado)
 {
+	(*activado)=1;
 	setsockopt(servidor, SOL_SOCKET, SO_REUSEADDR, activado, sizeof(*activado));
 }
 
@@ -96,7 +97,6 @@ void configurarServidor(unsigned short PORT){
 	// Definimos la direccion, creamos el socket, bindeamos y ponemos a escuchar nuevas conexiones
 	direccion = crearDireccionParaServidor(PORT);
 	socketNuevasConexiones = socket_w();
-	activado=1;
 	permitirReutilizacion(socketNuevasConexiones,&activado);
 	bind_ws(socketNuevasConexiones,&direccion);
 	listen_w(socketNuevasConexiones);
@@ -171,12 +171,11 @@ char* intToChar(int i){
 	return string_from_format("%c",i);
 }
 
-void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned short PORT, unsigned int* tamanio){
+void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned short PORT, unsigned int* tamanio, int* activado){
 	// Definimos la direccion, creamos el socket, bindeamos y ponemos a escuchar nuevas conexiones
 	(*dire) = crearDireccionParaServidor(PORT);
 	(*socket) = socket_w();
-	activado=1;
-	//permitirReutilizacion((*socket),&activado);
+	permitirReutilizacion((*socket),&activado);
 	bind_ws((*socket),dire);
 	listen_w((*socket));
 	(*tamanio)=sizeof(*dire);

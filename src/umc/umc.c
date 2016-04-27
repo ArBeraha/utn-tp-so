@@ -109,13 +109,30 @@ void procesarHeader(int cliente, char *header){
 		free(payload);
 		break;
 
+	case HeaderReservarEspacio:
+		//char* pedidoPagina = recv_waitall_ws(cliente, sizeof(int)); //ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
+		log_info(activeLogger,"CPU me pidio memoria");
+		int cantPaginasPedidas; //= pedido.cantPaginasPedidas
+		if(buscarPaginasConsecutivas(cantPaginasPedidas)){  //lo q si hay q recibir es la cant de paginas q quiere nucleo
+			crearNuevaPagina();
+		}
+		else{
+			//send("No hay espacio para nueva pag")
+		}
+
+
+
 	case HeaderPedirPagina:
-		log_info(activeLogger,"Se recibio pedido de pagina de Nucleo");
+		log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
+		char* pedidoPagina = recv_waitall_ws(cliente, sizeof(pedidoAUmc_t));
+		char* devolucion = devolverBytesDeUnaPagina(pedidoPagina); //*** VER QUE LE MANDO!! * pedidoPagina??
+		//send(devolucion)
 
 	case HeaderGrabarPagina:
+		log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
 
 	case HeaderLiberarRecursosPagina:
-
+		log_info(activeLogger,"Se recibio pedido de liberar una pagina, por CPU");
 
 
 	case HeaderScript: /*A implementar*/ break; //TODO
@@ -132,6 +149,26 @@ void procesarHeader(int cliente, char *header){
 
 
 //1. Funciones principales de UMC
+
+int buscarPaginasConsecutivas(int cantidadPaginasPedidas){
+	int i;
+	int j;
+
+	for(i=0;i<MARCO;i++){
+		if(tablaPaginas[i].bitUso==0){
+			for(j=0;j<cantidadPaginasPedidas-1;j++){
+				if(tablaPaginas[j].bitUso==0){
+					if(j==cantidadPaginasPedidas-1) return i;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+char* crearNuevaPagina(int cantidadPaginas){
+
+}
 
 char existeLaPaginaYEstaEnMemoria(int nroPagina){
 	tablaPaginas[nroPagina].bitPresencia==1 && nroPagina<=MARCO?1:0;
@@ -156,6 +193,7 @@ char* devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanioALeer){ //nr
 		return NULL;
 	}
 }
+
 
 void almacenarBytesEnUnaPagina(int nroPagina, int offset, int tamanio, int buffer){
 }
@@ -317,10 +355,12 @@ int main(void) {
 	//CAMBIAR, yo hice que umc sea cliente de nucleo, pero deberia ser servidor de nucleo!
 	// Y FALTARIA QUE umc sea cliente de Swap
 
-	servidorCPUyNucleo(); //OJO! A cada cpu hay que atenderla con un hilo
-
 	realizarConexionASwap();
 	escucharPedidosDeSwap();
+
+	servidorCPUyNucleo(); //OJO! A cada cpu hay que atenderla con un hilo
+
+
 
 	recibirComandos(); //Otro hilo?
 

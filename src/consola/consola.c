@@ -85,11 +85,11 @@ void procesarHeader(char *header){
 		exit(EXIT_FAILURE);
 		break;
 
-	case HeaderConsolaImprimi:
+	case HeaderImprimir:
 		imprimirVariable();
 		break;
 
-	case HeaderConsolaImprimiTexto:
+	case HeaderImprimirTexto:
 		imprimirTexto();
 		break;
 

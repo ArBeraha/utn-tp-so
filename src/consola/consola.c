@@ -20,7 +20,7 @@
 
 
 #define PATHSIZE 2048
-#define DEBUG true
+#define DEBUG false
 
 typedef int ansisop_var_t;
 int cliente;
@@ -200,7 +200,6 @@ int main(int argc, char* argv[])
 	if(programa==NULL){
 		perror("No se encontro el archivo.");
 	}
-	free(path);
 
 	// Me conecto al nucleo y hago el handshake
 	realizarConexion();

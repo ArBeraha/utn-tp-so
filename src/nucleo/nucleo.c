@@ -72,9 +72,10 @@ bool pedirPaginas(int PID, char* codigo){
 	return respuesta;
 }
 
-char* getScript(int consola){ //fixme: Puede haber que cambiar algo segun como se deba pasar el script.
-	char* scriptSize = recv_waitall_ws(consola,sizeof(int));
+char* getScript(int consola){
+	char* scriptSize = recv_waitall_ws(consola,1);
 	int size = charToInt(scriptSize);
+	log_debug(bgLogger,"Consola envió un archivo de tamaño: %d",size);
 	free(scriptSize);
 	return recv_waitall_ws(consola,size);
 }

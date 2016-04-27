@@ -30,6 +30,10 @@
 #define ENTRADAS_TLB 10
 #define RETARDO 5 //En MICRO SEGUNDOS: 1 micro = 1000 milisegundos
 
+//Prototipos
+void procesarHeader(int cliente, char *header);
+//Fin prototipos
+
 typedef struct tlbStruct{
 	int pid,
 		pagina;
@@ -78,75 +82,6 @@ int getHandshake()
 	return charToInt(handshake);
 }
 
-void procesarHeader(int cliente, char *header){
-	// Segun el protocolo procesamos el header del mensaje recibido
-	char* payload;
-	int payload_size;
-	log_debug(bgLogger,"Llego un mensaje con header %d\n",charToInt(header));
-
-	switch(charToInt(header)) {
-
-	case HeaderError:
-		log_error(activeLogger,"Header de Error\n");
-		quitarCliente(cliente);
-		break;
-
-	case HeaderHandshake:
-		log_debug(bgLogger,"Llego un handshake\n");
-		payload_size=1;
-		payload = malloc(payload_size);
-		read(socketCliente[cliente] , payload, payload_size);
-		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
-		if ( (charToInt(payload)==SOYCPU) || (charToInt(payload)==SOYNUCLEO) ){
-			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
-			send(socketCliente[cliente], intToChar(SOYUMC), 1, 0);
-		}
-		else {
-			log_error(activeLogger,"No es un cliente apropiado! rechazada la conexion\n");
-			log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
-			quitarCliente(cliente);
-		}
-		free(payload);
-		break;
-
-	case HeaderReservarEspacio:
-		//char* pedidoPagina = recv_waitall_ws(cliente, sizeof(int)); //ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
-		log_info(activeLogger,"CPU me pidio memoria");
-		int cantPaginasPedidas; //= pedido.cantPaginasPedidas
-		if(buscarPaginasConsecutivas(cantPaginasPedidas)){  //lo q si hay q recibir es la cant de paginas q quiere nucleo
-			crearNuevaPagina();
-		}
-		else{
-			//send("No hay espacio para nueva pag")
-		}
-
-
-
-	case HeaderPedirPagina:
-		log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
-		char* pedidoPagina = recv_waitall_ws(cliente, sizeof(pedidoAUmc_t));
-		char* devolucion = devolverBytesDeUnaPagina(pedidoPagina); //*** VER QUE LE MANDO!! * pedidoPagina??
-		//send(devolucion)
-
-	case HeaderGrabarPagina:
-		log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
-
-	case HeaderLiberarRecursosPagina:
-		log_info(activeLogger,"Se recibio pedido de liberar una pagina, por CPU");
-
-
-	case HeaderScript: /*A implementar*/ break; //TODO
-	/* Agregar futuros casos */
-
-	default:
-		log_error(activeLogger,"Llego cualquier cosa.");
-		log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
-		log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
-		quitarCliente(cliente);
-		break;
-	}
-}
-
 
 //1. Funciones principales de UMC
 
@@ -167,25 +102,31 @@ int buscarPaginasConsecutivas(int cantidadPaginasPedidas){
 }
 
 char* crearNuevaPagina(int cantidadPaginas){
-
+	char* a;
+	return a;
 }
 
 char existeLaPaginaYEstaEnMemoria(int nroPagina){
-	(tablaPaginas[nroPagina].bitPresencia==1 && nroPagina<=MARCO && tablaPaginas[nroPagina].bitUso==1)?1:0;
+	if(tablaPaginas[nroPagina].bitPresencia==1 && nroPagina<=MARCO && tablaPaginas[nroPagina].bitUso==1){
+		return 1;
+	} else{
+		return 0;
+	}
 }
 
 void inicializarPrograma(int idPrograma, int paginasRequeridas){
 }
 
-char* devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanioALeer){ //nroPag, desde donde, hasta donde. Pag entera es Pag1,0,MARCO_SIZE
+char* devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanioALeerAPartirDeOffset){ //nroPag, desde donde, hasta donde. Pag entera es Pag1,0,MARCO_SIZE
+	size_t tamanioALeer = tamanioALeerAPartirDeOffset;
 	if(existeLaPaginaYEstaEnMemoria(nroPagina)){
 		usleep(retardo);
 		int marco = tablaPaginas[nroPagina].marcoUtilizado;
 		int pos = (marco * MARCO_SIZE) + offset;
 		char *infoBuscada;
-		memcpy(infoBuscada,&memoria[pos],tamanioALeer);
+		//memcpy(infoBuscada,&memoria[pos],tamanioALeer); // NO FUNCA: VER
 
-		log_info(activeLogger,"Se devolvio la pagina %d, offset &d, con %d bytes", nroPagina,offset,tamanioALeer());
+		log_info(activeLogger,"Se devolvio la pagina %d, offset &d, con %d bytes", nroPagina,offset,tamanioALeer);
 		return infoBuscada;   //CAMBIAR LOS CHAR* POR ANSISOP_T, POR EN REALIDAD SON INTS, NADA DE CHAR PAPA
 	}
 	else{
@@ -203,6 +144,7 @@ void finalizarPrograma(int idPrograma){
 
 
 //FIN 1
+
 
 //2. Funciones que se mandan por consola
 
@@ -320,7 +262,7 @@ void escucharPedidosDeSwap(){
 
 void crearMemoriaYTlbYTablaPaginas(){
 	//Creo memoria y la relleno
-	memoria = (char*)malloc(tamanioMemoria);
+	memoria = malloc(tamanioMemoria);
 	log_info(activeLogger,"Creada la memoria.");
 
 	//Relleno TLB
@@ -344,6 +286,75 @@ void crearMemoriaYTlbYTablaPaginas(){
 	}
 }
 
+
+void procesarHeader(int cliente, char *header){
+	// Segun el protocolo procesamos el header del mensaje recibido
+	char* payload;
+	int payload_size;
+	log_debug(bgLogger,"Llego un mensaje con header %d\n",charToInt(header));
+
+	switch(charToInt(header)) {
+
+	case HeaderError:
+		log_error(activeLogger,"Header de Error\n");
+		quitarCliente(cliente);
+		break;
+
+	case HeaderHandshake:
+		log_debug(bgLogger,"Llego un handshake\n");
+		payload_size=1;
+		payload = malloc(payload_size);
+		read(socketCliente[cliente] , payload, payload_size);
+		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
+		if ( (charToInt(payload)==SOYCPU) || (charToInt(payload)==SOYNUCLEO) ){
+			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
+			send(socketCliente[cliente], intToChar(SOYUMC), 1, 0);
+		}
+		else {
+			log_error(activeLogger,"No es un cliente apropiado! rechazada la conexion\n");
+			log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
+			quitarCliente(cliente);
+		}
+		free(payload);
+		break;
+
+	case HeaderReservarEspacio:
+		//char* pedidoPagina = recv_waitall_ws(cliente, sizeof(int)); //ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
+		log_info(activeLogger,"CPU me pidio memoria");
+		int cantPaginasPedidas; //= pedido.cantPaginasPedidas
+		if(buscarPaginasConsecutivas(cantPaginasPedidas)){  //lo q si hay q recibir es la cant de paginas q quiere nucleo
+			char* pag =crearNuevaPagina(1);
+		}
+		else{
+			//send("No hay espacio para nueva pag")
+		}
+
+
+
+	case HeaderPedirPagina:
+		log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
+		//char* pedidoPagina = recv_waitall_ws(cliente, sizeof(pedidoAUmc_t));
+		//char* devolucion = devolverBytesDeUnaPagina(pedidoPagina); //*** VER QUE LE MANDO!! * pedidoPagina??
+		//send(devolucion)
+
+	case HeaderGrabarPagina:
+		log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
+
+	case HeaderLiberarRecursosPagina:
+		log_info(activeLogger,"Se recibio pedido de liberar una pagina, por CPU");
+
+
+	case HeaderScript: /*A implementar*/ break; //TODO
+	/* Agregar futuros casos */
+
+	default:
+		log_error(activeLogger,"Llego cualquier cosa.");
+		log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
+		log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
+		quitarCliente(cliente);
+		break;
+	}
+}
 
 int main(void) {
 

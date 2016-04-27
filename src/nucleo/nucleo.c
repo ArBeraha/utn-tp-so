@@ -106,6 +106,14 @@ void rechazarProceso(int PID){
 	free(proceso); // Destruir Proceso y PCB
 }
 
+void finalizarProceso(int PID){
+	t_proceso* proceso = list_get(listaProcesos,PID);
+	queue_push(colaCPU,(int*)proceso->cpu); // Disponemos de nuevo de la CPU
+	proceso->cpu = SIN_ASIGNAR;
+	proceso->estado= EXIT;
+	queue_push(colaSalida,PID);
+}
+
 void destruirProceso(int PID){
 	t_proceso* proceso = list_remove(listaProcesos,PID);
 	if (proceso->estado != EXIT)

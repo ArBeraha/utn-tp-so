@@ -14,4 +14,6 @@
 typedef enum {HeaderError, HeaderScript, HeaderHandshake, HeaderImprimir,
 	HeaderImprimirTexto, HeaderConsolaFinalizarNormalmente, HeaderPCB, HeaderSolicitudSentencia} header_t;
 
+char* headerToMSG(header_t header);
+
 #endif /* OTROS_HEADER_H_ */

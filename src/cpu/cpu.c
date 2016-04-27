@@ -17,7 +17,7 @@
 #include "../otros/sockets/cliente-servidor.h"
 #include "../otros/log.h"
 
-// VARIABLES GLOBALES
+/*------------Variables Globales--------------*/
 int cliente_cpu; //cpu es cliente del nucleo
 int cliente_umc; //cpu es cliente de umc
 
@@ -26,7 +26,15 @@ struct sockaddr_in direccionUmc;	  //direccion umc
 
 t_log *activeLogger, *bgLogger;
 
+/*------------Declaracion de funciones--------------*/
+void procesarHeader(char*);
+void procesarPCB();
+void esperar_programas();
+void procesarPCB();
+void recibir_sentencia();
+void parsear();
 
+/*------------Funciones--------------*/
 int getHandshake(int cli)
 {
 	char* handshake = recv_nowait_ws(cli,1);
@@ -75,19 +83,6 @@ void hacer_handshake_umc(){
 }
 
 
-void hacer_handshake(int clienteid,handshake_t id){
-
-	char *hand = string_from_format("%c%c",HeaderHandshake,id);
-	send_w(clienteid,hand,2);
-
-	if(getHandshake(clienteid)!= id){
-		perror("Handshake incorrecto");
-	}
-	else{
-			log_info(activeLogger,"Exito al hacer handshake");
-		}
-}
-
 void esperar_programas(){
 	log_debug(bgLogger,"Esperando programas de nucleo %d.");
 	char* header;
@@ -131,8 +126,18 @@ void pedir_sentencia(){
 }
 
 
-void procesarPCB();
-void parsear();
+void procesarPCB(){
+	//incrementar_registro();
+	//pedir_sentencia();
+	//recibir_sentencia();
+}
+
+void recibir_sentencia(){
+	//char* sentencia= recv_wwitall_ws(cliente_umc,tamanio); TODO que size deberia ser?
+}
+
+void parsear(){
+}
 
 int main()
 {

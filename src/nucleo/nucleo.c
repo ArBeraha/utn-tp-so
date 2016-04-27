@@ -52,7 +52,6 @@ typedef enum {
 } t_proceso_estado;
 
 typedef struct {
-	char* codigo;
 	int consola; // Indice de socketCliente
 	int cpu; // Indice de socketCliente, legible solo cuando estado sea EXEC
 	t_proceso_estado estado;
@@ -86,14 +85,16 @@ int crearProceso(int consola) {
 	proceso->PCB.PC = SIN_ASIGNAR;
 	proceso->PCB.SP = SIN_ASIGNAR;
 	proceso->estado = NEW;
-	proceso->codigo = getScript(consola);
 	proceso->consola = consola;
 	proceso->cpu = SIN_ASIGNAR;
-	if(!pedirPaginas(proceso->PCB.PID, proceso->codigo)) { // Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
+	char* codigo = getScript(consola);
+	// Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
+	if(!pedirPaginas(proceso->PCB.PID, codigo)) {
 		rechazarProceso(proceso->PCB.PID);
 		log_info(activeLogger, "UMC no da paginas para el proceso %d!", proceso->PCB.PID);
 		log_info(activeLogger, "Se rechazo el proceso %d.",proceso->PCB.PID);
 	}
+	free(codigo);
 	return proceso->PCB.PID;
 }
 

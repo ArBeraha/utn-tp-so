@@ -28,7 +28,7 @@
 
 
 
-#define PUERTO 8080
+#define PUERTOUMC 8081
 
 /* la estructura que de cada proceso de procese(? */
 typedef struct infoProcesos {
@@ -48,37 +48,49 @@ t_list* espacioUtilizado; //lista de paginas usadas
 t_list* espacioDisponible; //lista de paginas no usadas
 
 // FUNCIONES UTILES
+ // SOCKETS
+	struct sockaddr_in direccionServidor;
+    struct sockaddr_in direccionCliente;
+    int servidor, cliente;
+    unsigned int tamanioDireccion;
 
-	/*void servidorSwap()
+
+
+int getHandshake()
+{
+	char* handshake = recv_nowait_ws(cliente,sizeof(handshake_t));
+	return &handshake;
+}
+
+void handshakear()
+{
+	if(getHandshake() != SOYUMC)
 	{
-	// SOCKETS
-	int mayorDescriptor, i;
-		char header[1];
+		log_error(activeLogger,"Se conecto al nucleo algo que no es umc");
+	}
+	log_debug(bgLogger,"Swap recibio handshake");
+	handshake_t hand = SOYUMC;
+	send_w(cliente, (void*)&hand, sizeof(hand));
+	log_debug(bgLogger,"Swap handshakeo");
+}
 
-		crearLogs("Swap","Swap");
-		configurarServidor(PUERTO);
-		inicializarClientes();
-		log_info(activeLogger,"Esperando conexiones ...");
 
-		while(1){
-			char* recv_waitall_ws(int cliente, int msgSize);
+void socketear()
+{
+	direccionServidor = crearDireccionParaServidor(PUERTOUMC);
+	servidor = socket_w();
+	int activado = 1;
+	bind_ws(servidor,&direccionServidor);
+	permitirReutilizacion(servidor,&activado);
+	listen_w(servidor);
+	log_debug(bgLogger,"Estoy escuchando");
 
-			if (tieneLectura(socketNuevasConexiones))
-				procesarNuevasConexiones();
+	cliente = accept(servidor, (void*)&direccionCliente,&tamanioDireccion);
+	log_debug(bgLogger,"Conexion aceptada");
+	handshakear();
+}
 
-			for (i = 0; i < getMaxClients(); i++){
-				if (tieneLectura(socketCliente[i]))	{
-					if (read( socketCliente[i] , header, 1) == 0)
-						quitarCliente(i);
-					else
-					{
-						log_debug(bgLogger,"LLEGO main %c\n",header);
-						procesarHeader(i,header);
-					}
-				}
-			}
 
-*/
 
 
 
@@ -106,7 +118,7 @@ void manejoSwap()
 		disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
 		list_add(espacioDisponible, disponibles);
 		
-		// void servidorSwap();
+		void socketear();
 }
 
 

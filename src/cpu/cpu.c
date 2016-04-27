@@ -88,6 +88,16 @@ void hacer_handshake(int clienteid,handshake_t id){
 		}
 }
 
+void esperar_programas(){
+	log_debug(bgLogger,"Esperando programas de nucleo %d.");
+	char* header;
+	while(1){
+		header = recv_waitall_ws(cliente_cpu,sizeof(char));
+		procesarHeader(header);    //TODO implementar - nuevos headers?
+		free(header);
+	}
+}
+
 void procesarHeader(char *header){
 	// Segun el protocolo procesamos el header del mensaje recibido
 	log_debug(bgLogger,"Llego un mensaje con header %d.",charToInt(header));
@@ -102,6 +112,7 @@ void procesarHeader(char *header){
 		log_error(activeLogger,"Segunda vez que se recibe un headerHandshake acá.");
 		exit(EXIT_FAILURE);
 		break;
+
 	case HeaderPCB:
 		procesarPCB(); //inicio el proceso de aumentar el PC, pedir UMC sentencia...
 	    break;
@@ -113,19 +124,12 @@ void procesarHeader(char *header){
 	}
 }
 
-void esperar_programas(){
-	log_debug(bgLogger,"Esperando programas de nucleo %d.");
-	char* header;
-	while(1){
-		header = recv_waitall_ws(cliente_cpu,sizeof(char));
-		procesarHeader(header);    //TODO implementar - nuevos headers?
-		free(header);
-	}
-}
-
 void pedir_sentencia(){
 	//pedir al UMC la proxima sentencia a ejecutar
+	char* solic = string_from_format("%c",HeaderSolicitudSentencia);
+	send_w(cliente_umc,solic,sizeof(strlen(solic)));
 }
+
 
 void procesarPCB();
 void parsear();
@@ -161,7 +165,9 @@ int main()
 
 	//Actualizar Program Counter
 
-	//Notificar fin de quantum
+	//Notificar fin de quantum;
+
+
 	destruirLogs(); //TODO cambiar de lugar
 
 	return 0;

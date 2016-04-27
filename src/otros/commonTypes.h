@@ -10,8 +10,12 @@
 
 typedef int ansisop_var_t;
 
+
+
 typedef struct t_PCB{
-	int x; // por poner algo
+	int PID; // identificador único
+	int PC;	 // Program Counter
+	int SP;  // Posición del Stack
 	// MAGIA DE PCB!
 } t_PCB;
 #endif /* OTROS_COMMONTYPES_H_ */

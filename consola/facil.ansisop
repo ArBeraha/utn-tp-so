@@ -1,4 +1,4 @@
-#!/usr/bin/ansisop
+#!/home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/consola/consola
 begin
 	variables a, b
 	a = 3

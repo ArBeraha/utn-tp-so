@@ -21,6 +21,7 @@
 #include <commons/config.h>
 #include <commons/collections/dictionary.h>
 #include <commons/collections/queue.h>
+#include <commons/collections/list.h>
 #include "../otros/handshake.h"
 #include "../otros/header.h"
 #include "../otros/sockets/cliente-servidor.h"
@@ -58,10 +59,10 @@ typedef struct {
 	struct t_PCB PCB;
 } t_proceso;
 
-t_queue* colaListos;
-t_queue* colaSalida;
-t_queue* colaCPU; //Mejor tener una cola que tener que crear un struct t_cpu que diga la disponibilidad
-t_list* listaProcesos;
+struct t_queue* colaListos;
+struct t_queue* colaSalida;
+struct t_queue* colaCPU; //Mejor tener una cola que tener que crear un struct t_cpu que diga la disponibilidad
+struct t_list* listaProcesos;
 // Falta la cola de bloqueados para cada IO
 
 /* INICIO PARA PLANIFICACION */
@@ -82,7 +83,7 @@ int crearProceso(int consola) {
 	proceso->cpu = SIN_ASIGNAR;
 	if(!pedirPaginas(proceso->PCB.PID, proceso->codigo)) { // Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
 		rechazarProceso(proceso->PCB.PID);
-		log_info(bgLogger, "Se rechazo el proceso %d!",proceso->PCB.PID);
+		log_info(activeLogger, "Se rechazo el proceso %d!",proceso->PCB.PID);
 	}
 	return proceso->PCB.PID;
 }
@@ -125,7 +126,7 @@ void destruirProceso(int PID){
 }
 
 void planificarProcesos(){
-	//FIFO por ahora
+	//TODO RR, FIFO por ahora
 	if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
 		ejecutarProceso(queue_pop(colaListos),queue_pop(colaCPU));
 
@@ -136,7 +137,7 @@ void planificarProcesos(){
 void bloquearProceso(int PID, int IO){
 	t_proceso* proceso = list_get(listaProcesos,PID);
 	if (proceso->estado != EXEC)
-		log_warning(activeLogger, "Bloqueo inadecuado del proceso %d!",PID);
+		log_warning(activeLogger, "El proceso %d se bloqueo pese a que no estaba ejecutando!",PID);
 	proceso->estado = BLOCK;
 	queue_push(colaCPU,proceso->cpu); // Disponemos de la CPU
 	proceso->cpu = SIN_ASIGNAR;
@@ -188,24 +189,32 @@ void desbloquearProceso(int PID){
  }
  */
 
-void imprimirVariable() {
+
+int getConsolaAsociada(int cliente){
+	int PID = charToInt(recv_waitall_ws(cliente, sizeof(int)));
+	t_proceso* proceso = list_get(listaProcesos,PID);
+	return proceso->consola;
+}
+
+void imprimirVariable(int cliente) {
+	int consola = getConsolaAsociada(cliente);
 	char* msgValue = recv_waitall_ws(cliente, sizeof(ansisop_var_t));
 	char* name = recv_waitall_ws(cliente, sizeof(char));
-	send_w(NULL, headerToMSG(HeaderImprimirVariable), 1); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!
-	send_w(NULL, msgValue, sizeof(ansisop_var_t)); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!
-	send_w(NULL, name, sizeof(char)); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!;
+	send_w(consola, headerToMSG(HeaderImprimirVariableConsola), 1);
+	send_w(consola, msgValue, sizeof(ansisop_var_t));
+	send_w(consola, name, sizeof(char));
 	free(msgValue);
 	free(name);
 }
 
-void imprimirTexto() {
+void imprimirTexto(int cliente) {
+	int consola = getConsolaAsociada(cliente);
 	char* msgSize = recv_waitall_ws(cliente, sizeof(int));
 	int size = charToInt(msgSize);
 	char* texto = recv_waitall_ws(cliente, size);
-	log_debug(bgLogger, "%s", texto);
-	send_w(NULL, headerToMSG(HeaderImprimirTexto), 1); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!
-	send_w(NULL, intToChar(size), 1); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!
-	send_w(NULL, texto, size); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!
+	send_w(consola, headerToMSG(HeaderImprimirTextoConsola), 1);
+	send_w(consola, intToChar(size), 1);
+	send_w(consola, texto, size);
 	free(msgSize);
 	free(texto);
 }
@@ -244,12 +253,12 @@ void procesarHeader(int cliente, char *header) {
 		free(payload);
 		break;
 
-	case HeaderImprimirVariable:
-		imprimirVariable();
+	case HeaderImprimirVariableNucleo:
+		imprimirVariable(cliente);
 		break;
 
-	case HeaderImprimirTexto:
-		imprimirTexto();
+	case HeaderImprimirTextoNucleo:
+		imprimirTexto(cliente);
 		break;
 
 	case HeaderScript: /*A implementar*/

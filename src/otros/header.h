@@ -12,7 +12,7 @@
 // https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/protocolo
 
 typedef enum {HeaderError, HeaderScript, HeaderHandshake, HeaderImprimirVariable,
-	HeaderImprimirTexto, HeaderConsolaFinalizarNormalmente, HeaderPCB, HeaderSolicitudSentencia} header_t;
+	HeaderImprimirTexto, HeaderConsolaFinalizarNormalmente, HeaderPCB, HeaderSolicitudSentencia, HeaderConsolaFinalizarRechazado} header_t;
 
 char* headerToMSG(header_t header);
 

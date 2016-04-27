@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <commons/string.h>
 #include <commons/log.h>
 #include <commons/config.h>
@@ -25,78 +26,6 @@
 #include "../otros/sockets/cliente-servidor.h"
 #include "../otros/log.h"
 #include "../otros/commonTypes.h"
-
-// Posibles estados de un proceso
-typedef enum {
-	NEW, READY, EXEC, BLOCK, EXIT
-} t_proceso_estado;
-
-typedef struct {
-	int consola; // Indice de socketCliente
-	int cpu; // Indice de socketCliente, legible solo cuando estado sea EXEC
-	t_proceso_estado estado;
-	struct t_PCB PCB;
-} t_proceso;
-
-t_queue* colaListos;
-t_queue* colaCPU; //Mejor tener una cola que tener que crear un struct t_cpu que diga la disponibilidad
-t_list* listaProcesos;
-
-int crearProceso(int consola) {
-	t_proceso* proceso = malloc(sizeof(t_proceso));
-	proceso->PCB.PID = list_add(listaProcesos, proceso);
-	proceso->PCB.PC = NULL;
-	proceso->PCB.SP = NULL;
-	proceso->estado = NEW;
-	proceso->consola = consola;
-	proceso->cpu = NULL;
-	return proceso->PCB.PID;
-}
-
-void planificarProcesos(){
-	//FIFO por ahora
-	if (queue_size(colaListos)>0)
-		if (queue_size(colaCPU)>0)
-			asignarProceso(queue_pop(colaListos),queue_pop(colaCPU));
-}
-
-void asignarProceso(int PID, int cpu){
-	t_proceso* proceso = list_get(listaProcesos,PID);
-	proceso->estado = EXEC;
-	proceso->cpu = cpu;
-	// mandarProcesoCpu(cpu, proceso->PCB);
-};
-
-void bloquearProceso(int PID, int IO){
-	t_proceso* proceso = list_get(listaProcesos,PID);
-	proceso->estado = BLOCK;
-	queue_push(colaCPU,proceso->cpu); // Disponemos de la CPU
-	proceso->cpu = NULL;
-	// Añadir a la cola de ese IO
-}
-
-void desbloquearProceso(int PID){
-	t_proceso* proceso = list_get(listaProcesos,PID);
-	proceso->estado = READY;
-	queue_push(colaListos,PID);
-}
-
-void finalizarProceso(int PID){
-	t_proceso* proceso = list_get(listaProcesos,PID);
-	queue_push(colaCPU,(int*)proceso->cpu); // Disponemos de nuevo de la CPU
-	proceso->cpu = NULL;
-	send(socketCliente[proceso->consola], intToChar(HeaderConsolaFinalizarNormalmente), 1, 0); // Le decimos adios a la consola
-	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
-	proceso->estado = EXIT;
-	//avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
-}
-
-void destruirProceso(int PID){
-	t_proceso* proceso = list_remove(listaProcesos,PID);
-	if (proceso->estado != EXIT)
-		log_warning(activeLogger, "Se esta destruyendo el proceso %d que no libero sus recursos!",PID);
-	free(proceso);
-}
 
 // Globales de servidor
 int socketConsola, socketCPU, mayorDescriptor;
@@ -112,6 +41,108 @@ int cliente; //se usa para ser cliente de UMC
 #define PUERTOCPU 8088
 
 #define UMC_PORT 8081
+
+
+#define SIN_ASIGNAR -1 // Para que rompan las listas y vectores
+
+// Posibles estados de un proceso
+typedef enum {
+	NEW, READY, EXEC, BLOCK, EXIT
+} t_proceso_estado;
+
+typedef struct {
+	char* codigo;
+	int consola; // Indice de socketCliente
+	int cpu; // Indice de socketCliente, legible solo cuando estado sea EXEC
+	t_proceso_estado estado;
+	struct t_PCB PCB;
+} t_proceso;
+
+t_queue* colaListos;
+t_queue* colaSalida;
+t_queue* colaCPU; //Mejor tener una cola que tener que crear un struct t_cpu que diga la disponibilidad
+t_list* listaProcesos;
+// Falta la cola de bloqueados para cada IO
+
+/* INICIO PARA PLANIFICACION */
+bool pedirPaginas(int PID, char* codigo){
+	int respuesta=false;
+	// todo: Calcular cantidad de paginas
+	// todo: preguntar por cantidad a umc
+	return respuesta;
+}
+
+int crearProceso(int consola) {
+	t_proceso* proceso = malloc(sizeof(t_proceso));
+	proceso->PCB.PID = list_add(listaProcesos, proceso);
+	proceso->PCB.PC = SIN_ASIGNAR;
+	proceso->PCB.SP = SIN_ASIGNAR;
+	proceso->estado = NEW;
+	proceso->consola = consola;
+	proceso->cpu = SIN_ASIGNAR;
+	if(!pedirPaginas(proceso->PCB.PID, proceso->codigo)) { // Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
+		rechazarProceso(proceso->PCB.PID);
+		log_info(bgLogger, "Se rechazo el proceso %d!",proceso->PCB.PID);
+	}
+	return proceso->PCB.PID;
+}
+
+void ejecutarProceso(int PID, int cpu){
+	t_proceso* proceso = list_get(listaProcesos,PID);
+	if (proceso->estado != READY)
+		log_warning(activeLogger, "Ejecucion del proceso %d sin estar listo!",PID);
+	proceso->estado = EXEC;
+	proceso->cpu = cpu;
+	// todo: mandarProcesoCpu(cpu, proceso->PCB);
+};
+
+void rechazarProceso(int PID){
+	t_proceso* proceso = list_remove(listaProcesos,PID);
+	if (proceso->estado != NEW)
+		log_warning(activeLogger, "Se esta rechazando el proceso %d ya aceptado!",PID);
+	send(socketCliente[proceso->consola], intToChar(HeaderConsolaFinalizarRechazado), 1, 0); // Le decimos adios a la consola
+	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
+	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
+	free(proceso); // Destruir Proceso y PCB
+}
+
+void destruirProceso(int PID){
+	t_proceso* proceso = list_remove(listaProcesos,PID);
+	if (proceso->estado != EXIT)
+		log_warning(activeLogger, "Se esta destruyendo el proceso %d que no libero sus recursos!",PID);
+	send(socketCliente[proceso->consola], intToChar(HeaderConsolaFinalizarNormalmente), 1, 0); // Le decimos adios a la consola
+	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
+	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
+	free(proceso); // Destruir Proceso y PCB
+}
+
+void planificarProcesos(){
+	//FIFO por ahora
+	if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
+		ejecutarProceso(queue_pop(colaListos),queue_pop(colaCPU));
+
+	if (!queue_is_empty(colaSalida))
+		destruirProceso(queue_pop(colaSalida));
+}
+
+void bloquearProceso(int PID, int IO){
+	t_proceso* proceso = list_get(listaProcesos,PID);
+	if (proceso->estado != EXEC)
+		log_warning(activeLogger, "Bloqueo inadecuado del proceso %d!",PID);
+	proceso->estado = BLOCK;
+	queue_push(colaCPU,proceso->cpu); // Disponemos de la CPU
+	proceso->cpu = SIN_ASIGNAR;
+	// todo: Añadir a la cola de ese IO
+}
+
+void desbloquearProceso(int PID){
+	t_proceso* proceso = list_get(listaProcesos,PID);
+	if (proceso->estado != BLOCK)
+		log_warning(activeLogger, "Desbloqueando el proceso %d sin estar bloqueado!",PID);
+	proceso->estado = READY;
+	queue_push(colaListos,PID);
+}
+/* FIN PARA PLANIFICACION */
 
 // FIXME: error al compilar: expected ‘struct t_config *’ but argument is of type ‘struct t_config *’
 // Si nadie lo sabe arreglar, podemos preguntarle a los ayudantes xD es muuuuy raro esto.
@@ -280,6 +311,11 @@ int main(void) {
 	int i;
 	struct timeval espera = newEspera(); // Periodo maximo de espera del select
 	char header[1];
+	listaProcesos = list_create();
+	colaCPU = queue_create();
+	colaListos = queue_create();
+	colaSalida = queue_create();
+
 
 	crearLogs("Nucleo", "Nucleo");
 
@@ -300,12 +336,13 @@ int main(void) {
 		FD_SET(socketConsola, &socketsParaLectura);
 		FD_SET(socketCPU, &socketsParaLectura);
 
-		if (socketConsola > socketCPU)
-			mayorDescriptor = socketConsola;
-		else
-			mayorDescriptor = socketCPU;
-
 		mayorDescriptor = incorporarClientes();
+		if ((socketConsola>mayorDescriptor) || (socketCPU>mayorDescriptor))
+			if (socketConsola > socketCPU)
+				mayorDescriptor = socketConsola;
+			else
+				mayorDescriptor = socketCPU;
+
 		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, &espera);
 
 		if (tieneLectura(socketConsola))
@@ -324,8 +361,16 @@ int main(void) {
 					procesarHeader(i, header);
 			}
 		}
+
+		planificarProcesos();
 	}
 
 	destruirLogs();
+
+	list_destroy(listaProcesos);
+	queue_destroy(colaCPU);
+	queue_destroy(colaListos);
+	queue_destroy(colaSalida);
+
 	return EXIT_SUCCESS;
 }

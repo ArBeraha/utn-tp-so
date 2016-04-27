@@ -160,11 +160,11 @@ void warnDebug()
 
 void cargarArchivoEnMemoria()
 {
-	// TODO entrega 2
+	// FIXME: Dependera de como haya que pasarlo
 }
 void enviarContenidoDelArchivo()
 {
-	//TODO entrega 2
+	// FIXME: Dependera de como haya que pasarlo
 }
 
 int main(int argc, char* argv[])

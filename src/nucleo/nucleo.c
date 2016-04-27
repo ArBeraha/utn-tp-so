@@ -73,17 +73,26 @@ bool pedirPaginas(int PID, char* codigo){
 	return respuesta;
 }
 
+char* getScript(int consola){ //fixme: Puede haber que cambiar algo segun como se deba pasar el script.
+	char* scriptSize = recv_waitall_ws(consola,sizeof(int));
+	int size = charToInt(scriptSize);
+	free(scriptSize);
+	return recv_waitall_ws(consola,size);
+}
+
 int crearProceso(int consola) {
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	proceso->PCB.PID = list_add(listaProcesos, proceso);
 	proceso->PCB.PC = SIN_ASIGNAR;
 	proceso->PCB.SP = SIN_ASIGNAR;
 	proceso->estado = NEW;
+	proceso->codigo = getScript(consola);
 	proceso->consola = consola;
 	proceso->cpu = SIN_ASIGNAR;
 	if(!pedirPaginas(proceso->PCB.PID, proceso->codigo)) { // Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
 		rechazarProceso(proceso->PCB.PID);
-		log_info(activeLogger, "Se rechazo el proceso %d!",proceso->PCB.PID);
+		log_info(activeLogger, "UMC no da paginas para el proceso %d!", proceso->PCB.PID);
+		log_info(activeLogger, "Se rechazo el proceso %d.",proceso->PCB.PID);
 	}
 	return proceso->PCB.PID;
 }
@@ -261,9 +270,9 @@ void procesarHeader(int cliente, char *header) {
 		imprimirTexto(cliente);
 		break;
 
-	case HeaderScript: /*A implementar*/
-		break; //TODO
-		/* Agregar futuros casos */
+	case HeaderScript:
+		crearProceso(cliente);
+		break;
 
 	default:
 		log_error(activeLogger, "Llego cualquier cosa.");

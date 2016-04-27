@@ -12,6 +12,6 @@
 // https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/protocolo
 
 typedef enum {HeaderError, HeaderScript, HeaderHandshake, HeaderConsolaImprimi,
-	HeaderConsolaImprimiTexto, HeaderConsolaFinalizarNormalmente} header_t;
+	HeaderConsolaImprimiTexto, HeaderConsolaFinalizarNormalmente, HeaderPCB} header_t;
 
 #endif /* OTROS_HEADER_H_ */

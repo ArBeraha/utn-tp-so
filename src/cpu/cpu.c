@@ -102,11 +102,9 @@ void procesarHeader(char *header){
 		log_error(activeLogger,"Segunda vez que se recibe un headerHandshake acá.");
 		exit(EXIT_FAILURE);
 		break;
-	/*case desconectar
-	 * case headerPCB
-	 * case finalizar
-	*/
-
+	case HeaderPCB:
+		procesarPCB(); //inicio el proceso de aumentar el PC, pedir UMC sentencia...
+	    break;
 	default:
 		log_error(activeLogger,"Llego cualquier cosa.");
 		log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
@@ -129,7 +127,7 @@ void pedir_sentencia(){
 	//pedir al UMC la proxima sentencia a ejecutar
 }
 
-void incrementarPCB();
+void procesarPCB();
 void parsear();
 
 int main()

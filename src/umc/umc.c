@@ -22,12 +22,13 @@
 #include "../otros/sockets/cliente-servidor.h"
 #include "../otros/log.h"
 
-#define PUERTO 8081
+#define PUERTO_UMC_NUCLEO 8081
 #define MARCO 10
 #define MARCO_SIZE 100 //en bytes
 #define DEBUG true
 #define PUERTO_SWAP 8082
 #define ENTRADAS_TLB 10
+#define RETARDO 5 //En MICRO SEGUNDOS: 1 micro = 1000 milisegundos
 
 typedef struct tlbStruct{
 	int pid,
@@ -61,6 +62,7 @@ char* memoria;
 tlb_t tlb[ENTRADAS_TLB];
 tlb_t* ptlb;
 tablaPagina_t tablaPaginas[MARCO];
+int retardo = RETARDO;
 
 struct timeval newEspera()
 {
@@ -107,6 +109,15 @@ void procesarHeader(int cliente, char *header){
 		free(payload);
 		break;
 
+	case HeaderPedirPagina:
+		log_info(activeLogger,"Se recibio pedido de pagina de Nucleo");
+
+	case HeaderGrabarPagina:
+
+	case HeaderLiberarRecursosPagina:
+
+
+
 	case HeaderScript: /*A implementar*/ break; //TODO
 	/* Agregar futuros casos */
 
@@ -129,14 +140,20 @@ char existeLaPaginaYEstaEnMemoria(int nroPagina){
 void inicializarPrograma(int idPrograma, int paginasRequeridas){
 }
 
-char* devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanioALeer){
+char* devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanioALeer){ //nroPag, desde donde, hasta donde. Pag entera es Pag1,0,MARCO_SIZE
 	if(existeLaPaginaYEstaEnMemoria(nroPagina)){
+		usleep(retardo);
 		int marco = tablaPaginas[nroPagina].marcoUtilizado;
 		int pos = (marco * MARCO_SIZE) + offset;
 		char *infoBuscada;
 		memcpy(infoBuscada,&memoria[pos],tamanioALeer);
-								//**********************************
+
+		log_info(activeLogger,"Se devolvio la pagina %d, offset &d, con %d bytes", nroPagina,offset,tamanioALeer());
 		return infoBuscada;   //CAMBIAR LOS CHAR* POR ANSISOP_T, POR EN REALIDAD SON INTS, NADA DE CHAR PAPA
+	}
+	else{
+		log_error(activeLogger,"No existe la pagina numero %d.", getpid());
+		return NULL;
 	}
 }
 
@@ -151,7 +168,11 @@ void finalizarPrograma(int idPrograma){
 
 //2. Funciones que se mandan por consola
 
-void retardo(){
+void fRetardo(){
+	int nuevoRetardo;
+	printf("Ingrese el nuevo valor de Retardo en milisegundos: ");
+	scanf("%d",nuevoRetardo);
+	retardo = nuevoRetardo*1000;
 }
 void dumpEstructuraMemoria(){
 }
@@ -170,7 +191,7 @@ void recibirComandos(){
 		scanf("%d ",&funcion);
 
 		switch(funcion){
-			case 1: retardo();
+			case 1: fRetardo();
 			case 2: dumpEstructuraMemoria();
 			case 3: dumpContenidoMemoria();
 			case 4: flushTlb();
@@ -191,7 +212,7 @@ void servidorCPUyNucleo(){
 	char header[1];
 
 	crearLogs("Umc","Umc");
-	configurarServidor(PUERTO);
+	configurarServidor(PUERTO_UMC_NUCLEO);
 	inicializarClientes();
 	log_info(activeLogger,"Esperando conexiones ...");
 
@@ -262,8 +283,7 @@ void escucharPedidosDeSwap(){
 void crearMemoriaYTlbYTablaPaginas(){
 	//Creo memoria y la relleno
 	memoria = (char*)malloc(tamanioMemoria);
-	memset(memoria,'\0',tamanioMemoria);
-	log_info(activeLogger,"Creada la memoria y rellenada con \0.");
+	log_info(activeLogger,"Creada la memoria.");
 
 	//Relleno TLB
 	int i;
@@ -285,7 +305,6 @@ void crearMemoriaYTlbYTablaPaginas(){
 			tablaPaginas[i].bitUso = 0;
 	}
 }
-
 
 
 int main(void) {

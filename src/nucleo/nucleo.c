@@ -213,13 +213,7 @@ int main(void) {
 
 		for (i = 0; i < getMaxClients(); i++){
 			if (tieneLectura(socketCliente[i]))	{
-				if (read( socketCliente[i] , header, 1) == 0)
-					quitarCliente(i);
-				else
-				{
-					log_debug(bgLogger,"LLEGO main %s",header);
-					procesarHeader(i,header);
-				}
+				procesarHeader(i,header);
 			}
 		}
 	}

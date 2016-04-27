@@ -17,21 +17,21 @@
 #include "../otros/header.h"
 #include "../otros/sockets/cliente-servidor.h"
 #include "../otros/log.h"
-
+#include "../otros/commonTypes.h"
 
 #define PATHSIZE 2048
 #define DEBUG false
 
-typedef int ansisop_var_t;
-int cliente;
-t_log *activeLogger, *bgLogger;
 FILE* programa;
+int cliente;
 
 void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el navegador xD
 {
 	//Lee y termina por \n y \0, entonces si hay un \n lo piso con \0, y si hay un \0 lo piso con \0 (lease, no hago nada xD)
 	texto[strcspn(texto, "\n")]='\0';
 }
+
+
 void imprimirVariable()
 {
 	char* msgValue = recv_waitall_ws(cliente,sizeof(ansisop_var_t));

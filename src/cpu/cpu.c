@@ -44,7 +44,7 @@ void conectar_nucleo(){
 
 void hacer_handshake_nucleo(){
 	char* hand = string_from_format("%c%c",HeaderHandshake,SOYCPU);
-	send_w(cliente_cpu,hand,sizeof(strlen(hand)));
+	send_w(cliente_cpu,hand,2);
 
 	if(getHandshake(cliente_cpu)!= SOYNUCLEO){
 		perror("Se esperaba que CPU se conecte con el nucleo.");

@@ -28,7 +28,7 @@
 
 
 
-#define PUERTOUMC 8081
+#define PUERTO_SWAP 8082
 
 /* la estructura que de cada proceso de procese(? */
 typedef struct infoProcesos {
@@ -54,44 +54,68 @@ t_list* espacioDisponible; //lista de paginas no usadas
     int servidor, cliente;
     unsigned int tamanioDireccion;
 
+    void procesarHeader(char *header){
+    	// Segun el protocolo procesamos el header del mensaje recibido
+    	log_debug(bgLogger,"Llego un mensaje con header %d.",charToInt(header));
+
+    	switch(charToInt(header)) {
+
+    	case HeaderError:
+    		log_error(activeLogger,"Header de Error.");
+    		break;
+
+    	case HeaderHandshake:
+    		log_error(activeLogger,"Segunda vez que se recibe un headerHandshake acá.");
+    		exit(EXIT_FAILURE);
+    		break;
+
+
+    	default:
+    		log_error(activeLogger,"Llego cualquier cosa.");
+    		log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
+    		exit(EXIT_FAILURE);
+    		break;
+    	}
+    }
+
+    void conectarAUmc()
+    {
+    	direccion = crearDireccionParaCliente(8082);
+    	cliente = socket_w();
+    	connect_w(cliente, &direccion);
+    }
 
 
 int getHandshake()
 {
-	char* handshake = recv_nowait_ws(cliente,sizeof(handshake_t));
-	return &handshake;
+    	char* handshake = recv_nowait_ws(cliente,1);
+    	return charToInt(handshake);
 }
+
 
 void handshakear()
 {
-	if(getHandshake() != SOYUMC)
+	char *hand = string_from_format("%c%c",HeaderHandshake,SOYSWAP);
+	send_w(cliente, hand, 2);
+
+	log_debug(bgLogger,"Consola handshakeo.");
+	if(getHandshake()!=SOYUMC)
 	{
-		log_error(activeLogger,"Se conecto al nucleo algo que no es umc");
+		perror("Se esperaba que la swap se conecte con la umc.");
 	}
-	log_debug(bgLogger,"Swap recibio handshake");
-	handshake_t hand = SOYUMC;
-	send_w(cliente, (void*)&hand, sizeof(hand));
-	log_debug(bgLogger,"Swap handshakeo");
+	else
+		log_debug(bgLogger,"Swap recibio handshake de umc.");
+
 }
 
-
-void socketear()
+void realizarConexion()
 {
-	direccionServidor = crearDireccionParaServidor(PUERTOUMC);
-	servidor = socket_w();
-	int activado = 1;
-	bind_ws(servidor,&direccionServidor);
-	permitirReutilizacion(servidor,&activado);
-	listen_w(servidor);
-	log_debug(bgLogger,"Estoy escuchando");
-
-	cliente = accept(servidor, (void*)&direccionCliente,&tamanioDireccion);
-	log_debug(bgLogger,"Conexion aceptada");
+	conectarAUmc();
+	log_info(activeLogger,"Conexion al umc correcta :).");
 	handshakear();
+	log_info(activeLogger,"Handshake finalizado exitosamente.");
+
 }
-
-
-
 
 
 
@@ -118,7 +142,7 @@ void manejoSwap()
 		disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
 		list_add(espacioDisponible, disponibles);
 		
-		void socketear();
+		void realizarConexion();
 }
 
 
@@ -127,7 +151,7 @@ void manejoSwap()
 
 int main()
 {
-
+    manejoSwap();
 
 
 

@@ -70,8 +70,15 @@ void asignarProceso(int PID, int cpu){
 void bloquearProceso(int PID, int IO){
 	t_proceso* proceso = list_get(listaProcesos,PID);
 	proceso->estado = BLOCK;
+	queue_push(colaCPU,proceso->cpu); // Disponemos de la CPU
 	proceso->cpu = NULL;
 	// Añadir a la cola de ese IO
+}
+
+void desbloquearProceso(int PID){
+	t_proceso* proceso = list_get(listaProcesos,PID);
+	proceso->estado = READY;
+	queue_push(colaListos,PID);
 }
 
 void finalizarProceso(int PID){

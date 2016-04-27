@@ -171,7 +171,7 @@ char* crearNuevaPagina(int cantidadPaginas){
 }
 
 char existeLaPaginaYEstaEnMemoria(int nroPagina){
-	tablaPaginas[nroPagina].bitPresencia==1 && nroPagina<=MARCO?1:0;
+	(tablaPaginas[nroPagina].bitPresencia==1 && nroPagina<=MARCO && tablaPaginas[nroPagina].bitUso==1)?1:0;
 }
 
 void inicializarPrograma(int idPrograma, int paginasRequeridas){

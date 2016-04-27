@@ -8,6 +8,7 @@
 
 #include "../otros/handshake.h"
 #include "../otros/sockets/cliente-servidor.h"
+#include "../otros/header.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <commons/log.h>
@@ -17,7 +18,17 @@
 #include <commons/process.h>
 #include <commons/txt.h>
 #include <commons/collections/list.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/time.h>
 
+
+
+#define PUERTO 8080
 
 /* la estructura que de cada proceso de procese(? */
 typedef struct infoProcesos {
@@ -36,11 +47,67 @@ t_log* logSwap; //archivo de logs
 t_list* espacioUtilizado; //lista de paginas usadas
 t_list* espacioDisponible; //lista de paginas no usadas
 
+// FUNCIONES UTILES
+
+	/*void servidorSwap()
+	{
+	// SOCKETS
+	int mayorDescriptor, i;
+		char header[1];
+
+		crearLogs("Swap","Swap");
+		configurarServidor(PUERTO);
+		inicializarClientes();
+		log_info(activeLogger,"Esperando conexiones ...");
+
+		while(1){
+			char* recv_waitall_ws(int cliente, int msgSize);
+
+			if (tieneLectura(socketNuevasConexiones))
+				procesarNuevasConexiones();
+
+			for (i = 0; i < getMaxClients(); i++){
+				if (tieneLectura(socketCliente[i]))	{
+					if (read( socketCliente[i] , header, 1) == 0)
+						quitarCliente(i);
+					else
+					{
+						log_debug(bgLogger,"LLEGO main %c\n",header);
+						procesarHeader(i,header);
+					}
+				}
+			}
+
+*/
 
 
 
 
+void manejoSwap()
+{
+	/*asignemos el archivo de configuracion "vamo' a asignarlo"*/
+		archSwap = config_create("archivoConfigSwap");
+		/*vamo' a leerlo*/
+		char* puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
+		char* nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");
+		int cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
+		int tamPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
+		int retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
 
+		/*logs*/
+		logSwap = log_create("logSwap", "TP", 0, LOG_LEVEL_TRACE);
+
+		/* listas manejo de paginas */
+		espacioUtilizado = list_create();
+		espacioDisponible = list_create();
+
+		t_disponibles* disponibles = malloc(sizeof(t_disponibles));
+		disponibles.marcoInicial = 0; //primer marco
+		disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
+		list_add(espacioDisponible, disponibles);
+		
+		// void servidorSwap();
+}
 
 
 
@@ -48,75 +115,6 @@ t_list* espacioDisponible; //lista de paginas no usadas
 
 int main()
 {
-	/*asignemos el archivo de configuracion "vamo' a asignarlo"*/
-	archSwap = config_create("archivoConfigSwap");
-	/*vamo' a leerlo*/
-	char* puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
-	char* nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");
-	int cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
-	int tamPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
-	int retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
-
-	/*logs*/
-	logSwap = log_create("logSwap", "TP", 0, LOG_LEVEL_TRACE);
-
-	/* listas manejo de paginas */
-	espacioUtilizado = list_create();
-	espacioDisponible = list_create();
-
-	t_disponibles* disponibles = malloc(sizeof(t_disponibles));
-	disponibles.marcoInicial = 0; //primer marco
-	disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
-	list_add(espacioDisponible, disponibles);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

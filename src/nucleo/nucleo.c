@@ -213,7 +213,13 @@ int main(void) {
 
 		for (i = 0; i < getMaxClients(); i++){
 			if (tieneLectura(socketCliente[i]))	{
-				procesarHeader(i,header);
+				if(read(socketCliente[i], header, 1) == 0)
+					{
+						log_error(activeLogger, "Se rompio la conexion. Read leyó 0 bytes");
+						quitarCliente(i);
+					}
+				else
+					procesarHeader(i,header);
 			}
 		}
 	}

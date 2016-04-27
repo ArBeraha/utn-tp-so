@@ -23,19 +23,30 @@
 #include "../otros/header.h"
 #include "../otros/sockets/cliente-servidor.h"
 #include "../otros/log.h"
+#include "../otros/commonTypes.h"
+
+typedef struct t_proceso{
+	int consola;
+	int cpu;
+	struct t_PCB PCB;
+};
 
 // Globales de servidor
 int socketConsola, socketCPU, mayorDescriptor;
 int activadoCPU, activadoConsola; //No hace falta iniciarlizarlas. Lo hacer la funcion permitir reutilizacion ahora.
 struct sockaddr_in direccionConsola, direccionCPU;
 unsigned int tamanioDireccionConsola, tamanioDireccionCPU;
+
+// Globales de cliente
+struct sockaddr_in direccionParaUMC;
+int cliente; //se usa para ser cliente de UMC
+
 #define PUERTOCONSOLA 8080
 #define PUERTOCPU 8088
 
 #define UMC_PORT 8081
 
-struct sockaddr_in direccionParaUMC;
-int cliente; //se usa para ser cliente de UMC
+
 
 // FIXME: error al compilar: expected ‘struct t_config *’ but argument is of type ‘struct t_config *’
 // Si nadie lo sabe arreglar, podemos preguntarle a los ayudantes xD es muuuuy raro esto.
@@ -73,6 +84,31 @@ void cargarCFG()
 }
 */
 
+
+void imprimirVariable()
+{
+	char* msgValue = recv_waitall_ws(cliente,sizeof(ansisop_var_t));
+	char* name = recv_waitall_ws(cliente,sizeof(char));
+	send_w(NULL,headerToMSG(HeaderImprimirVariable),1); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!
+	send_w(NULL,msgValue,sizeof(ansisop_var_t)); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!
+	send_w(NULL,name,sizeof(char)); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!;
+	free(msgValue);
+	free(name);
+}
+
+void imprimirTexto()
+{
+	char* msgSize = recv_waitall_ws(cliente,sizeof(int));
+	int size = charToInt(msgSize);
+	char* texto = recv_waitall_ws(cliente,size);
+	log_debug(bgLogger,"%s",texto);
+	send_w(NULL,headerToMSG(HeaderImprimirTexto),1); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!
+	send_w(NULL,intToChar(size),1); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!
+	send_w(NULL,texto,size); //fixme: null es la consola asociada al proceso que corre en la cpu que manda el mensaje!
+	free (msgSize);
+	free (texto);
+}
+
 void procesarHeader(int cliente, char *header){
 	// Segun el protocolo procesamos el header del mensaje recibido
 	char* payload;
@@ -102,6 +138,15 @@ void procesarHeader(int cliente, char *header){
 			quitarCliente(cliente);
 		}
 		free(payload);
+		break;
+
+
+	case HeaderImprimirVariable:
+		imprimirVariable();
+		break;
+
+	case HeaderImprimirTexto:
+		imprimirTexto();
 		break;
 
 	case HeaderScript: /*A implementar*/ break; //TODO

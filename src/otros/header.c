@@ -6,6 +6,7 @@
  */
 
 #include "header.h"
+#include <commons/string.h>
 
 char* headerToMSG(header_t header)
 {

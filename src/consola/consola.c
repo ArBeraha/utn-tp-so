@@ -38,7 +38,10 @@ void imprimirVariable()
 	int value = charToInt(msgValue);
 	char* name = recv_waitall_ws(cliente,sizeof(char));
 	sacarSaltoDeLinea(name);
-	log_info(activeLogger,"Variable %s: %d.",name,value);
+	// uso printf y logger de background solo porque es un mensaje impreso normalmente
+	// y no algo del log.
+	printf("Variable %s: %d.",name,value);
+	log_debug(bgLogger,"Mensaje impreso: Variable %s: %d.",name,value);
 	free(msgValue);
 	free(name);
 }
@@ -49,7 +52,10 @@ void imprimirTexto()
 	int size = charToInt(msgSize);
 	char* texto = recv_waitall_ws(cliente,size);
 	sacarSaltoDeLinea(texto);
-	log_info(activeLogger,"%s",texto);
+	printf("%s\n",texto);
+	// uso printf y logger de background solo porque es un mensaje impreso normalmente
+	// y no algo del log.
+	log_debug(bgLogger,"Mensaje impreso: %s",texto);
 	free (msgSize);
 	free (texto);
 }
@@ -85,7 +91,7 @@ void procesarHeader(char *header){
 		exit(EXIT_FAILURE);
 		break;
 
-	case HeaderImprimir:
+	case HeaderImprimirVariable:
 		imprimirVariable();
 		break;
 

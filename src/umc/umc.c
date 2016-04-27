@@ -275,7 +275,7 @@ void crearMemoriaYTlbYTablaPaginas(){
 	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).");
 
 	//Creo puntero a tabla y relleno tabla paginas
-	tablaPagina_t pTablaPaginas = (tablaPagina_t*)malloc(sizeof(tablaPagina_t*)*MARCO);
+	struct tablaPagina_t* pTablaPaginas = (tablaPagina_t*)malloc(sizeof(tablaPagina_t*)*MARCO);
 	int j;
 	for(j=0;j<MARCO;i++){
 			tablaPaginas[i].pid = -1;

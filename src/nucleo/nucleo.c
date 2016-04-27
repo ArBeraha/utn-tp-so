@@ -68,7 +68,7 @@ void asignarProceso(int PID, int cpu){
 };
 
 void bloquearProceso(int PID, int IO){
-	t_proceso* proceso = list_remove(listaProcesos,PID);
+	t_proceso* proceso = list_get(listaProcesos,PID);
 	proceso->estado = BLOCK;
 	proceso->cpu = NULL;
 	// Añadir a la cola de ese IO

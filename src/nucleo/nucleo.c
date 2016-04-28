@@ -42,10 +42,6 @@ pthread_t UMC; //hilo para UMC. Asi si UMC tarda, Nucleo puede seguir manejando 
 pthread_t crearProcesos; // este hilo crear procesos nuevos para evitar un bloqueo del planificador. Sin este hilo, el principal llama al hilo UMC para pedir paginas y debe bloquearse hasta tener la respuesta!
 pthread_mutex_t lock;
 
-#define PUERTOCONSOLA 8080
-#define PUERTOCPU 8088
-#define UMC_PORT 8081
-
 // ***** INICIO DEBUG ***** //
 // setear esto a true desactiva el thread que se conecta con UMC.
 // Es util para debugear sin tener una consola extra con UMC abierto.
@@ -61,6 +57,11 @@ typedef enum {
 	NEW, READY, EXEC, BLOCK, EXIT
 } t_proceso_estado;
 
+typedef enum {
+	FIFO, RR
+} t_planificacion;
+t_planificacion algoritmo;
+
 typedef struct {
 	int consola; // Indice de socketCliente
 	int cpu; // Indice de socketCliente, legible solo cuando estado sea EXEC
@@ -68,13 +69,11 @@ typedef struct {
 	struct t_PCB PCB;
 } t_proceso;
 
-struct t_queue* colaListos;
-struct t_queue* colaSalida;
-struct t_queue* colaCPU; //Mejor tener una cola que tener que crear un struct t_cpu que diga la disponibilidad
-struct t_list* listaProcesos;
+t_queue* colaListos;
+t_queue* colaSalida;
+t_queue* colaCPU; //Mejor tener una cola que tener que crear un struct t_cpu que diga la disponibilidad
+t_list* listaProcesos;
 // Falta la cola de bloqueados para cada IO
-
-
 
 /* INICIO PARA PLANIFICACION */
 bool pedirPaginas(int PID, char* codigo){
@@ -165,6 +164,13 @@ void destruirProceso(int PID){
 
 void planificarProcesos(){
 	//TODO RR, FIFO por ahora
+	switch (algoritmo){
+		// Procesos especificos
+	case FIFO: break;
+	case RR: break;
+	}
+
+	// Procesos Comunes a ambos
 	if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
 		ejecutarProceso(queue_pop(colaListos),queue_pop(colaCPU));
 
@@ -199,10 +205,11 @@ void desbloquearProceso(int PID){
 
 // FIXME: error al compilar: expected ‘struct t_config *’ but argument is of type ‘struct t_config *’
 // Si nadie lo sabe arreglar, podemos preguntarle a los ayudantes xD es muuuuy raro esto.
-/*
+
  typedef struct customConfig {
  int puertoConsola;
  int puertoCPU;
+
  int quantum; //TODO que sea modificable en tiempo de ejecucion si el archivo cambia
  int queantum_sleep; //TODO que sea modificable en tiempo de ejecucion si el archivo cambia
  char** sem_ids;
@@ -210,14 +217,18 @@ void desbloquearProceso(int PID){
  char** io_ids;
  int* ioSleep;
  char** sharedVars;
+ // Agrego cosas que no esta en la consigna pero necesitamos
+ int puertoUMC;
+ char* ipUMC;
  } customConfig_t;
 
- struct customConfig_t config;
- struct t_config *configNucleo;
+customConfig_t config;
+t_config* configNucleo;
 
  void cargarCFG()
  {
- configNucleo = malloc(sizeof(struct t_config));
+ t_config* configNucleo;
+ //configNucleo = malloc(sizeof(struct t_config)); NO HACE FALTA
  configNucleo = config_create("nucleo.cfg");
  config.puertoConsola = config_get_int_value(configNucleo,"PUERTO_PROG");
  config.puertoCPU = config_get_int_value(configNucleo,"PUERTO_CPU");
@@ -230,8 +241,10 @@ void desbloquearProceso(int PID){
  //retorna chars, no int, pero como internamente son lo mismo, entender un puntero como a char* o a int* es indistinto
  config.ioSleep = config_get_array_value(configNucleo,"IO_SLEEP");
  config.sharedVars = config_get_array_value(configNucleo,"SHARED_VARS");
+ config.ipUMC= config_get_string_value(configNucleo,"IP_UMC");
+ config.puertoUMC = config_get_int_value(configNucleo,"PUERTO_UMC");
  }
- */
+
 
 
 int getConsolaAsociada(int cliente){
@@ -345,7 +358,7 @@ void handshakear() {
 }
 
 void conectarALaUMC() {
-	direccionParaUMC = crearDireccionParaCliente(UMC_PORT); //todo: reemplazar por el que se carga desde la config
+	direccionParaUMC = crearDireccionParaCliente(config.puertoUMC);
 	cliente = socket_w();
 	connect_w(cliente, &direccionParaUMC);
 }
@@ -393,11 +406,13 @@ int main(void) {
 	colaSalida = queue_create();
 	pthread_mutex_init(&lock, NULL);
 
+	cargarCFG();
 	crearLogs("Nucleo", "Nucleo");
 
+
 	configurarServidorExtendido(&socketConsola, &direccionConsola,
-			PUERTOCONSOLA, &tamanioDireccionConsola, &activadoConsola);
-	configurarServidorExtendido(&socketCPU, &direccionCPU, PUERTOCPU,
+			config.puertoConsola, &tamanioDireccionConsola, &activadoConsola);
+	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puertoCPU,
 			&tamanioDireccionCPU, &activadoCPU);
 
 	inicializarClientes();
@@ -411,11 +426,12 @@ int main(void) {
 		FD_SET(socketCPU, &socketsParaLectura);
 
 		mayorDescriptor = incorporarClientes();
-		if ((socketConsola>mayorDescriptor) || (socketCPU>mayorDescriptor))
+		if ((socketConsola>mayorDescriptor) || (socketCPU>mayorDescriptor)){
 			if (socketConsola > socketCPU)
 				mayorDescriptor = socketConsola;
 			else
 				mayorDescriptor = socketCPU;
+		}
 
 		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, &espera);
 

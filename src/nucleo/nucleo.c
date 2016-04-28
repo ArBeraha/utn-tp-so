@@ -38,6 +38,10 @@ unsigned int tamanioDireccionConsola, tamanioDireccionCPU;
 struct sockaddr_in direccionParaUMC;
 int cliente; //se usa para ser cliente de UMC
 
+pthread_t UMC; //hilo para UMC. Asi si UMC tarda, Nucleo puede seguir manejando CPUs y consolas sin bloquearse.
+pthread_t crearProcesos; // este hilo crear procesos nuevos para evitar un bloqueo del planificador. Sin este hilo, el principal llama al hilo UMC para pedir paginas y debe bloquearse hasta tener la respuesta!
+pthread_mutex_t lock;
+
 #define PUERTOCONSOLA 8080
 #define PUERTOCPU 8088
 #define UMC_PORT 8081
@@ -70,6 +74,8 @@ struct t_queue* colaCPU; //Mejor tener una cola que tener que crear un struct t_
 struct t_list* listaProcesos;
 // Falta la cola de bloqueados para cada IO
 
+
+
 /* INICIO PARA PLANIFICACION */
 bool pedirPaginas(int PID, char* codigo){
 	int respuesta=false;
@@ -86,9 +92,23 @@ char* getScript(int consola){
 	return recv_waitall_ws(consola,size);
 }
 
+void rechazarProceso(int PID){
+	pthread_mutex_lock(&lock);
+	t_proceso* proceso = list_remove(listaProcesos,PID);
+	pthread_mutex_unlock(&lock);
+	if (proceso->estado != NEW)
+		log_warning(activeLogger, "Se esta rechazando el proceso %d ya aceptado!",PID);
+	send(socketCliente[proceso->consola], intToChar(HeaderConsolaFinalizarRechazado), 1, 0); // Le decimos adios a la consola
+	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
+	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
+	free(proceso); // Destruir Proceso y PCB
+}
+
 int crearProceso(int consola) {
 	t_proceso* proceso = malloc(sizeof(t_proceso));
+	pthread_mutex_lock(&lock);
 	proceso->PCB.PID = list_add(listaProcesos, proceso);
+	pthread_mutex_unlock(&lock);
 	proceso->PCB.PC = SIN_ASIGNAR;
 	proceso->PCB.SP = SIN_ASIGNAR;
 	proceso->estado = NEW;
@@ -105,8 +125,15 @@ int crearProceso(int consola) {
 	return proceso->PCB.PID;
 }
 
+void cargarProceso(int consola){
+	// Crea un hilo que crea el proceso y se banca esperar a que umc le de paginas. Mientras tanto, el planificador sigue andando.
+	pthread_create(&crearProcesos, NULL, (void*)crearProceso, consola);
+}
+
 void ejecutarProceso(int PID, int cpu){
+	pthread_mutex_lock(&lock);
 	t_proceso* proceso = list_get(listaProcesos,PID);
+	pthread_mutex_unlock(&lock);
 	if (proceso->estado != READY)
 		log_warning(activeLogger, "Ejecucion del proceso %d sin estar listo!",PID);
 	proceso->estado = EXEC;
@@ -114,18 +141,10 @@ void ejecutarProceso(int PID, int cpu){
 	// todo: mandarProcesoCpu(cpu, proceso->PCB);
 };
 
-void rechazarProceso(int PID){
-	t_proceso* proceso = list_remove(listaProcesos,PID);
-	if (proceso->estado != NEW)
-		log_warning(activeLogger, "Se esta rechazando el proceso %d ya aceptado!",PID);
-	send(socketCliente[proceso->consola], intToChar(HeaderConsolaFinalizarRechazado), 1, 0); // Le decimos adios a la consola
-	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
-	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
-	free(proceso); // Destruir Proceso y PCB
-}
-
 void finalizarProceso(int PID){
+	pthread_mutex_lock(&lock);
 	t_proceso* proceso = list_get(listaProcesos,PID);
+	pthread_mutex_unlock(&lock);
 	queue_push(colaCPU,(int*)proceso->cpu); // Disponemos de nuevo de la CPU
 	proceso->cpu = SIN_ASIGNAR;
 	proceso->estado= EXIT;
@@ -133,7 +152,9 @@ void finalizarProceso(int PID){
 }
 
 void destruirProceso(int PID){
+	pthread_mutex_lock(&lock);
 	t_proceso* proceso = list_remove(listaProcesos,PID);
+	pthread_mutex_unlock(&lock);
 	if (proceso->estado != EXIT)
 		log_warning(activeLogger, "Se esta destruyendo el proceso %d que no libero sus recursos!",PID);
 	send(socketCliente[proceso->consola], intToChar(HeaderConsolaFinalizarNormalmente), 1, 0); // Le decimos adios a la consola
@@ -152,7 +173,9 @@ void planificarProcesos(){
 }
 
 void bloquearProceso(int PID, int IO){
+	pthread_mutex_lock(&lock);
 	t_proceso* proceso = list_get(listaProcesos,PID);
+	pthread_mutex_unlock(&lock);
 	if (proceso->estado != EXEC)
 		log_warning(activeLogger, "El proceso %d se bloqueo pese a que no estaba ejecutando!",PID);
 	proceso->estado = BLOCK;
@@ -162,13 +185,17 @@ void bloquearProceso(int PID, int IO){
 }
 
 void desbloquearProceso(int PID){
+	pthread_mutex_lock(&lock);
 	t_proceso* proceso = list_get(listaProcesos,PID);
+	pthread_mutex_unlock(&lock);
 	if (proceso->estado != BLOCK)
 		log_warning(activeLogger, "Desbloqueando el proceso %d sin estar bloqueado!",PID);
 	proceso->estado = READY;
 	queue_push(colaListos,PID);
 }
 /* FIN PARA PLANIFICACION */
+
+
 
 // FIXME: error al compilar: expected ‘struct t_config *’ but argument is of type ‘struct t_config *’
 // Si nadie lo sabe arreglar, podemos preguntarle a los ayudantes xD es muuuuy raro esto.
@@ -279,7 +306,7 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderScript:
-		crearProceso(cliente);
+		cargarProceso(cliente);
 		break;
 
 	default:
@@ -333,12 +360,17 @@ void realizarConexionConUMC() {
 void manejarUMC() {
 	log_debug(bgLogger, "Hilo para solicitudes de UMC inicializado.");
 	realizarConexionConUMC();
-	// TODO:
-	// 1. reservar memoria (las consultas a memoria reservada las hacen las cpus, pero la reserva la hace el nucleo)
-	// 2. Esperar respuesta sobre si se pudo reservar o no.
-	// Volver a 1., porque pueden volver a pedirme que reserve memoria ...
 }
-/* FIN PARA UMC */
+
+void iniciarHiloUMC(){
+	if(!DEBUG_IGNORE_UMC){
+			// Me conecto a la umc y hago el handshake
+			pthread_create(&UMC, NULL, (void*)manejarUMC, NULL);
+		}
+		else{
+			warnDebug();
+		}
+}
 
 void warnDebug() {
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
@@ -346,6 +378,9 @@ void warnDebug() {
 	log_info(activeLogger, "Para correr nucleo en modo normal, settear en false el define DEBUG_IGNORE_UMC.");
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
 }
+/* FIN PARA UMC */
+
+
 
 int main(void) {
 
@@ -356,7 +391,7 @@ int main(void) {
 	colaCPU = queue_create();
 	colaListos = queue_create();
 	colaSalida = queue_create();
-
+	pthread_mutex_init(&lock, NULL);
 
 	crearLogs("Nucleo", "Nucleo");
 
@@ -368,14 +403,7 @@ int main(void) {
 	inicializarClientes();
 	log_info(activeLogger, "Esperando conexiones ...");
 
-	if(!DEBUG_IGNORE_UMC){
-		// Me conecto a la umc y hago el handshake
-		pthread_t UMC; //hilo para UMC. Asi si UMC tarda, Nucleo puede seguir manejando CPUs y consolas sin bloquearse.
-		pthread_create(&UMC, NULL, (void*)manejarUMC, NULL);	
-	}
-	else{
-		warnDebug();
-	}
+	iniciarHiloUMC();
 
 	while (1) {
 		FD_ZERO(&socketsParaLectura);

@@ -341,10 +341,10 @@ void manejarUMC() {
 /* FIN PARA UMC */
 
 void warnDebug() {
-	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
+	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
 	log_info(activeLogger, "NO SE ESTABLECE CONEXION CON UMC EN ESTE MODO!");
 	log_info(activeLogger, "Para correr nucleo en modo normal, settear en false el define DEBUG_IGNORE_UMC.");
-	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
+	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
 }
 
 int main(void) {

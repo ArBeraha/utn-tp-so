@@ -27,7 +27,10 @@ typedef enum {
 	HeaderPedirPagina,
 	HeaderLiberarRecursosPagina,
 	HeaderGrabarPagina,
-	HeaderReservarEspacio
+	HeaderReservarEspacio,
+	HeaderPedirContenidoPagina,
+	HeaderErrorNoHayPaginas,
+	HeaderTeReservePagina
 } header_t;
 
 char* headerToMSG(header_t header);

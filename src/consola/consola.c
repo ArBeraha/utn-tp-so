@@ -21,6 +21,7 @@
 
 #define PATHSIZE 2048
 #define DEBUG false
+#define DEBUG_LOG_OLD_REMOVE false
 
 FILE* programa;
 int cliente;
@@ -171,7 +172,7 @@ void cargarYEnviarArchivo() {
 	while (read != -1) {
 		log_info(bgLogger, "Se leyó:%s", line);
 		string_append(&contenido, line);
-		size += strcspn(line, "\n");
+		size += strcspn(line, "\n")+1;
 		free(line);
 		length = 0; //no se si es necesario... pero nunca sobra xD
 		read = getline(&line, &length, programa);
@@ -181,14 +182,22 @@ void cargarYEnviarArchivo() {
 	size += 2;
 	log_info(bgLogger, contenido);
 	log_debug(bgLogger, "Fin de archivo alcanzado. Tamaño almacenado: %d", size);
-	send_w(cliente, headerToMSG(HeaderScript), 1);
-	send_w(cliente, intToChar(size), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
-	send_w(cliente, contenido, size);
+	while(1){
+		send_w(cliente, headerToMSG(HeaderScript), 1);
+		send_w(cliente, intToChar(size), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
+		send_w(cliente, contenido, size);
+		sleep(1);
+	}
+
+
 	free(contenido);
 	log_debug(bgLogger,"Archivo enviado");
 }
 
 int main(int argc, char* argv[]) {
+	if (DEBUG_LOG_OLD_REMOVE) {
+		system("rm -rfv *.log");
+		}
 	//TODO lo de pasar los handshakes como un byte por meter el numero en un caracter, va barbaro! total son 5
 	// ahora... con los headers que hacemos? cuando lleguemos al header 10 explota todo.
 	crearLogs(string_from_format("consola_%d", getpid()), "Consola");
@@ -227,8 +236,7 @@ int main(int argc, char* argv[]) {
 	realizarConexion();
 
 	// Paso el archivo a nucleo.
-	// cargarYEnviarArchivo(); FIXME: no se que pasa!
-
+	 cargarYEnviarArchivo(); //FIXME: no se que pasa!
 	// Escucho pedidos (de impresion) hasta que el header que llegue sea de finalizar.
 	// En ese caso se finaliza.
 	escucharPedidos();

@@ -45,7 +45,7 @@ pthread_mutex_t lock;
 // ***** INICIO DEBUG ***** //
 // setear esto a true desactiva el thread que se conecta con UMC.
 // Es util para debugear sin tener una consola extra con UMC abierto.
-#define DEBUG_IGNORE_UMC false
+#define DEBUG_IGNORE_UMC true
 // ***** FIN DEBUG ***** //
 
 // Para que rompan las listas y vectores
@@ -84,11 +84,19 @@ bool pedirPaginas(int PID, char* codigo){
 }
 
 char* getScript(int consola){
-	char* scriptSize = recv_waitall_ws(consola,1);
-	int size = charToInt(scriptSize);
+	char scriptSize;
+	char* script;
+	int size;
+	//char* scriptSize = recv_waitall_ws(consola,1);
+	read(socketCliente[cliente], &scriptSize, 1);
+	size = charToInt(&scriptSize);
 	log_debug(bgLogger,"Consola envió un archivo de tamaño: %d",size);
-	free(scriptSize);
-	return recv_waitall_ws(consola,size);
+	//free(scriptSize);
+	printf("Size:%d\n",size);
+	script = malloc(sizeof(char)*size);
+	read(socketCliente[cliente],script,size);
+	log_info(activeLogger,"Script:\n%s\n",script);
+	return script; //recv_waitall_ws(consola,size);
 }
 
 void rechazarProceso(int PID){
@@ -115,11 +123,11 @@ int crearProceso(int consola) {
 	proceso->cpu = SIN_ASIGNAR;
 	char* codigo = getScript(consola);
 	// Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
-	if(!pedirPaginas(proceso->PCB.PID, codigo)) {
+	/*if(!pedirPaginas(proceso->PCB.PID, codigo)) {
 		rechazarProceso(proceso->PCB.PID);
 		log_info(activeLogger, "UMC no da paginas para el proceso %d!", proceso->PCB.PID);
 		log_info(activeLogger, "Se rechazo el proceso %d.",proceso->PCB.PID);
-	}
+	}*/
 	free(codigo);
 	return proceso->PCB.PID;
 }
@@ -127,6 +135,7 @@ int crearProceso(int consola) {
 void cargarProceso(int consola){
 	// Crea un hilo que crea el proceso y se banca esperar a que umc le de paginas. Mientras tanto, el planificador sigue andando.
 	pthread_create(&crearProcesos, NULL, (void*)crearProceso, consola);
+	//sleep(1000000);
 }
 
 void ejecutarProceso(int PID, int cpu){
@@ -319,7 +328,8 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderScript:
-		cargarProceso(cliente);
+		//cargarProceso(cliente);
+		crearProceso(cliente);
 		break;
 
 	default:
@@ -406,9 +416,10 @@ int main(void) {
 	colaSalida = queue_create();
 	pthread_mutex_init(&lock, NULL);
 
-	cargarCFG();
+	config.puertoConsola=8080;
+	config.puertoCPU=8088;
+	//cargarCFG();
 	crearLogs("Nucleo", "Nucleo");
-
 
 	configurarServidorExtendido(&socketConsola, &direccionConsola,
 			config.puertoConsola, &tamanioDireccionConsola, &activadoConsola);

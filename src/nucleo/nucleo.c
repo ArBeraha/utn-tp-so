@@ -38,9 +38,12 @@ unsigned int tamanioDireccionConsola, tamanioDireccionCPU;
 struct sockaddr_in direccionParaUMC;
 int cliente; //se usa para ser cliente de UMC
 
-pthread_t UMC; //hilo para UMC. Asi si UMC tarda, Nucleo puede seguir manejando CPUs y consolas sin bloquearse.
-pthread_t crearProcesos; // este hilo crear procesos nuevos para evitar un bloqueo del planificador. Sin este hilo, el principal llama al hilo UMC para pedir paginas y debe bloquearse hasta tener la respuesta!
-pthread_mutex_t lock;
+// Hilos
+pthread_t UMC; //Una instancia que finaliza luego de establecer conexion. Hilo para UMC. Asi si UMC tarda, Nucleo puede seguir manejando CPUs y consolas sin bloquearse.
+pthread_t crearProcesos; // 1..n instancias. Este hilo crear procesos nuevos para evitar un bloqueo del planificador. Sin este hilo, el principal llama al hilo UMC para pedir paginas y debe bloquearse hasta tener la respuesta!
+
+// Semaforos
+pthread_mutex_t lockProccessList;
 
 // ***** INICIO DEBUG ***** //
 // setear esto a true desactiva el thread que se conecta con UMC.
@@ -77,10 +80,26 @@ t_list* listaProcesos;
 
 /* INICIO PARA PLANIFICACION */
 bool pedirPaginas(int PID, char* codigo){
-	int respuesta=false;
-	// todo: Calcular cantidad de paginas
-	// todo: preguntar por cantidad a umc
-	return respuesta;
+	int hayMemDisponible;
+	char respuesta;
+	if(DEBUG_IGNORE_UMC){ // Para DEBUG
+		log_warning(activeLogger,"DEBUG_IGNORE_UMC está en true! Se supone que no hay paginas");
+		hayMemDisponible = false;
+	}
+	else{    // Para curso normal del programa
+			send_w(cliente, headerToMSG(HeaderScript), 1);
+			send_w(cliente, intToChar(strlen(codigo)), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
+			send_w(cliente, codigo, strlen(codigo));
+			read(cliente, &respuesta, 1);
+			hayMemDisponible = (int)respuesta;
+			if(hayMemDisponible!=0 && hayMemDisponible!=1){
+				log_warning(activeLogger,"Umc debería enviar un booleano (0 o 1) y envió %d", hayMemDisponible);
+			}
+			free(codigo);
+			free(respuesta);
+			log_debug(bgLogger,"Hay memoria disponible para el proceso %d.",PID);
+	}
+	return (bool)hayMemDisponible;
 }
 
 char* getScript(int consola){
@@ -100,9 +119,9 @@ char* getScript(int consola){
 }
 
 void rechazarProceso(int PID){
-	pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_remove(listaProcesos,PID);
-	pthread_mutex_unlock(&lock);
+	pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != NEW)
 		log_warning(activeLogger, "Se esta rechazando el proceso %d ya aceptado!",PID);
 	send(socketCliente[proceso->consola], intToChar(HeaderConsolaFinalizarRechazado), 1, 0); // Le decimos adios a la consola
@@ -113,15 +132,15 @@ void rechazarProceso(int PID){
 
 int crearProceso(int consola) {
 	t_proceso* proceso = malloc(sizeof(t_proceso));
-	pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&lockProccessList);
 	proceso->PCB.PID = list_add(listaProcesos, proceso);
-	pthread_mutex_unlock(&lock);
+	pthread_mutex_unlock(&lockProccessList);
 	proceso->PCB.PC = SIN_ASIGNAR;
 	proceso->PCB.SP = SIN_ASIGNAR;
 	proceso->estado = NEW;
 	proceso->consola = consola;
 	proceso->cpu = SIN_ASIGNAR;
-	char* codigo = getScript(consola);
+	char* codigo = getScript(consola); // TODO: cuando haya hilos semaforear esto
 	// Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
 	/*if(!pedirPaginas(proceso->PCB.PID, codigo)) {
 		rechazarProceso(proceso->PCB.PID);
@@ -139,9 +158,9 @@ void cargarProceso(int consola){
 }
 
 void ejecutarProceso(int PID, int cpu){
-	pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_get(listaProcesos,PID);
-	pthread_mutex_unlock(&lock);
+	pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != READY)
 		log_warning(activeLogger, "Ejecucion del proceso %d sin estar listo!",PID);
 	proceso->estado = EXEC;
@@ -150,9 +169,9 @@ void ejecutarProceso(int PID, int cpu){
 };
 
 void finalizarProceso(int PID){
-	pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_get(listaProcesos,PID);
-	pthread_mutex_unlock(&lock);
+	pthread_mutex_unlock(&lockProccessList);
 	queue_push(colaCPU,(int*)proceso->cpu); // Disponemos de nuevo de la CPU
 	proceso->cpu = SIN_ASIGNAR;
 	proceso->estado= EXIT;
@@ -160,9 +179,9 @@ void finalizarProceso(int PID){
 }
 
 void destruirProceso(int PID){
-	pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_remove(listaProcesos,PID);
-	pthread_mutex_unlock(&lock);
+	pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != EXIT)
 		log_warning(activeLogger, "Se esta destruyendo el proceso %d que no libero sus recursos!",PID);
 	send(socketCliente[proceso->consola], intToChar(HeaderConsolaFinalizarNormalmente), 1, 0); // Le decimos adios a la consola
@@ -188,9 +207,9 @@ void planificarProcesos(){
 }
 
 void bloquearProceso(int PID, int IO){
-	pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_get(listaProcesos,PID);
-	pthread_mutex_unlock(&lock);
+	pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != EXEC)
 		log_warning(activeLogger, "El proceso %d se bloqueo pese a que no estaba ejecutando!",PID);
 	proceso->estado = BLOCK;
@@ -200,9 +219,9 @@ void bloquearProceso(int PID, int IO){
 }
 
 void desbloquearProceso(int PID){
-	pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_get(listaProcesos,PID);
-	pthread_mutex_unlock(&lock);
+	pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != BLOCK)
 		log_warning(activeLogger, "Desbloqueando el proceso %d sin estar bloqueado!",PID);
 	proceso->estado = READY;
@@ -234,25 +253,23 @@ void desbloquearProceso(int PID){
 customConfig_t config;
 t_config* configNucleo;
 
- void cargarCFG()
- {
- t_config* configNucleo;
- //configNucleo = malloc(sizeof(struct t_config)); NO HACE FALTA
- configNucleo = config_create("nucleo.cfg");
- config.puertoConsola = config_get_int_value(configNucleo,"PUERTO_PROG");
- config.puertoCPU = config_get_int_value(configNucleo,"PUERTO_CPU");
- config.quantum = config_get_int_value(configNucleo,"QUANTUM");
- config.queantum_sleep = config_get_int_value(configNucleo,"QUANTUM_SLEEP");
- config.sem_ids = config_get_array_value(configNucleo,"SEM_IDS");
- //retorna chars, no int, pero como internamente son lo mismo, entender un puntero como a char* o a int* es indistinto
- config.semInit = config_get_array_value(configNucleo,"SEM_INIT");
- config.io_ids = config_get_array_value(configNucleo,"IO_IDS");
- //retorna chars, no int, pero como internamente son lo mismo, entender un puntero como a char* o a int* es indistinto
- config.ioSleep = config_get_array_value(configNucleo,"IO_SLEEP");
- config.sharedVars = config_get_array_value(configNucleo,"SHARED_VARS");
- config.ipUMC= config_get_string_value(configNucleo,"IP_UMC");
- config.puertoUMC = config_get_int_value(configNucleo,"PUERTO_UMC");
- }
+void cargarCFG() {
+	t_config* configNucleo;
+	configNucleo = config_create("nucleo.cfg");
+	config.puertoConsola = config_get_int_value(configNucleo, "PUERTO_PROG");
+	config.puertoCPU = config_get_int_value(configNucleo, "PUERTO_CPU");
+	config.quantum = config_get_int_value(configNucleo, "QUANTUM");
+	config.queantum_sleep = config_get_int_value(configNucleo, "QUANTUM_SLEEP");
+	config.sem_ids = config_get_array_value(configNucleo, "SEM_IDS");
+	//retorna chars, no int, pero como internamente son lo mismo, entender un puntero como a char* o a int* es indistinto
+	config.semInit = config_get_array_value(configNucleo, "SEM_INIT");
+	config.io_ids = config_get_array_value(configNucleo, "IO_IDS");
+	//retorna chars, no int, pero como internamente son lo mismo, entender un puntero como a char* o a int* es indistinto
+	config.ioSleep = config_get_array_value(configNucleo, "IO_SLEEP");
+	config.sharedVars = config_get_array_value(configNucleo, "SHARED_VARS");
+	config.ipUMC = config_get_string_value(configNucleo, "IP_UMC");
+	config.puertoUMC = config_get_int_value(configNucleo, "PUERTO_UMC");
+}
 
 
 
@@ -328,7 +345,7 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderScript:
-		//cargarProceso(cliente);
+		//cargarProceso(cliente); // la posta con hilos! cuando se sincronize bien borrar la siguiente linea
 		crearProceso(cliente);
 		break;
 
@@ -404,9 +421,16 @@ void warnDebug() {
 /* FIN PARA UMC */
 
 
+void finalizar() {
+	destruirLogs();
+	list_destroy(listaProcesos);
+	queue_destroy(colaCPU);
+	queue_destroy(colaListos);
+	queue_destroy(colaSalida);
+}
 
 int main(void) {
-
+	system("clear");
 	int i;
 	struct timeval espera = newEspera(); // Periodo maximo de espera del select
 	char header[1];
@@ -414,11 +438,11 @@ int main(void) {
 	colaCPU = queue_create();
 	colaListos = queue_create();
 	colaSalida = queue_create();
-	pthread_mutex_init(&lock, NULL);
+	pthread_mutex_init(&lockProccessList, NULL);
 
 	config.puertoConsola=8080;
 	config.puertoCPU=8088;
-	//cargarCFG();
+	cargarCFG();
 	crearLogs("Nucleo", "Nucleo");
 
 	configurarServidorExtendido(&socketConsola, &direccionConsola,
@@ -466,12 +490,6 @@ int main(void) {
 		planificarProcesos();
 	}
 
-	destruirLogs();
-
-	list_destroy(listaProcesos);
-	queue_destroy(colaCPU);
-	queue_destroy(colaListos);
-	queue_destroy(colaSalida);
-
+	finalizar();
 	return EXIT_SUCCESS;
 }

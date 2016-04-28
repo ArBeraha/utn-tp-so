@@ -182,19 +182,17 @@ void cargarYEnviarArchivo() {
 	size += 2;
 	log_info(bgLogger, contenido);
 	log_debug(bgLogger, "Fin de archivo alcanzado. Tamaño almacenado: %d", size);
-	while(1){
-		send_w(cliente, headerToMSG(HeaderScript), 1);
-		send_w(cliente, intToChar(size), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
-		send_w(cliente, contenido, size);
-		sleep(1);
-	}
 
+	send_w(cliente, headerToMSG(HeaderScript), 1);
+	send_w(cliente, intToChar(size), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
+	send_w(cliente, contenido, size);
 
 	free(contenido);
 	log_debug(bgLogger,"Archivo enviado");
 }
 
 int main(int argc, char* argv[]) {
+	system("clear");
 	if (DEBUG_LOG_OLD_REMOVE) {
 		system("rm -rfv *.log");
 		}

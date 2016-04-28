@@ -12,7 +12,6 @@
 #include <commons/string.h>
 #include <commons/log.h>
 #include <string.h>
-#include <parser/parser.h>
 #include "../otros/handshake.h"
 #include "../otros/header.h"
 #include "../otros/sockets/cliente-servidor.h"
@@ -27,9 +26,6 @@ struct sockaddr_in direccionUmc;	  //direccion umc
 
 t_log *activeLogger, *bgLogger;
 
-AnSISOP_funciones funciones;		//funciones de AnSISOP
-AnSISOP_kernel funcionesKernel;		// funciones kernel de AnSISOP
-
 /*------------Declaracion de funciones--------------*/
 void procesarHeader(char*);
 void procesarPCB();
@@ -37,97 +33,6 @@ void esperar_programas();
 void procesarPCB();
 void recibir_sentencia();
 void parsear();
-
-/*------------PRIMITIVAS--------------*/
-
-//cambiar el valor de retorno a t_puntero
-void definir_variable(t_nombre_variable variable){
-	printf("Definir la variable %c \n",variable);
-	//return variable;
-}
-
-//cambiar valor de retorno a t_puntero
-void obtener_posicion_de(t_nombre_variable variable){
-	printf("Obtener posicion de %c \n",variable);
-	//return variable;
-}
-
-//cambiar valor de retorno a t_valor_variable
-void dereferenciar(t_puntero direccion){
-	printf("Dereferenciar %d y su valor es:  \n",direccion);
-	//return &direccion;
-}
-
-void asignar(t_puntero direccion_variable, t_valor_variable valor){
-	printf("Asignando en %d el valor %d\n", direccion_variable,valor);
-}
-
-//cambiar valor de retorno a t_valor_variable
-void obtener_valor_compartida(t_nombre_compartida variable){
-	printf("Obtener valor de variable compartida %s y es: %d \n",variable,*variable); // no seria el valor real
-
-}
-
-//cambiar valor de retorno a t_valor_variable
-void asignar_valor_compartida(t_nombre_compartida variable, t_valor_variable valor){
-	printf("Asignar el valor %d a la variable compartida %s \n",valor,variable);
-}
-
-//cambiar valor de retorno a t_puntero_instruccion
-void irAlLaber(t_nombre_etiqueta etiqueta){
-	printf("Obtener puntero de %s",etiqueta);
-}
-
-//cambiar valor de retorno a t_puntero_instruccion
-void llamar_sin_retorno(t_nombre_etiqueta etiqueta){
-	printf("Llamar a funcion %s\n", etiqueta);
-}
-
-//cambiar valor de retorno a t_puntero_instruccion
-void retornar(t_valor_variable variable){
-	printf("Cambiar entorno actual usando el PC de %d \n",variable);
-}
-
-void imprimir(t_valor_variable valor){
-	printf("Imprimir %d\n",valor);
-}
-void imprimir_texto(char* texto){
-	 printf("Imprimir texto: %s",texto);
-}
-
-//cambiar valor de retorno a int
-void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo){
-	printf("Informar a nucleo que el programa quiere usar '%s' durante %d unidades de tiempo\n",dispositivo,tiempo);
-}
-
-//cambiar valor de retorno a int
-void wait(t_nombre_semaforo identificador_semaforo){
-	printf("Comunicar nucleo de hacer wait con semaforo: %s", identificador_semaforo);
-}
-
-//cambiar valor de retorno a int
-void signal(t_nombre_semaforo identificador_semaforo){
-	printf("Comunicar nucleo de hacer signal con semaforo: %s", identificador_semaforo);
-}
-
-void inicializar_primitivas(){
-
-	funciones.AnSISOP_definirVariable = &definir_variable;
-	funciones.AnSISOP_obtenerPosicionVariable = &obtener_posicion_de;
-	funciones.AnSISOP_dereferenciar= &dereferenciar;
-	funciones.AnSISOP_asignar= &asignar;
-	funciones.AnSISOP_obtenerValorCompartida= &obtener_valor_compartida;
-	funciones.AnSISOP_asignarValorCompartida= &asignar_valor_compartida;
-	funciones.AnSISOP_irAlLabel= &irAlLaber;
-	funciones.AnSISOP_imprimir = &imprimir;
-	funciones.AnSISOP_imprimirTexto= &imprimir_texto;
-	funciones.AnSISOP_llamarSinRetorno = &llamar_sin_retorno;
-	funciones.AnSISOP_retornar=&retornar;
-	funciones.AnSISOP_entradaSalida=&entrada_salida;
-	funcionesKernel.AnSISOP_wait= &wait;
-	funcionesKernel.AnSISOP_signal=&signal;
-
-}
 
 /*--------Funciones----------*/
 
@@ -234,17 +139,12 @@ void recibir_sentencia(){
 }
 
 void parsear(char* const sentencia){
-	printf("Ejecutando: %s\n",sentencia);
-	analizadorLinea(sentencia,&funciones,&funcionesKernel);
 }
 
 int main()
 {
 	crearLogs(string_from_format("CPU_%d",getpid()),"CPU");
 	log_info(activeLogger,"Soy CPU de process ID %d.", getpid());
-
-	inicializar_primitivas();
-	parsear("variables a,b");
 
 	//conectarse a nucleo
 	conectar_nucleo();

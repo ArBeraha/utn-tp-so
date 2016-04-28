@@ -51,14 +51,16 @@ t_list* espacioDisponible; //lista de paginas no usadas
  // SOCKETS
 	struct sockaddr_in direccionServidor;
     struct sockaddr_in direccionCliente;
-    int servidor, cliente;
+    int servidor, cliente, socketUmc;
     unsigned int tamanioDireccion;
 
-    void procesarHeader(char *header){
+void procesarHeader(char *header)
+{
     	// Segun el protocolo procesamos el header del mensaje recibido
     	log_debug(bgLogger,"Llego un mensaje con header %d.",charToInt(header));
 
-    	switch(charToInt(header)) {
+    	switch(charToInt(header))
+    	{
 
     	case HeaderError:
     		log_error(activeLogger,"Header de Error.");
@@ -78,12 +80,17 @@ t_list* espacioDisponible; //lista de paginas no usadas
     	}
     }
 
-    void conectarAUmc()
-    {
-    	direccion = crearDireccionParaCliente(8082);
-    	cliente = socket_w();
-    	connect_w(cliente, &direccion);
-    }
+/*servidor = socket_w();
+	int activado = 1;
+	bind_ws(servidor,&direccionServidor);
+	permitirReutilizacion(servidor,&activado);
+	listen_w(servidor);
+	printf("Estoy escuchando\n");
+
+	cliente = accept(servidor, (void*)&direccionCliente,&tamanioDireccion);
+	printf("Conexion aceptada :)");
+	handshakear();
+*/
 
 
 int getHandshake()
@@ -93,7 +100,8 @@ int getHandshake()
 }
 
 
-void handshakear()
+
+void handshakearAUmc()
 {
 	char *hand = string_from_format("%c%c",HeaderHandshake,SOYSWAP);
 	send_w(cliente, hand, 2);
@@ -108,17 +116,27 @@ void handshakear()
 
 }
 
-void realizarConexion()
+void realizarConexionAUmc()
 {
-	conectarAUmc();
-	log_info(activeLogger,"Conexion al umc correcta :).");
-	handshakear();
+	char header[1];
+
+	configurarServidor(PUERTO_SWAP);
+	log_info(activeLogger,"Esperando conexiones");
+	handshakearAUmc();
 	log_info(activeLogger,"Handshake finalizado exitosamente.");
 
+	FD_ZERO(&socketsParaLectura);
+    FD_SET(socketUmc, &socketsParaLectura);
+     if (tieneLectura(socketUmc))
+     procesarNuevasConexiones(&socketUmc);
+     if (read( socketUmc , header, 1) != 0)
+     {
+    					log_debug(bgLogger,"LLEGO main %s",header);
+    					procesarHeader(header);
+     }
+
+
 }
-
-
-
 void manejoSwap()
 {
 	/*asignemos el archivo de configuracion "vamo' a asignarlo"*/
@@ -131,7 +149,7 @@ void manejoSwap()
 		int retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
 
 		/*logs*/
-		logSwap = log_create("logSwap", "TP", 0, LOG_LEVEL_TRACE);
+		crearLogs("Swap","Swap");
 
 		/* listas manejo de paginas */
 		espacioUtilizado = list_create();
@@ -142,7 +160,8 @@ void manejoSwap()
 		disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
 		list_add(espacioDisponible, disponibles);
 		
-		void realizarConexion();
+		//void realizarConexion();
+
 }
 
 

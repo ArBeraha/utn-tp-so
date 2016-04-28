@@ -14,13 +14,19 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/time.h>
+#include <pthread.h>
+#include <stdbool.h>
 #include <commons/string.h>
 #include <commons/log.h>
 #include <commons/config.h>
+#include <commons/collections/dictionary.h>
+#include <commons/collections/queue.h>
+#include <commons/collections/list.h>
 #include "../otros/handshake.h"
 #include "../otros/header.h"
 #include "../otros/sockets/cliente-servidor.h"
 #include "../otros/log.h"
+#include "../otros/commonTypes.h"
 
 #define PUERTO_UMC_NUCLEO 8081
 #define MARCO 10
@@ -55,7 +61,14 @@ typedef struct tablaPag{ //No hace falta indicar el numero de la pagina, es la p
 	char bitPresencia;
 	char bitModificacion;
 	char bitUso;
+	int* punteroAMarco;
 }tablaPagina_t;
+
+typedef struct marco{
+    int indice;
+    int uso;
+    void* contenido;
+}marco_t;
 
 int tamanioMemoria = MARCO * MARCO_SIZE;
 
@@ -65,8 +78,10 @@ t_log *activeLogger, *bgLogger;
 char* memoria;
 tlb_t tlb[ENTRADAS_TLB];
 tlb_t* ptlb;
-tablaPagina_t tablaPaginas[MARCO];
 int retardo = RETARDO;
+
+struct marco_t* marco = malloc(MARCO * sizeof(marco_t));
+struct t_queue* marcosLibres;
 
 struct timeval newEspera()
 {
@@ -85,38 +100,10 @@ int getHandshake()
 
 //1. Funciones principales de UMC
 
-int buscarPaginasConsecutivas(int cantidadPaginasPedidas){
-	int i;
-	int j;
-
-	for(i=0;i<MARCO;i++){
-		if(tablaPaginas[i].bitUso==0){
-			for(j=0;j<cantidadPaginasPedidas-1;j++){
-				if(tablaPaginas[j].bitUso==0){
-					if(j==cantidadPaginasPedidas-1) return i;
-				}
-			}
-		}
-	}
-	return 0;
-}
-
-char* crearNuevaPagina(int cantidadPaginas){
-	char* a;
-	return a;
-}
-
-char existeLaPaginaYEstaEnMemoria(int nroPagina){
-	if(tablaPaginas[nroPagina].bitPresencia==1 && nroPagina<=MARCO && tablaPaginas[nroPagina].bitUso==1){
-		return 1;
-	} else{
-		return 0;
-	}
-}
-
 void inicializarPrograma(int idPrograma, int paginasRequeridas){
 }
 
+/*
 char* devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanioALeerAPartirDeOffset){ //nroPag, desde donde, hasta donde. Pag entera es Pag1,0,MARCO_SIZE
 	size_t tamanioALeer = tamanioALeerAPartirDeOffset;
 	if(existeLaPaginaYEstaEnMemoria(nroPagina)){
@@ -134,7 +121,7 @@ char* devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanioALeerAPartir
 		return NULL;
 	}
 }
-
+*/
 
 void almacenarBytesEnUnaPagina(int nroPagina, int offset, int tamanio, int buffer){
 }
@@ -261,9 +248,23 @@ void escucharPedidosDeSwap(){
 // FIN 4
 
 void crearMemoriaYTlbYTablaPaginas(){
+
 	//Creo memoria y la relleno
 	memoria = malloc(tamanioMemoria);
+	memset(memoria,'\0',tamanioMemoria);
 	log_info(activeLogger,"Creada la memoria.");
+
+	//Creo cola de marcos disponibles
+	int j;
+	struct marco_t marco;
+	marco.pid=j;
+	marco.usado=0;
+	marco.contenido=NULL;
+	for(j=0;j<MARCO;j++){
+		queue_enqueue(marcosLibres,marco);
+	}
+	log_info(activeLogger,"Creada cola de marcos listos, con la cantidad configurada por archivo.");
+
 
 	//Relleno TLB
 	int i;
@@ -273,17 +274,6 @@ void crearMemoriaYTlbYTablaPaginas(){
 		tlb[i].direccion=NULL;
 	}
 	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).");
-
-	//Creo puntero a tabla y relleno tabla paginas
-	struct tablaPagina_t* pTablaPaginas = (tablaPagina_t*)malloc(sizeof(tablaPagina_t*)*MARCO);
-	int j;
-	for(j=0;j<MARCO;i++){
-			tablaPaginas[i].pid = -1;
-			tablaPaginas[i].marcoUtilizado = -1;
-			tablaPaginas[i].bitPresencia = 0;
-			tablaPaginas[i].bitModificacion = 0;
-			tablaPaginas[i].bitUso = 0;
-	}
 }
 
 
@@ -320,51 +310,43 @@ void procesarHeader(int cliente, char *header){
 
 	case HeaderReservarEspacio:
 		//char* pedidoPagina = recv_waitall_ws(cliente, sizeof(int)); //ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
-		log_info(activeLogger,"CPU me pidio memoria");
-		int cantPaginasPedidas; //= pedido.cantPaginasPedidas
-		if(buscarPaginasConsecutivas(cantPaginasPedidas)){  //lo q si hay q recibir es la cant de paginas q quiere nucleo
-			char* pag =crearNuevaPagina(1);
-		}
-		else{
-			//send("No hay espacio para nueva pag")
-		}
+		log_info(activeLogger,"Nucleo me pidio memoria");
+		int cantPaginasPedidas;
+		struct t_list* tablaPaginas;
+
+		//if(queue_pop(marcosLibres)){
+		//
+		//}
 
 
+		case HeaderPedirPagina:
+			log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
+			//char* pedidoPagina = recv_waitall_ws(cliente, sizeof(pedidoAUmc_t));
+			//char* devolucion = devolverBytesDeUnaPagina(pedidoPagina); //*** VER QUE LE MANDO!! * pedidoPagina??
+			//send(devolucion)
 
-	case HeaderPedirPagina:
-		log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
-		//char* pedidoPagina = recv_waitall_ws(cliente, sizeof(pedidoAUmc_t));
-		//char* devolucion = devolverBytesDeUnaPagina(pedidoPagina); //*** VER QUE LE MANDO!! * pedidoPagina??
-		//send(devolucion)
+		case HeaderGrabarPagina:
+			log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
 
-	case HeaderGrabarPagina:
-		log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
+		case HeaderLiberarRecursosPagina:
+			log_info(activeLogger,"Se recibio pedido de liberar una pagina, por CPU");
 
-	case HeaderLiberarRecursosPagina:
-		log_info(activeLogger,"Se recibio pedido de liberar una pagina, por CPU");
-
-
-	case HeaderScript: /*A implementar*/ break; //TODO
-	/* Agregar futuros casos */
-
-	default:
-		log_error(activeLogger,"Llego cualquier cosa.");
-		log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
-		log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
-		quitarCliente(cliente);
-		break;
+		default:
+			log_error(activeLogger,"Llego cualquier cosa.");
+			log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
+			log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
+			quitarCliente(cliente);
+			break;
 	}
 }
 
 int main(void) {
 
-	crearLogs(string_from_format("umc_%d",getpid()),"Umc");
+	crearLogs("Umc","Umc");
 	log_info(activeLogger,"Soy umc de process ID %d.", getpid());
 
-	crearMemoriaYTlbYTablaPaginas();
+	crearMemoriaYTlb();
 
-	//CAMBIAR, yo hice que umc sea cliente de nucleo, pero deberia ser servidor de nucleo!
-	// Y FALTARIA QUE umc sea cliente de Swap
 
 	realizarConexionASwap();
 	escucharPedidosDeSwap();
@@ -379,3 +361,30 @@ int main(void) {
 
 	return 0;
 }
+
+/*Ari's tips
+ Ro, yo lo veo así al asunto, las páginas no existen antes que te pidan algo,
+ sólo vas a tener la tabla de marcos que es la memoria real,  la tabla de páginas
+ para mi debería ser una lista, ya que para cada proceso vamos a saber en tiempo
+ de ejecución cuantas páginas necesita. Una vez que te piden espacio creas una tabla
+ de paginas(lista) y recorres el array de marcos y cada espacio que encontras
+ (no necesariamente contiguo) agregas un nodo a la lista con presencia 1, una vez que
+ terminaste el array de marcos y faltan páginas por ubicar llamas al swap para ver si
+ existe espacio en el almacenamiento secundario (y el swap hace algo parecido y te responde),
+ esos nodos van a tener presencia 0
+finalmente respondes si pudiste o no ubicar la cantidad de páginas solicitadas
+ */
+
+/*
+ Entonces, cada vez que me piden paginas creo una nueva lista de paginas para ese PID
+
+ Los marcos sin usar los tengo en un cola, asi es mas rapdio, para agarrar uno: queue_pop(marcosLibres)
+
+ struct marco{
+     int indice;
+     int uso;
+     void* contenido;
+}
+
+
+ */

@@ -34,7 +34,8 @@ void procesarPCB();
 void recibir_sentencia();
 void parsear();
 
-/*------------Funciones--------------*/
+/*--------Funciones----------*/
+
 int getHandshake(int cli)
 {
 	char* handshake = recv_nowait_ws(cli,1);
@@ -111,6 +112,7 @@ void procesarHeader(char *header){
 	case HeaderPCB:
 		procesarPCB(); //inicio el proceso de aumentar el PC, pedir UMC sentencia...
 	    break;
+
 	default:
 		log_error(activeLogger,"Llego cualquier cosa.");
 		log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
@@ -136,19 +138,17 @@ void recibir_sentencia(){
 	//char* sentencia= recv_wwitall_ws(cliente_umc,tamanio); TODO que size deberia ser?
 }
 
-void parsear(){
+void parsear(char* const sentencia){
 }
 
 int main()
 {
-
 	crearLogs(string_from_format("CPU_%d",getpid()),"CPU");
 	log_info(activeLogger,"Soy CPU de process ID %d.", getpid());
 
 	//conectarse a nucleo
 	conectar_nucleo();
 	hacer_handshake_nucleo();
-	//TODO corregir error al conectar con nucleo
 
 	//conectarse a umc
 	conectar_umc();
@@ -163,13 +163,9 @@ int main()
 	 *
 	 *parsear_sentencia();
 	 */
-
 	//Ejecutar
-
 	//Actualizar en UMC
-
 	//Actualizar Program Counter
-
 	//Notificar fin de quantum;
 
 

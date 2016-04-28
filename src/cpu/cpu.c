@@ -17,6 +17,7 @@
 #include "../otros/header.h"
 #include "../otros/sockets/cliente-servidor.h"
 #include "../otros/log.h"
+#include "../otros/commonTypes.h"
 
 /*------------Variables Globales--------------*/
 int cliente_cpu; //cpu es cliente del nucleo
@@ -35,8 +36,10 @@ void procesarHeader(char*);
 void procesarPCB();
 void esperar_programas();
 void procesarPCB();
-void recibir_sentencia();
+void pedir_sentencia();
 void parsear();
+void obtenerPCB();
+void esperar_sentencia();
 
 /*--------Funciones----------*/
 //cambiar el valor de retorno a t_puntero
@@ -90,6 +93,7 @@ void retornar(t_valor_variable variable){
 void imprimir(t_valor_variable valor){
 	printf("Imprimir %d\n",valor);
 }
+
 void imprimir_texto(char* texto){
 	 printf("Imprimir texto: %s",texto);
 }
@@ -126,6 +130,11 @@ void inicializar_primitivas(){
 	funcionesKernel.AnSISOP_wait= &wait;
 	funcionesKernel.AnSISOP_signal=&signal;
 
+}
+
+void parsear(char* const sentencia){
+	printf("Ejecutando: %s\n",sentencia);
+	analizadorLinea(sentencia,&funciones,&funcionesKernel);
 }
 
 /*--------Funciones----------*/
@@ -204,9 +213,12 @@ void procesarHeader(char *header){
 		break;
 
 	case HeaderPCB:
-		procesarPCB(); //inicio el proceso de aumentar el PC, pedir UMC sentencia...
+		obtenerPCB(); //inicio el proceso de aumentar el PC, pedir UMC sentencia...
 	    break;
 
+	case HeaderSentencia:
+		obtener_y_parsear();
+		break;
 	default:
 		log_error(activeLogger,"Llego cualquier cosa.");
 		log_error(activeLogger,"Llego el header numero %d y no hay una acciÃ³n definida para Ã©l.",charToInt(header));
@@ -221,20 +233,25 @@ void pedir_sentencia(){
 	send_w(cliente_umc,solic,sizeof(strlen(solic)));
 }
 
-
-void procesarPCB(){
-	//incrementar_registro();
-	//pedir_sentencia();
-	//recibir_sentencia();
+void esperar_sentencia(){
+	char* header = recv_waitall_ws(cliente_cpu,sizeof(char));
+	procesarHeader(header);
+	free(header);
 }
 
-void recibir_sentencia(){
-	//char* sentencia= recv_wwitall_ws(cliente_umc,tamanio); TODO que size deberia ser?
+void obtenerPCB(){
+	//funcion que recibe el pcb
+	pedir_sentencia();
+	esperar_sentencia();
 }
 
-void parsear(char* const sentencia){
-	printf("Ejecutando: %s\n",sentencia);
-	analizadorLinea(sentencia,&funciones,&funcionesKernel);
+void obtener_y_parsear(void){
+	char* sentencia = recv_waitall_ws(cliente_umc,300);
+	parsear(sentencia);
+}
+
+void procesarPCB(t_PCB* pcb){
+	pcb->PC++;	//incrementar registro
 }
 
 int main()

@@ -22,6 +22,7 @@ typedef enum {
 	HeaderConsolaFinalizarNormalmente,
 	HeaderPCB,
 	HeaderSolicitudSentencia,
+	HeaderSentencia,
 	HeaderConsolaFinalizarRechazado,
 	HeaderPedirPagina,
 	HeaderLiberarRecursosPagina,

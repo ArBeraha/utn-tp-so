@@ -22,11 +22,15 @@ typedef enum {
 	HeaderConsolaFinalizarNormalmente,
 	HeaderPCB,
 	HeaderSolicitudSentencia,
+	HeaderSentencia,
 	HeaderConsolaFinalizarRechazado,
 	HeaderPedirPagina,
 	HeaderLiberarRecursosPagina,
 	HeaderGrabarPagina,
-	HeaderReservarEspacio
+	HeaderReservarEspacio,
+	HeaderPedirContenidoPagina,
+	HeaderErrorNoHayPaginas,
+	HeaderTeReservePagina
 } header_t;
 
 char* headerToMSG(header_t header);

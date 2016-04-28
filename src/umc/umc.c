@@ -5,6 +5,7 @@
  *      Author: utnso
  */
 
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
@@ -27,6 +28,7 @@
 #include "../otros/sockets/cliente-servidor.h"
 #include "../otros/log.h"
 #include "../otros/commonTypes.h"
+#include <math.h>
 
 #define PUERTO_UMC_NUCLEO 8081
 #define MARCO 10
@@ -46,28 +48,33 @@ typedef struct tlbStruct{
 	char* direccion;
 }tlb_t;
 
-typedef struct pedidoAUmc{
-	 int idPrograma,
-		 paginasRequeridas,
-		 nroPagina,
+typedef struct pedidoLecura{
+	 int pid,
+		 paginaRequerida,
 		 offset,
-		 tamanio,
-		 buffer;
-}pedidoAUmc_t;
+		 tamanio;
+}pedidoLectura_t;
 
-typedef struct tablaPag{ //No hace falta indicar el numero de la pagina, es la posicion
+/*
+typedef struct pedidoMemoria{
 	int pid;
+	char* contenido;
+}pedidoMemoria_t;
+*/
+
+typedef struct{ //No hace falta indicar el numero de la pagina, es la posicion
+	int pid;
+	int nroPagina;
 	int marcoUtilizado;
 	char bitPresencia;
 	char bitModificacion;
 	char bitUso;
-	int* punteroAMarco;
 }tablaPagina_t;
 
-typedef struct marco{
+typedef struct{
     int indice;
     int uso;
-    void* contenido;
+    void* direccionContenido;
 }marco_t;
 
 int tamanioMemoria = MARCO * MARCO_SIZE;
@@ -76,12 +83,18 @@ typedef int ansisop_var_t;
 int cliente;
 t_log *activeLogger, *bgLogger;
 char* memoria;
-tlb_t tlb[ENTRADAS_TLB];
-tlb_t* ptlb;
 int retardo = RETARDO;
 
-struct marco_t* marco = malloc(MARCO * sizeof(marco_t));
-struct t_queue* marcosLibres;
+t_queue* marcosLibres;
+
+char* pedidoPaginaPid ;
+char* pedidoPaginaTamanioContenido;
+
+t_list* listaTablasPaginas;
+
+tlb_t* tlb;
+marco_t* tablaMarcos;
+
 
 struct timeval newEspera()
 {
@@ -249,24 +262,15 @@ void escucharPedidosDeSwap(){
 
 void crearMemoriaYTlbYTablaPaginas(){
 
+	marcosLibres = queue_create();
+
 	//Creo memoria y la relleno
 	memoria = malloc(tamanioMemoria);
 	memset(memoria,'\0',tamanioMemoria);
 	log_info(activeLogger,"Creada la memoria.");
 
-	//Creo cola de marcos disponibles
-	int j;
-	struct marco_t marco;
-	marco.pid=j;
-	marco.usado=0;
-	marco.contenido=NULL;
-	for(j=0;j<MARCO;j++){
-		queue_enqueue(marcosLibres,marco);
-	}
-	log_info(activeLogger,"Creada cola de marcos listos, con la cantidad configurada por archivo.");
-
-
 	//Relleno TLB
+
 	int i;
 	for(i = 0; i<ENTRADAS_TLB; i++){
 		tlb[i].pid=-1;
@@ -274,6 +278,15 @@ void crearMemoriaYTlbYTablaPaginas(){
 		tlb[i].direccion=NULL;
 	}
 	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).");
+
+	//Relleno tabla marcos
+	int k;
+	for(k=0;k<MARCO;k++){
+		tablaMarcos[k].indice=k;
+		tablaMarcos[k].uso=0;
+		tablaMarcos[k].direccionContenido=NULL;
+		queue_push(marcosLibres,&tablaMarcos[k]);
+	}
 }
 
 
@@ -308,18 +321,45 @@ void procesarHeader(int cliente, char *header){
 		free(payload);
 		break;
 
-	case HeaderReservarEspacio:
-		//char* pedidoPagina = recv_waitall_ws(cliente, sizeof(int)); //ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
-		log_info(activeLogger,"Nucleo me pidio memoria");
-		int cantPaginasPedidas;
-		struct t_list* tablaPaginas;
+		case HeaderReservarEspacio:
+			pedidoPaginaPid = recv_waitall_ws(cliente, sizeof(int));
+			pedidoPaginaTamanioContenido = recv_waitall_ws(cliente, sizeof(int));
+			//ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
+			log_info(activeLogger,"Nucleo me pidio memoria");
 
-		//if(queue_pop(marcosLibres)){
-		//
-		//}
+			int cantPaginasPedidas = ((float)charToInt(pedidoPaginaTamanioContenido) + MARCO_SIZE - 1) / MARCO_SIZE; //A+B-1 / B
+			int pid = charToInt(pedidoPaginaPid);
 
+			//Primero preguntar si swap tiene espacio..
+			if(queue_size(marcosLibres)>=cantPaginasPedidas){ //Si alcanzan los marcos libres...
+				struct t_list* tablaPaginas;
+				int i;
+				for(i=0;i<cantPaginasPedidas;i++){
+					marco_t* marcoNuevo;
+					marcoNuevo = queue_pop(marcosLibres);
+					marcoNuevo->uso=1;
 
-		case HeaderPedirPagina:
+					tablaPagina_t* nuevaPagina;
+					nuevaPagina = malloc(sizeof(tablaPagina_t));
+					nuevaPagina->pid = pid;
+					nuevaPagina->nroPagina = i;
+					nuevaPagina->marcoUtilizado = marcoNuevo->indice;
+					nuevaPagina->bitPresencia=1;
+					nuevaPagina->bitModificacion=0;
+					nuevaPagina->bitUso=1;
+
+					list_add_in_index(listaTablasPaginas,pid,tablaPaginas);
+				}
+
+				send_w(cliente, headerToMSG(HeaderTeReservePagina), 1);
+			}
+			else{
+				send_w(cliente, headerToMSG(HeaderErrorNoHayPaginas), 1);
+			}
+
+			//Hay que agregar a tlb la pagina nueva?
+
+		case HeaderPedirContenidoPagina:
 			log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
 			//char* pedidoPagina = recv_waitall_ws(cliente, sizeof(pedidoAUmc_t));
 			//char* devolucion = devolverBytesDeUnaPagina(pedidoPagina); //*** VER QUE LE MANDO!! * pedidoPagina??
@@ -342,10 +382,17 @@ void procesarHeader(int cliente, char *header){
 
 int main(void) {
 
+	//Antes definido en crearMemoriaYTlb
+
+	//tlb_t tlb[ENTRADAS_TLB];
+
+	tlb = malloc(ENTRADAS_TLB * sizeof(tlb_t));
+	tablaMarcos = malloc(MARCO * sizeof(marco_t));
+
 	crearLogs("Umc","Umc");
 	log_info(activeLogger,"Soy umc de process ID %d.", getpid());
 
-	crearMemoriaYTlb();
+	crearMemoriaYTlbYTablaPaginas();
 
 
 	realizarConexionASwap();

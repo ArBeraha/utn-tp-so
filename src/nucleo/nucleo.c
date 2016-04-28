@@ -40,11 +40,17 @@ int cliente; //se usa para ser cliente de UMC
 
 #define PUERTOCONSOLA 8080
 #define PUERTOCPU 8088
-
 #define UMC_PORT 8081
 
+// ***** INICIO DEBUG ***** //
+// setear esto a true desactiva el thread que se conecta con UMC.
+// Es util para debugear sin tener una consola extra con UMC abierto.
+#define DEBUG_IGNORE_UMC false
+// ***** FIN DEBUG ***** //
 
-#define SIN_ASIGNAR -1 // Para que rompan las listas y vectores
+// Para que rompan las listas y vectores
+#define SIN_ASIGNAR -1
+
 
 // Posibles estados de un proceso
 typedef enum {
@@ -334,6 +340,13 @@ void manejarUMC() {
 }
 /* FIN PARA UMC */
 
+void warnDebug() {
+	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
+	log_info(activeLogger, "NO SE ESTABLECE CONEXION CON UMC EN ESTE MODO!");
+	log_info(activeLogger, "Para correr nucleo en modo normal, settear en false el define DEBUG_IGNORE_UMC.");
+	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
+}
+
 int main(void) {
 
 	int i;
@@ -355,9 +368,14 @@ int main(void) {
 	inicializarClientes();
 	log_info(activeLogger, "Esperando conexiones ...");
 
-	// Me conecto a la umc y hago el handshake
-	//pthread_t UMC; //hilo para UMC. Asi si UMC tarda, Nucleo puede seguir manejando CPUs y consolas sin bloquearse.
-	//pthread_create(&UMC, NULL, (void*)manejarUMC, NULL);
+	if(!DEBUG_IGNORE_UMC){
+		// Me conecto a la umc y hago el handshake
+		pthread_t UMC; //hilo para UMC. Asi si UMC tarda, Nucleo puede seguir manejando CPUs y consolas sin bloquearse.
+		pthread_create(&UMC, NULL, (void*)manejarUMC, NULL);	
+	}
+	else{
+		warnDebug();
+	}
 
 	while (1) {
 		FD_ZERO(&socketsParaLectura);

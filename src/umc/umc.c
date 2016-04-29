@@ -48,11 +48,11 @@ typedef struct tlbStruct{
 	char* direccion;
 }tlb_t;
 
-typedef struct pedidoLecura{
+typedef struct{
 	 int pid,
 		 paginaRequerida,
 		 offset,
-		 tamanio;
+		 cantBytes;
 }pedidoLectura_t;
 
 /*
@@ -95,6 +95,8 @@ t_list* listaTablasPaginas;
 tlb_t* tlb;
 marco_t* tablaMarcos;
 
+int tlbHabilitada = 1; //1 ON.  0 OFF
+
 
 struct timeval newEspera()
 {
@@ -113,33 +115,94 @@ int getHandshake()
 
 //1. Funciones principales de UMC
 
-void inicializarPrograma(int idPrograma, int paginasRequeridas){
+
+int estaEnTlb(pedidoLectura_t pedido){
+	int i;
+	for(i=0;i<ENTRADAS_TLB; i++){
+		if(tlb[i].pid==pedido.pid && tlb[i].pagina==pedido.paginaRequerida){
+			return 1;
+		}
+	}
+	return 0;
 }
 
-/*
-char* devolverBytesDeUnaPagina(int nroPagina,int offset, int tamanioALeerAPartirDeOffset){ //nroPag, desde donde, hasta donde. Pag entera es Pag1,0,MARCO_SIZE
-	size_t tamanioALeer = tamanioALeerAPartirDeOffset;
-	if(existeLaPaginaYEstaEnMemoria(nroPagina)){
-		usleep(retardo);
-		int marco = tablaPaginas[nroPagina].marcoUtilizado;
-		int pos = (marco * MARCO_SIZE) + offset;
-		char *infoBuscada;
-		//memcpy(infoBuscada,&memoria[pos],tamanioALeer); // NO FUNCA: VER
+int buscarEnTlb(pedidoLectura_t pedido){ //Repito codigo, i know, pero esta soluc no funciona para las dos, porque si se encuentra el pedido en tlb[0] y retornas 'i', "no estaria en tlb" cuando si
+	int i;
+	for(i=0;i<ENTRADAS_TLB; i++){
+		if(tlb[i].pid==pedido.pid && tlb[i].pagina==pedido.paginaRequerida){
+			return i;
+		}
+	}
+	return 0;
+}
 
-		log_info(activeLogger,"Se devolvio la pagina %d, offset &d, con %d bytes", nroPagina,offset,tamanioALeer);
-		return infoBuscada;   //CAMBIAR LOS CHAR* POR ANSISOP_T, POR EN REALIDAD SON INTS, NADA DE CHAR PAPA
+int existePidEnListadeTablas(int pid){
+	(list_get(listaTablasPaginas, pid)!=NULL)?1:0; //Va a la posicion de la lista de las tablas de paginas. ==NULL no existe el elemento
+}
+
+int existePaginaBuscadaEnTabla(int pag, t_list* tablaPaginaBuscada){
+	(list_get(tablaPaginaBuscada,pag))?1:0;   //EN VERDAD DEVUELVE NULL SI NO HAY NADA? ...
+}
+
+char* buscarEnTablaMarcos(int marcoBuscado, pedidoLectura_t pedido){ //Ver si necesito o no el pedido, me suena que tenia que hacer algo
+	marco_t* marcoEnTabla = list_get(tablaMarcos,marcoBuscado);
+	return (marcoEnTabla->direccionContenido);
+}
+
+char* buscarEnSwap(int marcoBuscado, pedidoLectura_t pedido){
+	//TODO
+}
+
+char* agregarAMemoria(tablaPagina_t* paginaBuscada){
+	//TODO
+}
+
+char* devolverPedidoPagina(pedidoLectura_t pedido){
+
+	if(estaEnTlb(pedido) && tlbHabilitada){
+		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d",pedido.pid,pedido.paginaRequerida);
+		int pos = buscarEnTlb(pedido);
+		send_w(cliente, tlb[pos].direccion, 4);
+
 	}
 	else{
-		log_error(activeLogger,"No existe la pagina numero %d.", getpid());
-		return NULL;
+		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas",pedido.pid,pedido.paginaRequerida);
+
+		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
+			t_list* tablaPaginaBuscada = list_get(listaTablasPaginas, pedido.pid);
+
+			if(existePaginaBuscadaEnTabla(pedido.paginaRequerida,tablaPaginaBuscada)){ //Si la pagina existe dentro de la tabla particular
+				tablaPagina_t* paginaBuscada = list_get(tablaPaginaBuscada, pedido.paginaRequerida);
+
+				if(paginaBuscada->bitPresencia){
+					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+					char* devolucion = buscarEnTablaMarcos(paginaBuscada->marcoUtilizado,pedido);
+					send_w(cliente, devolucion, 4);
+				}
+				else{
+					char* devolucion = buscarEnSwap(paginaBuscada->marcoUtilizado,pedido);
+					send_w(cliente, devolucion, 4);
+					agregarAMemoria(paginaBuscada);
+				}
+			}
+			else{
+				send_w(cliente, intToChar(HeaderNoExistePagina), 4);
+			}
+		}
+		else{
+			send_w(cliente,  intToChar(HeaderNoExisteTablaDePag), 4);
+		}
 	}
 }
-*/
+
 
 void almacenarBytesEnUnaPagina(int nroPagina, int offset, int tamanio, int buffer){
 }
 
 void finalizarPrograma(int idPrograma){
+}
+
+void inicializarPrograma(int idPrograma, int paginasRequeridas){
 }
 
 
@@ -290,6 +353,7 @@ void crearMemoriaYTlbYTablaPaginas(){
 }
 
 
+
 void procesarHeader(int cliente, char *header){
 	// Segun el protocolo procesamos el header del mensaje recibido
 	char* payload;
@@ -361,9 +425,12 @@ void procesarHeader(int cliente, char *header){
 
 		case HeaderPedirContenidoPagina:
 			log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
-			//char* pedidoPagina = recv_waitall_ws(cliente, sizeof(pedidoAUmc_t));
-			//char* devolucion = devolverBytesDeUnaPagina(pedidoPagina); //*** VER QUE LE MANDO!! * pedidoPagina??
-			//send(devolucion)
+			pedidoLectura_t pedido;
+			pedido.pid = recv_waitall_ws(cliente, sizeof(int));
+			pedido.paginaRequerida = recv_waitall_ws(cliente, sizeof(int));
+			pedido.offset = recv_waitall_ws(cliente, sizeof(int));
+			pedido.cantBytes = recv_waitall_ws(cliente, sizeof(int));
+			devolverPedidoPagina(pedido);
 
 		case HeaderGrabarPagina:
 			log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");

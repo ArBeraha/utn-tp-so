@@ -16,6 +16,7 @@
 #include <sys/time.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <string.h>
 #include <commons/string.h>
 #include <commons/log.h>
 #include <commons/config.h>
@@ -27,6 +28,7 @@
 #include "../otros/sockets/cliente-servidor.h"
 #include "../otros/log.h"
 #include "../otros/commonTypes.h"
+#include "math.h"
 
 // Globales de servidor
 int socketConsola, socketCPU, mayorDescriptor;
@@ -54,7 +56,6 @@ pthread_mutex_t lockProccessList;
 // Para que rompan las listas y vectores
 #define SIN_ASIGNAR -1
 
-
 // Posibles estados de un proceso
 typedef enum {
 	NEW, READY, EXEC, BLOCK, EXIT
@@ -78,53 +79,77 @@ t_queue* colaCPU; //Mejor tener una cola que tener que crear un struct t_cpu que
 t_list* listaProcesos;
 // Falta la cola de bloqueados para cada IO
 
+typedef struct customConfig {
+	int puertoConsola;
+	int puertoCPU;
+
+	int quantum; //TODO que sea modificable en tiempo de ejecucion si el archivo cambia
+	int queantum_sleep; //TODO que sea modificable en tiempo de ejecucion si el archivo cambia
+	// TODOS TIENEN QUE SER CHAR**, NO ES LO MISMO LEER 4 BYTES QUE 1
+	char** sem_ids;
+	char** semInit;
+	char** io_ids;
+	char** ioSleep;
+	char** sharedVars;
+	// Agrego cosas que no esta en la consigna pero necesitamos
+	int puertoUMC;
+	char* ipUMC;
+} customConfig_t;
+
+customConfig_t config;
+t_config* configNucleo;
+
 /* INICIO PARA PLANIFICACION */
-bool pedirPaginas(int PID, char* codigo){
+bool pedirPaginas(int PID, char* codigo) {
 	int hayMemDisponible;
 	char respuesta;
-	if(DEBUG_IGNORE_UMC){ // Para DEBUG
-		log_warning(activeLogger,"DEBUG_IGNORE_UMC está en true! Se supone que no hay paginas");
+	if (DEBUG_IGNORE_UMC) { // Para DEBUG
+		log_warning(activeLogger,
+				"DEBUG_IGNORE_UMC está en true! Se supone que no hay paginas");
 		hayMemDisponible = false;
+	} else {    // Para curso normal del programa
+		send_w(cliente, headerToMSG(HeaderScript), 1);
+		send_w(cliente, intToChar(strlen(codigo)), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
+		send_w(cliente, codigo, strlen(codigo));
+		read(cliente, &respuesta, 1);
+		hayMemDisponible = (int) respuesta;
+		if (hayMemDisponible != 0 && hayMemDisponible != 1) {
+			log_warning(activeLogger,
+					"Umc debería enviar un booleano (0 o 1) y envió %d",
+					hayMemDisponible);
+		}
+		free(codigo);
+		//free(respuesta);  No es un puntero
+		log_debug(bgLogger, "Hay memoria disponible para el proceso %d.", PID);
 	}
-	else{    // Para curso normal del programa
-			send_w(cliente, headerToMSG(HeaderScript), 1);
-			send_w(cliente, intToChar(strlen(codigo)), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
-			send_w(cliente, codigo, strlen(codigo));
-			read(cliente, &respuesta, 1);
-			hayMemDisponible = (int)respuesta;
-			if(hayMemDisponible!=0 && hayMemDisponible!=1){
-				log_warning(activeLogger,"Umc debería enviar un booleano (0 o 1) y envió %d", hayMemDisponible);
-			}
-			free(codigo);
-			free(respuesta);
-			log_debug(bgLogger,"Hay memoria disponible para el proceso %d.",PID);
-	}
-	return (bool)hayMemDisponible;
+	return (bool) hayMemDisponible;
 }
 
-char* getScript(int consola){
+char* getScript(int consola) {
 	char scriptSize;
 	char* script;
 	int size;
 	//char* scriptSize = recv_waitall_ws(consola,1);
 	read(socketCliente[cliente], &scriptSize, 1);
 	size = charToInt(&scriptSize);
-	log_debug(bgLogger,"Consola envió un archivo de tamaño: %d",size);
+	log_debug(bgLogger, "Consola envió un archivo de tamaño: %d", size);
 	//free(scriptSize);
-	printf("Size:%d\n",size);
-	script = malloc(sizeof(char)*size);
-	read(socketCliente[cliente],script,size);
-	log_info(activeLogger,"Script:\n%s\n",script);
+	printf("Size:%d\n", size);
+	script = malloc(sizeof(char) * size);
+	read(socketCliente[cliente], script, size);
+	log_info(activeLogger, "Script:\n%s\n", script);
 	return script; //recv_waitall_ws(consola,size);
 }
 
-void rechazarProceso(int PID){
+void rechazarProceso(int PID) {
 	pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_remove(listaProcesos,PID);
+	t_proceso* proceso = list_remove(listaProcesos, PID);
 	pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != NEW)
-		log_warning(activeLogger, "Se esta rechazando el proceso %d ya aceptado!",PID);
-	send(socketCliente[proceso->consola], intToChar(HeaderConsolaFinalizarRechazado), 1, 0); // Le decimos adios a la consola
+		log_warning(activeLogger,
+				"Se esta rechazando el proceso %d ya aceptado!", PID);
+	send(socketCliente[proceso->consola],
+			intToChar(HeaderConsolaFinalizarRechazado), 1, 0); // Le decimos adios a la consola
 	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
 	free(proceso); // Destruir Proceso y PCB
@@ -143,115 +168,143 @@ int crearProceso(int consola) {
 	char* codigo = getScript(consola); // TODO: cuando haya hilos semaforear esto
 	// Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
 	/*if(!pedirPaginas(proceso->PCB.PID, codigo)) {
-		rechazarProceso(proceso->PCB.PID);
-		log_info(activeLogger, "UMC no da paginas para el proceso %d!", proceso->PCB.PID);
-		log_info(activeLogger, "Se rechazo el proceso %d.",proceso->PCB.PID);
-	}*/
+	 rechazarProceso(proceso->PCB.PID);
+	 log_info(activeLogger, "UMC no da paginas para el proceso %d!", proceso->PCB.PID);
+	 log_info(activeLogger, "Se rechazo el proceso %d.",proceso->PCB.PID);
+	 }*/
 	free(codigo);
 	return proceso->PCB.PID;
 }
 
-void cargarProceso(int consola){
+void cargarProceso(int consola) {
 	// Crea un hilo que crea el proceso y se banca esperar a que umc le de paginas. Mientras tanto, el planificador sigue andando.
-	pthread_create(&crearProcesos, NULL, (void*)crearProceso, consola);
+	pthread_create(&crearProcesos, NULL, (void*) crearProceso, consola);
 	//sleep(1000000);
 }
 
-void ejecutarProceso(int PID, int cpu){
+void ejecutarProceso(int PID, int cpu) {
 	pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_get(listaProcesos,PID);
+	t_proceso* proceso = list_get(listaProcesos, PID);
 	pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != READY)
-		log_warning(activeLogger, "Ejecucion del proceso %d sin estar listo!",PID);
+		log_warning(activeLogger, "Ejecucion del proceso %d sin estar listo!",
+				PID);
 	proceso->estado = EXEC;
 	proceso->cpu = cpu;
 	// todo: mandarProcesoCpu(cpu, proceso->PCB);
-};
+}
+;
 
-void finalizarProceso(int PID){
+void finalizarProceso(int PID) {
 	pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_get(listaProcesos,PID);
+	t_proceso* proceso = list_get(listaProcesos, PID);
 	pthread_mutex_unlock(&lockProccessList);
-	queue_push(colaCPU,(int*)proceso->cpu); // Disponemos de nuevo de la CPU
+	queue_push(colaCPU, (int*) proceso->cpu); // Disponemos de nuevo de la CPU
 	proceso->cpu = SIN_ASIGNAR;
-	proceso->estado= EXIT;
-	queue_push(colaSalida,PID);
+	proceso->estado = EXIT;
+	queue_push(colaSalida, PID);
 }
 
-void destruirProceso(int PID){
+void destruirProceso(int PID) {
 	pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_remove(listaProcesos,PID);
+	t_proceso* proceso = list_remove(listaProcesos, PID);
 	pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != EXIT)
-		log_warning(activeLogger, "Se esta destruyendo el proceso %d que no libero sus recursos!",PID);
-	send(socketCliente[proceso->consola], intToChar(HeaderConsolaFinalizarNormalmente), 1, 0); // Le decimos adios a la consola
+		log_warning(activeLogger,
+				"Se esta destruyendo el proceso %d que no libero sus recursos!",
+				PID);
+	send(socketCliente[proceso->consola],
+			intToChar(HeaderConsolaFinalizarNormalmente), 1, 0); // Le decimos adios a la consola
 	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
 	free(proceso); // Destruir Proceso y PCB
 }
 
-void planificarProcesos(){
-	//TODO RR, FIFO por ahora
-	switch (algoritmo){
-		// Procesos especificos
-	case FIFO: break;
-	case RR: break;
-	}
-
-	// Procesos Comunes a ambos
-	if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
-		ejecutarProceso(queue_pop(colaListos),queue_pop(colaCPU));
-
-	if (!queue_is_empty(colaSalida))
-		destruirProceso(queue_pop(colaSalida));
+void actualizarPCB(t_PCB PCB){ //
+	// Cuando CPU me actualice la PCB del proceso me manda una PCB (no un puntero)
+	pthread_mutex_lock(&lockProccessList);
+	t_proceso* proceso = list_get(listaProcesos, PCB.PID);
+	pthread_mutex_unlock(&lockProccessList);
+	proceso->PCB=PCB;
 }
 
-void bloquearProceso(int PID, int IO){
+bool terminoQuantum(t_proceso* proceso){
+	return (!(proceso->PCB.PC%config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
+}
+
+void expulsarProceso(t_proceso* proceso){
+	if (proceso->estado!=EXEC)
+		log_warning(activeLogger, "Expulsion del proceso %d sin estar ejecutandose!",proceso->PCB.PID);
+	proceso->estado=READY;
+	queue_push(colaListos, proceso->PCB.PID);
+	queue_push(colaCPU, proceso->cpu); // Disponemos de la CPU
+	proceso->cpu = SIN_ASIGNAR;
+}
+
+
+
+void planificarProcesos() {
+	int i;
+	//TODO RR, FIFO por ahora
+	switch (algoritmo) {
+	// Procesos especificos
+	case RR:
+
+		for(i=0;i<list_size(listaProcesos);i++){
+			pthread_mutex_lock(&lockProccessList);
+			t_proceso* proceso = list_get(listaProcesos,i);
+			pthread_mutex_unlock(&lockProccessList);
+			if (proceso->estado==EXEC){
+				if (terminoQuantum(proceso))
+					expulsarProceso(proceso);
+			}
+		}
+		/*NOTA: RR usa FIFO, así que sin break*/
+	case FIFO:
+
+		if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
+			ejecutarProceso(queue_pop(colaListos), queue_pop(colaCPU));
+
+		if (!queue_is_empty(colaSalida))
+			destruirProceso(queue_pop(colaSalida));
+
+		break;
+	}
+	//printf("planificando...\n");
+}
+
+void bloquearProceso(int PID, int IO) {
 	pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_get(listaProcesos,PID);
+	t_proceso* proceso = list_get(listaProcesos, PID);
 	pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != EXEC)
-		log_warning(activeLogger, "El proceso %d se bloqueo pese a que no estaba ejecutando!",PID);
+		log_warning(activeLogger,
+				"El proceso %d se bloqueo pese a que no estaba ejecutando!",
+				PID);
 	proceso->estado = BLOCK;
-	queue_push(colaCPU,proceso->cpu); // Disponemos de la CPU
+	queue_push(colaCPU, proceso->cpu); // Disponemos de la CPU
 	proceso->cpu = SIN_ASIGNAR;
 	// todo: Añadir a la cola de ese IO
 }
 
-void desbloquearProceso(int PID){
+void desbloquearProceso(int PID) {
 	pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_get(listaProcesos,PID);
+	t_proceso* proceso = list_get(listaProcesos, PID);
 	pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != BLOCK)
-		log_warning(activeLogger, "Desbloqueando el proceso %d sin estar bloqueado!",PID);
+		log_warning(activeLogger,
+				"Desbloqueando el proceso %d sin estar bloqueado!", PID);
 	proceso->estado = READY;
-	queue_push(colaListos,PID);
+	queue_push(colaListos, PID);
 }
 /* FIN PARA PLANIFICACION */
 
+// Funcion para obtener los Int de los array de configuracion
+int AsciiToInt(char* var){
+	return atoi(var);
+}
 
 
-// FIXME: error al compilar: expected ‘struct t_config *’ but argument is of type ‘struct t_config *’
-// Si nadie lo sabe arreglar, podemos preguntarle a los ayudantes xD es muuuuy raro esto.
-
- typedef struct customConfig {
- int puertoConsola;
- int puertoCPU;
-
- int quantum; //TODO que sea modificable en tiempo de ejecucion si el archivo cambia
- int queantum_sleep; //TODO que sea modificable en tiempo de ejecucion si el archivo cambia
- char** sem_ids;
- int* semInit;
- char** io_ids;
- int* ioSleep;
- char** sharedVars;
- // Agrego cosas que no esta en la consigna pero necesitamos
- int puertoUMC;
- char* ipUMC;
- } customConfig_t;
-
-customConfig_t config;
-t_config* configNucleo;
 
 void cargarCFG() {
 	t_config* configNucleo;
@@ -260,22 +313,29 @@ void cargarCFG() {
 	config.puertoCPU = config_get_int_value(configNucleo, "PUERTO_CPU");
 	config.quantum = config_get_int_value(configNucleo, "QUANTUM");
 	config.queantum_sleep = config_get_int_value(configNucleo, "QUANTUM_SLEEP");
-	config.sem_ids = config_get_array_value(configNucleo, "SEM_IDS");
+	config.sem_ids =	config_get_array_value(configNucleo, "SEM_ID");
 	//retorna chars, no int, pero como internamente son lo mismo, entender un puntero como a char* o a int* es indistinto
 	config.semInit = config_get_array_value(configNucleo, "SEM_INIT");
-	config.io_ids = config_get_array_value(configNucleo, "IO_IDS");
+	config.io_ids = config_get_array_value(configNucleo, "IO_ID");
 	//retorna chars, no int, pero como internamente son lo mismo, entender un puntero como a char* o a int* es indistinto
 	config.ioSleep = config_get_array_value(configNucleo, "IO_SLEEP");
 	config.sharedVars = config_get_array_value(configNucleo, "SHARED_VARS");
 	config.ipUMC = config_get_string_value(configNucleo, "IP_UMC");
 	config.puertoUMC = config_get_int_value(configNucleo, "PUERTO_UMC");
+	/*
+		Ejemplo de array 'int'
+	printf("SEM_ID[2]=%d\n",AsciiToInt(config.semInit[2]));
+		Ejemplo de array de Strings
+	printf("IO_ID[2]=%s\n",config.io_ids[2]);
+
+	*/
 }
 
 
 
-int getConsolaAsociada(int cliente){
+int getConsolaAsociada(int cliente) {
 	int PID = charToInt(recv_waitall_ws(cliente, sizeof(int)));
-	t_proceso* proceso = list_get(listaProcesos,PID);
+	t_proceso* proceso = list_get(listaProcesos, PID);
 	return proceso->consola;
 }
 
@@ -402,24 +462,23 @@ void manejarUMC() {
 	realizarConexionConUMC();
 }
 
-void iniciarHiloUMC(){
-	if(!DEBUG_IGNORE_UMC){
-			// Me conecto a la umc y hago el handshake
-			pthread_create(&UMC, NULL, (void*)manejarUMC, NULL);
-		}
-		else{
-			warnDebug();
-		}
+void iniciarHiloUMC() {
+	if (!DEBUG_IGNORE_UMC) {
+		// Me conecto a la umc y hago el handshake
+		pthread_create(&UMC, NULL, (void*) manejarUMC, NULL);
+	} else {
+		warnDebug();
+	}
 }
 
 void warnDebug() {
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
 	log_info(activeLogger, "NO SE ESTABLECE CONEXION CON UMC EN ESTE MODO!");
-	log_info(activeLogger, "Para correr nucleo en modo normal, settear en false el define DEBUG_IGNORE_UMC.");
+	log_info(activeLogger,
+			"Para correr nucleo en modo normal, settear en false el define DEBUG_IGNORE_UMC.");
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
 }
 /* FIN PARA UMC */
-
 
 void finalizar() {
 	destruirLogs();
@@ -440,9 +499,8 @@ int main(void) {
 	colaSalida = queue_create();
 	pthread_mutex_init(&lockProccessList, NULL);
 
-	config.puertoConsola=8080;
-	config.puertoCPU=8088;
 	cargarCFG();
+
 	crearLogs("Nucleo", "Nucleo");
 
 	configurarServidorExtendido(&socketConsola, &direccionConsola,
@@ -461,7 +519,8 @@ int main(void) {
 		FD_SET(socketCPU, &socketsParaLectura);
 
 		mayorDescriptor = incorporarClientes();
-		if ((socketConsola>mayorDescriptor) || (socketCPU>mayorDescriptor)){
+		if ((socketConsola > mayorDescriptor)
+				|| (socketCPU > mayorDescriptor)) {
 			if (socketConsola > socketCPU)
 				mayorDescriptor = socketConsola;
 			else

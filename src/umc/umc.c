@@ -396,7 +396,7 @@ void procesarHeader(int cliente, char *header){
 
 			//Primero preguntar si swap tiene espacio..
 			if(queue_size(marcosLibres)>=cantPaginasPedidas){ //Si alcanzan los marcos libres...
-				struct t_list* tablaPaginas;
+				t_list* tablaPaginas;
 				int i;
 				for(i=0;i<cantPaginasPedidas;i++){
 					marco_t* marcoNuevo;

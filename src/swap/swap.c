@@ -6,9 +6,6 @@
  */
 
 
-#include "../otros/handshake.h"
-#include "../otros/sockets/cliente-servidor.h"
-#include "../otros/header.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <commons/log.h>
@@ -25,6 +22,10 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/time.h>
+#include "../otros/handshake.h"
+#include "../otros/sockets/cliente-servidor.h"
+#include "../otros/header.h"
+#include "../otros/log.h"
 
 
 
@@ -42,19 +43,18 @@ typedef struct disponibles {
 	int totalMarcos;
 } t_disponibles;
 
-t_config* archSwap; //archivo de configuracion
-t_log* logSwap; //archivo de logs
-t_list* espacioUtilizado; //lista de paginas usadas
-t_list* espacioDisponible; //lista de paginas no usadas
+struct t_config* archSwap; //archivo de configuracion
+
+struct t_list* espacioUtilizado; //lista de paginas usadas
+struct t_list* espacioDisponible; //lista de paginas no usadas
 
 // FUNCIONES UTILES
  // SOCKETS
 	struct sockaddr_in direccionServidor;
-    struct sockaddr_in direccionCliente;
+	struct sockaddr_in direccionCliente;
     int servidor, cliente, socketUmc;
-    unsigned int tamanioDireccion;
 
-void procesarHeader(char *header)
+void procesarHeader(int cliente, char *header)
 {
     	// Segun el protocolo procesamos el header del mensaje recibido
     	log_debug(bgLogger,"Llego un mensaje con header %d.",charToInt(header));
@@ -67,8 +67,9 @@ void procesarHeader(char *header)
     		break;
 
     	case HeaderHandshake:
-    		log_error(activeLogger,"Segunda vez que se recibe un headerHandshake acá.");
-    		exit(EXIT_FAILURE);
+    		//log_error(activeLogger,"Segunda vez que se recibe un headerHandshake acá.");
+    		//exit(EXIT_FAILURE);
+
     		break;
 
 
@@ -80,17 +81,8 @@ void procesarHeader(char *header)
     	}
     }
 
-/*servidor = socket_w();
-	int activado = 1;
-	bind_ws(servidor,&direccionServidor);
-	permitirReutilizacion(servidor,&activado);
-	listen_w(servidor);
-	printf("Estoy escuchando\n");
 
-	cliente = accept(servidor, (void*)&direccionCliente,&tamanioDireccion);
-	printf("Conexion aceptada :)");
-	handshakear();
-*/
+
 
 
 int getHandshake()
@@ -106,7 +98,7 @@ void handshakearAUmc()
 	char *hand = string_from_format("%c%c",HeaderHandshake,SOYSWAP);
 	send_w(cliente, hand, 2);
 
-	log_debug(bgLogger,"Consola handshakeo.");
+	//log_debug(bgLogger,"Consola handshakeo.");
 	if(getHandshake()!=SOYUMC)
 	{
 		perror("Se esperaba que la swap se conecte con la umc.");
@@ -118,52 +110,74 @@ void handshakearAUmc()
 
 void realizarConexionAUmc()
 {
-	char header[1];
-
+	//char header[1];
+    printf("1");
 	configurarServidor(PUERTO_SWAP);
+	printf("2");
 	log_info(activeLogger,"Esperando conexiones");
+	printf("3");
+	procesarNuevasConexiones();
+	printf("4");
 	handshakearAUmc();
+	printf("5");
 	log_info(activeLogger,"Handshake finalizado exitosamente.");
-
-	FD_ZERO(&socketsParaLectura);
-    FD_SET(socketUmc, &socketsParaLectura);
-     if (tieneLectura(socketUmc))
-     procesarNuevasConexiones(&socketUmc);
-     if (read( socketUmc , header, 1) != 0)
-     {
-    					log_debug(bgLogger,"LLEGO main %s",header);
-    					procesarHeader(header);
-     }
+	printf("6");
+//
+//	FD_ZERO(&socketsParaLectura);
+//    FD_SET(socketUmc, &socketsParaLectura);
+//     if (tieneLectura(socketUmc))
+//     procesarNuevasConexiones(&socketUmc);
+//     if (read( socketUmc , header, 1) != 0)
+//     {
+//    					log_debug(bgLogger,"LLEGO main %s",header);
+//    					procesarHeader(cliente,header);
+//     }
 
 
 }
 void manejoSwap()
 {
-	/*asignemos el archivo de configuracion "vamo' a asignarlo"*/
-		archSwap = config_create("archivoConfigSwap");
-		/*vamo' a leerlo*/
-		char* puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
-		char* nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");
-		int cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
-		int tamPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
-		int retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
-
-		/*logs*/
+//	/*asignemos el archivo de configuracion "vamo' a asignarlo"*/
+//		archSwap = config_create("archivoConfigSwap");
+//		/*vamo' a leerlo*/
+//		char* puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
+//		char* nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");
+//		int cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
+//		int tamPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
+//		int retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
+//
+//		/*logs*/
 		crearLogs("Swap","Swap");
+//
+//		/* listas manejo de paginas */
+//		espacioUtilizado = list_create();
+//		espacioDisponible = list_create();
+//
+//		t_disponibles* disponibles = malloc(sizeof(t_disponibles));
+//		disponibles->marcoInicial = 0; //primer marco
+//		disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
+//		list_add(espacioDisponible, disponibles);
+//
+//	direccion = crearDireccionParaServidor(PUERTO_SWAP);
+//	socketNuevasConexiones = socket_w();
+//	permitirReutilizacion(socketNuevasConexiones,&activado);
+//	bind_ws(socketNuevasConexiones,&direccion);
+//	listen_w(socketNuevasConexiones);
+//	tamanioDireccion=sizeof(direccion);
+//
+//	struct sockaddr_in clienteDir;
+//	unsigned int clienteLen = sizeof(clienteDir);
+//	int socketNuevoCliente;
+//	socketNuevoCliente = accept(socketNuevasConexiones, (struct sockaddr *)&clienteDir, (socklen_t*)&clienteLen);
+//	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , socketNuevoCliente , inet_ntoa(clienteDir.sin_addr) , ntohs(clienteDir.sin_port));
+//	agregarCliente(socketNuevoCliente);
+//
+//	handshakearAUmc();
 
-		/* listas manejo de paginas */
-		espacioUtilizado = list_create();
-		espacioDisponible = list_create();
 
-		t_disponibles* disponibles = malloc(sizeof(t_disponibles));
-		disponibles.marcoInicial = 0; //primer marco
-		disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
-		list_add(espacioDisponible, disponibles);
-		
-		//void realizarConexion();
+
 
 }
-
 
 
 
@@ -171,6 +185,10 @@ void manejoSwap()
 int main()
 {
     manejoSwap();
+	realizarConexionAUmc();
+
+
+
 
 
 
@@ -192,3 +210,4 @@ int main()
 	 */
 	return 0;
 }
+

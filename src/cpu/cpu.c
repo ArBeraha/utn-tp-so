@@ -12,6 +12,7 @@
 #include <commons/string.h>
 #include <commons/log.h>
 #include <parser/parser.h>
+#include <parser/metadata_program.h>
 #include <string.h>
 #include "../otros/handshake.h"
 #include "../otros/header.h"
@@ -33,9 +34,8 @@ struct sockaddr_in direccionUmc;	  //dbireccion umc
 
 /*------------Declaracion de funciones--------------*/
 void procesarHeader(char*);
-void procesarPCB();
+t_PCB procesarPCB();
 void esperar_programas();
-void procesarPCB();
 void pedir_sentencia();
 void parsear();
 void obtenerPCB();
@@ -130,6 +130,8 @@ void esperar_sentencia();
 //	funcionesKernel.AnSISOP_wait= &wait;
 //	funcionesKernel.AnSISOP_signal=&signal;
 //
+//	log_info(activeLogger,"Primitivas Inicializadas");
+//
 //}
 //
 //void parsear(char* const sentencia){
@@ -191,7 +193,7 @@ void esperar_programas(){
 	log_debug(bgLogger,"Esperando programas de nucleo %d.");
 	char* header;
 	while(1){
-		header = recv_waitall_ws(cliente_nucleo,sizeof(char));
+		header = recv_waitall_ws(cliente_nucleo,1);
 		procesarHeader(header);    //TODO implementar - nuevos headers?
 		free(header);
 	}
@@ -254,8 +256,11 @@ void obtener_y_parsear(void){
 	free(sentencia);
 }
 
-void procesarPCB(t_PCB* pcb){
-	pcb->PC++;	//incrementar registro
+t_PCB procesarPCB(t_PCB pcb){
+	t_PCB nuevoPCB;	//incrementar registro
+	nuevoPCB = pcb;
+	nuevoPCB.PC++;
+	return nuevoPCB;
 }
 
 int main()
@@ -276,7 +281,6 @@ int main()
 
 	//CPU se pone a esperar que nucleo le envie PCB
 	esperar_programas();
-
 
 	destruirLogs(); //TODO cambiar de lugar
 

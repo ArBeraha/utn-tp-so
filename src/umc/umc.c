@@ -108,7 +108,7 @@ struct timeval newEspera()
 
 int getHandshake()
 {
-	char* handshake = recv_nowait_ws(cliente,1);
+	char* handshake = recv_waitall_ws(cliente,1);
 	return charToInt(handshake);
 }
 
@@ -316,9 +316,21 @@ void realizarConexionASwap()
 void escucharPedidosDeSwap(){
 	char* header;
 	while(true){
-			header = recv_waitall_ws(cliente,sizeof(char));
-			procesarHeader(cliente,header);
-			free(header);
+		if (cliente!=0){ // Solo si esta conextado
+			//header = recv_waitall_ws(cliente,sizeof(char)); ESTO NO ME PERMITE CHEQUEAR SI SE DESCONECTO!!
+			header = malloc(1);
+			int bytesRecibidos = recv(cliente, header, 1, MSG_WAITALL);
+			if (bytesRecibidos <= 0)
+			{
+				printf("SWAP se desconecto\n");
+				close(cliente);
+				cliente=0;
+				return;
+			}
+			else
+				procesarHeader(cliente,header);
+		free(header);
+		}
 	}
 }
 // FIN 4

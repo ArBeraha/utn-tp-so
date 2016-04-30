@@ -452,23 +452,14 @@ void conectarALaUMC() {
 
 void realizarConexionConUMC() {
 	conectarALaUMC();
-	log_info(activeLogger, "Conexion al nucleo correcta :).");
+	log_info(activeLogger, "Conexion a la UMC correcta :).");
 	handshakear();
 	log_info(activeLogger, "Handshake con UMC finalizado exitosamente.");
 }
 
-void manejarUMC() {
-	log_debug(bgLogger, "Hilo para solicitudes de UMC inicializado.");
+void conectarConUMC() {
+	log_debug(bgLogger, "Iniciando conexion con UMC...");
 	realizarConexionConUMC();
-}
-
-void iniciarHiloUMC() {
-	if (!DEBUG_IGNORE_UMC) {
-		// Me conecto a la umc y hago el handshake
-		pthread_create(&UMC, NULL, (void*) manejarUMC, NULL);
-	} else {
-		warnDebug();
-	}
 }
 
 void warnDebug() {
@@ -477,6 +468,14 @@ void warnDebug() {
 	log_info(activeLogger,
 			"Para correr nucleo en modo normal, settear en false el define DEBUG_IGNORE_UMC.");
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
+}
+
+void iniciarHiloUMC() {
+	if (!DEBUG_IGNORE_UMC) {
+		conectarConUMC();
+	} else {
+		warnDebug();
+	}
 }
 /* FIN PARA UMC */
 
@@ -511,7 +510,7 @@ int main(void) {
 	inicializarClientes();
 	log_info(activeLogger, "Esperando conexiones ...");
 
-	iniciarHiloUMC();
+	conectarConUMC();
 
 	while (1) {
 		FD_ZERO(&socketsParaLectura);

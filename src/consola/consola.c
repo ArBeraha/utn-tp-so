@@ -20,8 +20,11 @@
 #include "../otros/commonTypes.h"
 
 #define PATHSIZE 2048
+
+// ********* INICIO DEBUG ******** //
 #define DEBUG false
 #define DEBUG_LOG_OLD_REMOVE false
+// ********* FIN DEBUG ******** //
 
 FILE* programa;
 int cliente;
@@ -65,9 +68,9 @@ void conectarANucleo() {
 }
 
 void finalizar() {
-	fclose(programa);
 	log_info(activeLogger, "Fin exitoso.");
 	destruirLogs();
+	// el fclose se hace apenas se deja de usar el archivo para poder correr 2 instancias del mismo proceso ansisop.
 	// close(cliente); // TODO se hace aca o lo maneja el nucleo con "quitarCliente" al finalizar una consola en forma normal?"
 	exit(EXIT_SUCCESS); //Un return desde main hace un exit, asi que es lo mismo hacerlo aca como exit!
 }
@@ -146,8 +149,7 @@ void realizarConexion() {
 void warnDebug() {
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 	log_info(activeLogger,
-			"Para ingresar manualmente un archivo: Cambiar true por false en consola.c -> #define DEBUG, y despues recompilar.",
-			getpid());
+			"Para ingresar manualmente un archivo: Cambiar true por false en consola.c -> #define DEBUG, y despues recompilar.");
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 }
 
@@ -160,10 +162,10 @@ void cargarYEnviarArchivo() {
 	ssize_t read = getline(&line, &length, programa);
 
 	//Descarto la primera linea si es el hashbang!
-	if(line[0]=='#' && line[1]=='!')
-	{
+	if (line[0] == '#' && line[1] == '!') {
 		log_info(bgLogger, "Se leyó:%s", line);
-		log_info(bgLogger, "No se pasa la linea anterior al nucleo por ser un hashbang.");
+		log_info(bgLogger,
+				"No se pasa la linea anterior al nucleo por ser un hashbang.");
 		length = 0;
 		line = NULL;
 		read = getline(&line, &length, programa);
@@ -172,7 +174,7 @@ void cargarYEnviarArchivo() {
 	while (read != -1) {
 		log_info(bgLogger, "Se leyó:%s", line);
 		string_append(&contenido, line);
-		size += strcspn(line, "\n")+1;
+		size += strcspn(line, "\n") + 1;
 		free(line);
 		length = 0; //no se si es necesario... pero nunca sobra xD
 		read = getline(&line, &length, programa);
@@ -181,21 +183,25 @@ void cargarYEnviarArchivo() {
 	string_append(&contenido, "\n\0");
 	size += 2;
 	log_info(bgLogger, contenido);
-	log_debug(bgLogger, "Fin de archivo alcanzado. Tamaño almacenado: %d", size);
+	log_debug(bgLogger, "Fin de archivo alcanzado. Tamaño almacenado: %d",
+			size);
 
 	send_w(cliente, headerToMSG(HeaderScript), 1);
 	send_w(cliente, intToChar(size), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
 	send_w(cliente, contenido, size);
 
 	free(contenido);
-	log_debug(bgLogger,"Archivo enviado");
+	log_debug(bgLogger, "Archivo enviado");
+	fclose(programa); //Lo cierro aca asi se puede volver a ejecutar el mismo programa por mas que la consola este activa.
 }
 
 int main(int argc, char* argv[]) {
 	system("clear");
 	if (DEBUG_LOG_OLD_REMOVE) {
+		log_warning(activeLogger, "DEBUG_LOG_OLD_REMOVE esta en true!");
+		log_debug(activeLogger, "Borrando logs antiguos...");
 		system("rm -rfv *.log");
-		}
+	}
 	//TODO lo de pasar los handshakes como un byte por meter el numero en un caracter, va barbaro! total son 5
 	// ahora... con los headers que hacemos? cuando lleguemos al header 10 explota todo.
 	crearLogs(string_from_format("consola_%d", getpid()), "Consola");
@@ -234,10 +240,11 @@ int main(int argc, char* argv[]) {
 	realizarConexion();
 
 	// Paso el archivo a nucleo.
-	 cargarYEnviarArchivo(); //FIXME: no se que pasa!
+	cargarYEnviarArchivo();
 	// Escucho pedidos (de impresion) hasta que el header que llegue sea de finalizar.
 	// En ese caso se finaliza.
 	escucharPedidos();
+	// La finalizacion se hace por header de finalizacion de consola.
 	return EXIT_SUCCESS;
 }
 

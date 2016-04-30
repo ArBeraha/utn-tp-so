@@ -38,7 +38,7 @@ unsigned int tamanioDireccionConsola, tamanioDireccionCPU;
 
 // Globales de cliente
 struct sockaddr_in direccionParaUMC;
-int cliente; //se usa para ser cliente de UMC
+int umc; //se usa para ser cliente de UMC
 
 // Hilos
 pthread_t UMC; //Una instancia que finaliza luego de establecer conexion. Hilo para UMC. Asi si UMC tarda, Nucleo puede seguir manejando CPUs y consolas sin bloquearse.
@@ -51,6 +51,7 @@ pthread_mutex_t lockProccessList;
 // setear esto a true desactiva el thread que se conecta con UMC.
 // Es util para debugear sin tener una consola extra con UMC abierto.
 #define DEBUG_IGNORE_UMC false
+#define DEBUG_IGNORE_UMC_PAGES true
 // ***** FIN DEBUG ***** //
 
 // Para que rompan las listas y vectores
@@ -103,15 +104,15 @@ t_config* configNucleo;
 bool pedirPaginas(int PID, char* codigo) {
 	int hayMemDisponible;
 	char respuesta;
-	if (DEBUG_IGNORE_UMC) { // Para DEBUG
+	if (DEBUG_IGNORE_UMC_PAGES) { // Para DEBUG
 		log_warning(activeLogger,
-				"DEBUG_IGNORE_UMC está en true! Se supone que no hay paginas");
+				"DEBUG_IGNORE_UMC_PAGES está en true! Se supone que no hay paginas");
 		hayMemDisponible = false;
 	} else {    // Para curso normal del programa
-		send_w(cliente, headerToMSG(HeaderScript), 1);
-		send_w(cliente, intToChar(strlen(codigo)), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
-		send_w(cliente, codigo, strlen(codigo));
-		read(cliente, &respuesta, 1);
+		send_w(umc, headerToMSG(HeaderScript), 1);
+		send_w(umc, intToChar(strlen(codigo)), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
+		send_w(umc, codigo, strlen(codigo));
+		read(umc, &respuesta, 1);
 		hayMemDisponible = (int) respuesta;
 		if (hayMemDisponible != 0 && hayMemDisponible != 1) {
 			log_warning(activeLogger,
@@ -119,7 +120,6 @@ bool pedirPaginas(int PID, char* codigo) {
 					hayMemDisponible);
 		}
 		free(codigo);
-		//free(respuesta);  No es un puntero
 		log_debug(bgLogger, "Hay memoria disponible para el proceso %d.", PID);
 	}
 	return (bool) hayMemDisponible;
@@ -130,15 +130,15 @@ char* getScript(int consola) {
 	char* script;
 	int size;
 	//char* scriptSize = recv_waitall_ws(consola,1);
-	read(socketCliente[cliente], &scriptSize, 1);
+	read(socketCliente[consola], &scriptSize, 1);
 	size = charToInt(&scriptSize);
 	log_debug(bgLogger, "Consola envió un archivo de tamaño: %d", size);
 	//free(scriptSize);
 	printf("Size:%d\n", size);
 	script = malloc(sizeof(char) * size);
-	read(socketCliente[cliente], script, size);
+	read(socketCliente[consola], script, size);
 	log_info(activeLogger, "Script:\n%s\n", script);
-	return script; //recv_waitall_ws(consola,size);
+	return script;
 }
 
 void rechazarProceso(int PID) {
@@ -429,13 +429,13 @@ struct timeval newEspera() {
 
 /* INICIO PARA UMC */
 int getHandshake() {
-	char* handshake = recv_nowait_ws(cliente, 1);
+	char* handshake = recv_nowait_ws(umc, 1);
 	return charToInt(handshake);
 }
 
 void handshakear() {
 	char *hand = string_from_format("%c%c", HeaderHandshake, SOYNUCLEO);
-	send_w(cliente, hand, 2);
+	send_w(umc, hand, 2);
 
 	log_debug(bgLogger, "UMC handshakeo.");
 	if (getHandshake() != SOYUMC) {
@@ -446,8 +446,8 @@ void handshakear() {
 
 void conectarALaUMC() {
 	direccionParaUMC = crearDireccionParaCliente(config.puertoUMC);
-	cliente = socket_w();
-	connect_w(cliente, &direccionParaUMC);
+	umc = socket_w();
+	connect_w(umc, &direccionParaUMC);
 }
 
 void realizarConexionConUMC() {

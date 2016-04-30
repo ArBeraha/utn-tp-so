@@ -27,13 +27,14 @@
 *.i*86
 *.x86_64
 *.hex
-consola
-cpu
-nucleo
-swap
-umc
 
 # Debug files
 *.dSYM/
 /Debug/ 
 /Release/
+
+.metadata
+/.metadata/
+*.d
+*.settings/
+*.metadata/

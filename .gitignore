@@ -38,3 +38,5 @@
 *.d
 *.settings/
 *.metadata/
+/Remote*/
+/compartido/Debug/

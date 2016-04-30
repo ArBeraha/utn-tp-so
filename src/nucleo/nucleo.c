@@ -50,7 +50,7 @@ pthread_mutex_t lockProccessList;
 // ***** INICIO DEBUG ***** //
 // setear esto a true desactiva el thread que se conecta con UMC.
 // Es util para debugear sin tener una consola extra con UMC abierto.
-#define DEBUG_IGNORE_UMC true
+#define DEBUG_IGNORE_UMC false
 // ***** FIN DEBUG ***** //
 
 // Para que rompan las listas y vectores

@@ -97,6 +97,9 @@ marco_t* tablaMarcos;
 
 int tlbHabilitada = 1; //1 ON.  0 OFF
 
+pthread_t SWAP;
+pthread_t NUCLEO_CPU;
+
 
 struct timeval newEspera()
 {
@@ -108,7 +111,7 @@ struct timeval newEspera()
 
 int getHandshake()
 {
-	char* handshake = recv_waitall_ws(cliente,1);
+	char* handshake = recv_nowait_ws(cliente,1);
 	return charToInt(handshake);
 }
 
@@ -316,21 +319,9 @@ void realizarConexionASwap()
 void escucharPedidosDeSwap(){
 	char* header;
 	while(true){
-		if (cliente!=0){ // Solo si esta conextado
-			//header = recv_waitall_ws(cliente,sizeof(char)); ESTO NO ME PERMITE CHEQUEAR SI SE DESCONECTO!!
-			header = malloc(1);
-			int bytesRecibidos = recv(cliente, header, 1, MSG_WAITALL);
-			if (bytesRecibidos <= 0)
-			{
-				printf("SWAP se desconecto\n");
-				close(cliente);
-				cliente=0;
-				return;
-			}
-			else
-				procesarHeader(cliente,header);
-		free(header);
-		}
+			header = recv_waitall_ws(cliente,sizeof(char));
+			procesarHeader(cliente,header);
+			free(header);
 	}
 }
 // FIN 4
@@ -459,6 +450,11 @@ void procesarHeader(int cliente, char *header){
 	}
 }
 
+void conexionASwap(){
+	realizarConexionASwap();
+	escucharPedidosDeSwap();
+}
+
 int main(void) {
 
 	//Antes definido en crearMemoriaYTlb
@@ -473,12 +469,9 @@ int main(void) {
 
 	crearMemoriaYTlbYTablaPaginas();
 
+	pthread_create(&SWAP, NULL, (void*) conexionASwap, NULL);
 
-	realizarConexionASwap();
-	escucharPedidosDeSwap();
-
-	servidorCPUyNucleo(); //OJO! A cada cpu hay que atenderla con un hilo
-
+	pthread_create(&NUCLEO_CPU, NULL, (void*) servidorCPUyNucleo, NULL); //OJO! A cada cpu hay que atenderla con un hilo
 
 
 	recibirComandos(); //Otro hilo?

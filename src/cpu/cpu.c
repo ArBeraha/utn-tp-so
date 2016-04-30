@@ -271,13 +271,15 @@ int main()
 	//inicializar_primitivas();
 	//parsear("a = b + 12");
 
-	//conectarse a nucleo
-	conectar_nucleo();
-	hacer_handshake_nucleo();
+
 
 	//conectarse a umc
 	conectar_umc();
 	hacer_handshake_umc();
+
+	//conectarse a nucleo
+	conectar_nucleo();
+	hacer_handshake_nucleo();
 
 	//CPU se pone a esperar que nucleo le envie PCB
 	esperar_programas();

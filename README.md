@@ -1,5 +1,17 @@
 # tp-2016-1c-Con-16-bits-me-hago-alto-kernel
 
+# Como agregar todo esto en eclipse
+
+    cd workspace
+
+    git clone https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel.git
+
+    Abrir eclipse -> Switch to workspace -> other -> seleccionar tp-2016-1c-Con-16-bits-me-hago-alto-kernel (carpeta que aparece por hacer gitclone en el workspace)
+
+    Eclipse -> importar proyecto -> seleccionar las carpetas de los modulos (están todas en el nuevo workspace, osea, tp-2016-1c-Con-16-bits-me-hago-alto-kernel) una por una, y la carpeta "compartido" para los archivos compartidos.
+
+Los archivos compartidos aparecen en todos los modulos, pero en realidad están linkeados. Cuando se modifican en un lugar, el cambio impacta en todos lados.
+
 # Protocolo
 [![Link del protocolo](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/Protocolo)](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/Protocolo)
 
@@ -7,46 +19,17 @@
 # Compilacion
 
 ## Compilar todos los modulos desde eclipse
-In the Eclipse main menu
+Darle al botoncito de la hoja con 0s y 1s de la toolbar.
 
-    Click derecho sobre el proyecto->build configurations->build all.
-
-No hacer el build all desde otro lado, ya que por alguna razon cosmica no anda.
-
-Los binarios quedan en workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/"UnModulo"/, donde "unModulo" es el modulo que uno busca.
+Los binarios quedan en workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/"UnModulo"/Debug/, donde "unModulo" es el modulo que uno busca.
 
 
-
-## Compilar todos los modulos desde consola
+## Compilar todos los modulos desde consola (deprecated)
 Para compilar todo por consola de una:
 
     En workspace o donde se haga gitclone -> cd tp-2016-1c-Con-16-bits-me-hago-alto-kernel -> sh compilar
 
 Con eso van a estar los 5 ejecutables, cada uno en la carpeta de su modulo. Se puede correr todas las veces que uno quiera dentro de la misma carpeta.
-
-
-
-## Como testear desde eclipse uno de los modulos:
-Sirve para correr un modulo sobre eclipse y usar el debugger, mientras puede o no haber otros en consolas de linux. No hace correr los demas modulos en background ni nada asi :(
-
-In the Eclipse main menu
-
-    select "Project" -> "Properties" (alternatively, just hold the ALT-key down and hit Enter)
-
-In the "Properties for (project name)" window
-
-    select "C/C++ Build" in the list on the left
-
-In the "C/C++ Build" configuration that is displayed on the right side
-
-    select "Manage configurations"
-
-In the "Manage configurations..." window
-
-    Ahora se selecciona el nombre del modulo que se quiere testear!
-    select "Set Active"
-    select "OK"
-    select "OK" again to close Project Properties
 
 
 # Distribución de módulos

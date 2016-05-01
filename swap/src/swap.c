@@ -86,7 +86,7 @@ int main()
 	log_info(activeLogger,"Esperando conexiones");
 	printf("3");
 	procesarNuevasConexiones();
-	cliente=socketCliente[0];
+	cliente=clientes[0].socket;
 	printf("4");
 
 	while (1){

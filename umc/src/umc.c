@@ -59,13 +59,6 @@ typedef struct{
 		 cantBytes;
 }pedidoLectura_t;
 
-/*
-typedef struct pedidoMemoria{
-	int pid;
-	char* contenido;
-}pedidoMemoria_t;
-*/
-
 typedef struct{ //No hace falta indicar el numero de la pagina, es la posicion
 	int nroPagina;
 	int marcoUtilizado;
@@ -74,25 +67,17 @@ typedef struct{ //No hace falta indicar el numero de la pagina, es la posicion
 	char bitUso; //Quizas vuele..
 }tablaPagina_t;
 
-//typedef struct{
-//    int indice;
-//    int uso;
-//    void* direccionContenido;
-//}marco_t;
 
 typedef int ansisop_var_t;
 int cliente;
 t_log *activeLogger, *bgLogger;
 char* memoria;
 
-//t_queue* marcosLibres; Por el momento deprecated..
 
 char* pedidoPaginaPid ;
 char* pedidoPaginaTamanioContenido;
 
 t_list* listaTablasPaginas;
-//tablaPagina_t** listaTablaPaginas;
-//t_list** listaTablaPaginas;
 
 tlb_t* tlb;
 
@@ -196,6 +181,7 @@ int buscarEnTlb(pedidoLectura_t pedido){ //Repito codigo, i know, pero esta solu
 
 int existePidEnListadeTablas(int pid){
 	(list_get(listaTablasPaginas, pid)!=NULL)?1:0; //Va a la posicion de la lista de las tablas de paginas. ==NULL no existe el elemento
+	//(listaTablasPaginas[pid].nroPagina!=-1)?1:0;
 }
 
 int existePaginaBuscadaEnTabla(int pag, t_list* tablaPaginaBuscada){
@@ -364,11 +350,12 @@ void crearMemoriaYTlbYTablaPaginas(){
 	//for(j=0;j<config.cantidad_marcos;j++){
 	//	vectorMarcosOcupados[j]=0;
 	//}
+	printf("1 \n");
 
-	listaTablasPaginas = malloc(sizeof(tablaPagina_t)*config.cantidad_marcos);
-	memset(listaTablasPaginas,-1,sizeof(tablaPagina_t)*config.cantidad_marcos);
+//	listaTablasPaginas = malloc(sizeof(tablaPagina_t)* config.cantidad_marcos);
+//	listaTablasPaginas = &listaTablas;
 
-
+	printf("2 \n");
 }
 
 // FIN 3
@@ -470,7 +457,8 @@ void procesarHeader(int cliente, char *header){
 
 // FIN 4
 
-void test(){
+
+void test(tablaPagina_t* vectorTablasPaginas[]){
 
 	vectorMarcosOcupados[0]=1;
 	vectorMarcosOcupados[1]=1;
@@ -478,6 +466,7 @@ void test(){
 
 	int marcoNuevo = buscarPrimerMarcoLibre();
 	vectorMarcosOcupados[marcoNuevo]=1; //Lo marco como ocupado
+
 	printf("El primer marco libre deberia ser el 3 y es: %d \n", marcoNuevo);
 	printf("Y ahora su contenido deberia ser 1: %d \n\n", vectorMarcosOcupados[marcoNuevo]);
 
@@ -506,7 +495,11 @@ void test(){
 
 	if(cantidadMarcosLibres()>=ccantPaginasPedidas){
 		printf("aca llegue1\n");
-		tablaPagina_t* tablaPaginas; //1 por cada pid
+
+		t_list* listaPaginas;
+		listaPaginas = list_create();  //ACA ROMPE!!!
+
+		printf("Cree lista paginas");
 
 		int i;
 
@@ -516,25 +509,31 @@ void test(){
 			vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
 			printf("Marco seleccionado numero: %d (deberia ser 4, 5 y 6)\n", unMarcoNuevo);
 			printf("aca llegue3\n");
-			tablaPagina_t* nuevaPag;
-			printf("aca llegue3,5\n");
-			printf("aca llegue1\n");
 
-			nuevaPag->nroPagina = i;
-			nuevaPag->marcoUtilizado = unMarcoNuevo;
-			nuevaPag->bitPresencia=1;
-			nuevaPag->bitModificacion=0;
-			nuevaPag->bitUso=1;
+			tablaPagina_t nuevaPag;
+
+			printf("aca llegue3,5\n");
+
+			nuevaPag.nroPagina = i;
+			nuevaPag.marcoUtilizado = unMarcoNuevo;
+			nuevaPag.bitPresencia=1;
+			nuevaPag.bitModificacion=0;
+			nuevaPag.bitUso=1;
 			printf("aca llegue4\n");
 
-			list_add_in_index((t_list*)tablaPaginas,i,nuevaPag);
+
+			list_add_in_index(listaPaginas,i,&nuevaPag);
+
 			printf("aca llegue5\n");
 		}
-	list_add_in_index((t_list*)listaTablasPaginas,ppid,tablaPaginas);
+
+	list_add_in_index(listaTablasPaginas,ppid,listaPaginas);
+
 	printf("aca llegue6\n");
 	printf("Se agregaron las %d paginas en %d \n", ccantPaginasPedidas, ppid);
 
 	t_list* agarramosTablaPaginas = list_get(listaTablasPaginas, 5);
+
 	tablaPagina_t* pagina0 = list_get(agarramosTablaPaginas,0);
 	tablaPagina_t* pagina1 = list_get(agarramosTablaPaginas,1);
 	tablaPagina_t* pagina2 = list_get(agarramosTablaPaginas,2);
@@ -544,21 +543,28 @@ void test(){
 	printf("En la posicion 0 estaria la pagina 0 con marco 4, coincide con: pagina:%d, marco: %d \n", pagina0->nroPagina, pagina0->marcoUtilizado);
 	printf("En la posicion 0 estaria la pagina 1 con marco 5, coincide con: pagina:%d, marco: %d \n", pagina1->nroPagina, pagina1->marcoUtilizado);
 	printf("En la posicion 0 estaria la pagina 2 con marco 6, coincide con: pagina:%d, marco: %d \n", pagina2->nroPagina, pagina2->marcoUtilizado);
-
-
 	}
 }
+
 
 int main(void) {
 
 	cargarCFG();
+
+	t_list* listaTabPaginas;
+	listaTabPaginas = list_create();  //Creo estas dos listas de prueba...
+
+	t_list* tablaPag;
+	tablaPag = list_create();
+
+	tablaPagina_t* vectorTablasPaginas[config.cantidad_marcos * config.tamanio_marco];
 
 	crearLogs("Umc","Umc");
 	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
 
 	crearMemoriaYTlbYTablaPaginas();
 
-	test();
+	test(vectorTablasPaginas);
 
 	//pthread_create(&SWAP, NULL, (void*) conexionASwap, NULL);
 

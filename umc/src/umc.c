@@ -77,7 +77,7 @@ char* memoria;
 char* pedidoPaginaPid ;
 char* pedidoPaginaTamanioContenido;
 
-t_list* listaTablasPaginas;
+t_list** listaTablasPaginas;
 
 tlb_t* tlb;
 
@@ -352,8 +352,8 @@ void crearMemoriaYTlbYTablaPaginas(){
 	//}
 	printf("1 \n");
 
-//	listaTablasPaginas = malloc(sizeof(tablaPagina_t)* config.cantidad_marcos);
-//	listaTablasPaginas = &listaTablas;
+	listaTablasPaginas = malloc(sizeof(t_list)*100); //100 cambiar, cantidad de pedidos de memoria..
+													 // se podria calcular un max
 
 	printf("2 \n");
 }
@@ -458,7 +458,7 @@ void procesarHeader(int cliente, char *header){
 // FIN 4
 
 
-void test(tablaPagina_t* vectorTablasPaginas[]){
+void test(){
 
 	vectorMarcosOcupados[0]=1;
 	vectorMarcosOcupados[1]=1;
@@ -496,8 +496,11 @@ void test(tablaPagina_t* vectorTablasPaginas[]){
 	if(cantidadMarcosLibres()>=ccantPaginasPedidas){
 		printf("aca llegue1\n");
 
-		t_list* listaPaginas;
-		listaPaginas = list_create();  //ACA ROMPE!!!
+		//t_list* listaPaginas;
+		//listaPaginas = list_create();  //ACA ROMPE!!!
+
+		listaTablasPaginas[ppid]=list_create();
+
 
 		printf("Cree lista paginas");
 
@@ -522,49 +525,46 @@ void test(tablaPagina_t* vectorTablasPaginas[]){
 			printf("aca llegue4\n");
 
 
-			list_add_in_index(listaPaginas,i,&nuevaPag);
+			list_add_in_index(listaTablasPaginas[ppid],i,&nuevaPag);
 
 			printf("aca llegue5\n");
 		}
 
-	list_add_in_index(listaTablasPaginas,ppid,listaPaginas);
 
 	printf("aca llegue6\n");
 	printf("Se agregaron las %d paginas en %d \n", ccantPaginasPedidas, ppid);
 
-	t_list* agarramosTablaPaginas = list_get(listaTablasPaginas, 5);
+	tablaPagina_t* pagina0Tabla5 = list_get(listaTablasPaginas[5], 0);
+	tablaPagina_t* pagina1Tabla5 = list_get(listaTablasPaginas[5], 1);
+	tablaPagina_t* pagina2Tabla5 = list_get(listaTablasPaginas[5], 2);
 
-	tablaPagina_t* pagina0 = list_get(agarramosTablaPaginas,0);
-	tablaPagina_t* pagina1 = list_get(agarramosTablaPaginas,1);
-	tablaPagina_t* pagina2 = list_get(agarramosTablaPaginas,2);
+
+
 
 	printf("Agarramos la tabla de paginas en las posicion 5. \n");
-	printf("Y deberia tener 3 paginas dentro, coincide con cant: %d \n", list_size(agarramosTablaPaginas));
-	printf("En la posicion 0 estaria la pagina 0 con marco 4, coincide con: pagina:%d, marco: %d \n", pagina0->nroPagina, pagina0->marcoUtilizado);
-	printf("En la posicion 0 estaria la pagina 1 con marco 5, coincide con: pagina:%d, marco: %d \n", pagina1->nroPagina, pagina1->marcoUtilizado);
-	printf("En la posicion 0 estaria la pagina 2 con marco 6, coincide con: pagina:%d, marco: %d \n", pagina2->nroPagina, pagina2->marcoUtilizado);
+	printf("Y deberia tener 3 paginas dentro, coincide con cant: %d \n", list_size(listaTablasPaginas[5]));
+	printf("En la posicion 0 estaria la pagina 0 con marco 4, coincide con: pagina:%d, marco: %d \n", pagina0Tabla5->nroPagina, pagina0Tabla5->marcoUtilizado);
+	printf("En la posicion 0 estaria la pagina 1 con marco 5, coincide con: pagina:%d, marco: %d \n", pagina1Tabla5->nroPagina, pagina1Tabla5->marcoUtilizado);
+	printf("En la posicion 0 estaria la pagina 2 con marco 6, coincide con: pagina:%d, marco: %d \n", pagina2Tabla5->nroPagina, pagina2Tabla5->marcoUtilizado);
 	}
 }
 
+void finalizar() {
+	destruirLogs();
+	list_destroy(listaTablasPaginas);
+	free(memoria);
+}
 
 int main(void) {
 
 	cargarCFG();
-
-	t_list* listaTabPaginas;
-	listaTabPaginas = list_create();  //Creo estas dos listas de prueba...
-
-	t_list* tablaPag;
-	tablaPag = list_create();
-
-	tablaPagina_t* vectorTablasPaginas[config.cantidad_marcos * config.tamanio_marco];
 
 	crearLogs("Umc","Umc");
 	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
 
 	crearMemoriaYTlbYTablaPaginas();
 
-	test(vectorTablasPaginas);
+	test();
 
 	//pthread_create(&SWAP, NULL, (void*) conexionASwap, NULL);
 
@@ -572,7 +572,7 @@ int main(void) {
 
 	//recibirComandos(); //Otro hilo?
 
-	free(memoria);
+	finalizar();
 
 	return 0;
 }

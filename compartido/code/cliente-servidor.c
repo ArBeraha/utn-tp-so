@@ -108,7 +108,6 @@ void inicializarClientes(){
 	int i;
 	for (i = 0; i < MAXCLIENTS; i++){
 		clientes[i].socket=0;
-		clientes[i].atentido=false;
 	}
 }
 
@@ -118,6 +117,7 @@ void agregarCliente(t_cliente cliente){
 	for (i = 0; i < MAXCLIENTS; i++) {
 		if( clientes[i].socket == 0 )	{
 			clientes[i] = cliente;
+			clientes[i].atentido=false;
 			printf("Añadido a la lista de sockets como %d\n" , i);
 			break;
 		}
@@ -126,8 +126,6 @@ void agregarCliente(t_cliente cliente){
 
 void quitarCliente(int i){
 	// Liberamos del array al cliente y cerramos su socket
-	//struct sockaddr_in clienteDir;
-	//unsigned int clienteLen = sizeof(clienteDir);
 	getpeername(clientes[i].socket , (struct sockaddr*)&clientes[i].addr , (socklen_t*)&clientes[i].addrlen);
 	printf("Invitado desconectado , ip %s , puerto %d \n" , inet_ntoa(clientes[i].addr.sin_addr) , ntohs(clientes[i].addr.sin_port));
 	close(clientes[i].socket);

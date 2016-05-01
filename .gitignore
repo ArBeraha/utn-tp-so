@@ -38,6 +38,8 @@
 /swap/Debug/swap
 /umc/Debug/umc
 
+
+
 .metadata
 /.metadata/
 *.d
@@ -45,3 +47,4 @@
 *.metadata/
 /Remote*/
 /compartido/Debug/
+*.log

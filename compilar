@@ -5,35 +5,35 @@ clear
 cd consola
 cd Debug
 make clean
-make
+make all
 cd ..
 cd ..
 
 cd cpu
 cd Debug
 make clean
-make
+make all
 cd ..
 cd ..
 
 cd nucleo
 cd Debug
 make clean
-make
+make all
 cd ..
 cd ..
 
 cd swap
 cd Debug
 make clean
-make
+make all
 cd ..
 cd ..
 
 cd umc
 cd Debug
 make clean
-make
+make all
 cd ..
 cd ..
 

@@ -68,14 +68,14 @@ typedef struct{ //No hace falta indicar el numero de la pagina, es la posicion
 	int marcoUtilizado;
 	char bitPresencia;
 	char bitModificacion;
-	char bitUso;
+	char bitUso; //Quizas vuele..
 }tablaPagina_t;
 
-typedef struct{
-    int indice;
-    int uso;
-    void* direccionContenido;
-}marco_t;
+//typedef struct{
+//    int indice;
+//    int uso;
+//    void* direccionContenido;
+//}marco_t;
 
 int tamanioMemoria = MARCO * MARCO_SIZE;
 
@@ -85,7 +85,7 @@ t_log *activeLogger, *bgLogger;
 char* memoria;
 int retardo = RETARDO;
 
-t_queue* marcosLibres;
+//t_queue* marcosLibres; Por el momento deprecated..
 
 char* pedidoPaginaPid ;
 char* pedidoPaginaTamanioContenido;
@@ -93,7 +93,8 @@ char* pedidoPaginaTamanioContenido;
 t_list* listaTablasPaginas;
 
 tlb_t* tlb;
-marco_t* tablaMarcos;
+
+int vectorMarcosOcupados[MARCO]; //vectorMarcosOcupados[n]== 1 -> Esta ocupado
 
 int tlbHabilitada = 1; //1 ON.  0 OFF
 
@@ -109,14 +110,53 @@ struct timeval newEspera()
 	return espera;
 }
 
-int getHandshake()
-{
-	char* handshake = recv_nowait_ws(cliente,1);
-	return charToInt(handshake);
-}
+//Prototipos
+
+int estaEnTlb(pedidoLectura_t pedido);
+int buscarEnTlb(pedidoLectura_t pedido);
+int existePidEnListadeTablas(int pid);
+int existePaginaBuscadaEnTabla(int pag, t_list* tablaPaginaBuscada);
+char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido);
+int buscarPrimerMarcoLibre();
+int cantidadMarcosLibres();
+
+char* buscarEnSwap(int marcoBuscado, pedidoLectura_t pedido); //TODO
+char* agregarAMemoria(tablaPagina_t* paginaBuscada); //TODO
+
+char* devolverPedidoPagina(pedidoLectura_t pedido);
+void almacenarBytesEnUnaPagina(int nroPagina, int offset, int tamanio, int buffer); //TODO
+void finalizarPrograma(int idPrograma); //TODO
+void inicializarPrograma(int idPrograma, int paginasRequeridas); //TODO
+
+void fRetardo();
+void dumpEstructuraMemoria(); //TODO
+void dumpContenidoMemoria(); //TODO
+void flushTlb(); //TODO
+void flushMemory(); //TODO
+void recibirComandos();
+
+void servidorCPUyNucleo();
+int getHandshake();
+void handshakearASwap();
+void conectarASwap(); //MOTHER OF DECLARATIVIDAD...
+void realizarConexionASwap();
+void escucharPedidosDeSwap();
+void conexionASwap();
+
+void procesarHeader(int cliente, char *header);
+
+void crearMemoriaYTlbYTablaPaginas();
+
+//Fin prototipos
 
 
-//1. Funciones principales de UMC
+
+
+
+// ************** EMPIEZA .C *****************
+
+
+//0. Funciones auxiliares a las funciones Principales
 
 
 int estaEnTlb(pedidoLectura_t pedido){
@@ -147,10 +187,38 @@ int existePaginaBuscadaEnTabla(int pag, t_list* tablaPaginaBuscada){
 	(list_get(tablaPaginaBuscada,pag))?1:0;   //EN VERDAD DEVUELVE NULL SI NO HAY NADA? ...
 }
 
-char* buscarEnTablaMarcos(int marcoBuscado, pedidoLectura_t pedido){ //Ver si necesito o no el pedido, me suena que tenia que hacer algo
-	marco_t* marcoEnTabla = list_get(tablaMarcos,marcoBuscado);
-	return (marcoEnTabla->direccionContenido);
+//char* buscarEnTablaMarcos(int marcoBuscado, pedidoLectura_t pedido){ //Ver si necesito o no el pedido, me suena que tenia que hacer algo
+//	marco_t* marcoEnTabla = list_get(tablaMarcos,marcoBuscado);
+//	return (marcoEnTabla->direccionContenido);
+//}
+
+char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido){
+	int pos = marcoBuscado * MARCO_SIZE;
+	return memoria[pos];
 }
+
+int buscarPrimerMarcoLibre(){
+	int i;
+	for(i=0;i<MARCO;i++){
+		(vectorMarcosOcupados[i]==0)?:i;
+	}
+	return -1;
+}
+
+int cantidadMarcosLibres(){
+	int i;
+	int c;
+	for(i=0;i<MARCO;i++){
+		if(vectorMarcosOcupados[i]==0)
+			c++;
+	}
+	return c;
+}
+
+// FIN 0
+
+
+// 1. Funciones principales
 
 char* buscarEnSwap(int marcoBuscado, pedidoLectura_t pedido){
 	//TODO
@@ -179,7 +247,7 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 
 				if(paginaBuscada->bitPresencia){
 					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
-					char* devolucion = buscarEnTablaMarcos(paginaBuscada->marcoUtilizado,pedido);
+					char* devolucion = buscarMarco(paginaBuscada->marcoUtilizado,pedido);
 					send_w(cliente, devolucion, 4);
 				}
 				else{
@@ -249,8 +317,170 @@ void recibirComandos(){
 }
 // FIN 2
 
+// 3. Inicializar estructura de UMC
 
-// 3.Server de los cpu y de nucleo
+void crearMemoriaYTlbYTablaPaginas(){
+
+	//marcosLibres = queue_create();
+
+	//Creo memoria y la relleno
+	memoria = malloc(tamanioMemoria);
+	memset(memoria,'\0',tamanioMemoria);
+	log_info(activeLogger,"Creada la memoria.");
+
+	//Relleno TLB
+	int i;
+	for(i = 0; i<ENTRADAS_TLB; i++){
+		tlb[i].pid=-1;
+		tlb[i].pagina=-1;
+		tlb[i].direccion=NULL;
+	}
+	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).");
+
+	//Relleno tabla marcos DEPRECATED
+//	int k;
+//	for(k=0;k<MARCO;k++){
+//		tablaMarcos[k].indice=k;
+//		tablaMarcos[k].uso=0;
+//		tablaMarcos[k].direccionContenido=NULL;
+//		queue_push(marcosLibres,&tablaMarcos[k]);
+//	}
+}
+
+// FIN 3
+
+// 4. Procesar headers
+
+void procesarHeader(int cliente, char *header){
+	// Segun el protocolo procesamos el header del mensaje recibido
+	char* payload;
+	int payload_size;
+	log_debug(bgLogger,"Llego un mensaje con header %d\n",charToInt(header));
+
+	switch(charToInt(header)) {
+
+	case HeaderError:
+		log_error(activeLogger,"Header de Error\n");
+		quitarCliente(cliente);
+		break;
+
+	case HeaderHandshake:
+		log_debug(bgLogger,"Llego un handshake\n");
+		payload_size=1;
+		payload = malloc(payload_size);
+		read(socketCliente[cliente] , payload, payload_size);
+		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
+		if ( (charToInt(payload)==SOYCPU) || (charToInt(payload)==SOYNUCLEO) ){
+			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
+			send(socketCliente[cliente], intToChar(SOYUMC), 1, 0);
+		}
+		else {
+			log_error(activeLogger,"No es un cliente apropiado! rechazada la conexion\n");
+			log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
+			quitarCliente(cliente);
+		}
+		free(payload);
+		break;
+
+		case HeaderReservarEspacio:
+			pedidoPaginaPid = recv_waitall_ws(cliente, sizeof(int));
+			pedidoPaginaTamanioContenido = recv_waitall_ws(cliente, sizeof(int));
+			//ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
+			log_info(activeLogger,"Nucleo me pidio memoria");
+
+			int cantPaginasPedidas = ((float)charToInt(pedidoPaginaTamanioContenido) + MARCO_SIZE - 1) / MARCO_SIZE; //A+B-1 / B
+			int pid = charToInt(pedidoPaginaPid);
+
+			//Primero preguntar si swap tiene espacio..
+			if(cantidadMarcosLibres()>=cantPaginasPedidas){ //Si alcanzan los marcos libres...
+				t_list* tablaPaginas;
+				int i;
+				for(i=0;i<cantPaginasPedidas;i++){
+//					marco_t* marcoNuevo;
+//					marcoNuevo = queue_pop(marcosLibres);
+//					marcoNuevo->uso=1;
+					int marcoNuevo = buscarPrimerMarcoLibre();
+					vectorMarcosOcupados[marcoNuevo]=1; //Lo marco como ocupado
+
+					tablaPagina_t* nuevaPagina;
+					nuevaPagina = malloc(sizeof(tablaPagina_t));
+					nuevaPagina->pid = pid;
+					nuevaPagina->nroPagina = i;
+					nuevaPagina->marcoUtilizado = marcoNuevo;
+					nuevaPagina->bitPresencia=1;
+					nuevaPagina->bitModificacion=0;
+					nuevaPagina->bitUso=1;
+
+					list_add_in_index(listaTablasPaginas,pid,tablaPaginas);
+				}
+
+				send_w(cliente, headerToMSG(HeaderTeReservePagina), 1);
+			}
+			else{
+				send_w(cliente, headerToMSG(HeaderErrorNoHayPaginas), 1);
+			}
+
+			//Hay que agregar a tlb la pagina nueva?
+
+		case HeaderPedirContenidoPagina:
+			log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
+			pedidoLectura_t pedido;
+			pedido.pid = recv_waitall_ws(cliente, sizeof(int));
+			pedido.paginaRequerida = recv_waitall_ws(cliente, sizeof(int));
+			pedido.offset = recv_waitall_ws(cliente, sizeof(int));
+			pedido.cantBytes = recv_waitall_ws(cliente, sizeof(int));
+			devolverPedidoPagina(pedido);
+
+		case HeaderGrabarPagina:
+			log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
+
+		case HeaderLiberarRecursosPagina:
+			log_info(activeLogger,"Se recibio pedido de liberar una pagina, por CPU");
+
+		default:
+			log_error(activeLogger,"Llego cualquier cosa.");
+			log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
+			log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
+			quitarCliente(cliente);
+			break;
+	}
+}
+
+// FIN 4
+
+int main(void) {
+
+	//tlb_t tlb[ENTRADAS_TLB];
+
+	tlb = malloc(ENTRADAS_TLB * sizeof(tlb_t));
+
+	crearLogs("Umc","Umc");
+	log_info(activeLogger,"Soy umc de process ID %d.", getpid());
+
+	crearMemoriaYTlbYTablaPaginas();
+
+	pthread_create(&SWAP, NULL, (void*) conexionASwap, NULL);
+
+	pthread_create(&NUCLEO_CPU, NULL, (void*) servidorCPUyNucleo, NULL); //OJO! A cada cpu hay que atenderla con un hilo
+
+	recibirComandos(); //Otro hilo?
+
+	free(memoria);
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+// 5.Server de los cpu y de nucleo
 void servidorCPUyNucleo(){
 
 	int mayorDescriptor, i;
@@ -282,10 +512,17 @@ void servidorCPUyNucleo(){
 	}
 	destruirLogs();
 }
-// FIN 3
+
+int getHandshake()
+{
+	char* handshake = recv_nowait_ws(cliente,1);
+	return charToInt(handshake);
+}
+
+// FIN 5
 
 
-// 4. Conexion a Swap
+// 6. Conexion a Swap
 void handshakearASwap(){
 	char *hand = string_from_format("%c%c",HeaderHandshake,SOYUMC);
 	send_w(cliente, hand, 2);
@@ -336,162 +573,15 @@ void escucharPedidosDeSwap(){
 		}
 	}
 }
-// FIN 4
 
-void crearMemoriaYTlbYTablaPaginas(){
-
-	marcosLibres = queue_create();
-
-	//Creo memoria y la relleno
-	memoria = malloc(tamanioMemoria);
-	memset(memoria,'\0',tamanioMemoria);
-	log_info(activeLogger,"Creada la memoria.");
-
-	//Relleno TLB
-
-	int i;
-	for(i = 0; i<ENTRADAS_TLB; i++){
-		tlb[i].pid=-1;
-		tlb[i].pagina=-1;
-		tlb[i].direccion=NULL;
-	}
-	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).");
-
-	//Relleno tabla marcos
-	int k;
-	for(k=0;k<MARCO;k++){
-		tablaMarcos[k].indice=k;
-		tablaMarcos[k].uso=0;
-		tablaMarcos[k].direccionContenido=NULL;
-		queue_push(marcosLibres,&tablaMarcos[k]);
-	}
-}
-
-
-
-void procesarHeader(int cliente, char *header){
-	// Segun el protocolo procesamos el header del mensaje recibido
-	char* payload;
-	int payload_size;
-	log_debug(bgLogger,"Llego un mensaje con header %d\n",charToInt(header));
-
-	switch(charToInt(header)) {
-
-	case HeaderError:
-		log_error(activeLogger,"Header de Error\n");
-		quitarCliente(cliente);
-		break;
-
-	case HeaderHandshake:
-		log_debug(bgLogger,"Llego un handshake\n");
-		payload_size=1;
-		payload = malloc(payload_size);
-		read(socketCliente[cliente] , payload, payload_size);
-		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
-		if ( (charToInt(payload)==SOYCPU) || (charToInt(payload)==SOYNUCLEO) ){
-			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
-			send(socketCliente[cliente], intToChar(SOYUMC), 1, 0);
-		}
-		else {
-			log_error(activeLogger,"No es un cliente apropiado! rechazada la conexion\n");
-			log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
-			quitarCliente(cliente);
-		}
-		free(payload);
-		break;
-
-		case HeaderReservarEspacio:
-			pedidoPaginaPid = recv_waitall_ws(cliente, sizeof(int));
-			pedidoPaginaTamanioContenido = recv_waitall_ws(cliente, sizeof(int));
-			//ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
-			log_info(activeLogger,"Nucleo me pidio memoria");
-
-			int cantPaginasPedidas = ((float)charToInt(pedidoPaginaTamanioContenido) + MARCO_SIZE - 1) / MARCO_SIZE; //A+B-1 / B
-			int pid = charToInt(pedidoPaginaPid);
-
-			//Primero preguntar si swap tiene espacio..
-			if(queue_size(marcosLibres)>=cantPaginasPedidas){ //Si alcanzan los marcos libres...
-				t_list* tablaPaginas;
-				int i;
-				for(i=0;i<cantPaginasPedidas;i++){
-					marco_t* marcoNuevo;
-					marcoNuevo = queue_pop(marcosLibres);
-					marcoNuevo->uso=1;
-
-					tablaPagina_t* nuevaPagina;
-					nuevaPagina = malloc(sizeof(tablaPagina_t));
-					nuevaPagina->pid = pid;
-					nuevaPagina->nroPagina = i;
-					nuevaPagina->marcoUtilizado = marcoNuevo->indice;
-					nuevaPagina->bitPresencia=1;
-					nuevaPagina->bitModificacion=0;
-					nuevaPagina->bitUso=1;
-
-					list_add_in_index(listaTablasPaginas,pid,tablaPaginas);
-				}
-
-				send_w(cliente, headerToMSG(HeaderTeReservePagina), 1);
-			}
-			else{
-				send_w(cliente, headerToMSG(HeaderErrorNoHayPaginas), 1);
-			}
-
-			//Hay que agregar a tlb la pagina nueva?
-
-		case HeaderPedirContenidoPagina:
-			log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
-			pedidoLectura_t pedido;
-			pedido.pid = recv_waitall_ws(cliente, sizeof(int));
-			pedido.paginaRequerida = recv_waitall_ws(cliente, sizeof(int));
-			pedido.offset = recv_waitall_ws(cliente, sizeof(int));
-			pedido.cantBytes = recv_waitall_ws(cliente, sizeof(int));
-			devolverPedidoPagina(pedido);
-
-		case HeaderGrabarPagina:
-			log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
-
-		case HeaderLiberarRecursosPagina:
-			log_info(activeLogger,"Se recibio pedido de liberar una pagina, por CPU");
-
-		default:
-			log_error(activeLogger,"Llego cualquier cosa.");
-			log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
-			log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
-			quitarCliente(cliente);
-			break;
-	}
-}
-
-void conexionASwap(){
+void conexionASwap(){ //Creada para unir las dos funciones y crear un hilo
 	realizarConexionASwap();
 	escucharPedidosDeSwap();
 }
-
-int main(void) {
-
-	//Antes definido en crearMemoriaYTlb
-
-	//tlb_t tlb[ENTRADAS_TLB];
-
-	tlb = malloc(ENTRADAS_TLB * sizeof(tlb_t));
-	tablaMarcos = malloc(MARCO * sizeof(marco_t));
-
-	crearLogs("Umc","Umc");
-	log_info(activeLogger,"Soy umc de process ID %d.", getpid());
-
-	crearMemoriaYTlbYTablaPaginas();
-
-	pthread_create(&SWAP, NULL, (void*) conexionASwap, NULL);
-
-	pthread_create(&NUCLEO_CPU, NULL, (void*) servidorCPUyNucleo, NULL); //OJO! A cada cpu hay que atenderla con un hilo
+// FIN 6
 
 
-	recibirComandos(); //Otro hilo?
 
-	free(memoria);
-
-	return 0;
-}
 
 /*Ari's tips
  Ro, yo lo veo así al asunto, las páginas no existen antes que te pidan algo,

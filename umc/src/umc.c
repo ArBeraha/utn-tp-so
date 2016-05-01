@@ -91,6 +91,8 @@ char* pedidoPaginaPid ;
 char* pedidoPaginaTamanioContenido;
 
 t_list* listaTablasPaginas;
+//tablaPagina_t** listaTablaPaginas;
+//t_list** listaTablaPaginas;
 
 tlb_t* tlb;
 
@@ -357,11 +359,15 @@ void crearMemoriaYTlbYTablaPaginas(){
 	//Creo vector de marcos ocupados y lo relleno
 	vectorMarcosOcupados = malloc(sizeof(int) * config.cantidad_marcos);
 	log_info(activeLogger,"Creado el vector de marcos ocupados \n");
-	int j;
+	//int j;
 	memset(vectorMarcosOcupados,0,config.cantidad_marcos* config.tamanio_marco);
 	//for(j=0;j<config.cantidad_marcos;j++){
 	//	vectorMarcosOcupados[j]=0;
 	//}
+
+	listaTablasPaginas = malloc(sizeof(tablaPagina_t)*config.cantidad_marcos);
+	memset(listaTablasPaginas,-1,sizeof(tablaPagina_t)*config.cantidad_marcos);
+
 
 }
 
@@ -485,8 +491,6 @@ void test(){
 	printf("Contenido vector en pos 7: %d \n", vectorMarcosOcupados[7]);
 	printf("Contenido vector en pos 8: %d \n", vectorMarcosOcupados[8]);
 	printf("Contenido vector en pos 9: %d \n", vectorMarcosOcupados[9]);
-	printf("Contenido vector en pos 10: %d \n", vectorMarcosOcupados[10]);
-	printf("Contenido vector en pos 11: %d \n\n", vectorMarcosOcupados[11]);
 
 
 	printf("Pasamos al test de memoria \n \n");
@@ -501,27 +505,21 @@ void test(){
 
 
 	if(cantidadMarcosLibres()>=ccantPaginasPedidas){
-
+		printf("aca llegue1\n");
 		tablaPagina_t* tablaPaginas; //1 por cada pid
-		int i;
 
+		int i;
 
 		for(i=0;i<ccantPaginasPedidas;i++){
 
 			int unMarcoNuevo = buscarPrimerMarcoLibre();
 			vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
 			printf("Marco seleccionado numero: %d (deberia ser 4, 5 y 6)\n", unMarcoNuevo);
-
-			tablaPagina_t* nuevaPag;
-
-			printf("aca llegue1\n");
-			nuevaPag = malloc(sizeof(tablaPagina_t));
-
-			printf("aca llegue2\n");
-
-			//nuevaPagina = malloc(11);
-
 			printf("aca llegue3\n");
+			tablaPagina_t* nuevaPag;
+			printf("aca llegue3,5\n");
+			printf("aca llegue1\n");
+
 			nuevaPag->nroPagina = i;
 			nuevaPag->marcoUtilizado = unMarcoNuevo;
 			nuevaPag->bitPresencia=1;
@@ -529,10 +527,10 @@ void test(){
 			nuevaPag->bitUso=1;
 			printf("aca llegue4\n");
 
-			list_add_in_index(tablaPaginas,i,nuevaPag);
+			list_add_in_index((t_list*)tablaPaginas,i,nuevaPag);
 			printf("aca llegue5\n");
 		}
-	list_add_in_index(listaTablasPaginas,ppid,tablaPaginas);
+	list_add_in_index((t_list*)listaTablasPaginas,ppid,tablaPaginas);
 	printf("aca llegue6\n");
 	printf("Se agregaron las %d paginas en %d \n", ccantPaginasPedidas, ppid);
 

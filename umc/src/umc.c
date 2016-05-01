@@ -77,7 +77,7 @@ char* memoria;
 char* pedidoPaginaPid ;
 char* pedidoPaginaTamanioContenido;
 
-t_list** listaTablasPaginas;
+t_list* listaTablasPaginas;
 
 tlb_t* tlb;
 
@@ -345,15 +345,31 @@ void crearMemoriaYTlbYTablaPaginas(){
 	//Creo vector de marcos ocupados y lo relleno
 	vectorMarcosOcupados = malloc(sizeof(int) * config.cantidad_marcos);
 	log_info(activeLogger,"Creado el vector de marcos ocupados \n");
-	//int j;
+
 	memset(vectorMarcosOcupados,0,config.cantidad_marcos* config.tamanio_marco);
-	//for(j=0;j<config.cantidad_marcos;j++){
-	//	vectorMarcosOcupados[j]=0;
-	//}
+
 	printf("1 \n");
 
-	listaTablasPaginas = malloc(sizeof(t_list)*100); //100 cambiar, cantidad de pedidos de memoria..
-													 // se podria calcular un max
+
+
+	int k;
+	listaTablasPaginas = list_create();
+	printf("2");
+		for(k=0;k<100;k++){
+			t_list* tablaPaginas = list_create();
+			list_add(listaTablasPaginas,tablaPaginas);
+//			list_add(tablaPaginas,1);
+//			list_add(tablaPaginas,2);
+//			list_add(tablaPaginas,3);
+//			list_add(tablaPaginas,4);
+		}
+
+//		for(k=0;k<list_size(listaTablasPaginas);k++){
+//			for(j=0;j<list_size(list_get(listaTablasPaginas,k));j++){
+//				printf("%d",list_get(list_get(listaTablasPaginas,k),j));
+//			}
+//			printf("\n");
+//		}
 
 	printf("2 \n");
 }
@@ -496,14 +512,6 @@ void test(){
 	if(cantidadMarcosLibres()>=ccantPaginasPedidas){
 		printf("aca llegue1\n");
 
-		//t_list* listaPaginas;
-		//listaPaginas = list_create();  //ACA ROMPE!!!
-
-		listaTablasPaginas[ppid]=list_create();
-
-
-		printf("Cree lista paginas");
-
 		int i;
 
 		for(i=0;i<ccantPaginasPedidas;i++){
@@ -524,8 +532,8 @@ void test(){
 			nuevaPag.bitUso=1;
 			printf("aca llegue4\n");
 
-
-			list_add_in_index(listaTablasPaginas[ppid],i,&nuevaPag);
+			t_list* tablaPag = list_get(listaTablasPaginas,ppid);
+			list_add_in_index(tablaPag,i,&nuevaPag);
 
 			printf("aca llegue5\n");
 		}
@@ -534,15 +542,17 @@ void test(){
 	printf("aca llegue6\n");
 	printf("Se agregaron las %d paginas en %d \n", ccantPaginasPedidas, ppid);
 
-	tablaPagina_t* pagina0Tabla5 = list_get(listaTablasPaginas[5], 0);
-	tablaPagina_t* pagina1Tabla5 = list_get(listaTablasPaginas[5], 1);
-	tablaPagina_t* pagina2Tabla5 = list_get(listaTablasPaginas[5], 2);
+	t_list* tabla5 = list_get(listaTablasPaginas, 5);
+
+	tablaPagina_t* pagina0Tabla5 = list_get(tabla5,0);
+	tablaPagina_t* pagina1Tabla5 = list_get(tabla5,1);
+	tablaPagina_t* pagina2Tabla5 = list_get(tabla5,2);
 
 
 
 
 	printf("Agarramos la tabla de paginas en las posicion 5. \n");
-	printf("Y deberia tener 3 paginas dentro, coincide con cant: %d \n", list_size(listaTablasPaginas[5]));
+	printf("Y deberia tener 3 paginas dentro, coincide con cant: %d \n", list_size(tabla5));
 	printf("En la posicion 0 estaria la pagina 0 con marco 4, coincide con: pagina:%d, marco: %d \n", pagina0Tabla5->nroPagina, pagina0Tabla5->marcoUtilizado);
 	printf("En la posicion 0 estaria la pagina 1 con marco 5, coincide con: pagina:%d, marco: %d \n", pagina1Tabla5->nroPagina, pagina1Tabla5->marcoUtilizado);
 	printf("En la posicion 0 estaria la pagina 2 con marco 6, coincide con: pagina:%d, marco: %d \n", pagina2Tabla5->nroPagina, pagina2Tabla5->marcoUtilizado);

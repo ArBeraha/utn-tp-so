@@ -28,7 +28,7 @@ Los binarios quedan en workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/"UnM
 
     cd tp-2016-1c-Con-16-bits-me-hago-alto-kernel/unModulo/Debug/
 
-    make clean && make
+    make clean && make all                 [USAR MAKE ALL, NO MAKE]
 
 
 ## Compilar todos los modulos desde consola

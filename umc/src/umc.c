@@ -390,6 +390,7 @@ void procesarHeader(int cliente, char *header){
 		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
 		if ( (charToInt(payload)==SOYCPU) || (charToInt(payload)==SOYNUCLEO) ){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
+			clientes[cliente].identidad = charToInt(payload);
 			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
 		}
 		else {

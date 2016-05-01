@@ -386,6 +386,7 @@ void procesarHeader(int cliente, char *header) {
 				|| (charToInt(payload) == SOYCPU)) {
 			log_debug(bgLogger,
 					"Es un cliente apropiado! Respondiendo handshake");
+			clientes[cliente].identidad = charToInt(payload);
 			send(clientes[cliente].socket, intToChar(SOYNUCLEO), 1, 0);
 		} else {
 			log_error(activeLogger,

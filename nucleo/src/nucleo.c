@@ -50,7 +50,7 @@ pthread_mutex_t lockProccessList;
 // ***** INICIO DEBUG ***** //
 // setear esto a true desactiva el thread que se conecta con UMC.
 // Es util para debugear sin tener una consola extra con UMC abierto.
-#define DEBUG_IGNORE_UMC false
+#define DEBUG_IGNORE_UMC true
 #define DEBUG_IGNORE_UMC_PAGES true
 // ***** FIN DEBUG ***** //
 
@@ -104,7 +104,7 @@ t_config* configNucleo;
 bool pedirPaginas(int PID, char* codigo) {
 	int hayMemDisponible;
 	char respuesta;
-	if (DEBUG_IGNORE_UMC_PAGES) { // Para DEBUG
+	if (DEBUG_IGNORE_UMC || DEBUG_IGNORE_UMC_PAGES) { // Para DEBUG
 		log_warning(activeLogger,
 				"DEBUG_IGNORE_UMC_PAGES está en true! Se supone que no hay paginas");
 		hayMemDisponible = false;
@@ -193,7 +193,6 @@ void ejecutarProceso(int PID, int cpu) {
 	proceso->cpu = cpu;
 	// todo: mandarProcesoCpu(cpu, proceso->PCB);
 }
-;
 
 void finalizarProceso(int PID) {
 	pthread_mutex_lock(&lockProccessList);
@@ -427,13 +426,17 @@ struct timeval newEspera() {
 	return espera;
 }
 
-/* INICIO PARA UMC */
+
+
+/* ---------- INICIO PARA UMC ---------- */
+// Dejo toodo sin espacios en el medio cuestion de que al ver solo las firmas
+// de las funciones, esta parte se saltee rapido. Idealmente,
+// no habria que tocarla mas :)
 int getHandshake() {
 	char* handshake = recv_nowait_ws(umc, 1);
 	return charToInt(handshake);
 }
-
-void handshakear() {
+void handshakearUMC() {
 	char *hand = string_from_format("%c%c", HeaderHandshake, SOYNUCLEO);
 	send_w(umc, hand, 2);
 
@@ -443,25 +446,11 @@ void handshakear() {
 	} else
 		log_debug(bgLogger, "Núcleo recibió handshake de UMC.");
 }
-
-void conectarALaUMC() {
+void establecerConexionConUMC() {
 	direccionParaUMC = crearDireccionParaCliente(config.puertoUMC);
 	umc = socket_w();
 	connect_w(umc, &direccionParaUMC);
 }
-
-void realizarConexionConUMC() {
-	conectarALaUMC();
-	log_info(activeLogger, "Conexion a la UMC correcta :).");
-	handshakear();
-	log_info(activeLogger, "Handshake con UMC finalizado exitosamente.");
-}
-
-void conectarConUMC() {
-	log_debug(bgLogger, "Iniciando conexion con UMC...");
-	realizarConexionConUMC();
-}
-
 void warnDebug() {
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
 	log_info(activeLogger, "NO SE ESTABLECE CONEXION CON UMC EN ESTE MODO!");
@@ -469,15 +458,20 @@ void warnDebug() {
 			"Para correr nucleo en modo normal, settear en false el define DEBUG_IGNORE_UMC.");
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
 }
-
-void iniciarHiloUMC() {
+void conectarAUMC() {
 	if (!DEBUG_IGNORE_UMC) {
-		conectarConUMC();
+		log_debug(bgLogger, "Iniciando conexion con UMC...");
+		establecerConexionConUMC();
+		log_info(activeLogger, "Conexion a la UMC correcta :).");
+		handshakearUMC();
+		log_info(activeLogger, "Handshake con UMC finalizado exitosamente.");realizarConexionConUMC();
 	} else {
 		warnDebug();
 	}
 }
-/* FIN PARA UMC */
+/* ---------- FIN PARA UMC ---------- */
+
+
 
 void finalizar() {
 	destruirLogs();
@@ -510,7 +504,7 @@ int main(void) {
 	inicializarClientes();
 	log_info(activeLogger, "Esperando conexiones ...");
 
-	conectarConUMC();
+	conectarAUMC();
 
 	while (1) {
 		FD_ZERO(&socketsParaLectura);

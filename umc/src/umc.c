@@ -399,6 +399,7 @@ void procesarHeader(int cliente, char *header){
 			quitarCliente(cliente);
 		}
 		free(payload);
+		clientes[cliente].atentido=false;
 		break;
 
 		case HeaderReservarEspacio:

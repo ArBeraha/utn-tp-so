@@ -108,6 +108,7 @@ void inicializarClientes(){
 	int i;
 	for (i = 0; i < MAXCLIENTS; i++){
 		clientes[i].socket=0;
+		clientes[i].atentido=false;
 	}
 }
 

@@ -51,8 +51,8 @@ void imprimirVariable() {
 	sacarSaltoDeLinea(name);
 	// uso printf y logger de background solo porque es un mensaje impreso normalmente
 	// y no algo del log.
-	printf("Variable %s: %d.", name, value);
-	log_debug(bgLogger, "Mensaje impreso: Variable %s: %d.", name, value);
+	printf("Consola> Variable %s: %d.", name, value);
+	log_debug(bgLogger, "Consola> Mensaje impreso: Variable %s: %d.", name, value);
 	free(msgValue);
 	free(name);
 }
@@ -62,10 +62,10 @@ void imprimirTexto() {
 	int size = charToInt(msgSize);
 	char* texto = recv_waitall_ws(cliente, size);
 	sacarSaltoDeLinea(texto);
-	printf("%s\n", texto);
+	printf("Consola> %s\n", texto);
 	// uso printf y logger de background solo porque es un mensaje impreso normalmente
 	// y no algo del log.
-	log_debug(bgLogger, "Mensaje impreso: %s", texto);
+	log_debug(bgLogger, "Mensaje impreso: Consola> %s", texto);
 	free(msgSize);
 	free(texto);
 }

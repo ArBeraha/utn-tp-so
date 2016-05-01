@@ -1,0 +1,28 @@
+[INFO] 23:03:59:397 Umc/(3496:3496): 
+
+***** Log de Umc *****
+
+
+[INFO] 23:03:59:397 Umc/(3496:3496): Soy umc de process ID 3496.
+[INFO] 23:03:59:397 Umc/(3496:3496): Creada la memoria.
+[INFO] 23:03:59:397 Umc/(3496:3496): Creada la TLB y rellenada con ceros (0).
+[INFO] 23:03:59:397 Umc/(3496:3498): 
+
+***** Log de Umc *****
+
+
+[INFO] 23:03:59:397 Umc/(3496:3498): Esperando conexiones ...
+[INFO] 23:04:35:585 Umc/(3502:3502): 
+
+***** Log de Umc *****
+
+
+[INFO] 23:04:35:585 Umc/(3502:3502): Soy umc de process ID 3502.
+[INFO] 23:04:35:585 Umc/(3502:3502): Creada la memoria.
+[INFO] 23:04:35:585 Umc/(3502:3502): Creada la TLB y rellenada con ceros (0).
+[INFO] 23:04:35:585 Umc/(3502:3504): 
+
+***** Log de Umc *****
+
+
+[INFO] 23:04:35:586 Umc/(3502:3504): Esperando conexiones ...

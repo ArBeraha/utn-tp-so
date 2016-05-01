@@ -31,12 +31,12 @@ Los binarios quedan en workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/"UnM
     make clean && make
 
 
-## Compilar todos los modulos desde consola (deprecated)
+## Compilar todos los modulos desde consola
 Para compilar todo por consola de una:
 
     En workspace o donde se haga gitclone -> cd tp-2016-1c-Con-16-bits-me-hago-alto-kernel -> sh compilar
 
-Con eso van a estar los 5 ejecutables, cada uno en la carpeta de su modulo. Se puede correr todas las veces que uno quiera dentro de la misma carpeta.
+Con eso van a estar los 5 ejecutables, cada uno en la carpeta de su modulo/Debug. Se puede correr todas las veces que uno quiera dentro de la misma carpeta.
 
 
 # Distribución de módulos

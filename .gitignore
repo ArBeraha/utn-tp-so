@@ -32,6 +32,11 @@
 *.dSYM/
 /Debug/ 
 /Release/
+/consola/Debug/consola
+/cpu/Debug/cpu
+/nucleo/Debug/nucleo
+/swap/Debug/swap
+/umc/Debug/umc
 
 .metadata
 /.metadata/

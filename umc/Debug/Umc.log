@@ -26,3 +26,60 @@
 
 
 [INFO] 23:04:35:586 Umc/(3502:3504): Esperando conexiones ...
+[INFO] 23:47:06:820 Umc/(5247:5247): 
+
+***** Log de Umc *****
+
+
+[INFO] 23:47:06:820 Umc/(5247:5247): Soy umc de process ID 5247.
+[INFO] 23:47:06:820 Umc/(5247:5247): Creada la memoria.
+
+[INFO] 23:47:06:820 Umc/(5247:5247): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 23:47:06:820 Umc/(5247:5247): Creado el vector de marcos ocupados 
+
+[INFO] 23:47:06:821 Umc/(5247:5249): 
+
+***** Log de Umc *****
+
+
+[INFO] 23:47:06:821 Umc/(5247:5249): Esperando conexiones ...
+[INFO] 23:48:11:814 Umc/(5318:5318): 
+
+***** Log de Umc *****
+
+
+[INFO] 23:48:11:814 Umc/(5318:5318): 
+ Soy umc de process ID 5318.
+
+[INFO] 23:48:11:814 Umc/(5318:5318): Creada la memoria.
+
+[INFO] 23:48:11:814 Umc/(5318:5318): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 23:48:11:814 Umc/(5318:5318): Creado el vector de marcos ocupados 
+
+[INFO] 23:48:11:814 Umc/(5318:5320): 
+
+***** Log de Umc *****
+
+
+[INFO] 23:48:11:814 Umc/(5318:5320): Esperando conexiones ...
+[INFO] 23:48:22:820 Umc/(5370:5370): 
+
+***** Log de Umc *****
+
+
+[INFO] 23:48:22:820 Umc/(5370:5370): Soy umc de process ID 5370.
+
+[INFO] 23:48:22:820 Umc/(5370:5370): Creada la memoria.
+
+[INFO] 23:48:22:820 Umc/(5370:5370): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 23:48:22:820 Umc/(5370:5370): Creado el vector de marcos ocupados 
+
+[INFO] 23:48:22:820 Umc/(5370:5372): 
+
+***** Log de Umc *****
+
+
+[INFO] 23:48:22:820 Umc/(5370:5372): Esperando conexiones ...

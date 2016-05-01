@@ -5,7 +5,6 @@
  *      Author: utnso
  */
 
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
@@ -17,6 +16,7 @@
 #include <sys/time.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <string.h>
 #include <commons/string.h>
 #include <commons/log.h>
 #include <commons/config.h>
@@ -29,18 +29,22 @@
 #include "cliente-servidor.h"
 #include "log.h"
 #include "commonTypes.h"
+#include <math.h>
 
-#define PUERTO_UMC_NUCLEO 8081
-#define MARCO 10
-#define MARCO_SIZE 100 //en bytes
-#define DEBUG true
-#define PUERTO_SWAP 8082
-#define ENTRADAS_TLB 10
-#define RETARDO 5 //En MICRO SEGUNDOS: 1 micro = 1000 milisegundos
+typedef struct customConfig {
+	int puerto_umc_nucleo;
+	int puerto_swap;
 
-//Prototipos
-void procesarHeader(int cliente, char *header);
-//Fin prototipos
+	int cantidad_marcos;
+	int tamanio_marco;
+
+	int entradas_tlb;
+	int retardo;
+} customConfig_t;
+
+customConfig_t config;
+t_config* configUmc;
+
 
 typedef struct tlbStruct{
 	int pid,
@@ -77,13 +81,10 @@ typedef struct{ //No hace falta indicar el numero de la pagina, es la posicion
 //    void* direccionContenido;
 //}marco_t;
 
-int tamanioMemoria = MARCO * MARCO_SIZE;
-
 typedef int ansisop_var_t;
 int cliente;
 t_log *activeLogger, *bgLogger;
 char* memoria;
-int retardo = RETARDO;
 
 //t_queue* marcosLibres; Por el momento deprecated..
 
@@ -94,7 +95,9 @@ t_list* listaTablasPaginas;
 
 tlb_t* tlb;
 
-int vectorMarcosOcupados[MARCO]; //vectorMarcosOcupados[n]== 1 -> Esta ocupado
+int* vectorMarcosOcupados; //vectorMarcosOcupados[n]== 1 -> Esta ocupado
+
+int tamanioMemoria;
 
 int tlbHabilitada = 1; //1 ON.  0 OFF
 
@@ -150,7 +153,18 @@ void crearMemoriaYTlbYTablaPaginas();
 //Fin prototipos
 
 
+void cargarCFG() {
+	t_config* configNucleo;
+	configNucleo = config_create("umc.cfg");
+	config.puerto_swap = config_get_int_value(configNucleo, "PUERTO_SWAP");
+	config.puerto_umc_nucleo= config_get_int_value(configNucleo, "PUERTO_UMC_NUCLEO");
 
+	config.cantidad_marcos = config_get_int_value(configNucleo, "CANTIDAD_MARCOS");
+	config.tamanio_marco = config_get_int_value(configNucleo, "TAMANIO_MARCO");
+
+	config.entradas_tlb = config_get_int_value(configNucleo, "ENTRADAS_TLB");
+	config.retardo = config_get_int_value(configNucleo, "RETARDO");
+}
 
 
 // ************** EMPIEZA .C *****************
@@ -161,7 +175,7 @@ void crearMemoriaYTlbYTablaPaginas();
 
 int estaEnTlb(pedidoLectura_t pedido){
 	int i;
-	for(i=0;i<ENTRADAS_TLB; i++){
+	for(i=0;i<config.entradas_tlb; i++){
 		if(tlb[i].pid==pedido.pid && tlb[i].pagina==pedido.paginaRequerida){
 			return 1;
 		}
@@ -171,7 +185,7 @@ int estaEnTlb(pedidoLectura_t pedido){
 
 int buscarEnTlb(pedidoLectura_t pedido){ //Repito codigo, i know, pero esta soluc no funciona para las dos, porque si se encuentra el pedido en tlb[0] y retornas 'i', "no estaria en tlb" cuando si
 	int i;
-	for(i=0;i<ENTRADAS_TLB; i++){
+	for(i=0;i<config.entradas_tlb; i++){
 		if(tlb[i].pid==pedido.pid && tlb[i].pagina==pedido.paginaRequerida){
 			return i;
 		}
@@ -193,13 +207,13 @@ int existePaginaBuscadaEnTabla(int pag, t_list* tablaPaginaBuscada){
 //}
 
 char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido){
-	int pos = marcoBuscado * MARCO_SIZE;
+	int pos = marcoBuscado * config.tamanio_marco;
 	return memoria[pos];
 }
 
 int buscarPrimerMarcoLibre(){
 	int i;
-	for(i=0;i<MARCO;i++){
+	for(i=0;i<config.cantidad_marcos;i++){
 		(vectorMarcosOcupados[i]==0)?:i;
 	}
 	return -1;
@@ -208,7 +222,7 @@ int buscarPrimerMarcoLibre(){
 int cantidadMarcosLibres(){
 	int i;
 	int c;
-	for(i=0;i<MARCO;i++){
+	for(i=0;i<config.cantidad_marcos;i++){
 		if(vectorMarcosOcupados[i]==0)
 			c++;
 	}
@@ -286,7 +300,7 @@ void fRetardo(){
 	int nuevoRetardo;
 	printf("Ingrese el nuevo valor de Retardo en milisegundos: ");
 	scanf("%d",nuevoRetardo);
-	retardo = nuevoRetardo*1000;
+	config.retardo = nuevoRetardo*1000;
 }
 void dumpEstructuraMemoria(){
 }
@@ -321,30 +335,26 @@ void recibirComandos(){
 
 void crearMemoriaYTlbYTablaPaginas(){
 
-	//marcosLibres = queue_create();
-
 	//Creo memoria y la relleno
+	tamanioMemoria = config.cantidad_marcos * config.tamanio_marco;
 	memoria = malloc(tamanioMemoria);
 	memset(memoria,'\0',tamanioMemoria);
-	log_info(activeLogger,"Creada la memoria.");
+	log_info(activeLogger,"Creada la memoria.\n");
 
 	//Relleno TLB
+	tlb = malloc(config.entradas_tlb * sizeof(tlb_t));
 	int i;
-	for(i = 0; i<ENTRADAS_TLB; i++){
+	for(i = 0; i<config.entradas_tlb; i++){
 		tlb[i].pid=-1;
 		tlb[i].pagina=-1;
 		tlb[i].direccion=NULL;
 	}
-	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).");
+	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).\n");
 
-	//Relleno tabla marcos DEPRECATED
-//	int k;
-//	for(k=0;k<MARCO;k++){
-//		tablaMarcos[k].indice=k;
-//		tablaMarcos[k].uso=0;
-//		tablaMarcos[k].direccionContenido=NULL;
-//		queue_push(marcosLibres,&tablaMarcos[k]);
-//	}
+	//Creo vector de marcos ocupados
+	vectorMarcosOcupados = malloc(sizeof(int) * config.cantidad_marcos);
+	log_info(activeLogger,"Creado el vector de marcos ocupados \n");
+
 }
 
 // FIN 3
@@ -388,7 +398,7 @@ void procesarHeader(int cliente, char *header){
 			//ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
 			log_info(activeLogger,"Nucleo me pidio memoria");
 
-			int cantPaginasPedidas = ((float)charToInt(pedidoPaginaTamanioContenido) + MARCO_SIZE - 1) / MARCO_SIZE; //A+B-1 / B
+			int cantPaginasPedidas = ((float)charToInt(pedidoPaginaTamanioContenido) + config.tamanio_marco - 1) / config.tamanio_marco; //A+B-1 / B
 			int pid = charToInt(pedidoPaginaPid);
 
 			//Primero preguntar si swap tiene espacio..
@@ -450,12 +460,10 @@ void procesarHeader(int cliente, char *header){
 
 int main(void) {
 
-	//tlb_t tlb[ENTRADAS_TLB];
-
-	tlb = malloc(ENTRADAS_TLB * sizeof(tlb_t));
+	cargarCFG();
 
 	crearLogs("Umc","Umc");
-	log_info(activeLogger,"Soy umc de process ID %d.", getpid());
+	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
 
 	crearMemoriaYTlbYTablaPaginas();
 
@@ -488,7 +496,7 @@ void servidorCPUyNucleo(){
 	char header[1];
 
 	crearLogs("Umc","Umc");
-	configurarServidor(PUERTO_UMC_NUCLEO);
+	configurarServidor(config.puerto_umc_nucleo);
 	inicializarClientes();
 	log_info(activeLogger,"Esperando conexiones ...");
 
@@ -537,7 +545,7 @@ void handshakearASwap(){
 }
 
 void conectarASwap(){
-	direccion = crearDireccionParaCliente(PUERTO_SWAP);
+	direccion = crearDireccionParaCliente(config.puerto_swap);
 	cliente = socket_w();
 	connect_w(cliente, &direccion);
 

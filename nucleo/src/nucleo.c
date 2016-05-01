@@ -100,7 +100,7 @@ typedef struct customConfig {
 customConfig_t config;
 t_config* configNucleo;
 
-/* INICIO PARA PLANIFICACION */
+/*  ----------INICIO PARA PLANIFICACION ---------- */
 bool pedirPaginas(int PID, char* codigo) {
 	int hayMemDisponible;
 	char respuesta;
@@ -240,8 +240,6 @@ void expulsarProceso(t_proceso* proceso){
 	proceso->cpu = SIN_ASIGNAR;
 }
 
-
-
 void planificarProcesos() {
 	int i;
 	//TODO RR, FIFO por ahora
@@ -296,14 +294,14 @@ void desbloquearProceso(int PID) {
 	proceso->estado = READY;
 	queue_push(colaListos, PID);
 }
-/* FIN PARA PLANIFICACION */
+/* ---------- FIN PARA PLANIFICACION ---------- */
+
+
 
 // Funcion para obtener los Int de los array de configuracion
 int AsciiToInt(char* var){
 	return atoi(var);
 }
-
-
 
 void cargarCFG() {
 	t_config* configNucleo;
@@ -464,7 +462,7 @@ void conectarAUMC() {
 		establecerConexionConUMC();
 		log_info(activeLogger, "Conexion a la UMC correcta :).");
 		handshakearUMC();
-		log_info(activeLogger, "Handshake con UMC finalizado exitosamente.");realizarConexionConUMC();
+		log_info(activeLogger, "Handshake con UMC finalizado exitosamente.");
 	} else {
 		warnDebug();
 	}
@@ -531,7 +529,9 @@ int main(void) {
 		for (i = 0; i < getMaxClients(); i++) {
 			if (tieneLectura(socketCliente[i])) {
 				if (read(socketCliente[i], header, 1) == 0) {
-					log_error(activeLogger,
+					// Lo puse como warning porque puede no ser un error
+					// sino que una consola se haya finalizado con ctrl+C intencionalmente
+					log_warning(activeLogger,
 							"Se rompio la conexion. Read leyó 0 bytes");
 					quitarCliente(i);
 				} else

@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <commons/string.h>
+#include <commons/config.h>
 #include <string.h>
 #include <commons/log.h>
 #include <unistd.h>
@@ -28,6 +29,14 @@
 
 FILE* programa;
 int cliente;
+t_config* configConsola;
+int puertoNucleo;
+
+void cargarConfig(){
+	t_config* configConsola;
+	configConsola = config_create("consola.cfg");
+	puertoNucleo = config_get_int_value(configConsola, "PUERTO_NUCLEO");
+}
 
 void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el navegador xD
 {
@@ -62,7 +71,7 @@ void imprimirTexto() {
 }
 
 void conectarANucleo() {
-	direccion = crearDireccionParaCliente(8080);
+	direccion = crearDireccionParaCliente(puertoNucleo);
 	cliente = socket_w();
 	connect_w(cliente, &direccion);
 }
@@ -197,6 +206,7 @@ void cargarYEnviarArchivo() {
 
 int main(int argc, char* argv[]) {
 	system("clear");
+	cargarConfig();
 	if (DEBUG_LOG_OLD_REMOVE) {
 		log_warning(activeLogger, "DEBUG_LOG_OLD_REMOVE esta en true!");
 		log_debug(activeLogger, "Borrando logs antiguos...");
@@ -240,7 +250,10 @@ int main(int argc, char* argv[]) {
 	realizarConexion();
 
 	// Paso el archivo a nucleo.
-	cargarYEnviarArchivo();
+	if(!DEBUG){
+		cargarYEnviarArchivo();
+	}
+
 	// Escucho pedidos (de impresion) hasta que el header que llegue sea de finalizar.
 	// En ese caso se finaliza.
 	escucharPedidos();

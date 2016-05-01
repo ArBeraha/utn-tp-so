@@ -138,6 +138,7 @@ char* getScript(int consola) {
 	script = malloc(sizeof(char) * size);
 	read(clientes[consola].socket, script, size);
 	log_info(activeLogger, "Script:\n%s\n", script);
+	clientes[consola].atentido=false;
 	return script;
 }
 
@@ -367,6 +368,7 @@ void procesarHeader(int cliente, char *header) {
 	char* payload;
 	int payload_size;
 	log_debug(bgLogger, "Llego un mensaje con header %d", charToInt(header));
+	clientes[cliente].atentido=true;
 
 	switch (charToInt(header)) {
 
@@ -395,6 +397,7 @@ void procesarHeader(int cliente, char *header) {
 			quitarCliente(cliente);
 		}
 		free(payload);
+		clientes[cliente].atentido=false;
 		break;
 
 	case HeaderImprimirVariableNucleo:
@@ -406,8 +409,8 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderScript:
-		//cargarProceso(cliente); // la posta con hilos! cuando se sincronize bien borrar la siguiente linea
-		crearProceso(cliente);
+		cargarProceso(cliente); // la posta con hilos! cuando se sincronize bien borrar la siguiente linea
+		//crearProceso(cliente);
 		break;
 
 	default:

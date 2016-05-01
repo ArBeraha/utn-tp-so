@@ -24,6 +24,13 @@ Darle al botoncito de la hoja con 0s y 1s de la toolbar.
 Los binarios quedan en workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/"UnModulo"/Debug/, donde "unModulo" es el modulo que uno busca.
 
 
+## Compilar de a un modulo
+
+    cd tp-2016-1c-Con-16-bits-me-hago-alto-kernel/unModulo/Debug/
+
+    make clean && make
+
+
 ## Compilar todos los modulos desde consola (deprecated)
 Para compilar todo por consola de una:
 

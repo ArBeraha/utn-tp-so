@@ -67,7 +67,6 @@ typedef struct pedidoMemoria{
 */
 
 typedef struct{ //No hace falta indicar el numero de la pagina, es la posicion
-	int pid;
 	int nroPagina;
 	int marcoUtilizado;
 	char bitPresencia;
@@ -95,7 +94,7 @@ t_list* listaTablasPaginas;
 
 tlb_t* tlb;
 
-int* vectorMarcosOcupados; //vectorMarcosOcupados[n]== 1 -> Esta ocupado
+unsigned int* vectorMarcosOcupados; //vectorMarcosOcupados[n]== 1 -> Esta ocupado
 
 int tamanioMemoria;
 
@@ -214,17 +213,21 @@ char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido){
 int buscarPrimerMarcoLibre(){
 	int i;
 	for(i=0;i<config.cantidad_marcos;i++){
-		(vectorMarcosOcupados[i]==0)?:i;
+		if(vectorMarcosOcupados[i]==0){
+			return i;
+		}
 	}
 	return -1;
 }
 
 int cantidadMarcosLibres(){
 	int i;
-	int c;
+	int c=0;
+
 	for(i=0;i<config.cantidad_marcos;i++){
-		if(vectorMarcosOcupados[i]==0)
+		if(vectorMarcosOcupados[i]==0){
 			c++;
+		}
 	}
 	return c;
 }
@@ -351,9 +354,14 @@ void crearMemoriaYTlbYTablaPaginas(){
 	}
 	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).\n");
 
-	//Creo vector de marcos ocupados
+	//Creo vector de marcos ocupados y lo relleno
 	vectorMarcosOcupados = malloc(sizeof(int) * config.cantidad_marcos);
 	log_info(activeLogger,"Creado el vector de marcos ocupados \n");
+	int j;
+	memset(vectorMarcosOcupados,0,config.cantidad_marcos* config.tamanio_marco);
+	//for(j=0;j<config.cantidad_marcos;j++){
+	//	vectorMarcosOcupados[j]=0;
+	//}
 
 }
 
@@ -403,18 +411,16 @@ void procesarHeader(int cliente, char *header){
 
 			//Primero preguntar si swap tiene espacio..
 			if(cantidadMarcosLibres()>=cantPaginasPedidas){ //Si alcanzan los marcos libres...
-				t_list* tablaPaginas;
+				t_list* tablaPaginas; //1 por cada pid
 				int i;
 				for(i=0;i<cantPaginasPedidas;i++){
-//					marco_t* marcoNuevo;
-//					marcoNuevo = queue_pop(marcosLibres);
-//					marcoNuevo->uso=1;
+
 					int marcoNuevo = buscarPrimerMarcoLibre();
 					vectorMarcosOcupados[marcoNuevo]=1; //Lo marco como ocupado
 
 					tablaPagina_t* nuevaPagina;
 					nuevaPagina = malloc(sizeof(tablaPagina_t));
-					nuevaPagina->pid = pid;
+					//nuevaPagina->pid = pid;
 					nuevaPagina->nroPagina = i;
 					nuevaPagina->marcoUtilizado = marcoNuevo;
 					nuevaPagina->bitPresencia=1;
@@ -458,6 +464,93 @@ void procesarHeader(int cliente, char *header){
 
 // FIN 4
 
+void test(){
+
+	vectorMarcosOcupados[0]=1;
+	vectorMarcosOcupados[1]=1;
+	vectorMarcosOcupados[2]=1;
+
+	int marcoNuevo = buscarPrimerMarcoLibre();
+	vectorMarcosOcupados[marcoNuevo]=1; //Lo marco como ocupado
+	printf("El primer marco libre deberia ser el 3 y es: %d \n", marcoNuevo);
+	printf("Y ahora su contenido deberia ser 1: %d \n\n", vectorMarcosOcupados[marcoNuevo]);
+
+	printf("Contenido vector en pos 0: %d \n", vectorMarcosOcupados[0]);
+	printf("Contenido vector en pos 1: %d \n", vectorMarcosOcupados[1]);
+	printf("Contenido vector en pos 2: %d \n", vectorMarcosOcupados[2]);
+	printf("Contenido vector en pos 3: %d \n", vectorMarcosOcupados[3]);
+	printf("Contenido vector en pos 4: %d \n", vectorMarcosOcupados[4]);
+	printf("Contenido vector en pos 5: %d \n", vectorMarcosOcupados[5]);
+	printf("Contenido vector en pos 6: %d \n", vectorMarcosOcupados[6]);
+	printf("Contenido vector en pos 7: %d \n", vectorMarcosOcupados[7]);
+	printf("Contenido vector en pos 8: %d \n", vectorMarcosOcupados[8]);
+	printf("Contenido vector en pos 9: %d \n", vectorMarcosOcupados[9]);
+	printf("Contenido vector en pos 10: %d \n", vectorMarcosOcupados[10]);
+	printf("Contenido vector en pos 11: %d \n\n", vectorMarcosOcupados[11]);
+
+
+	printf("Pasamos al test de memoria \n \n");
+
+	int ccantPaginasPedidas = 3;
+	int ppid = 5;
+
+	printf("Cantidad de marcos total: %d \n", config.cantidad_marcos);
+
+	int cant = cantidadMarcosLibres();
+	printf("La cantidad de marcos libres deberia ser 6, y es: %d \n", cant);
+
+
+	if(cantidadMarcosLibres()>=ccantPaginasPedidas){
+
+		tablaPagina_t* tablaPaginas; //1 por cada pid
+		int i;
+
+
+		for(i=0;i<ccantPaginasPedidas;i++){
+
+			int unMarcoNuevo = buscarPrimerMarcoLibre();
+			vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
+			printf("Marco seleccionado numero: %d (deberia ser 4, 5 y 6)\n", unMarcoNuevo);
+
+			tablaPagina_t* nuevaPag;
+
+			printf("aca llegue1\n");
+			nuevaPag = malloc(sizeof(tablaPagina_t));
+
+			printf("aca llegue2\n");
+
+			//nuevaPagina = malloc(11);
+
+			printf("aca llegue3\n");
+			nuevaPag->nroPagina = i;
+			nuevaPag->marcoUtilizado = unMarcoNuevo;
+			nuevaPag->bitPresencia=1;
+			nuevaPag->bitModificacion=0;
+			nuevaPag->bitUso=1;
+			printf("aca llegue4\n");
+
+			list_add_in_index(tablaPaginas,i,nuevaPag);
+			printf("aca llegue5\n");
+		}
+	list_add_in_index(listaTablasPaginas,ppid,tablaPaginas);
+	printf("aca llegue6\n");
+	printf("Se agregaron las %d paginas en %d \n", ccantPaginasPedidas, ppid);
+
+	t_list* agarramosTablaPaginas = list_get(listaTablasPaginas, 5);
+	tablaPagina_t* pagina0 = list_get(agarramosTablaPaginas,0);
+	tablaPagina_t* pagina1 = list_get(agarramosTablaPaginas,1);
+	tablaPagina_t* pagina2 = list_get(agarramosTablaPaginas,2);
+
+	printf("Agarramos la tabla de paginas en las posicion 5. \n");
+	printf("Y deberia tener 3 paginas dentro, coincide con cant: %d \n", list_size(agarramosTablaPaginas));
+	printf("En la posicion 0 estaria la pagina 0 con marco 4, coincide con: pagina:%d, marco: %d \n", pagina0->nroPagina, pagina0->marcoUtilizado);
+	printf("En la posicion 0 estaria la pagina 1 con marco 5, coincide con: pagina:%d, marco: %d \n", pagina1->nroPagina, pagina1->marcoUtilizado);
+	printf("En la posicion 0 estaria la pagina 2 con marco 6, coincide con: pagina:%d, marco: %d \n", pagina2->nroPagina, pagina2->marcoUtilizado);
+
+
+	}
+}
+
 int main(void) {
 
 	cargarCFG();
@@ -467,11 +560,13 @@ int main(void) {
 
 	crearMemoriaYTlbYTablaPaginas();
 
-	pthread_create(&SWAP, NULL, (void*) conexionASwap, NULL);
+	test();
 
-	pthread_create(&NUCLEO_CPU, NULL, (void*) servidorCPUyNucleo, NULL); //OJO! A cada cpu hay que atenderla con un hilo
+	//pthread_create(&SWAP, NULL, (void*) conexionASwap, NULL);
 
-	recibirComandos(); //Otro hilo?
+	//pthread_create(&NUCLEO_CPU, NULL, (void*) servidorCPUyNucleo, NULL); //OJO! A cada cpu hay que atenderla con un hilo
+
+	//recibirComandos(); //Otro hilo?
 
 	free(memoria);
 

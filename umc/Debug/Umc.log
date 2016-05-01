@@ -83,3 +83,1290 @@
 
 
 [INFO] 23:48:22:820 Umc/(5370:5372): Esperando conexiones ...
+[INFO] 00:18:59:550 Umc/(6174:6174): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:18:59:550 Umc/(6174:6174): Soy umc de process ID 6174.
+
+[INFO] 00:18:59:550 Umc/(6174:6174): Creada la memoria.
+
+[INFO] 00:18:59:550 Umc/(6174:6174): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:18:59:550 Umc/(6174:6174): Creado el vector de marcos ocupados 
+
+[INFO] 00:19:41:95 Umc/(6188:6188): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:19:41:95 Umc/(6188:6188): Soy umc de process ID 6188.
+
+[INFO] 00:19:41:95 Umc/(6188:6188): Creada la memoria.
+
+[INFO] 00:19:41:95 Umc/(6188:6188): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:19:41:95 Umc/(6188:6188): Creado el vector de marcos ocupados 
+
+[INFO] 00:21:02:747 Umc/(6261:6261): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:21:02:747 Umc/(6261:6261): Soy umc de process ID 6261.
+
+[INFO] 00:21:02:747 Umc/(6261:6261): Creada la memoria.
+
+[INFO] 00:21:02:747 Umc/(6261:6261): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:21:02:747 Umc/(6261:6261): Creado el vector de marcos ocupados 
+
+[INFO] 00:21:35:528 Umc/(6316:6316): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:21:35:528 Umc/(6316:6316): Soy umc de process ID 6316.
+
+[INFO] 00:21:35:528 Umc/(6316:6316): Creada la memoria.
+
+[INFO] 00:21:35:528 Umc/(6316:6316): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:21:35:528 Umc/(6316:6316): Creado el vector de marcos ocupados 
+
+[INFO] 00:23:20:211 Umc/(6380:6380): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:23:20:211 Umc/(6380:6380): Soy umc de process ID 6380.
+
+[INFO] 00:23:20:211 Umc/(6380:6380): Creada la memoria.
+
+[INFO] 00:23:20:211 Umc/(6380:6380): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:23:20:211 Umc/(6380:6380): Creado el vector de marcos ocupados 
+
+[INFO] 00:25:46:80 Umc/(6448:6448): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:25:46:80 Umc/(6448:6448): Soy umc de process ID 6448.
+
+[INFO] 00:25:46:80 Umc/(6448:6448): Creada la memoria.
+
+[INFO] 00:25:46:80 Umc/(6448:6448): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:25:46:80 Umc/(6448:6448): Creado el vector de marcos ocupados 
+
+[INFO] 00:26:20:299 Umc/(6524:6524): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:26:20:299 Umc/(6524:6524): Soy umc de process ID 6524.
+
+[INFO] 00:26:20:299 Umc/(6524:6524): Creada la memoria.
+
+[INFO] 00:26:20:299 Umc/(6524:6524): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:26:20:299 Umc/(6524:6524): Creado el vector de marcos ocupados 
+
+[INFO] 00:40:13:442 Umc/(6985:6985): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:40:13:443 Umc/(6985:6985): Soy umc de process ID 6985.
+
+[INFO] 00:40:13:443 Umc/(6985:6985): Creada la memoria.
+
+[INFO] 00:40:13:443 Umc/(6985:6985): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:40:13:443 Umc/(6985:6985): Creado el vector de marcos ocupados 
+
+[INFO] 00:41:18:292 Umc/(7055:7055): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:41:18:292 Umc/(7055:7055): Soy umc de process ID 7055.
+
+[INFO] 00:41:18:292 Umc/(7055:7055): Creada la memoria.
+
+[INFO] 00:41:18:292 Umc/(7055:7055): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:41:18:292 Umc/(7055:7055): Creado el vector de marcos ocupados 
+
+[INFO] 00:43:22:156 Umc/(7116:7116): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:43:22:156 Umc/(7116:7116): Soy umc de process ID 7116.
+
+[INFO] 00:43:22:156 Umc/(7116:7116): Creada la memoria.
+
+[INFO] 00:43:22:156 Umc/(7116:7116): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:43:22:156 Umc/(7116:7116): Creado el vector de marcos ocupados 
+
+[INFO] 00:45:18:127 Umc/(7193:7193): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:45:18:127 Umc/(7193:7193): Soy umc de process ID 7193.
+
+[INFO] 00:45:18:127 Umc/(7193:7193): Creada la memoria.
+
+[INFO] 00:45:18:127 Umc/(7193:7193): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:45:18:127 Umc/(7193:7193): Creado el vector de marcos ocupados 
+
+[INFO] 00:51:52:953 Umc/(7285:7285): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:51:52:954 Umc/(7285:7285): Soy umc de process ID 7285.
+
+[INFO] 00:51:52:954 Umc/(7285:7285): Creada la memoria.
+
+[INFO] 00:51:52:954 Umc/(7285:7285): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:51:52:954 Umc/(7285:7285): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:33:964 Umc/(7298:7298): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:33:964 Umc/(7298:7298): Soy umc de process ID 7298.
+
+[INFO] 00:53:33:964 Umc/(7298:7298): Creada la memoria.
+
+[INFO] 00:53:33:964 Umc/(7298:7298): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:33:964 Umc/(7298:7298): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:35:768 Umc/(7299:7299): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:35:768 Umc/(7299:7299): Soy umc de process ID 7299.
+
+[INFO] 00:53:35:768 Umc/(7299:7299): Creada la memoria.
+
+[INFO] 00:53:35:768 Umc/(7299:7299): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:35:768 Umc/(7299:7299): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:36:779 Umc/(7300:7300): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:36:779 Umc/(7300:7300): Soy umc de process ID 7300.
+
+[INFO] 00:53:36:779 Umc/(7300:7300): Creada la memoria.
+
+[INFO] 00:53:36:779 Umc/(7300:7300): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:36:779 Umc/(7300:7300): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:37:343 Umc/(7301:7301): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:37:343 Umc/(7301:7301): Soy umc de process ID 7301.
+
+[INFO] 00:53:37:343 Umc/(7301:7301): Creada la memoria.
+
+[INFO] 00:53:37:343 Umc/(7301:7301): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:37:343 Umc/(7301:7301): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:37:902 Umc/(7302:7302): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:37:902 Umc/(7302:7302): Soy umc de process ID 7302.
+
+[INFO] 00:53:37:902 Umc/(7302:7302): Creada la memoria.
+
+[INFO] 00:53:37:902 Umc/(7302:7302): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:37:902 Umc/(7302:7302): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:38:401 Umc/(7303:7303): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:38:401 Umc/(7303:7303): Soy umc de process ID 7303.
+
+[INFO] 00:53:38:401 Umc/(7303:7303): Creada la memoria.
+
+[INFO] 00:53:38:401 Umc/(7303:7303): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:38:401 Umc/(7303:7303): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:38:961 Umc/(7304:7304): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:38:961 Umc/(7304:7304): Soy umc de process ID 7304.
+
+[INFO] 00:53:38:961 Umc/(7304:7304): Creada la memoria.
+
+[INFO] 00:53:38:961 Umc/(7304:7304): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:38:961 Umc/(7304:7304): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:39:482 Umc/(7305:7305): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:39:482 Umc/(7305:7305): Soy umc de process ID 7305.
+
+[INFO] 00:53:39:482 Umc/(7305:7305): Creada la memoria.
+
+[INFO] 00:53:39:482 Umc/(7305:7305): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:39:482 Umc/(7305:7305): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:39:965 Umc/(7306:7306): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:39:965 Umc/(7306:7306): Soy umc de process ID 7306.
+
+[INFO] 00:53:39:965 Umc/(7306:7306): Creada la memoria.
+
+[INFO] 00:53:39:965 Umc/(7306:7306): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:39:965 Umc/(7306:7306): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:40:439 Umc/(7307:7307): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:40:439 Umc/(7307:7307): Soy umc de process ID 7307.
+
+[INFO] 00:53:40:439 Umc/(7307:7307): Creada la memoria.
+
+[INFO] 00:53:40:439 Umc/(7307:7307): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:40:439 Umc/(7307:7307): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:40:898 Umc/(7308:7308): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:40:898 Umc/(7308:7308): Soy umc de process ID 7308.
+
+[INFO] 00:53:40:898 Umc/(7308:7308): Creada la memoria.
+
+[INFO] 00:53:40:898 Umc/(7308:7308): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:40:898 Umc/(7308:7308): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:41:399 Umc/(7309:7309): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:41:399 Umc/(7309:7309): Soy umc de process ID 7309.
+
+[INFO] 00:53:41:399 Umc/(7309:7309): Creada la memoria.
+
+[INFO] 00:53:41:399 Umc/(7309:7309): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:41:399 Umc/(7309:7309): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:41:865 Umc/(7310:7310): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:41:865 Umc/(7310:7310): Soy umc de process ID 7310.
+
+[INFO] 00:53:41:865 Umc/(7310:7310): Creada la memoria.
+
+[INFO] 00:53:41:865 Umc/(7310:7310): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:41:865 Umc/(7310:7310): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:42:293 Umc/(7311:7311): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:42:293 Umc/(7311:7311): Soy umc de process ID 7311.
+
+[INFO] 00:53:42:293 Umc/(7311:7311): Creada la memoria.
+
+[INFO] 00:53:42:293 Umc/(7311:7311): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:42:293 Umc/(7311:7311): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:42:740 Umc/(7312:7312): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:42:740 Umc/(7312:7312): Soy umc de process ID 7312.
+
+[INFO] 00:53:42:740 Umc/(7312:7312): Creada la memoria.
+
+[INFO] 00:53:42:740 Umc/(7312:7312): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:42:740 Umc/(7312:7312): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:43:166 Umc/(7313:7313): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:43:166 Umc/(7313:7313): Soy umc de process ID 7313.
+
+[INFO] 00:53:43:166 Umc/(7313:7313): Creada la memoria.
+
+[INFO] 00:53:43:166 Umc/(7313:7313): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:43:166 Umc/(7313:7313): Creado el vector de marcos ocupados 
+
+[INFO] 00:53:43:916 Umc/(7314:7314): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:53:43:916 Umc/(7314:7314): Soy umc de process ID 7314.
+
+[INFO] 00:53:43:916 Umc/(7314:7314): Creada la memoria.
+
+[INFO] 00:53:43:916 Umc/(7314:7314): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:53:43:916 Umc/(7314:7314): Creado el vector de marcos ocupados 
+
+[INFO] 00:54:40:537 Umc/(7323:7323): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:54:40:537 Umc/(7323:7323): Soy umc de process ID 7323.
+
+[INFO] 00:54:40:537 Umc/(7323:7323): Creada la memoria.
+
+[INFO] 00:54:40:537 Umc/(7323:7323): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:54:40:537 Umc/(7323:7323): Creado el vector de marcos ocupados 
+
+[INFO] 00:54:41:726 Umc/(7324:7324): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:54:41:726 Umc/(7324:7324): Soy umc de process ID 7324.
+
+[INFO] 00:54:41:726 Umc/(7324:7324): Creada la memoria.
+
+[INFO] 00:54:41:726 Umc/(7324:7324): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:54:41:726 Umc/(7324:7324): Creado el vector de marcos ocupados 
+
+[INFO] 00:54:44:875 Umc/(7373:7373): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:54:44:875 Umc/(7373:7373): Soy umc de process ID 7373.
+
+[INFO] 00:54:44:876 Umc/(7373:7373): Creada la memoria.
+
+[INFO] 00:54:44:876 Umc/(7373:7373): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:54:44:876 Umc/(7373:7373): Creado el vector de marcos ocupados 
+
+[INFO] 00:54:45:518 Umc/(7374:7374): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:54:45:518 Umc/(7374:7374): Soy umc de process ID 7374.
+
+[INFO] 00:54:45:518 Umc/(7374:7374): Creada la memoria.
+
+[INFO] 00:54:45:518 Umc/(7374:7374): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:54:45:518 Umc/(7374:7374): Creado el vector de marcos ocupados 
+
+[INFO] 00:54:46:77 Umc/(7375:7375): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:54:46:77 Umc/(7375:7375): Soy umc de process ID 7375.
+
+[INFO] 00:54:46:77 Umc/(7375:7375): Creada la memoria.
+
+[INFO] 00:54:46:77 Umc/(7375:7375): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:54:46:77 Umc/(7375:7375): Creado el vector de marcos ocupados 
+
+[INFO] 00:55:04:662 Umc/(7429:7429): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:55:04:662 Umc/(7429:7429): Soy umc de process ID 7429.
+
+[INFO] 00:55:04:662 Umc/(7429:7429): Creada la memoria.
+
+[INFO] 00:55:04:662 Umc/(7429:7429): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:55:04:662 Umc/(7429:7429): Creado el vector de marcos ocupados 
+
+[INFO] 00:55:06:237 Umc/(7431:7431): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:55:06:237 Umc/(7431:7431): Soy umc de process ID 7431.
+
+[INFO] 00:55:06:237 Umc/(7431:7431): Creada la memoria.
+
+[INFO] 00:55:06:237 Umc/(7431:7431): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:55:06:238 Umc/(7431:7431): Creado el vector de marcos ocupados 
+
+[INFO] 00:55:51:899 Umc/(7433:7433): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:55:51:899 Umc/(7433:7433): Soy umc de process ID 7433.
+
+[INFO] 00:55:51:899 Umc/(7433:7433): Creada la memoria.
+
+[INFO] 00:55:51:899 Umc/(7433:7433): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:55:51:899 Umc/(7433:7433): Creado el vector de marcos ocupados 
+
+[INFO] 00:58:04:494 Umc/(7512:7512): 
+
+***** Log de Umc *****
+
+
+[INFO] 00:58:04:494 Umc/(7512:7512): Soy umc de process ID 7512.
+
+[INFO] 00:58:04:494 Umc/(7512:7512): Creada la memoria.
+
+[INFO] 00:58:04:494 Umc/(7512:7512): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 00:58:04:494 Umc/(7512:7512): Creado el vector de marcos ocupados 
+
+[INFO] 01:01:01:554 Umc/(7583:7583): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:01:01:554 Umc/(7583:7583): Soy umc de process ID 7583.
+
+[INFO] 01:01:01:554 Umc/(7583:7583): Creada la memoria.
+
+[INFO] 01:01:01:554 Umc/(7583:7583): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:01:01:554 Umc/(7583:7583): Creado el vector de marcos ocupados 
+
+[INFO] 01:01:46:948 Umc/(7657:7657): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:01:46:948 Umc/(7657:7657): Soy umc de process ID 7657.
+
+[INFO] 01:01:46:948 Umc/(7657:7657): Creada la memoria.
+
+[INFO] 01:01:46:948 Umc/(7657:7657): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:01:46:948 Umc/(7657:7657): Creado el vector de marcos ocupados 
+
+[INFO] 01:02:57:21 Umc/(7721:7721): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:02:57:21 Umc/(7721:7721): Soy umc de process ID 7721.
+
+[INFO] 01:02:57:21 Umc/(7721:7721): Creada la memoria.
+
+[INFO] 01:02:57:21 Umc/(7721:7721): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:02:57:21 Umc/(7721:7721): Creado el vector de marcos ocupados 
+
+[INFO] 01:05:55:310 Umc/(7796:7796): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:05:55:310 Umc/(7796:7796): Soy umc de process ID 7796.
+
+[INFO] 01:05:55:310 Umc/(7796:7796): Creada la memoria.
+
+[INFO] 01:05:55:310 Umc/(7796:7796): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:05:55:310 Umc/(7796:7796): Creado el vector de marcos ocupados 
+
+[INFO] 01:08:11:287 Umc/(7866:7866): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:08:11:287 Umc/(7866:7866): Soy umc de process ID 7866.
+
+[INFO] 01:08:11:287 Umc/(7866:7866): Creada la memoria.
+
+[INFO] 01:08:11:287 Umc/(7866:7866): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:08:11:287 Umc/(7866:7866): Creado el vector de marcos ocupados 
+
+[INFO] 01:10:18:838 Umc/(7946:7946): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:10:18:838 Umc/(7946:7946): Soy umc de process ID 7946.
+
+[INFO] 01:10:18:838 Umc/(7946:7946): Creada la memoria.
+
+[INFO] 01:10:18:838 Umc/(7946:7946): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:10:18:838 Umc/(7946:7946): Creado el vector de marcos ocupados 
+
+[INFO] 01:21:12:543 Umc/(8424:8424): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:21:12:543 Umc/(8424:8424): Soy umc de process ID 8424.
+
+[INFO] 01:21:12:543 Umc/(8424:8424): Creada la memoria.
+
+[INFO] 01:21:12:543 Umc/(8424:8424): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:21:12:543 Umc/(8424:8424): Creado el vector de marcos ocupados 
+
+[INFO] 01:26:26:533 Umc/(8619:8619): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:26:26:533 Umc/(8619:8619): Soy umc de process ID 8619.
+
+[INFO] 01:26:26:533 Umc/(8619:8619): Creada la memoria.
+
+[INFO] 01:26:26:533 Umc/(8619:8619): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:26:26:533 Umc/(8619:8619): Creado el vector de marcos ocupados 
+
+[INFO] 01:27:54:499 Umc/(8747:8747): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:27:54:499 Umc/(8747:8747): Soy umc de process ID 8747.
+
+[INFO] 01:27:54:499 Umc/(8747:8747): Creada la memoria.
+
+[INFO] 01:27:54:499 Umc/(8747:8747): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:27:54:499 Umc/(8747:8747): Creado el vector de marcos ocupados 
+
+[INFO] 01:27:55:956 Umc/(8749:8749): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:27:55:956 Umc/(8749:8749): Soy umc de process ID 8749.
+
+[INFO] 01:27:55:956 Umc/(8749:8749): Creada la memoria.
+
+[INFO] 01:27:55:956 Umc/(8749:8749): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:27:55:956 Umc/(8749:8749): Creado el vector de marcos ocupados 
+
+[INFO] 01:28:01:125 Umc/(8751:8751): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:28:01:125 Umc/(8751:8751): Soy umc de process ID 8751.
+
+[INFO] 01:28:01:125 Umc/(8751:8751): Creada la memoria.
+
+[INFO] 01:28:01:125 Umc/(8751:8751): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:28:01:125 Umc/(8751:8751): Creado el vector de marcos ocupados 
+
+[INFO] 01:28:21:132 Umc/(8759:8759): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:28:21:132 Umc/(8759:8759): Soy umc de process ID 8759.
+
+[INFO] 01:28:21:132 Umc/(8759:8759): Creada la memoria.
+
+[INFO] 01:28:21:132 Umc/(8759:8759): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:28:21:132 Umc/(8759:8759): Creado el vector de marcos ocupados 
+
+[INFO] 01:28:26:100 Umc/(8807:8807): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:28:26:100 Umc/(8807:8807): Soy umc de process ID 8807.
+
+[INFO] 01:28:26:100 Umc/(8807:8807): Creada la memoria.
+
+[INFO] 01:28:26:100 Umc/(8807:8807): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:28:26:100 Umc/(8807:8807): Creado el vector de marcos ocupados 
+
+[INFO] 01:28:35:963 Umc/(8812:8812): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:28:35:963 Umc/(8812:8812): Soy umc de process ID 8812.
+
+[INFO] 01:28:35:963 Umc/(8812:8812): Creada la memoria.
+
+[INFO] 01:28:35:963 Umc/(8812:8812): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:28:35:963 Umc/(8812:8812): Creado el vector de marcos ocupados 
+
+[INFO] 01:29:22:699 Umc/(8875:8875): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:29:22:699 Umc/(8875:8875): Soy umc de process ID 8875.
+
+[INFO] 01:29:22:699 Umc/(8875:8875): Creada la memoria.
+
+[INFO] 01:29:22:699 Umc/(8875:8875): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:29:22:699 Umc/(8875:8875): Creado el vector de marcos ocupados 
+
+[INFO] 01:32:23:939 Umc/(8998:8998): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:32:23:939 Umc/(8998:8998): Soy umc de process ID 8998.
+
+[INFO] 01:32:23:939 Umc/(8998:8998): Creada la memoria.
+
+[INFO] 01:32:23:939 Umc/(8998:8998): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:32:23:939 Umc/(8998:8998): Creado el vector de marcos ocupados 
+
+[INFO] 01:35:34:492 Umc/(2237:2237): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:35:34:506 Umc/(2237:2237): Soy umc de process ID 2237.
+
+[INFO] 01:35:34:506 Umc/(2237:2237): Creada la memoria.
+
+[INFO] 01:35:34:506 Umc/(2237:2237): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:35:34:506 Umc/(2237:2237): Creado el vector de marcos ocupados 
+
+[INFO] 01:36:19:868 Umc/(2312:2312): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:36:19:868 Umc/(2312:2312): Soy umc de process ID 2312.
+
+[INFO] 01:36:19:868 Umc/(2312:2312): Creada la memoria.
+
+[INFO] 01:36:19:868 Umc/(2312:2312): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:36:19:868 Umc/(2312:2312): Creado el vector de marcos ocupados 
+
+[INFO] 01:36:21:258 Umc/(2314:2314): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:36:21:258 Umc/(2314:2314): Soy umc de process ID 2314.
+
+[INFO] 01:36:21:258 Umc/(2314:2314): Creada la memoria.
+
+[INFO] 01:36:21:258 Umc/(2314:2314): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:36:21:258 Umc/(2314:2314): Creado el vector de marcos ocupados 
+
+[INFO] 01:36:22:810 Umc/(2316:2316): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:36:22:810 Umc/(2316:2316): Soy umc de process ID 2316.
+
+[INFO] 01:36:22:810 Umc/(2316:2316): Creada la memoria.
+
+[INFO] 01:36:22:810 Umc/(2316:2316): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:36:22:810 Umc/(2316:2316): Creado el vector de marcos ocupados 
+
+[INFO] 01:36:39:988 Umc/(2370:2370): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:36:39:989 Umc/(2370:2370): Soy umc de process ID 2370.
+
+[INFO] 01:36:39:989 Umc/(2370:2370): Creada la memoria.
+
+[INFO] 01:36:39:989 Umc/(2370:2370): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:36:39:989 Umc/(2370:2370): Creado el vector de marcos ocupados 
+
+[INFO] 01:36:41:486 Umc/(2372:2372): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:36:41:486 Umc/(2372:2372): Soy umc de process ID 2372.
+
+[INFO] 01:36:41:486 Umc/(2372:2372): Creada la memoria.
+
+[INFO] 01:36:41:486 Umc/(2372:2372): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:36:41:486 Umc/(2372:2372): Creado el vector de marcos ocupados 
+
+[INFO] 01:39:44:412 Umc/(2782:2782): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:39:44:412 Umc/(2782:2782): Soy umc de process ID 2782.
+
+[INFO] 01:39:44:412 Umc/(2782:2782): Creada la memoria.
+
+[INFO] 01:39:44:412 Umc/(2782:2782): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:39:44:412 Umc/(2782:2782): Creado el vector de marcos ocupados 
+
+[INFO] 01:39:50:523 Umc/(2812:2812): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:39:50:523 Umc/(2812:2812): Soy umc de process ID 2812.
+
+[INFO] 01:39:50:523 Umc/(2812:2812): Creada la memoria.
+
+[INFO] 01:39:50:523 Umc/(2812:2812): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:39:50:523 Umc/(2812:2812): Creado el vector de marcos ocupados 
+
+[INFO] 01:40:13:512 Umc/(2895:2895): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:40:13:512 Umc/(2895:2895): Soy umc de process ID 2895.
+
+[INFO] 01:40:13:512 Umc/(2895:2895): Creada la memoria.
+
+[INFO] 01:40:13:512 Umc/(2895:2895): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:40:13:512 Umc/(2895:2895): Creado el vector de marcos ocupados 
+
+[INFO] 01:40:34:632 Umc/(2980:2980): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:40:34:632 Umc/(2980:2980): Soy umc de process ID 2980.
+
+[INFO] 01:40:34:632 Umc/(2980:2980): Creada la memoria.
+
+[INFO] 01:40:34:632 Umc/(2980:2980): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:40:34:632 Umc/(2980:2980): Creado el vector de marcos ocupados 
+
+[INFO] 01:42:32:609 Umc/(3117:3117): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:42:32:609 Umc/(3117:3117): Soy umc de process ID 3117.
+
+[INFO] 01:42:32:609 Umc/(3117:3117): Creada la memoria.
+
+[INFO] 01:42:32:609 Umc/(3117:3117): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:42:32:609 Umc/(3117:3117): Creado el vector de marcos ocupados 
+
+[INFO] 01:42:33:794 Umc/(3119:3119): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:42:33:794 Umc/(3119:3119): Soy umc de process ID 3119.
+
+[INFO] 01:42:33:794 Umc/(3119:3119): Creada la memoria.
+
+[INFO] 01:42:33:794 Umc/(3119:3119): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:42:33:794 Umc/(3119:3119): Creado el vector de marcos ocupados 
+
+[INFO] 01:42:37:711 Umc/(3152:3152): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:42:37:711 Umc/(3152:3152): Soy umc de process ID 3152.
+
+[INFO] 01:42:37:711 Umc/(3152:3152): Creada la memoria.
+
+[INFO] 01:42:37:711 Umc/(3152:3152): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:42:37:711 Umc/(3152:3152): Creado el vector de marcos ocupados 
+
+[INFO] 01:43:04:436 Umc/(3235:3235): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:43:04:436 Umc/(3235:3235): Soy umc de process ID 3235.
+
+[INFO] 01:43:04:436 Umc/(3235:3235): Creada la memoria.
+
+[INFO] 01:43:04:436 Umc/(3235:3235): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:43:04:436 Umc/(3235:3235): Creado el vector de marcos ocupados 
+
+[INFO] 01:43:10:366 Umc/(3267:3267): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:43:10:366 Umc/(3267:3267): Soy umc de process ID 3267.
+
+[INFO] 01:43:10:366 Umc/(3267:3267): Creada la memoria.
+
+[INFO] 01:43:10:366 Umc/(3267:3267): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:43:10:366 Umc/(3267:3267): Creado el vector de marcos ocupados 
+
+[INFO] 01:43:11:600 Umc/(3269:3269): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:43:11:600 Umc/(3269:3269): Soy umc de process ID 3269.
+
+[INFO] 01:43:11:600 Umc/(3269:3269): Creada la memoria.
+
+[INFO] 01:43:11:600 Umc/(3269:3269): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:43:11:600 Umc/(3269:3269): Creado el vector de marcos ocupados 
+
+[INFO] 01:43:39:405 Umc/(3351:3351): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:43:39:405 Umc/(3351:3351): Soy umc de process ID 3351.
+
+[INFO] 01:43:39:405 Umc/(3351:3351): Creada la memoria.
+
+[INFO] 01:43:39:405 Umc/(3351:3351): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:43:39:405 Umc/(3351:3351): Creado el vector de marcos ocupados 
+
+[INFO] 01:43:40:314 Umc/(3353:3353): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:43:40:314 Umc/(3353:3353): Soy umc de process ID 3353.
+
+[INFO] 01:43:40:314 Umc/(3353:3353): Creada la memoria.
+
+[INFO] 01:43:40:314 Umc/(3353:3353): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:43:40:314 Umc/(3353:3353): Creado el vector de marcos ocupados 
+
+[INFO] 01:45:06:344 Umc/(3519:3519): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:45:06:344 Umc/(3519:3519): Soy umc de process ID 3519.
+
+[INFO] 01:45:06:344 Umc/(3519:3519): Creada la memoria.
+
+[INFO] 01:45:06:344 Umc/(3519:3519): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:45:06:344 Umc/(3519:3519): Creado el vector de marcos ocupados 
+
+[INFO] 01:45:07:604 Umc/(3521:3521): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:45:07:604 Umc/(3521:3521): Soy umc de process ID 3521.
+
+[INFO] 01:45:07:604 Umc/(3521:3521): Creada la memoria.
+
+[INFO] 01:45:07:604 Umc/(3521:3521): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:45:07:604 Umc/(3521:3521): Creado el vector de marcos ocupados 
+
+[INFO] 01:49:01:16 Umc/(3680:3680): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:49:01:16 Umc/(3680:3680): Soy umc de process ID 3680.
+
+[INFO] 01:49:01:16 Umc/(3680:3680): Creada la memoria.
+
+[INFO] 01:49:01:16 Umc/(3680:3680): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:49:01:16 Umc/(3680:3680): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:02:322 Umc/(3818:3818): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:02:322 Umc/(3818:3818): Soy umc de process ID 3818.
+
+[INFO] 01:52:02:322 Umc/(3818:3818): Creada la memoria.
+
+[INFO] 01:52:02:322 Umc/(3818:3818): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:02:322 Umc/(3818:3818): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:03:441 Umc/(3820:3820): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:03:441 Umc/(3820:3820): Soy umc de process ID 3820.
+
+[INFO] 01:52:03:441 Umc/(3820:3820): Creada la memoria.
+
+[INFO] 01:52:03:441 Umc/(3820:3820): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:03:441 Umc/(3820:3820): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:04:609 Umc/(3822:3822): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:04:609 Umc/(3822:3822): Soy umc de process ID 3822.
+
+[INFO] 01:52:04:609 Umc/(3822:3822): Creada la memoria.
+
+[INFO] 01:52:04:609 Umc/(3822:3822): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:04:609 Umc/(3822:3822): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:05:335 Umc/(3824:3824): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:05:335 Umc/(3824:3824): Soy umc de process ID 3824.
+
+[INFO] 01:52:05:335 Umc/(3824:3824): Creada la memoria.
+
+[INFO] 01:52:05:335 Umc/(3824:3824): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:05:335 Umc/(3824:3824): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:05:907 Umc/(3827:3827): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:05:907 Umc/(3827:3827): Soy umc de process ID 3827.
+
+[INFO] 01:52:05:907 Umc/(3827:3827): Creada la memoria.
+
+[INFO] 01:52:05:907 Umc/(3827:3827): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:05:907 Umc/(3827:3827): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:06:370 Umc/(3829:3829): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:06:370 Umc/(3829:3829): Soy umc de process ID 3829.
+
+[INFO] 01:52:06:370 Umc/(3829:3829): Creada la memoria.
+
+[INFO] 01:52:06:370 Umc/(3829:3829): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:06:370 Umc/(3829:3829): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:06:994 Umc/(3831:3831): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:06:994 Umc/(3831:3831): Soy umc de process ID 3831.
+
+[INFO] 01:52:06:994 Umc/(3831:3831): Creada la memoria.
+
+[INFO] 01:52:06:994 Umc/(3831:3831): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:06:994 Umc/(3831:3831): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:07:875 Umc/(3833:3833): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:07:875 Umc/(3833:3833): Soy umc de process ID 3833.
+
+[INFO] 01:52:07:875 Umc/(3833:3833): Creada la memoria.
+
+[INFO] 01:52:07:875 Umc/(3833:3833): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:07:875 Umc/(3833:3833): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:10:288 Umc/(3835:3835): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:10:288 Umc/(3835:3835): Soy umc de process ID 3835.
+
+[INFO] 01:52:10:288 Umc/(3835:3835): Creada la memoria.
+
+[INFO] 01:52:10:288 Umc/(3835:3835): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:10:288 Umc/(3835:3835): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:10:616 Umc/(3837:3837): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:10:616 Umc/(3837:3837): Soy umc de process ID 3837.
+
+[INFO] 01:52:10:616 Umc/(3837:3837): Creada la memoria.
+
+[INFO] 01:52:10:616 Umc/(3837:3837): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:10:616 Umc/(3837:3837): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:10:941 Umc/(3839:3839): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:10:941 Umc/(3839:3839): Soy umc de process ID 3839.
+
+[INFO] 01:52:10:941 Umc/(3839:3839): Creada la memoria.
+
+[INFO] 01:52:10:941 Umc/(3839:3839): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:10:941 Umc/(3839:3839): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:11:274 Umc/(3841:3841): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:11:274 Umc/(3841:3841): Soy umc de process ID 3841.
+
+[INFO] 01:52:11:274 Umc/(3841:3841): Creada la memoria.
+
+[INFO] 01:52:11:274 Umc/(3841:3841): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:11:274 Umc/(3841:3841): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:11:591 Umc/(3843:3843): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:11:591 Umc/(3843:3843): Soy umc de process ID 3843.
+
+[INFO] 01:52:11:591 Umc/(3843:3843): Creada la memoria.
+
+[INFO] 01:52:11:591 Umc/(3843:3843): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:11:591 Umc/(3843:3843): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:11:894 Umc/(3845:3845): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:11:894 Umc/(3845:3845): Soy umc de process ID 3845.
+
+[INFO] 01:52:11:894 Umc/(3845:3845): Creada la memoria.
+
+[INFO] 01:52:11:894 Umc/(3845:3845): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:11:894 Umc/(3845:3845): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:12:203 Umc/(3847:3847): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:12:203 Umc/(3847:3847): Soy umc de process ID 3847.
+
+[INFO] 01:52:12:203 Umc/(3847:3847): Creada la memoria.
+
+[INFO] 01:52:12:203 Umc/(3847:3847): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:12:203 Umc/(3847:3847): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:12:536 Umc/(3849:3849): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:12:536 Umc/(3849:3849): Soy umc de process ID 3849.
+
+[INFO] 01:52:12:536 Umc/(3849:3849): Creada la memoria.
+
+[INFO] 01:52:12:536 Umc/(3849:3849): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:12:536 Umc/(3849:3849): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:13:294 Umc/(3851:3851): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:13:294 Umc/(3851:3851): Soy umc de process ID 3851.
+
+[INFO] 01:52:13:294 Umc/(3851:3851): Creada la memoria.
+
+[INFO] 01:52:13:294 Umc/(3851:3851): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:13:294 Umc/(3851:3851): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:13:976 Umc/(3853:3853): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:13:976 Umc/(3853:3853): Soy umc de process ID 3853.
+
+[INFO] 01:52:13:976 Umc/(3853:3853): Creada la memoria.
+
+[INFO] 01:52:13:976 Umc/(3853:3853): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:13:976 Umc/(3853:3853): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:14:497 Umc/(3855:3855): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:14:497 Umc/(3855:3855): Soy umc de process ID 3855.
+
+[INFO] 01:52:14:497 Umc/(3855:3855): Creada la memoria.
+
+[INFO] 01:52:14:497 Umc/(3855:3855): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:14:497 Umc/(3855:3855): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:15:77 Umc/(3857:3857): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:15:77 Umc/(3857:3857): Soy umc de process ID 3857.
+
+[INFO] 01:52:15:77 Umc/(3857:3857): Creada la memoria.
+
+[INFO] 01:52:15:77 Umc/(3857:3857): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:15:77 Umc/(3857:3857): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:15:647 Umc/(3859:3859): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:15:647 Umc/(3859:3859): Soy umc de process ID 3859.
+
+[INFO] 01:52:15:647 Umc/(3859:3859): Creada la memoria.
+
+[INFO] 01:52:15:647 Umc/(3859:3859): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:15:647 Umc/(3859:3859): Creado el vector de marcos ocupados 
+
+[INFO] 01:52:55:514 Umc/(3871:3871): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:52:55:535 Umc/(3871:3871): Soy umc de process ID 3871.
+
+[INFO] 01:52:55:541 Umc/(3871:3871): Creada la memoria.
+
+[INFO] 01:52:55:542 Umc/(3871:3871): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:52:55:543 Umc/(3871:3871): Creado el vector de marcos ocupados 
+
+[INFO] 01:55:33:479 Umc/(3951:3951): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:55:33:501 Umc/(3951:3951): Soy umc de process ID 3951.
+
+[INFO] 01:55:33:507 Umc/(3951:3951): Creada la memoria.
+
+[INFO] 01:55:33:508 Umc/(3951:3951): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:55:33:509 Umc/(3951:3951): Creado el vector de marcos ocupados 
+
+[INFO] 01:55:37:377 Umc/(3952:3952): 
+
+***** Log de Umc *****
+
+
+[INFO] 01:55:37:377 Umc/(3952:3952): Soy umc de process ID 3952.
+
+[INFO] 01:55:37:377 Umc/(3952:3952): Creada la memoria.
+
+[INFO] 01:55:37:377 Umc/(3952:3952): Creada la TLB y rellenada con ceros (0).
+
+[INFO] 01:55:37:377 Umc/(3952:3952): Creado el vector de marcos ocupados 
+

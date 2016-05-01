@@ -1,28 +1,38 @@
 #!usr/bin/sh
 
 cd consola
+cd Debug
 make clean
 make
+cd ..
 cd ..
 
 cd cpu
+cd Debug
 make clean
 make
+cd ..
 cd ..
 
 cd nucleo
+cd Debug
 make clean
 make
+cd ..
 cd ..
 
 cd swap
+cd Debug
 make clean
 make
 cd ..
+cd ..
 
 cd umc
+cd Debug
 make clean
 make
+cd ..
 cd ..
 
 echo ""

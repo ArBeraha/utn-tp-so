@@ -78,6 +78,7 @@ char* pedidoPaginaPid ;
 char* pedidoPaginaTamanioContenido;
 
 t_list* listaTablasPaginas;
+t_list* tabla5;
 
 tlb_t* tlb;
 
@@ -266,7 +267,7 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 			}
 		}
 		else{
-			send_w(cliente,  intToChar(HeaderNoExisteTablaDePag), 4);
+			send_w(cliente,intToChar(HeaderNoExisteTablaDePag), 4);
 		}
 	}
 }
@@ -348,21 +349,19 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 	memset(vectorMarcosOcupados,0,config.cantidad_marcos* config.tamanio_marco);
 
-	printf("1 \n");
+	printf("NO ROMPE 1 \n");
 
-
-
-	int k;
-	listaTablasPaginas = list_create();
-	printf("2");
-		for(k=0;k<100;k++){
-			t_list* tablaPaginas = list_create();
-			list_add(listaTablasPaginas,tablaPaginas);
-//			list_add(tablaPaginas,1);
-//			list_add(tablaPaginas,2);
-//			list_add(tablaPaginas,3);
-//			list_add(tablaPaginas,4);
-		}
+//	int k;
+//	listaTablasPaginas = list_create();
+//	printf("2\n");
+//		for(k=0;k<100;k++){
+//			t_list* tablaPaginas = list_create();
+//			list_add(listaTablasPaginas,tablaPaginas);
+////			list_add(tablaPaginas,1);
+////			list_add(tablaPaginas,2);
+////			list_add(tablaPaginas,3);
+////			list_add(tablaPaginas,4);
+//		}
 
 //		for(k=0;k<list_size(listaTablasPaginas);k++){
 //			for(j=0;j<list_size(list_get(listaTablasPaginas,k));j++){
@@ -371,7 +370,7 @@ void crearMemoriaYTlbYTablaPaginas(){
 //			printf("\n");
 //		}
 
-	printf("2 \n");
+	printf(" NO ROMPE 2 \n");
 }
 
 // FIN 3
@@ -542,14 +541,11 @@ void test(){
 	printf("aca llegue6\n");
 	printf("Se agregaron las %d paginas en %d \n", ccantPaginasPedidas, ppid);
 
-	t_list* tabla5 = list_get(listaTablasPaginas, 5);
+	tabla5 = list_get(listaTablasPaginas, 5);
 
 	tablaPagina_t* pagina0Tabla5 = list_get(tabla5,0);
 	tablaPagina_t* pagina1Tabla5 = list_get(tabla5,1);
 	tablaPagina_t* pagina2Tabla5 = list_get(tabla5,2);
-
-
-
 
 	printf("Agarramos la tabla de paginas en las posicion 5. \n");
 	printf("Y deberia tener 3 paginas dentro, coincide con cant: %d \n", list_size(tabla5));
@@ -571,6 +567,14 @@ int main(void) {
 
 	crearLogs("Umc","Umc");
 	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
+
+	int k;
+	listaTablasPaginas = list_create();
+	printf("2\n");
+	for(k=0;k<100;k++){
+		t_list* tablaPaginas = list_create();
+		list_add(listaTablasPaginas,tablaPaginas);
+	}
 
 	crearMemoriaYTlbYTablaPaginas();
 

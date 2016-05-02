@@ -107,16 +107,17 @@ void inicializarClientes(){
 	// Inicializamos en desconectado = 0
 	int i;
 	for (i = 0; i < MAXCLIENTS; i++){
-		socketCliente[i]=0;
+		clientes[i].socket=0;
 	}
 }
 
-void agregarCliente(int cliente){
+void agregarCliente(t_cliente cliente){
 	// Agregamos un cliente en la primera posicion libre del array de clientes
 	int i=0;
 	for (i = 0; i < MAXCLIENTS; i++) {
-		if( socketCliente[i] == 0 )	{
-			socketCliente[i] = cliente;
+		if( clientes[i].socket == 0 )	{
+			clientes[i] = cliente;
+			clientes[i].atentido=false;
 			printf("Añadido a la lista de sockets como %d\n" , i);
 			break;
 		}
@@ -125,22 +126,20 @@ void agregarCliente(int cliente){
 
 void quitarCliente(int i){
 	// Liberamos del array al cliente y cerramos su socket
-	struct sockaddr_in clienteDir;
-	unsigned int clienteLen = sizeof(clienteDir);
-	getpeername(socketCliente[i] , (struct sockaddr*)&clienteDir , (socklen_t*)&clienteLen);
-	printf("Invitado desconectado , ip %s , puerto %d \n" , inet_ntoa(clienteDir.sin_addr) , ntohs(clienteDir.sin_port));
-	close(socketCliente[i]);
-	socketCliente[i] = 0;
+	getpeername(clientes[i].socket , (struct sockaddr*)&clientes[i].addr , (socklen_t*)&clientes[i].addrlen);
+	printf("Invitado desconectado , ip %s , puerto %d \n" , inet_ntoa(clientes[i].addr.sin_addr) , ntohs(clientes[i].addr.sin_port));
+	close(clientes[i].socket);
+	clientes[i].socket = 0;
 }
 
 void procesarNuevasConexiones(){
 	// Aceptamos nueva conexion
-	struct sockaddr_in clienteDir;
-	unsigned int clienteLen = sizeof(clienteDir);
+	t_cliente cliente;
+	cliente.addrlen=sizeof(cliente.addr);
 	int socketNuevoCliente;
-	socketNuevoCliente = accept(socketNuevasConexiones, (struct sockaddr *)&clienteDir, (socklen_t*)&clienteLen);
-	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , socketNuevoCliente , inet_ntoa(clienteDir.sin_addr) , ntohs(clienteDir.sin_port));
-	agregarCliente(socketNuevoCliente);
+	socketNuevoCliente = accept(socketNuevasConexiones, (struct sockaddr *)&cliente.addr, (socklen_t*)&cliente.addrlen);
+	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , socketNuevoCliente , inet_ntoa(cliente.addr.sin_addr) , ntohs(cliente.addr.sin_port));
+	agregarCliente(cliente);
 }
 
 int tieneLectura(int socket){
@@ -149,19 +148,10 @@ int tieneLectura(int socket){
 
 int incorporarSockets(){
 	// Reseteamos y añadimos al set los sockets disponibles
-	int i,filedes,max_filedes;
 	FD_ZERO(&socketsParaLectura);
 	FD_SET(socketNuevasConexiones, &socketsParaLectura);
-	max_filedes=socketNuevasConexiones;
-	for (i = 0; i < MAXCLIENTS; i++){
-		filedes=socketCliente[i];
-		if (filedes>0)
-			FD_SET(socketCliente[i],&socketsParaLectura);
-
-		if (filedes>max_filedes)
-			max_filedes=filedes;
-	}
-	return max_filedes;
+	mayorDescriptor=socketNuevasConexiones;
+	return incorporarClientes();
 }
 
 int charToInt(char *c){
@@ -182,25 +172,28 @@ void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned
 }
 
 int incorporarClientes(){
-	// Reseteamos y añadimos al set los sockets disponibles
-	int i,filedes,max_filedes;
+	// Reseteamos y añadimos al set los sockets disponibles, NO atendidos
+	int i,filedes;
 	for (i = 0; i < MAXCLIENTS; i++){
-		filedes=socketCliente[i];
-		if (filedes>0)
-			FD_SET(socketCliente[i],&socketsParaLectura);
-
-		if (filedes>max_filedes)
-			max_filedes=filedes;
+		filedes=clientes[i].socket;
+		if (filedes>0){
+			if (clientes[i].atentido==false){
+				FD_SET(clientes[i].socket,&socketsParaLectura);
+				if (filedes>mayorDescriptor)
+					mayorDescriptor=filedes;
+			}
+		}
 	}
-	return max_filedes;
+	return mayorDescriptor;
 }
 
 void procesarNuevasConexionesExtendido(int* socket){
 	// Aceptamos nueva conexion
-	struct sockaddr_in clienteDir;
-	unsigned int clienteLen = sizeof(clienteDir);
+	t_cliente cliente;
+	cliente.addrlen=sizeof(cliente.addr);
 	int socketNuevoCliente;
-	socketNuevoCliente = accept((*socket), (struct sockaddr *)&clienteDir, (socklen_t*)&clienteLen);
-	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , socketNuevoCliente , inet_ntoa(clienteDir.sin_addr) , ntohs(clienteDir.sin_port));
-	agregarCliente(socketNuevoCliente);
+	socketNuevoCliente = accept((*socket), (struct sockaddr *)&cliente.addr, (socklen_t*)&cliente.addrlen);
+	cliente.socket=socketNuevoCliente;
+	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , socketNuevoCliente , inet_ntoa(cliente.addr.sin_addr) , ntohs(cliente.addr.sin_port));
+	agregarCliente(cliente);
 }

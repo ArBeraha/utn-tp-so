@@ -20,11 +20,20 @@
 #ifndef CLIENTE_SERVIDOR_H_
 #define CLIENTE_SERVIDOR_H_
 
-
-
 struct sockaddr_in direccion;
-int socketNuevasConexiones, socketCliente[MAXCLIENTS], tamanioDireccion, activado;
+int socketNuevasConexiones, tamanioDireccion, activado, mayorDescriptor;
 fd_set socketsParaLectura;
+
+typedef struct {
+	struct sockaddr_in addr;
+	socklen_t addrlen;
+	int socket;
+	int identidad;
+	bool atentido;
+
+} t_cliente;
+
+t_cliente clientes[MAXCLIENTS];
 
 /* ¿Como funciona esto?
  * Las funciones que solo son wrappers se llaman igual que la original con _w.
@@ -51,7 +60,7 @@ char* recv_con_criterio_ws(int cliente, int msgSize, int msgCriterio);
 //xAriel
 void configurarServidor(unsigned short PORT);
 void inicializarClientes();
-void agregarCliente(int cliente);
+void agregarCliente(t_cliente cliente);
 void quitarCliente(int i);
 void procesarNuevasConexiones();
 int tieneLectura(int socket);

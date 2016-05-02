@@ -394,11 +394,12 @@ void procesarHeader(int cliente, char *header){
 		log_debug(bgLogger,"Llego un handshake\n");
 		payload_size=1;
 		payload = malloc(payload_size);
-		read(socketCliente[cliente] , payload, payload_size);
+		read(clientes[cliente].socket , payload, payload_size);
 		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
 		if ( (charToInt(payload)==SOYCPU) || (charToInt(payload)==SOYNUCLEO) ){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
-			send(socketCliente[cliente], intToChar(SOYUMC), 1, 0);
+			clientes[cliente].identidad = charToInt(payload);
+			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
 		}
 		else {
 			log_error(activeLogger,"No es un cliente apropiado! rechazada la conexion\n");
@@ -406,6 +407,7 @@ void procesarHeader(int cliente, char *header){
 			quitarCliente(cliente);
 		}
 		free(payload);
+		clientes[cliente].atentido=false;
 		break;
 
 		case HeaderReservarEspacio:
@@ -620,14 +622,14 @@ void servidorCPUyNucleo(){
 		if (tieneLectura(socketNuevasConexiones))
 			procesarNuevasConexiones();
 
-		for (i = 0; i < getMaxClients(); i++){
-			if (tieneLectura(socketCliente[i]))	{
-				if (read( socketCliente[i] , header, 1) == 0)
+		for (i = 0; i < getMaxClients(); i++) {
+			if (tieneLectura(clientes[i].socket)) {
+				if (read(clientes[i].socket, header, 1) == 0) {
+					log_error(activeLogger,
+							"Se rompio la conexion. Read leyó 0 bytes");
 					quitarCliente(i);
-				else{
-					log_debug(bgLogger,"LLEGO main %c\n",header);
-					procesarHeader(i,header);
-				}
+				} else
+					procesarHeader(i, header);
 			}
 		}
 	}

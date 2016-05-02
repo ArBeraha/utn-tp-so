@@ -31,7 +31,7 @@
 #include "commonTypes.h"
 
 // Globales de servidor
-int socketConsola, socketCPU, mayorDescriptor;
+int socketConsola, socketCPU;
 int activadoCPU, activadoConsola; //No hace falta iniciarlizarlas. Lo hacer la funcion permitir reutilizacion ahora.
 struct sockaddr_in direccionConsola, direccionCPU;
 unsigned int tamanioDireccionConsola, tamanioDireccionCPU;
@@ -130,14 +130,15 @@ char* getScript(int consola) {
 	char* script;
 	int size;
 	//char* scriptSize = recv_waitall_ws(consola,1);
-	read(socketCliente[consola], &scriptSize, 1);
+	read(clientes[consola].socket, &scriptSize, 1);
 	size = charToInt(&scriptSize);
 	log_debug(bgLogger, "Consola envió un archivo de tamaño: %d", size);
 	//free(scriptSize);
 	printf("Size:%d\n", size);
 	script = malloc(sizeof(char) * size);
-	read(socketCliente[consola], script, size);
+	read(clientes[consola].socket, script, size);
 	log_info(activeLogger, "Script:\n%s\n", script);
+	clientes[consola].atentido=false;
 	return script;
 }
 
@@ -148,7 +149,7 @@ void rechazarProceso(int PID) {
 	if (proceso->estado != NEW)
 		log_warning(activeLogger,
 				"Se esta rechazando el proceso %d ya aceptado!", PID);
-	send(socketCliente[proceso->consola],
+	send(clientes[proceso->consola].socket,
 			intToChar(HeaderConsolaFinalizarRechazado), 1, 0); // Le decimos adios a la consola
 	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
@@ -212,7 +213,7 @@ void destruirProceso(int PID) {
 		log_warning(activeLogger,
 				"Se esta destruyendo el proceso %d que no libero sus recursos!",
 				PID);
-	send(socketCliente[proceso->consola],
+	send(clientes[proceso->consola].socket,
 			intToChar(HeaderConsolaFinalizarNormalmente), 1, 0); // Le decimos adios a la consola
 	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
@@ -364,6 +365,7 @@ void procesarHeader(int cliente, char *header) {
 	char* payload;
 	int payload_size;
 	log_debug(bgLogger, "Llego un mensaje con header %d", charToInt(header));
+	clientes[cliente].atentido=true;
 
 	switch (charToInt(header)) {
 
@@ -376,14 +378,15 @@ void procesarHeader(int cliente, char *header) {
 		log_debug(bgLogger, "Llego un handshake");
 		payload_size = 1;
 		payload = malloc(payload_size);
-		read(socketCliente[cliente], payload, payload_size);
+		read(clientes[cliente].socket, payload, payload_size);
 		log_debug(bgLogger, "Llego un mensaje con payload %d",
 				charToInt(payload));
 		if ((charToInt(payload) == SOYCONSOLA)
 				|| (charToInt(payload) == SOYCPU)) {
 			log_debug(bgLogger,
 					"Es un cliente apropiado! Respondiendo handshake");
-			send(socketCliente[cliente], intToChar(SOYNUCLEO), 1, 0);
+			clientes[cliente].identidad = charToInt(payload);
+			send(clientes[cliente].socket, intToChar(SOYNUCLEO), 1, 0);
 		} else {
 			log_error(activeLogger,
 					"No es un cliente apropiado! rechazada la conexion");
@@ -391,6 +394,7 @@ void procesarHeader(int cliente, char *header) {
 			quitarCliente(cliente);
 		}
 		free(payload);
+		clientes[cliente].atentido=false;
 		break;
 
 	case HeaderImprimirVariableNucleo:
@@ -402,8 +406,8 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderScript:
-		//cargarProceso(cliente); // la posta con hilos! cuando se sincronize bien borrar la siguiente linea
-		crearProceso(cliente);
+		cargarProceso(cliente); // la posta con hilos! cuando se sincronize bien borrar la siguiente linea
+		//crearProceso(cliente);
 		break;
 
 	default:
@@ -502,14 +506,16 @@ int main(void) {
 	inicializarClientes();
 	log_info(activeLogger, "Esperando conexiones ...");
 
+
 	conectarAUMC();
+
 
 	while (1) {
 		FD_ZERO(&socketsParaLectura);
 		FD_SET(socketConsola, &socketsParaLectura);
 		FD_SET(socketCPU, &socketsParaLectura);
 
-		mayorDescriptor = incorporarClientes();
+		incorporarClientes();
 		if ((socketConsola > mayorDescriptor)
 				|| (socketCPU > mayorDescriptor)) {
 			if (socketConsola > socketCPU)
@@ -527,11 +533,9 @@ int main(void) {
 			procesarNuevasConexionesExtendido(&socketCPU);
 
 		for (i = 0; i < getMaxClients(); i++) {
-			if (tieneLectura(socketCliente[i])) {
-				if (read(socketCliente[i], header, 1) == 0) {
-					// Lo puse como warning porque puede no ser un error
-					// sino que una consola se haya finalizado con ctrl+C intencionalmente
-					log_warning(activeLogger,
+			if (tieneLectura(clientes[i].socket)) {
+				if (read(clientes[i].socket, header, 1) == 0) {
+					log_error(activeLogger,
 							"Se rompio la conexion. Read leyó 0 bytes");
 					quitarCliente(i);
 				} else
@@ -539,7 +543,7 @@ int main(void) {
 			}
 		}
 
-		planificarProcesos();
+		//planificarProcesos();
 	}
 
 	finalizar();

@@ -5,6 +5,12 @@
  *      Author: utnso
  */
 
+
+
+
+#ifndef CLIENTE_SERVIDOR_H_
+#define CLIENTE_SERVIDOR_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
@@ -17,8 +23,6 @@
 #include <commons/string.h>
 
 #define MAXCLIENTS 30
-#ifndef CLIENTE_SERVIDOR_H_
-#define CLIENTE_SERVIDOR_H_
 
 struct sockaddr_in direccion;
 int socketNuevasConexiones, tamanioDireccion, activado, mayorDescriptor;
@@ -71,6 +75,8 @@ char* intToChar(int i);
 int incorporarClientes();
 void procesarNuevasConexionesExtendido(int* socket);
 void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned short PORT, unsigned int* tamanio, int* activado);
+char* intToChar4(int num); // RECORDAR: liberar el puntero con free()
+int char4ToInt(char* chars);
 
 #endif /* CLIENTE_SERVIDOR_H_ */
 

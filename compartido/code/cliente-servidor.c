@@ -197,3 +197,22 @@ void procesarNuevasConexionesExtendido(int* socket){
 	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , socketNuevoCliente , inet_ntoa(cliente.addr.sin_addr) , ntohs(cliente.addr.sin_port));
 	agregarCliente(cliente);
 }
+
+char* intToChar4(int num){
+	//RECORDAR: liberar el puntero con free()
+	int i;
+	char *chars;
+	chars = malloc(4);
+	for (i = 0; i != 4; ++i) {
+	    chars[i] = num >> (24 - i * 8);
+	}
+	return chars;
+}
+
+int char4ToInt(char* chars){
+	int i,num=0;
+	for (i = 0; i != 4; ++i) {
+	     num += chars[i] << (24 - i * 8);
+	}
+	return num;
+}

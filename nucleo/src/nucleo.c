@@ -1,5 +1,5 @@
 /*
- * kernel.c
+ * nucleo.c
  *
  *  Created on: 16/4/2016
  *      Author: utnso
@@ -16,18 +16,21 @@ bool pedirPaginas(int PID, char* codigo) {
 				"DEBUG_IGNORE_UMC_PAGES está en true! Se supone que no hay paginas");
 		hayMemDisponible = false;
 	} else {    // Para curso normal del programa
+		//Estos mutex garantizan que por ejemplo no haga cada hilo un send (esto podria solucionarse tambien juntando los send, pero es innecesario porque si o si hay que sincronizar)
+		//y que no se van a correr los sends de un hilo 1, los del hilo 2, umc responde por hilo 1 (lo primero que le llego) y como corre hilo 2, esa respuesta llega al hilo 2 en vez de al 1.
+		pthread_mutex_lock(&lock_UMC_conection);
 		send_w(umc, headerToMSG(HeaderScript), 1);
 		send_w(umc, intToChar(strlen(codigo)), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
 		send_w(umc, codigo, strlen(codigo));
 		read(umc, &respuesta, 1);
+		pthread_mutex_unlock(&lock_UMC_conection);
 		hayMemDisponible = (int) respuesta;
 		if (hayMemDisponible != 0 && hayMemDisponible != 1) {
 			log_warning(activeLogger,
 					"Umc debería enviar un booleano (0 o 1) y envió %d",
 					hayMemDisponible);
 		}
-		free(codigo);
-		log_debug(bgLogger, "Hay memoria disponible para el proceso %d.", PID);
+		log_debug(bgLogger, "Hay memoria disponible para el proceso %d.", PID);;
 	}
 	return (bool) hayMemDisponible;
 }
@@ -36,16 +39,14 @@ char* getScript(int consola) {
 	char scriptSize;
 	char* script;
 	int size;
-	//char* scriptSize = recv_waitall_ws(consola,1);
 	read(clientes[consola].socket, &scriptSize, 1);
 	size = charToInt(&scriptSize);
 	log_debug(bgLogger, "Consola envió un archivo de tamaño: %d", size);
-	//free(scriptSize);
 	printf("Size:%d\n", size);
 	script = malloc(sizeof(char) * size);
 	read(clientes[consola].socket, script, size);
-	log_info(activeLogger, "Script:\n%s\n", script);
-	clientes[consola].atentido=false;
+	log_info(activeLogger, "Script:\n%s", script);
+	clientes[consola].atentido=false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
 	return script;
 }
 
@@ -58,14 +59,14 @@ void rechazarProceso(int PID) {
 				"Se esta rechazando el proceso %d ya aceptado!", PID);
 	send(clientes[proceso->consola].socket,
 			intToChar(HeaderConsolaFinalizarRechazado), 1, 0); // Le decimos adios a la consola
-	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
+	log_info(bgLogger,"Consola avisada sobre la finalización del proceso ansisop.");
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
 	free(proceso); // Destruir Proceso y PCB
 }
 
 int crearProceso(int consola) {
-	t_proceso* proceso = malloc(sizeof(t_proceso));
 	pthread_mutex_lock(&lockProccessList);
+	t_proceso* proceso = malloc(sizeof(t_proceso));
 	proceso->PCB.PID = list_add(listaProcesos, proceso);
 	pthread_mutex_unlock(&lockProccessList);
 	proceso->PCB.PC = SIN_ASIGNAR;
@@ -73,13 +74,15 @@ int crearProceso(int consola) {
 	proceso->estado = NEW;
 	proceso->consola = consola;
 	proceso->cpu = SIN_ASIGNAR;
-	char* codigo = getScript(consola); // TODO: cuando haya hilos semaforear esto
+	char* codigo = getScript(consola);
 	// Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
-	/*if(!pedirPaginas(proceso->PCB.PID, codigo)) {
+	if(!pedirPaginas(proceso->PCB.PID, codigo)) {
+	 printf("rechazado");
 	 rechazarProceso(proceso->PCB.PID);
 	 log_info(activeLogger, "UMC no da paginas para el proceso %d!", proceso->PCB.PID);
 	 log_info(activeLogger, "Se rechazo el proceso %d.",proceso->PCB.PID);
-	 }*/
+	 }
+
 	free(codigo);
 	return proceso->PCB.PID;
 }
@@ -87,7 +90,6 @@ int crearProceso(int consola) {
 void cargarProceso(int consola) {
 	// Crea un hilo que crea el proceso y se banca esperar a que umc le de paginas. Mientras tanto, el planificador sigue andando.
 	pthread_create(&crearProcesos, NULL, (void*) crearProceso, consola);
-	//sleep(1000000);
 }
 
 void ejecutarProceso(int PID, int cpu) {
@@ -150,7 +152,6 @@ void expulsarProceso(t_proceso* proceso){
 
 void planificarProcesos() {
 	int i;
-	//TODO RR, FIFO por ahora
 	switch (algoritmo) {
 	// Procesos especificos
 	case RR:
@@ -313,8 +314,7 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderScript:
-		cargarProceso(cliente); // la posta con hilos! cuando se sincronize bien borrar la siguiente linea
-		//crearProceso(cliente);
+		cargarProceso(cliente);
 		break;
 
 	default:
@@ -443,7 +443,7 @@ int main(void) {
 			if (tieneLectura(clientes[i].socket)) {
 				if (read(clientes[i].socket, header, 1) == 0) {
 					log_error(activeLogger,
-							"Se rompio la conexion. Read leyó 0 bytes");
+							"Un cliente se desconectó.");
 					quitarCliente(i);
 				} else
 					procesarHeader(i, header);

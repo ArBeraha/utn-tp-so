@@ -49,7 +49,7 @@ pthread_t UMC; //Una instancia que finaliza luego de establecer conexion. Hilo p
 pthread_t crearProcesos; // 1..n instancias. Este hilo crear procesos nuevos para evitar un bloqueo del planificador. Sin este hilo, el principal llama al hilo UMC para pedir paginas y debe bloquearse hasta tener la respuesta!
 
 // Semaforos
-pthread_mutex_t lockProccessList;
+pthread_mutex_t lockProccessList, lock_UMC_conection, lockAlloc;
 
 // ***** INICIO DEBUG ***** //
 // setear esto a true desactiva el thread que se conecta con UMC.

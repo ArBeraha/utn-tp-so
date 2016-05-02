@@ -5,32 +5,7 @@
  *      Author: utnso
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <commons/string.h>
-#include <commons/config.h>
-#include <string.h>
-#include <commons/log.h>
-#include <unistd.h>
-#include "handshake.h"
-#include "header.h"
-#include "cliente-servidor.h"
-#include "log.h"
-#include "commonTypes.h"
-
-#define PATHSIZE 2048
-
-// ********* INICIO DEBUG ******** //
-#define DEBUG false
-#define DEBUG_LOG_OLD_REMOVE false
-// ********* FIN DEBUG ******** //
-
-FILE* programa;
-int cliente;
-t_config* configConsola;
-int puertoNucleo;
+#include "consola.h"
 
 void cargarConfig(){
 	t_config* configConsola;
@@ -80,7 +55,7 @@ void finalizar() {
 	log_info(activeLogger, "Fin exitoso.");
 	destruirLogs();
 	// el fclose se hace apenas se deja de usar el archivo para poder correr 2 instancias del mismo proceso ansisop.
-	// close(cliente); // TODO se hace aca o lo maneja el nucleo con "quitarCliente" al finalizar una consola en forma normal?"
+	close(cliente);
 	exit(EXIT_SUCCESS); //Un return desde main hace un exit, asi que es lo mismo hacerlo aca como exit!
 }
 
@@ -106,6 +81,12 @@ void procesarHeader(char *header) {
 
 	case HeaderImprimirTextoConsola:
 		imprimirTexto();
+		break;
+
+	case HeaderConsolaFinalizarRechazado:
+		log_info(activeLogger,"Proceso ansisop rechazado.");
+		log_info(activeLogger,"Finalizando...");
+		finalizar();
 		break;
 
 	case HeaderConsolaFinalizarNormalmente:
@@ -188,9 +169,9 @@ void cargarYEnviarArchivo() {
 		length = 0; //no se si es necesario... pero nunca sobra xD
 		read = getline(&line, &length, programa);
 	}
-	//free(line);
-	string_append(&contenido, "\n\0");
-	size += 2;
+	free(line);
+	string_append(&contenido, "\0");
+	size += 1;
 	log_info(bgLogger, contenido);
 	log_debug(bgLogger, "Fin de archivo alcanzado. Tamaño almacenado: %d",
 			size);

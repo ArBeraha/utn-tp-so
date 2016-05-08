@@ -21,7 +21,7 @@ void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el 
 
 void imprimirVariable() {
 	char* msgValue = recv_waitall_ws(cliente, sizeof(ansisop_var_t));
-	int value = charToInt(msgValue);
+	int value = char4ToInt(msgValue);
 	char* name = recv_waitall_ws(cliente, sizeof(char));
 	sacarSaltoDeLinea(name);
 	// uso printf y logger de background solo porque es un mensaje impreso normalmente
@@ -34,7 +34,7 @@ void imprimirVariable() {
 
 void imprimirTexto() {
 	char* msgSize = recv_waitall_ws(cliente, sizeof(int));
-	int size = charToInt(msgSize);
+	int size = char4ToInt(msgSize);
 	char* texto = recv_waitall_ws(cliente, size);
 	sacarSaltoDeLinea(texto);
 	printf("Consola> %s\n", texto);
@@ -177,7 +177,7 @@ void cargarYEnviarArchivo() {
 			size);
 
 	send_w(cliente, headerToMSG(HeaderScript), 1);
-	send_w(cliente, intToChar(size), 1); //fixme: un char admite de 0 a 255. SI el tamaño supera eso se rompe!
+	send_w(cliente, intToChar4(size), sizeof(int));
 	send_w(cliente, contenido, size);
 
 	free(contenido);

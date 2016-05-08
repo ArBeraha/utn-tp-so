@@ -36,16 +36,18 @@ bool pedirPaginas(int PID, char* codigo) {
 }
 
 char* getScript(int consola) {
+	log_debug(bgLogger, "Recibiendo archivo de consola %d...", consola);
 	char scriptSize;
 	char* script;
 	int size;
-	read(clientes[consola].socket, &scriptSize, 1);
-	size = charToInt(&scriptSize);
+	read(clientes[consola].socket, &scriptSize, sizeof(int));
+	size = char4ToInt(&scriptSize);
+	printf("%d",size);
 	log_debug(bgLogger, "Consola envió un archivo de tamaño: %d", size);
 	printf("Size:%d\n", size);
 	script = malloc(sizeof(char) * size);
 	read(clientes[consola].socket, script, size);
-	log_info(activeLogger, "Script:\n%s", script);
+	log_info(activeLogger, "Script de consola %d recibido:\n%s", consola, script);
 	clientes[consola].atentido=false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
 	return script;
 }
@@ -267,10 +269,10 @@ void imprimirVariable(int cliente) {
 void imprimirTexto(int cliente) {
 	int consola = getConsolaAsociada(cliente);
 	char* msgSize = recv_waitall_ws(cliente, sizeof(int));
-	int size = charToInt(msgSize);
+	int size = char4ToInt(msgSize);
 	char* texto = recv_waitall_ws(cliente, size);
 	send_w(consola, headerToMSG(HeaderImprimirTextoConsola), 1);
-	send_w(consola, intToChar(size), 1);
+	send_w(consola, msgSize, sizeof(int));
 	send_w(consola, texto, size);
 	free(msgSize);
 	free(texto);

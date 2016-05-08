@@ -70,7 +70,7 @@ int crearProceso(int consola) {
 	proceso->PCB.PID = list_add(listaProcesos, proceso);
 	pthread_mutex_unlock(&lockProccessList);
 	proceso->PCB.PC = SIN_ASIGNAR;
-	proceso->PCB.SP = SIN_ASIGNAR;
+	proceso->PCB.SP = (t_stack*) SIN_ASIGNAR;
 	proceso->estado = NEW;
 	proceso->consola = consola;
 	proceso->cpu = SIN_ASIGNAR;
@@ -114,7 +114,7 @@ void finalizarProceso(int PID) {
 	queue_push(colaCPU, (int*) proceso->cpu); // Disponemos de nuevo de la CPU
 	proceso->cpu = SIN_ASIGNAR;
 	proceso->estado = EXIT;
-	queue_push(colaSalida, PID);
+	queue_push(colaSalida, (void*) PID);
 }
 
 void destruirProceso(int PID) {
@@ -148,8 +148,8 @@ void expulsarProceso(t_proceso* proceso){
 	if (proceso->estado!=EXEC)
 		log_warning(activeLogger, "Expulsion del proceso %d sin estar ejecutandose!",proceso->PCB.PID);
 	proceso->estado=READY;
-	queue_push(colaListos, proceso->PCB.PID);
-	queue_push(colaCPU, proceso->cpu); // Disponemos de la CPU
+	queue_push(colaListos, (void*) proceso->PCB.PID);
+	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
 	proceso->cpu = SIN_ASIGNAR;
 }
 
@@ -172,10 +172,10 @@ void planificarProcesos() {
 	case FIFO:
 
 		if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
-			ejecutarProceso(queue_pop(colaListos), queue_pop(colaCPU));
+			ejecutarProceso((int) queue_pop(colaListos), (int) queue_pop(colaCPU));
 
 		if (!queue_is_empty(colaSalida))
-			destruirProceso(queue_pop(colaSalida));
+			destruirProceso((int) queue_pop(colaSalida));
 
 		break;
 	}
@@ -191,7 +191,7 @@ void bloquearProceso(int PID, int IO) {
 				"El proceso %d se bloqueo pese a que no estaba ejecutando!",
 				PID);
 	proceso->estado = BLOCK;
-	queue_push(colaCPU, proceso->cpu); // Disponemos de la CPU
+	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
 	proceso->cpu = SIN_ASIGNAR;
 	// todo: Añadir a la cola de ese IO
 }
@@ -204,7 +204,7 @@ void desbloquearProceso(int PID) {
 		log_warning(activeLogger,
 				"Desbloqueando el proceso %d sin estar bloqueado!", PID);
 	proceso->estado = READY;
-	queue_push(colaListos, PID);
+	queue_push(colaListos, (void*) PID);
 }
 /* ---------- FIN PARA PLANIFICACION ---------- */
 

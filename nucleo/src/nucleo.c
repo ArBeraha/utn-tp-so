@@ -76,20 +76,23 @@ int crearProceso(int consola) {
 	proceso->cpu = SIN_ASIGNAR;
 	char* codigo = getScript(consola);
 	// Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
-	if(!pedirPaginas(proceso->PCB.PID, codigo)) {
-	 printf("rechazado");
-	 rechazarProceso(proceso->PCB.PID);
-	 log_info(activeLogger, "UMC no da paginas para el proceso %d!", proceso->PCB.PID);
-	 log_info(activeLogger, "Se rechazo el proceso %d.",proceso->PCB.PID);
-	 }
+	if (!pedirPaginas(proceso->PCB.PID, codigo)) {
+		printf("rechazado");
+		rechazarProceso(proceso->PCB.PID);
+		log_info(activeLogger, "UMC no da paginas para el proceso %d!",
+				proceso->PCB.PID);
+		log_info(activeLogger, "Se rechazo el proceso %d.", proceso->PCB.PID);
+	}
 
 	free(codigo);
 	return proceso->PCB.PID;
 }
 
 void cargarProceso(int consola) {
-	// Crea un hilo que crea el proceso y se banca esperar a que umc le de paginas. Mientras tanto, el planificador sigue andando.
-	pthread_create(&crearProcesos, NULL, (void*) crearProceso, consola);
+	// Crea un hilo que crea el proceso y se banca esperar a que umc le de paginas.
+	// Mientras tanto, el planificador sigue andando.
+	pthread_create(&crearProcesos, &detachedAttr, (void*) crearProceso,
+			(void*) consola);
 }
 
 void ejecutarProceso(int PID, int cpu) {
@@ -237,7 +240,12 @@ void cargarCFG() {
 	*/
 }
 
-
+void configHilos(){
+	pthread_attr_init(&detachedAttr);
+	pthread_attr_setdetachstate(&detachedAttr,PTHREAD_CREATE_DETACHED);
+	pthread_mutex_init(&lockProccessList,NULL);
+	pthread_mutex_init(&lock_UMC_conection,NULL);
+}
 
 int getConsolaAsociada(int cliente) {
 	int PID = charToInt(recv_waitall_ws(cliente, sizeof(int)));
@@ -381,13 +389,15 @@ void conectarAUMC() {
 /* ---------- FIN PARA UMC ---------- */
 
 
-
 void finalizar() {
 	destruirLogs();
 	list_destroy(listaProcesos);
 	queue_destroy(colaCPU);
 	queue_destroy(colaListos);
 	queue_destroy(colaSalida);
+	pthread_mutex_destroy(&lockProccessList);
+	pthread_mutex_destroy(&lock_UMC_conection);
+	pthread_attr_destroy(&detachedAttr);
 }
 
 int main(void) {
@@ -402,6 +412,7 @@ int main(void) {
 	pthread_mutex_init(&lockProccessList, NULL);
 
 	cargarCFG();
+	configHilos();
 
 	crearLogs("Nucleo", "Nucleo");
 

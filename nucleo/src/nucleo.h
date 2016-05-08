@@ -45,11 +45,10 @@ struct sockaddr_in direccionParaUMC;
 int umc; //se usa para ser cliente de UMC
 
 // Hilos
-pthread_t UMC; //Una instancia que finaliza luego de establecer conexion. Hilo para UMC. Asi si UMC tarda, Nucleo puede seguir manejando CPUs y consolas sin bloquearse.
 pthread_t crearProcesos; // 1..n instancias. Este hilo crear procesos nuevos para evitar un bloqueo del planificador. Sin este hilo, el principal llama al hilo UMC para pedir paginas y debe bloquearse hasta tener la respuesta!
-
+pthread_attr_t detachedAttr; // Config para todos los hilos!
 // Semaforos
-pthread_mutex_t lockProccessList, lock_UMC_conection, lockAlloc;
+pthread_mutex_t lockProccessList, lock_UMC_conection;
 
 // ***** INICIO DEBUG ***** //
 // setear esto a true desactiva el thread que se conecta con UMC.

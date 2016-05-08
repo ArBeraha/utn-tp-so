@@ -6,17 +6,20 @@
 C_SRCS += \
 /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/cliente-servidor.c \
 /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/header.c \
-/home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/log.c 
+/home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/log.c \
+/home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/stack.c 
 
 OBJS += \
 ./code/cliente-servidor.o \
 ./code/header.o \
-./code/log.o 
+./code/log.o \
+./code/stack.o 
 
 C_DEPS += \
 ./code/cliente-servidor.d \
 ./code/header.d \
-./code/log.d 
+./code/log.d \
+./code/stack.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -35,6 +38,13 @@ code/header.o: /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/
 	@echo ' '
 
 code/log.o: /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/log.c
+	@echo 'Building file: $<'
+	@echo 'Invoking: GCC C Compiler'
+	gcc -I"/home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+code/stack.o: /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/stack.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
 	gcc -I"/home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"

@@ -1,0 +1,36 @@
+#!usr/bin/sh
+
+clear
+
+cd consola
+cd Debug
+rm -rf *.log
+cd ..
+cd ..
+
+cd cpu
+cd Debug
+rm -rf *.log
+cd ..
+cd ..
+
+cd nucleo
+cd Debug
+rm -rf *.log
+cd ..
+cd ..
+
+cd swap
+cd Debug
+rm -rf *.log
+cd ..
+cd ..
+
+cd umc
+cd Debug
+rm -rf *.log
+cd ..
+cd ..
+
+echo ""
+echo "Logs borrados."

@@ -7,7 +7,10 @@
 
 #include "nucleo.h"
 
-/*  ----------INICIO PARA PLANIFICACION ---------- */
+/* ---------- INICIO PARA UMC ---------- */
+// Dejo toodo sin espacios en el medio cuestion de que al ver solo las firmas
+// de las funciones, esta parte se saltee rapido. Idealmente,
+// no habria que tocarla mas :)
 bool pedirPaginas(int PID, char* codigo) {
 	int hayMemDisponible;
 	char respuesta;
@@ -34,7 +37,47 @@ bool pedirPaginas(int PID, char* codigo) {
 	}
 	return (bool) hayMemDisponible;
 }
+int getHandshake() {
+	char* handshake = recv_nowait_ws(umc, 1);
+	return charToInt(handshake);
+}
+void handshakearUMC() {
+	char *hand = string_from_format("%c%c", HeaderHandshake, SOYNUCLEO);
+	send_w(umc, hand, 2);
 
+	log_debug(bgLogger, "UMC handshakeo.");
+	if (getHandshake() != SOYUMC) {
+		perror("Se esperaba conectarse a la UMC.");
+	} else
+		log_debug(bgLogger, "Núcleo recibió handshake de UMC.");
+}
+void establecerConexionConUMC() {
+	direccionParaUMC = crearDireccionParaCliente(config.puertoUMC);
+	umc = socket_w();
+	connect_w(umc, &direccionParaUMC);
+}
+void warnDebug() {
+	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
+	log_info(activeLogger, "NO SE ESTABLECE CONEXION CON UMC EN ESTE MODO!");
+	log_info(activeLogger,
+			"Para correr nucleo en modo normal, settear en false el define DEBUG_IGNORE_UMC.");
+	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
+}
+void conectarAUMC() {
+	if (!DEBUG_IGNORE_UMC) {
+		log_debug(bgLogger, "Iniciando conexion con UMC...");
+		establecerConexionConUMC();
+		log_info(activeLogger, "Conexion a la UMC correcta :).");
+		handshakearUMC();
+		log_info(activeLogger, "Handshake con UMC finalizado exitosamente.");
+	} else {
+		warnDebug();
+	}
+}
+/* ---------- FIN PARA UMC ---------- */
+
+
+/*  ----------INICIO CONSOLA ---------- */
 char* getScript(int consola) {
 	log_debug(bgLogger, "Recibiendo archivo de consola %d...", consola);
 	char scriptSize;
@@ -51,7 +94,31 @@ char* getScript(int consola) {
 	clientes[consola].atentido=false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
 	return script;
 }
+void imprimirVariable(int cliente) {
+	int consola = getConsolaAsociada(cliente);
+	char* msgValue = recv_waitall_ws(cliente, sizeof(ansisop_var_t));
+	char* name = recv_waitall_ws(cliente, sizeof(char));
+	send_w(consola, headerToMSG(HeaderImprimirVariableConsola), 1);
+	send_w(consola, msgValue, sizeof(ansisop_var_t));
+	send_w(consola, name, sizeof(char));
+	free(msgValue);
+	free(name);
+}
+void imprimirTexto(int cliente) {
+	int consola = getConsolaAsociada(cliente);
+	char* msgSize = recv_waitall_ws(cliente, sizeof(int));
+	int size = char4ToInt(msgSize);
+	char* texto = recv_waitall_ws(cliente, size);
+	send_w(consola, headerToMSG(HeaderImprimirTextoConsola), 1);
+	send_w(consola, msgSize, sizeof(int));
+	send_w(consola, texto, size);
+	free(msgSize);
+	free(texto);
+}
+/*  ----------FIN CONSOLA ---------- */
 
+
+/*  ----------INICIO PARA PLANIFICACION ---------- */
 void rechazarProceso(int PID) {
 	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_remove(listaProcesos, PID);
@@ -155,30 +222,43 @@ void expulsarProceso(t_proceso* proceso){
 	proceso->cpu = SIN_ASIGNAR;
 }
 
-void planificarProcesos() {
+int cantidadProcesos(){
+	int cantidad;
+	pthread_mutex_lock(&lockProccessList);
+	cantidad = list_size(listaProcesos);
+	 // El unlock se hace dos o tres lineas despues de llamar a esta funcion
+	return cantidad;
+}
+
+void planificacionFIFO(){
+	if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
+		ejecutarProceso((int) queue_pop(colaListos), (int) queue_pop(colaCPU));
+
+	if (!queue_is_empty(colaSalida))
+		destruirProceso((int) queue_pop(colaSalida));
+}
+
+void planificacionRR(){
 	int i;
+	for(i=0;i<cantidadProcesos();i++){ // Con cantidadProcesos() se evitan condiciones de carrera.
+		t_proceso* proceso = list_get(listaProcesos,i);
+		pthread_mutex_unlock(&lockProccessList); // El lock se hace en cantidadProcesos()
+		if (proceso->estado==EXEC){
+			if (terminoQuantum(proceso))
+				expulsarProceso(proceso);
+		}
+	}
+	planificacionFIFO();
+}
+
+void planificarProcesos() {
 	switch (algoritmo) {
 	// Procesos especificos
 	case RR:
-
-		for(i=0;i<list_size(listaProcesos);i++){
-			pthread_mutex_lock(&lockProccessList);
-			t_proceso* proceso = list_get(listaProcesos,i);
-			pthread_mutex_unlock(&lockProccessList);
-			if (proceso->estado==EXEC){
-				if (terminoQuantum(proceso))
-					expulsarProceso(proceso);
-			}
-		}
-		/*NOTA: RR usa FIFO, así que sin break*/
+		planificacionRR();
+		break;
 	case FIFO:
-
-		if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
-			ejecutarProceso((int) queue_pop(colaListos), (int) queue_pop(colaCPU));
-
-		if (!queue_is_empty(colaSalida))
-			destruirProceso((int) queue_pop(colaSalida));
-
+		planificacionFIFO();
 		break;
 	}
 	//printf("planificando...\n");
@@ -255,29 +335,6 @@ int getConsolaAsociada(int cliente) {
 	return proceso->consola;
 }
 
-void imprimirVariable(int cliente) {
-	int consola = getConsolaAsociada(cliente);
-	char* msgValue = recv_waitall_ws(cliente, sizeof(ansisop_var_t));
-	char* name = recv_waitall_ws(cliente, sizeof(char));
-	send_w(consola, headerToMSG(HeaderImprimirVariableConsola), 1);
-	send_w(consola, msgValue, sizeof(ansisop_var_t));
-	send_w(consola, name, sizeof(char));
-	free(msgValue);
-	free(name);
-}
-
-void imprimirTexto(int cliente) {
-	int consola = getConsolaAsociada(cliente);
-	char* msgSize = recv_waitall_ws(cliente, sizeof(int));
-	int size = char4ToInt(msgSize);
-	char* texto = recv_waitall_ws(cliente, size);
-	send_w(consola, headerToMSG(HeaderImprimirTextoConsola), 1);
-	send_w(consola, msgSize, sizeof(int));
-	send_w(consola, texto, size);
-	free(msgSize);
-	free(texto);
-}
-
 void procesarHeader(int cliente, char *header) {
 	// Segun el protocolo procesamos el header del mensaje recibido
 	char* payload;
@@ -344,52 +401,6 @@ struct timeval newEspera() {
 	espera.tv_usec = 500000; 		//Microsegundos
 	return espera;
 }
-
-
-
-/* ---------- INICIO PARA UMC ---------- */
-// Dejo toodo sin espacios en el medio cuestion de que al ver solo las firmas
-// de las funciones, esta parte se saltee rapido. Idealmente,
-// no habria que tocarla mas :)
-int getHandshake() {
-	char* handshake = recv_nowait_ws(umc, 1);
-	return charToInt(handshake);
-}
-void handshakearUMC() {
-	char *hand = string_from_format("%c%c", HeaderHandshake, SOYNUCLEO);
-	send_w(umc, hand, 2);
-
-	log_debug(bgLogger, "UMC handshakeo.");
-	if (getHandshake() != SOYUMC) {
-		perror("Se esperaba conectarse a la UMC.");
-	} else
-		log_debug(bgLogger, "Núcleo recibió handshake de UMC.");
-}
-void establecerConexionConUMC() {
-	direccionParaUMC = crearDireccionParaCliente(config.puertoUMC);
-	umc = socket_w();
-	connect_w(umc, &direccionParaUMC);
-}
-void warnDebug() {
-	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
-	log_info(activeLogger, "NO SE ESTABLECE CONEXION CON UMC EN ESTE MODO!");
-	log_info(activeLogger,
-			"Para correr nucleo en modo normal, settear en false el define DEBUG_IGNORE_UMC.");
-	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
-}
-void conectarAUMC() {
-	if (!DEBUG_IGNORE_UMC) {
-		log_debug(bgLogger, "Iniciando conexion con UMC...");
-		establecerConexionConUMC();
-		log_info(activeLogger, "Conexion a la UMC correcta :).");
-		handshakearUMC();
-		log_info(activeLogger, "Handshake con UMC finalizado exitosamente.");
-	} else {
-		warnDebug();
-	}
-}
-/* ---------- FIN PARA UMC ---------- */
-
 
 void finalizar() {
 	destruirLogs();

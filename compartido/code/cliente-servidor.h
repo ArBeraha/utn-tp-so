@@ -49,7 +49,7 @@ t_cliente clientes[MAXCLIENTS];
 int getMaxClients(); //retorna la cantidad maxima de clientes de un server
 int socket_w();
 void send_w(int cliente, char* msg, int msgSize);
-struct sockaddr_in crearDireccionParaCliente(unsigned short PORT);
+struct sockaddr_in crearDireccionParaCliente(unsigned short PORT, char* IP);
 void connect_w(int cliente, struct sockaddr_in* direccionServidor);
 void permitirReutilizacion(int servidor, int* activado);
 char* recv_nowait_ws(int cliente, int msgSize);

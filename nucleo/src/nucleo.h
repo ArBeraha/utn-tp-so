@@ -33,6 +33,13 @@
 #include "log.h"
 #include "commonTypes.h"
 
+/* ---------- INICIO DEBUG ---------- */
+// Es util para debugear sin tener una consola extra con UMC abierto.
+#define DEBUG_IGNORE_UMC true
+#define DEBUG_IGNORE_UMC_PAGES true
+/* ---------- INICIO DEBUG ---------- */
+// Para que rompan las listas y vectores
+#define SIN_ASIGNAR -1
 
 // Globales de servidor
 int socketConsola, socketCPU;
@@ -49,16 +56,6 @@ pthread_t crearProcesos; // 1..n instancias. Este hilo crear procesos nuevos par
 pthread_attr_t detachedAttr; // Config para todos los hilos!
 // Semaforos
 pthread_mutex_t lockProccessList, lock_UMC_conection;
-
-// ***** INICIO DEBUG ***** //
-// setear esto a true desactiva el thread que se conecta con UMC.
-// Es util para debugear sin tener una consola extra con UMC abierto.
-#define DEBUG_IGNORE_UMC true
-#define DEBUG_IGNORE_UMC_PAGES true
-// ***** FIN DEBUG ***** //
-
-// Para que rompan las listas y vectores
-#define SIN_ASIGNAR -1
 
 // Posibles estados de un proceso
 typedef enum {
@@ -86,7 +83,6 @@ t_list* listaProcesos;
 typedef struct customConfig {
 	int puertoConsola;
 	int puertoCPU;
-
 	int quantum; //TODO que sea modificable en tiempo de ejecucion si el archivo cambia
 	int queantum_sleep; //TODO que sea modificable en tiempo de ejecucion si el archivo cambia
 	// TODOS TIENEN QUE SER CHAR**, NO ES LO MISMO LEER 4 BYTES QUE 1

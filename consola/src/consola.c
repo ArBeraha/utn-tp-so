@@ -10,7 +10,8 @@
 void cargarConfig(){
 	t_config* configConsola;
 	configConsola = config_create("consola.cfg");
-	puertoNucleo = config_get_int_value(configConsola, "PUERTO_NUCLEO");
+	config.puertoNucleo = config_get_int_value(configConsola, "PUERTO_NUCLEO");
+	config.ipNucleo = config_get_string_value(configConsola, "IP_NUCLEO");
 }
 
 void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el navegador xD
@@ -46,7 +47,7 @@ void imprimirTexto() {
 }
 
 void conectarANucleo() {
-	direccion = crearDireccionParaCliente(puertoNucleo);
+	direccion = crearDireccionParaCliente(config.puertoNucleo, config.ipNucleo);
 	cliente = socket_w();
 	connect_w(cliente, &direccion);
 }
@@ -193,10 +194,7 @@ int main(int argc, char* argv[]) {
 		log_debug(activeLogger, "Borrando logs antiguos...");
 		system("rm -rfv *.log");
 	}
-	//TODO lo de pasar los handshakes como un byte por meter el numero en un caracter, va barbaro! total son 5
-	// ahora... con los headers que hacemos? cuando lleguemos al header 10 explota todo.
 	crearLogs(string_from_format("consola_%d", getpid()), "Consola");
-	char* path = malloc(PATHSIZE);
 	log_info(activeLogger, "Soy consola de process ID %d.", getpid());
 
 	if (DEBUG) {

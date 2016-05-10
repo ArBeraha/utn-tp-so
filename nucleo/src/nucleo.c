@@ -445,14 +445,10 @@ int main(void) {
 		FD_SET(socketConsola, &socketsParaLectura);
 		FD_SET(socketCPU, &socketsParaLectura);
 
+		mayorDescriptor = socketConsola;
+		if (socketCPU>socketConsola)
+			mayorDescriptor = socketCPU;
 		incorporarClientes();
-		if ((socketConsola > mayorDescriptor)
-				|| (socketCPU > mayorDescriptor)) {
-			if (socketConsola > socketCPU)
-				mayorDescriptor = socketConsola;
-			else
-				mayorDescriptor = socketCPU;
-		}
 
 		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, &espera);
 

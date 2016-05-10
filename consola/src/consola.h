@@ -30,10 +30,16 @@
 #define DEBUG_LOG_OLD_REMOVE false
 // ********* FIN DEBUG ******** //
 
+typedef struct customConfig {
+	int puertoNucleo;
+	char* ipNucleo;
+} customConfig_t;
+
+char* path;
 FILE* programa;
 int cliente;
 t_config* configConsola;
-int puertoNucleo;
+customConfig_t config;
 
 
 #endif /* CONSOLA_H_ */

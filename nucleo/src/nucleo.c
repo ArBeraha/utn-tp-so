@@ -52,7 +52,7 @@ void handshakearUMC() {
 		log_debug(bgLogger, "Núcleo recibió handshake de UMC.");
 }
 void establecerConexionConUMC() {
-	direccionParaUMC = crearDireccionParaCliente(config.puertoUMC);
+	direccionParaUMC = crearDireccionParaCliente(config.puertoUMC, config.ipUMC);
 	umc = socket_w();
 	connect_w(umc, &direccionParaUMC);
 }

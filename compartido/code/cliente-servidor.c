@@ -20,11 +20,11 @@ void send_w(int cliente, char* msg, int msgSize)
 	send(cliente, msg, msgSize, 0);
 }
 
-struct sockaddr_in crearDireccionParaCliente(unsigned short PORT)
+struct sockaddr_in crearDireccionParaCliente(unsigned short PORT, char* IP)
 {
 	struct sockaddr_in direccionServidor;
 	direccionServidor.sin_family = AF_INET;
-	direccionServidor.sin_addr.s_addr = inet_addr("127.0.0.1");
+	direccionServidor.sin_addr.s_addr = inet_addr(IP);
 	direccionServidor.sin_port = htons(PORT);
 	return direccionServidor;
 }

@@ -40,6 +40,7 @@ typedef struct customConfig {
 
 	int entradas_tlb;
 	int retardo;
+	char* ip_swap;
 } customConfig_t;
 
 customConfig_t config;
@@ -48,8 +49,8 @@ t_config* configUmc;
 
 typedef struct tlbStruct{
 	int pid,
-		pagina;
-	char* direccion;
+		pagina,
+		marcoUtilizado;
 }tlb_t;
 
 typedef struct{
@@ -80,8 +81,6 @@ char* pedidoPaginaTamanioContenido;
 t_list* listaTablasPaginas;
 t_list* tabla5;
 
-//int contador=0; //Para que nos e pisen la creacion de las nuevas tablas
-
 tlb_t* tlb;
 
 unsigned int* vectorMarcosOcupados; //vectorMarcosOcupados[n]== 1 -> Esta ocupado
@@ -92,16 +91,6 @@ int tlbHabilitada = 1; //1 ON.  0 OFF
 
 pthread_t SWAP;
 pthread_t NUCLEO_CPU;
-
-
-
-
-
-
-
-//tablaPagina_t *nuevaPag;
-
-
 
 
 
@@ -154,16 +143,17 @@ void crearMemoriaYTlbYTablaPaginas();
 
 
 void cargarCFG() {
-	t_config* configNucleo;
-	configNucleo = config_create("umc.cfg");
-	config.puerto_swap = config_get_int_value(configNucleo, "PUERTO_SWAP");
-	config.puerto_umc_nucleo= config_get_int_value(configNucleo, "PUERTO_UMC_NUCLEO");
+	t_config* configUmc;
+	configUmc = config_create("umc.cfg");
+	config.puerto_swap = config_get_int_value(configUmc, "PUERTO_SWAP");
+	config.puerto_umc_nucleo= config_get_int_value(configUmc, "PUERTO_UMC_NUCLEO");
 
-	config.cantidad_marcos = config_get_int_value(configNucleo, "CANTIDAD_MARCOS");
-	config.tamanio_marco = config_get_int_value(configNucleo, "TAMANIO_MARCO");
+	config.cantidad_marcos = config_get_int_value(configUmc, "CANTIDAD_MARCOS");
+	config.tamanio_marco = config_get_int_value(configUmc, "TAMANIO_MARCO");
 
-	config.entradas_tlb = config_get_int_value(configNucleo, "ENTRADAS_TLB");
-	config.retardo = config_get_int_value(configNucleo, "RETARDO");
+	config.entradas_tlb = config_get_int_value(configUmc, "ENTRADAS_TLB");
+	config.retardo = config_get_int_value(configUmc, "RETARDO");
+	config.ip_swap = config_get_int_value(configUmc, "RETARDO");
 }
 
 
@@ -252,10 +242,16 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 	if(estaEnTlb(pedido) && tlbHabilitada){
 		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d",pedido.pid,pedido.paginaRequerida);
 		int pos = buscarEnTlb(pedido);
-		send_w(cliente, tlb[pos].direccion, 4);
+
+		char* marcoYOffsetBuscado = memoria[tlb[pos].marcoUtilizado * config.tamanio_marco + pedido.offset];
+		char* buscadoConCantBytes = NULL;
+		memcpy(buscadoConCantBytes, marcoYOffsetBuscado,pedido.cantBytes);
+
+		send_w(cliente, buscadoConCantBytes, 4);
 
 	}
 	else{
+
 		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas",pedido.pid,pedido.paginaRequerida);
 
 		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
@@ -352,7 +348,7 @@ void crearMemoriaYTlbYTablaPaginas(){
 	for(i = 0; i<config.entradas_tlb; i++){
 		tlb[i].pid=-1;
 		tlb[i].pagina=-1;
-		tlb[i].direccion=NULL;
+		tlb[i].marcoUtilizado=-1;
 	}
 	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).\n");
 
@@ -621,7 +617,7 @@ void handshakearASwap(){
 }
 
 void conectarASwap(){
-	direccion = crearDireccionParaCliente(config.puerto_swap,127);  //CAMBIAR ESTO DE IP
+	direccion = crearDireccionParaCliente(config.puerto_swap,config.ip_swap);  //CAMBIAR ESTO DE IP
 	cliente = socket_w();
 	connect_w(cliente, &direccion);
 

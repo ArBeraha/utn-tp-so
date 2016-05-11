@@ -16,5 +16,5 @@ void stack_push(t_stack* stack, void* item) {
 }
 
 void* stack_pop(t_stack* stack) {
-	return list_remove(stack, 0);
+	return list_remove(stack, list_size(stack)-1);
 }

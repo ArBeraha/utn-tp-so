@@ -12,9 +12,19 @@ t_stack* stack_create() {
 }
 
 void stack_push(t_stack* stack, void* item) {
-	list_add(stack, item);
+	list_add((t_list*)stack, item);
+}
+
+
+int stack_size(t_stack* stack){
+	return list_size((t_list*)stack);
 }
 
 void* stack_pop(t_stack* stack) {
-	return list_remove(stack, 0);
+	return list_remove((t_list*)stack, stack_size(stack)-1);
 }
+
+void stack_destroy(t_stack* stack){
+	list_destroy((t_list*)stack);
+}
+

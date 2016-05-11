@@ -80,6 +80,8 @@ char* pedidoPaginaTamanioContenido;
 t_list* listaTablasPaginas;
 t_list* tabla5;
 
+//int contador=0; //Para que nos e pisen la creacion de las nuevas tablas
+
 tlb_t* tlb;
 
 unsigned int* vectorMarcosOcupados; //vectorMarcosOcupados[n]== 1 -> Esta ocupado
@@ -90,6 +92,17 @@ int tlbHabilitada = 1; //1 ON.  0 OFF
 
 pthread_t SWAP;
 pthread_t NUCLEO_CPU;
+
+
+
+
+
+
+
+//tablaPagina_t *nuevaPag;
+
+
+
 
 
 struct timeval newEspera()
@@ -347,35 +360,46 @@ void crearMemoriaYTlbYTablaPaginas(){
 	vectorMarcosOcupados = malloc(sizeof(int) * config.cantidad_marcos);
 	log_info(activeLogger,"Creado el vector de marcos ocupados \n");
 
-	memset(vectorMarcosOcupados,0,config.cantidad_marcos* config.tamanio_marco);
-
-	printf("NO ROMPE 1 \n");
-
-//	int k;
-//	listaTablasPaginas = list_create();
-//	printf("2\n");
-//		for(k=0;k<100;k++){
-//			t_list* tablaPaginas = list_create();
-//			list_add(listaTablasPaginas,tablaPaginas);
-////			list_add(tablaPaginas,1);
-////			list_add(tablaPaginas,2);
-////			list_add(tablaPaginas,3);
-////			list_add(tablaPaginas,4);
-//		}
-
-//		for(k=0;k<list_size(listaTablasPaginas);k++){
-//			for(j=0;j<list_size(list_get(listaTablasPaginas,k));j++){
-//				printf("%d",list_get(list_get(listaTablasPaginas,k),j));
-//			}
-//			printf("\n");
-//		}
+	memset(vectorMarcosOcupados,0,sizeof(int) * config.cantidad_marcos);
 
 	printf(" NO ROMPE 2 \n");
 }
 
+
+
+
+
+
 // FIN 3
 
 // 4. Procesar headers
+
+int reservarPagina(int cantPaginasPedidas, int pid){
+
+	if(cantidadMarcosLibres()>=cantPaginasPedidas){ //Si alcanzan los marcos libres...
+
+		int i;
+		for(i=0;i<cantPaginasPedidas;i++){
+
+			tablaPagina_t *nuevaPag = malloc(sizeof(tablaPagina_t));
+
+			int unMarcoNuevo = buscarPrimerMarcoLibre();
+			vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
+			printf("Marco seleccionado numero: %d (deberia ser 4, 5 y 6)\n", unMarcoNuevo);
+
+			nuevaPag->nroPagina = i;
+			nuevaPag->marcoUtilizado = unMarcoNuevo;
+			nuevaPag->bitPresencia=1;
+			nuevaPag->bitModificacion=0;
+			nuevaPag->bitUso=1;
+
+			t_list* tablaPag = list_get(listaTablasPaginas,pid);
+			list_add_in_index(tablaPag,i,nuevaPag);
+		}
+		return 1;
+	}
+	else return 0; // No hay marcos libres
+}
 
 void procesarHeader(int cliente, char *header){
 	// Segun el protocolo procesamos el header del mensaje recibido
@@ -394,12 +418,11 @@ void procesarHeader(int cliente, char *header){
 		log_debug(bgLogger,"Llego un handshake\n");
 		payload_size=1;
 		payload = malloc(payload_size);
-		read(clientes[cliente].socket , payload, payload_size);
+		//read(socketCliente[cliente] , payload, payload_size);
 		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
 		if ( (charToInt(payload)==SOYCPU) || (charToInt(payload)==SOYNUCLEO) ){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
-			clientes[cliente].identidad = charToInt(payload);
-			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
+			//send(socketCliente[cliente], intToChar(SOYUMC), 1, 0);
 		}
 		else {
 			log_error(activeLogger,"No es un cliente apropiado! rechazada la conexion\n");
@@ -407,10 +430,10 @@ void procesarHeader(int cliente, char *header){
 			quitarCliente(cliente);
 		}
 		free(payload);
-		clientes[cliente].atentido=false;
 		break;
 
 		case HeaderReservarEspacio:
+
 			pedidoPaginaPid = recv_waitall_ws(cliente, sizeof(int));
 			pedidoPaginaTamanioContenido = recv_waitall_ws(cliente, sizeof(int));
 			//ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
@@ -420,32 +443,14 @@ void procesarHeader(int cliente, char *header){
 			int pid = charToInt(pedidoPaginaPid);
 
 			//Primero preguntar si swap tiene espacio..
-			if(cantidadMarcosLibres()>=cantPaginasPedidas){ //Si alcanzan los marcos libres...
-				t_list* tablaPaginas; //1 por cada pid
-				int i;
-				for(i=0;i<cantPaginasPedidas;i++){
 
-					int marcoNuevo = buscarPrimerMarcoLibre();
-					vectorMarcosOcupados[marcoNuevo]=1; //Lo marco como ocupado
 
-					tablaPagina_t* nuevaPagina;
-					nuevaPagina = malloc(sizeof(tablaPagina_t));
-					//nuevaPagina->pid = pid;
-					nuevaPagina->nroPagina = i;
-					nuevaPagina->marcoUtilizado = marcoNuevo;
-					nuevaPagina->bitPresencia=1;
-					nuevaPagina->bitModificacion=0;
-					nuevaPagina->bitUso=1;
-
-					list_add_in_index(listaTablasPaginas,pid,tablaPaginas);
-				}
-
+			if(reservarPagina(cantPaginasPedidas,pid)){
 				send_w(cliente, headerToMSG(HeaderTeReservePagina), 1);
 			}
 			else{
 				send_w(cliente, headerToMSG(HeaderErrorNoHayPaginas), 1);
-			}
-
+			};
 			//Hay que agregar a tlb la pagina nueva?
 
 		case HeaderPedirContenidoPagina:
@@ -471,6 +476,9 @@ void procesarHeader(int cliente, char *header){
 			break;
 	}
 }
+
+
+
 
 // FIN 4
 
@@ -501,60 +509,25 @@ void test(){
 
 	printf("Pasamos al test de memoria \n \n");
 
-	int ccantPaginasPedidas = 3;
-	int ppid = 5;
+	int test = reservarPagina(3,5);
 
-	printf("Cantidad de marcos total: %d \n", config.cantidad_marcos);
+	if(test){
+		tabla5 = list_get(listaTablasPaginas, 5);
 
-	int cant = cantidadMarcosLibres();
-	printf("La cantidad de marcos libres deberia ser 6, y es: %d \n", cant);
+		tablaPagina_t* pagina0Tabla5 = list_get(tabla5,0);
+		tablaPagina_t* pagina1Tabla5 = list_get(tabla5,1);
+		tablaPagina_t* pagina2Tabla5 = list_get(tabla5,2);
 
-
-	if(cantidadMarcosLibres()>=ccantPaginasPedidas){
-		printf("aca llegue1\n");
-
-		int i;
-
-		for(i=0;i<ccantPaginasPedidas;i++){
-
-			int unMarcoNuevo = buscarPrimerMarcoLibre();
-			vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
-			printf("Marco seleccionado numero: %d (deberia ser 4, 5 y 6)\n", unMarcoNuevo);
-			printf("aca llegue3\n");
-
-			tablaPagina_t nuevaPag;
-
-			printf("aca llegue3,5\n");
-
-			nuevaPag.nroPagina = i;
-			nuevaPag.marcoUtilizado = unMarcoNuevo;
-			nuevaPag.bitPresencia=1;
-			nuevaPag.bitModificacion=0;
-			nuevaPag.bitUso=1;
-			printf("aca llegue4\n");
-
-			t_list* tablaPag = list_get(listaTablasPaginas,ppid);
-			list_add_in_index(tablaPag,i,&nuevaPag);
-
-			printf("aca llegue5\n");
-		}
-
-
-	printf("aca llegue6\n");
-	printf("Se agregaron las %d paginas en %d \n", ccantPaginasPedidas, ppid);
-
-	tabla5 = list_get(listaTablasPaginas, 5);
-
-	tablaPagina_t* pagina0Tabla5 = list_get(tabla5,0);
-	tablaPagina_t* pagina1Tabla5 = list_get(tabla5,1);
-	tablaPagina_t* pagina2Tabla5 = list_get(tabla5,2);
-
-	printf("Agarramos la tabla de paginas en las posicion 5. \n");
-	printf("Y deberia tener 3 paginas dentro, coincide con cant: %d \n", list_size(tabla5));
-	printf("En la posicion 0 estaria la pagina 0 con marco 4, coincide con: pagina:%d, marco: %d \n", pagina0Tabla5->nroPagina, pagina0Tabla5->marcoUtilizado);
-	printf("En la posicion 0 estaria la pagina 1 con marco 5, coincide con: pagina:%d, marco: %d \n", pagina1Tabla5->nroPagina, pagina1Tabla5->marcoUtilizado);
-	printf("En la posicion 0 estaria la pagina 2 con marco 6, coincide con: pagina:%d, marco: %d \n", pagina2Tabla5->nroPagina, pagina2Tabla5->marcoUtilizado);
+		printf("Agarramos la tabla de paginas en las posicion 5. \n");
+		printf("Y deberia tener 3 paginas dentro, coincide con cant: %d \n", list_size(tabla5));
+		printf("En la posicion 0 estaria la pagina 0 con marco 4, coincide con: pagina:%d, marco: %d \n", pagina0Tabla5->nroPagina, pagina0Tabla5->marcoUtilizado);
+		printf("En la posicion 0 estaria la pagina 1 con marco 5, coincide con: pagina:%d, marco: %d \n", pagina1Tabla5->nroPagina, pagina1Tabla5->marcoUtilizado);
+		printf("En la posicion 0 estaria la pagina 2 con marco 6, coincide con: pagina:%d, marco: %d \n", pagina2Tabla5->nroPagina, pagina2Tabla5->marcoUtilizado);
 	}
+	else{
+		printf("No hay paginas disponibles");
+	}
+
 }
 
 void finalizar() {
@@ -621,19 +594,7 @@ void servidorCPUyNucleo(){
 
 		if (tieneLectura(socketNuevasConexiones))
 			procesarNuevasConexiones();
-
-		for (i = 0; i < getMaxClients(); i++) {
-			if (tieneLectura(clientes[i].socket)) {
-				if (read(clientes[i].socket, header, 1) == 0) {
-					log_error(activeLogger,
-							"Se rompio la conexion. Read leyó 0 bytes");
-					quitarCliente(i);
-				} else
-					procesarHeader(i, header);
-			}
-		}
 	}
-	destruirLogs();
 }
 
 int getHandshake()
@@ -660,7 +621,7 @@ void handshakearASwap(){
 }
 
 void conectarASwap(){
-	direccion = crearDireccionParaCliente(config.puerto_swap);
+	direccion = crearDireccionParaCliente(config.puerto_swap,127);  //CAMBIAR ESTO DE IP
 	cliente = socket_w();
 	connect_w(cliente, &direccion);
 
@@ -700,7 +661,9 @@ void escucharPedidosDeSwap(){
 void conexionASwap(){ //Creada para unir las dos funciones y crear un hilo
 	realizarConexionASwap();
 	escucharPedidosDeSwap();
+
 }
+
 // FIN 6
 
 

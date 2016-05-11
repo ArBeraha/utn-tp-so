@@ -27,19 +27,26 @@ typedef struct {
 } __attribute__((packed)) t_sentencia;
 
 typedef struct {
+	char ID;
+	t_variable variable;
+} __attribute__((packed)) t_identificador;
+
+typedef struct {
 	int posicion;
 	t_list* argumentos; // lista de t_variable
-	t_dictionary* variables; // diccionario ['ID',variable]
+	t_list* identificadores;  // lista de t_identificador
 	int posicionRetorno;
 	t_variable valorRetorno;
 } t_stack_item;
+
+
 
 typedef struct {
 	int PID; // identificador único
 	int PC;	 // Program Counter
 	t_stack* SP; // Posición del Stack: Pila de t_stack_item
 	int cantidad_paginas;
-	t_list* indice_codigo; // lista de t_sentencias que indican la posicion absoluta de una sentencia
+	t_list* indice_codigo; // lista de t_sentencias que indican la posicion absoluta de cada sentencia
 	t_dictionary* indice_etiquetas; // diccionario [Etiqueta,Posicion de la sentencia a saltar]
 } t_PCB;
 

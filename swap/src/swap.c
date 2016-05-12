@@ -31,6 +31,31 @@
 #define PUERTO_SWAP 8082
 int cliente;
 
+/* la estructura que de cada proceso de procese(? */
+typedef struct infoProcesos {
+	int pid;
+	int numPagina;
+	int posPagina;
+} t_infoProcesos;
+
+
+typedef struct disponibles {
+	int marcoInicial;
+	int totalMarcos;
+} t_disponibles;
+
+struct t_config* archSwap; //archivo de configuracion
+
+char* nomArchivo; //nombre del archivo vacio que creare mediante dd
+char* ddComand; // comando a mandar a consola para crear archivo mediante dd
+
+
+struct t_list* espacioUtilizado; //lista de paginas usadas
+struct t_list* espacioDisponible; //lista de paginas no usadas
+
+
+
+// FUNCIONES UTILES
 void procesarHeader(int cliente, char* header)
 {
 	char* payload;
@@ -75,24 +100,110 @@ void procesarHeader(int cliente, char* header)
     }
 
 
+void funcionamientoSwap()
+{
+
+	/*asignemos el archivo de configuracion "vamo' a asignarlo"*/
+		archSwap = config_create("archivoConfigSwap");
+
+		char* puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
+		char* nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");
+		int cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
+		int tamañoPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
+		int retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
+
+		// lo voy a usar para comando dd que requiere strings para mandar por comando a consola
+		char* cantPag = config_get_string_value(archSwap, "CANTIDAD_PAGINAS");
+		char* tamPag = config_get_string_value(archSwap, "TAMANIO_PAGINA");
+
+		/*logs*/
+		crearLogs("Swap","Swap");
+
+
+
+
+		// dd if=/dev/zero of=archivoConfigSwap bs=tamPag count=cantPag
+		espacioDisponible = cantPaginasSwap; //Para manejar la asignacion de paginas a procesos
+		ddComand = string_new(); //comando va a contener a dd que voy a mandar a consola para que cree el archivo
+		nomArchivo = config_get_string_value(archSwap, "NOMBRE_SWAP");
+		string_append(&ddComand, "dd if=/dev/zero of="); //crea archivo input vacio
+		string_append(&ddComand, nomArchivo); //con el nombre de la swap
+		string_append(&ddComand, " bs="); //defino tamaño del archivo (de la memoria swap)
+		string_append(&ddComand, tamPag);
+		string_append(&ddComand, " count=");
+		string_append(&ddComand, cantPag); //cuyo tamaño va a ser igual al tamaño de las paginas*cantidad de paginas
+		printf("%s\n", ddComand);
+		system(ddComand); //ejecuto comando
+
+
+
+		/* listas manejo de paginas */
+		espacioUtilizado = list_create();
+		espacioDisponible = list_create();
+
+		t_disponibles* disponibles = malloc(sizeof(t_disponibles));
+		disponibles->marcoInicial = 0; //primer marco
+		disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
+		list_add(espacioDisponible, disponibles);
+
+
+
+	//SOCKETS
+
+	    char *header;
+	    crearLogs("Swap","Swap");
+
+	    //printf("1");
+		configurarServidor(PUERTO_SWAP);
+		//printf("2");
+		log_info(activeLogger,"Esperando conexiones");
+		//printf("3");
+		procesarNuevasConexiones();
+		cliente=clientes[0].socket;
+		//printf("4");
+
+		while (1){
+			header=recv_waitall_ws(cliente,1);
+			procesarHeader(cliente,header);
+        }
+
+
+
+
+
+		/*
+		 FUNCIONES PRINCIPALES DE SWAP
+
+
+		void asignarEspacioANuevoProceso(){
+			//buscarHueco();
+			//Opcion A: bool? hayFragmentacionExterna(); si entonces compactar(); //usleep(retCompactacion) para procesos que llegan mientras swapeo?
+			//Opcion B:si no hay espacio total disponible rechazarProceso()? y cancelar inicializacion
+
+
+		}
+
+		void leerPagina(){
+			mando contenido de pagina por sockets?
+		}
+
+		void escribirPagina(){
+		  si ya esta escrita sobreescribir();
+		}
+
+		void finalizarProceso(){
+		 borrar de la particion de swap
+		 marcar paginas ocupadas como disponibles
+		}
+
+        */
+
+}
+
+
 int main()
 {
-	char *header;
-    crearLogs("Swap","Swap");
-
-    printf("1");
-	configurarServidor(PUERTO_SWAP);
-	printf("2");
-	log_info(activeLogger,"Esperando conexiones");
-	printf("3");
-	procesarNuevasConexiones();
-	cliente=clientes[0].socket;
-	printf("4");
-
-	while (1){
-		header=recv_waitall_ws(cliente,1);
-		procesarHeader(cliente,header);
-	}
+    funcionamientoSwap();
 
 	return 0;
 }

@@ -19,6 +19,7 @@
 #include "cliente-servidor.h"
 #include "log.h"
 #include "commonTypes.h"
+#include "serializacion.h"
 
 /*------------Variables Globales--------------*/
 int cliente_nucleo; //cpu es cliente del nucleo
@@ -27,10 +28,10 @@ int cliente_umc; //cpu es cliente de umc
 struct sockaddr_in direccionNucleo;   //direccion del nucleo
 struct sockaddr_in direccionUmc;	  //dbireccion umc
 
-//t_log *activeLogger, *bgLogger;
-//
 AnSISOP_funciones funciones;		//funciones de AnSISOP
 AnSISOP_kernel funcionesKernel;		// funciones kernel de AnSISOP
+
+t_PCB* pcbAuxiliar;
 
 /*------------Declaracion de funciones--------------*/
 void procesarHeader(char*);
@@ -41,7 +42,7 @@ void parsear();
 void obtenerPCB();
 void esperar_sentencia();
 
-/*--------Funciones----------*/ //COMENTADO LO DEL PARSER HASTA QUE COMPILE BIEN -.-
+/*--------FUNCIONES----------*/
 //cambiar el valor de retorno a t_puntero
 void definir_variable(t_nombre_variable variable){
 	printf("Definir la variable %c \n",variable);
@@ -92,10 +93,16 @@ void retornar(t_valor_variable variable){
 
 void imprimir(t_valor_variable valor){
 	printf("Imprimir %d\n",valor);
+	//header enviar valor de variable
+	send_w(cliente_nucleo,intToChar(valor),sizeof(t_valor_variable));
 }
 
 void imprimir_texto(char* texto){
-	 printf("Imprimir texto: %s",texto);
+	 printf("Imprimir texto: %s\n",texto);
+	 int cant = strlen(texto);
+	 //TODO enviar header?
+	 send_w(cliente_nucleo,texto,cant);		//envio a nucleo la cadena a imprimir
+	 printf("se envio a nucleo la cadena: %s",texto);
 }
 
 //cambiar valor de retorno a int
@@ -103,14 +110,17 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo){
 	printf("Informar a nucleo que el programa quiere usar '%s' durante %d unidades de tiempo\n",dispositivo,tiempo);
 }
 
-//cambiar valor de retorno a int
 void wait(t_nombre_semaforo identificador_semaforo){
 	printf("Comunicar nucleo de hacer wait con semaforo: %s", identificador_semaforo);
+	//header hace wait
+	send_w(cliente_nucleo,identificador_semaforo, sizeof(identificador_semaforo));
 }
 
-//cambiar valor de retorno a int
+
 void signal(t_nombre_semaforo identificador_semaforo){
 	printf("Comunicar nucleo de hacer signal con semaforo: %s", identificador_semaforo);
+	//header hace signal
+	send_w(cliente_nucleo,identificador_semaforo, sizeof(identificador_semaforo));
 }
 
 void inicializar_primitivas(){
@@ -131,7 +141,23 @@ void inicializar_primitivas(){
 	funcionesKernel.AnSISOP_signal=&signal;
 
 	log_info(activeLogger,"Primitivas Inicializadas");
+}
 
+void liberar_primitivas(){
+	free(funciones.AnSISOP_definirVariable );
+	free(funciones.AnSISOP_obtenerPosicionVariable  );
+	free(funciones.AnSISOP_dereferenciar );
+	free(funciones.AnSISOP_asignar );
+	free(funciones.AnSISOP_obtenerValorCompartida );
+	free(funciones.AnSISOP_asignarValorCompartida );
+	free(funciones.AnSISOP_irAlLabel );
+	free(funciones.AnSISOP_imprimir);
+	free(funciones.AnSISOP_imprimirTexto);
+	free(funciones.AnSISOP_llamarSinRetorno);
+	free(funciones.AnSISOP_retornar);
+	free(funciones.AnSISOP_entradaSalida);
+	free(funcionesKernel.AnSISOP_wait);
+	free(funcionesKernel.AnSISOP_signal);
 }
 
 void parsear(char* const sentencia){
@@ -141,19 +167,17 @@ void parsear(char* const sentencia){
 
 /*--------Funciones----------*/
 
-int getHandshake(int cli)
-{
+int getHandshake(int cli){
 	char* handshake = recv_nowait_ws(cli,1);
 	return charToInt(handshake);
 }
 
 void conectar_nucleo(){
-	direccionNucleo = crearDireccionParaCliente(8088);
+	direccionNucleo = crearDireccionParaCliente(8088,"127.0.0.1"); //TODO cambiar ip
 	cliente_nucleo = socket_w();
 	connect_w(cliente_nucleo,&direccionNucleo); //conecto cpu a la direccion 'direccionNucleo'
 
 	log_info(activeLogger,"Exito al conectar con NUCLEO!!");
-
 }
 
 void hacer_handshake_nucleo(){
@@ -169,7 +193,7 @@ void hacer_handshake_nucleo(){
 }
 
 void conectar_umc(){
-	direccionUmc = crearDireccionParaCliente(8081);
+	direccionUmc = crearDireccionParaCliente(8081,"127.0.0.1"); //TODO cambiar ip
 	cliente_umc = socket_w();
 	connect_w(cliente_umc,&direccionUmc); //conecto cpu a la direccion 'direccionUmc'
 
@@ -188,13 +212,12 @@ void hacer_handshake_umc(){
 		}
 }
 
-
 void esperar_programas(){
 	log_debug(bgLogger,"Esperando programas de nucleo %d.");
 	char* header;
 	while(1){
 		header = recv_waitall_ws(cliente_nucleo,1);
-		procesarHeader(header);    //TODO implementar - nuevos headers?
+		procesarHeader(header);
 		free(header);
 	}
 }
@@ -244,6 +267,7 @@ void esperar_sentencia(){
 void obtenerPCB(){
 	//funcion que recibe el pcb
 	pedir_sentencia();
+
 	esperar_sentencia();
 }
 
@@ -263,13 +287,37 @@ t_PCB procesarPCB(t_PCB pcb){
 	return nuevoPCB;
 }
 
+void serializar_PCB(char* res, t_PCB* pcb){		//terminar!
+
+	string_append(&res,intToChar(pcb.PC));		//pongo el PC
+	string_append(&res,intToChar(pcb.PID));		//pongo el PID
+	//serializar paginas de codigo
+	string_append(&res,intToChar(pcb.cantidad_paginas));	//pongo la cantidad de paginas
+	//serializar indice etiquetas
+	//serializar indice stack
+
+}
+
+//void deserializar_PCB(char* mensaje, t_PCB* pcb){
+//	//t_PCB* newPCB = malloc(24);
+//
+//	pcb->PC = atoi(string_substring(mensaje,0,3));	//pongo el PC
+//	pcb->PID = atoi(string_substring(mensaje,4,8));
+//
+//	//deserializar indices de codigo
+//
+//	pcb->cantidad_paginas = atoi(string_substring(mensaje,13,16));
+//
+//}
+
 int main()
 {
+	pcbAuxiliar = malloc(sizeof(t_PCB));
+
 	crearLogs(string_from_format("CPU_%d",getpid()),"CPU");
 	log_info(activeLogger,"Soy CPU de process ID %d.", getpid());
 
 	inicializar_primitivas();
-	//parsear("a = b + 12"); para probar
 
 	//conectarse a umc
 	conectar_umc();
@@ -282,7 +330,10 @@ int main()
 	//CPU se pone a esperar que nucleo le envie PCB
 	esperar_programas();
 
-	destruirLogs(); //TODO cambiar de lugar
+	destruirLogs();
+
+	free(pcbAuxiliar);
+	liberar_primitivas();
 
 	return 0;
 }

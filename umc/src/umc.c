@@ -127,14 +127,19 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 	//SI ESTA EN TLB DEVUELVO
 
 	if(estaEnTlb(pedido) && tlbHabilitada){
-		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d",pedido.pid,pedido.paginaRequerida);
+		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d \n",pedido.pid,pedido.paginaRequerida);
 		int pos = buscarEnTlb(pedido);
 
-		char* marcoYOffsetBuscado = memoria[tlb[pos].marcoUtilizado * config.tamanio_marco + pedido.offset];
-		char* buscadoConCantBytes = NULL;
-		memcpy(buscadoConCantBytes, marcoYOffsetBuscado,pedido.cantBytes);
+		char* contenido = malloc(pedido.cantBytes + 1);
+		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset,pedido.cantBytes);
+		contenido[pedido.cantBytes]='\0';
 
-		send_w(cliente, buscadoConCantBytes, 4);
+		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
+		return contenido; //Provisorio, tiene que ser un SEND
+
+		//send_w(cliente, contenido, 4);
+
+	//HASTA ACA OK!
 
 	}
 	//SINO, ME FIJO QUE SEA VALIDA LA PETICION
@@ -150,11 +155,18 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 
 					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
-					char* devolucion = buscarMarco(paginaBuscada->marcoUtilizado,pedido);
+					char* contenido = malloc(pedido.cantBytes + 1);
+					memcpy(contenido,memoria+paginaBuscada->marcoUtilizado * config.tamanio_marco+pedido.offset,pedido.cantBytes);
+					contenido[pedido.cantBytes]='\0';
+
+					printf("marco tlb: %d \n", paginaBuscada->marcoUtilizado);
+
 
 					agregarATlb(paginaBuscada,pedido.pid);
 
-					send_w(cliente, devolucion, 4);
+					//send_w(cliente, devolucion, 4);
+					return contenido; //Provisorio, tiene que ser un SEND
+		//HASTA ACA ANDA FENOMENO!
 				}
 	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y TODO LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
 				else{
@@ -240,7 +252,7 @@ void devolverPaginasDePid(int pid){ //OK
 
 }
 
-void devolverTodaLaMemoria(){
+void devolverTodaLaMemoria(){ //OK
 
 	int cantidadTablas = list_size(listaTablasPaginas);
 	int i;
@@ -272,7 +284,7 @@ void devolverTodaLaMemoria(){
 	}
 }
 
-void devolverMemoriaDePid(int pid){
+void devolverMemoriaDePid(int pid){ //OK
 	t_list* unaTabla = malloc(sizeof(t_list));
 	int tamanioLista = list_size(listaTablasPaginas);
 
@@ -594,6 +606,33 @@ void test(){
 	printf("---- De solo pid 5 --- \n");
 	devolverMemoriaDePid(5);
 
+	printf(" -------------------------------------------  \n \n");
+	printf("Haciendo un pedido de pagina \n");
+
+	pedidoLectura_t pedido;
+	pedido.pid = 5;
+	pedido.paginaRequerida = 1;
+	pedido.offset = 2;
+	pedido.cantBytes = 2;
+
+	printf("Simulamos que esta en TLB \n");
+	tlb[3].pid=5;
+	tlb[3].pagina=1;
+	tlb[3].marcoUtilizado= 5;
+
+	char* respuesta = devolverPedidoPagina(pedido);
+	printf("Respuesta1 deberia ser 'cd' y es: %s  \n",respuesta); //Original: abcd Empieza de la posicion 2 y lee 2 bytes
+
+	printf("--***---\n");
+
+	printf("Reinicio la tlb y no deberia encontrar, paso a buscarla en lista tablas \n");
+	inicializarTlb();
+	char* respuesta2 = devolverPedidoPagina(pedido);
+	printf("Respuesta2 deberia ser 'cd' y es: %s  \n",respuesta2);
+	printf("Y se deberia haber agregado a tlb.. \n");
+	printf("Tlb deberia ser (5,1,5) y es : Pid: %d, Pagina: %d, Marco: %d \n", tlb[0].pid, tlb[0].pagina, tlb[0].marcoUtilizado);
+	printf("--***---\n");
+
 }
 
 void finalizar() {
@@ -616,7 +655,7 @@ int main(void) {
 
 	int k;
 	listaTablasPaginas = list_create();
-	printf("2\n");
+
 	for(k=0;k<config.cantidad_marcos;k++){  //COMO MAXIMO ES LA CANTIDAD DE MARCOS, considerando q como minimo una tabla tiene 1 pag
 		t_list* tablaPaginas = list_create();
 		list_add(listaTablasPaginas,tablaPaginas);

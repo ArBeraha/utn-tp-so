@@ -233,8 +233,8 @@ void devolverPaginasDePid(int pid){ //OK
 
 	}
 	else{
-			printf("El pid supera la cantidad de tablas");
-			log_info(dump, "El pid supera la cantidad de tablas");
+		printf("El pid supera la cantidad de tablas");
+		log_info(dump, "El pid supera la cantidad de tablas");
 
 	}
 
@@ -259,13 +259,14 @@ void devolverTodaLaMemoria(){
 			unaPagina = list_get(unaTabla,j);
 			//Hago un solo print f de las caracteristicas
 			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",i, unaPagina->nroPagina,unaPagina->marcoUtilizado);
-			log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: ",i, unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
-			int k; //Hago un for para imprimir una por una las posiciones de la memoria hasta completar un marco completo aunque no lo use todo..
-			for(k=0;k<config.tamanio_marco;k++){
-				printf("%s", &memoria[(unaPagina->marcoUtilizado * config.tamanio_marco)+k]);
-				log_info(dump, "%s ", &memoria[(unaPagina->marcoUtilizado * config.tamanio_marco)+k]);
-			}
+			char* contenido = malloc(config.tamanio_marco+1);
+			memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
+			contenido[config.tamanio_marco]='\0';
+
+			printf("%s",contenido);
+			log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: %s ",i, unaPagina->nroPagina,unaPagina->marcoUtilizado,contenido);
+
 			printf("\n");
 		}
 	}
@@ -284,11 +285,18 @@ void devolverMemoriaDePid(int pid){
 			tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
 			unaPagina = list_get(unaTabla,i);
 
-			char *devolucionDeUnMarco = NULL;  //malloc(sizeof(char)); ??
-			memcpy(devolucionDeUnMarco,&memoria[unaPagina->marcoUtilizado * config.tamanio_marco], config.tamanio_marco);
+			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
-			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: %s \n",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado, devolucionDeUnMarco);
-			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, Contenido: %s \n",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado, devolucionDeUnMarco);
+			char* contenido = malloc(config.tamanio_marco+1);
+			memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
+			contenido[config.tamanio_marco]='\0';
+
+			printf("%s",contenido);
+			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, Contenido: %s ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,contenido);
+
+			printf("\n");
+
+
 		}
 
 	}
@@ -571,6 +579,21 @@ void test(){
 		printf("No hay paginas disponibles");
 	}
 
+	memoria[5*config.tamanio_marco]='a';
+	memoria[5*config.tamanio_marco+1]='b';
+	memoria[5*config.tamanio_marco+2]='c';
+	memoria[5*config.tamanio_marco+3]='d';
+	memoria[5*config.tamanio_marco+11]='d';
+
+	memoria[6*config.tamanio_marco]='a';
+	memoria[6*config.tamanio_marco+1]='b';
+	memoria[6*config.tamanio_marco+2]='c';
+
+	devolverTodaLaMemoria();
+
+	printf("---- De solo pid 5 --- \n");
+	devolverMemoriaDePid(5);
+
 }
 
 void finalizar() {
@@ -602,12 +625,6 @@ int main(void) {
 	crearMemoriaYTlbYTablaPaginas();
 
 	test();
-
-	memoria[5*config.tamanio_marco]='a';
-	memoria[5*config.tamanio_marco+1]='b';
-	memoria[5*config.tamanio_marco+2]='c';
-
-	devolverTodaLaMemoria();
 
 
 

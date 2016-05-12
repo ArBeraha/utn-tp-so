@@ -9,6 +9,9 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <commons/string.h>
 #include <commons/log.h>
 #include <parser/parser.h>
@@ -20,6 +23,10 @@
 #include "log.h"
 #include "commonTypes.h"
 #include "serializacion.h"
+
+/*------------Macros--------------*/
+#define DEBUG_IGNORE_UMC true
+
 
 /*------------Variables Globales--------------*/
 int cliente_nucleo; //cpu es cliente del nucleo
@@ -98,11 +105,12 @@ void imprimir(t_valor_variable valor){
 }
 
 void imprimir_texto(char* texto){
-	 printf("Imprimir texto: %s\n",texto);
-	 int cant = strlen(texto);
-	 //TODO enviar header?
-	 send_w(cliente_nucleo,texto,cant);		//envio a nucleo la cadena a imprimir
-	 printf("se envio a nucleo la cadena: %s",texto);
+	int size = strlen(texto);
+	log_debug(activeLogger, "Se envio a nucleo la cadena: %s", texto);
+	send_w(cliente_nucleo, headerToMSG(HeaderImprimirTextoNucleo), 1);
+	send_w(cliente_nucleo, intToChar4(size), sizeof(int));
+	send_w(cliente_nucleo, texto, size); 		//envio a nucleo la cadena a imprimir
+	// ??? free(texto); //como no se que onda lo que hace la blbioteca, no se si tire segment fault al hacer free. Una vez q este todoo andando probar hacer free aca
 }
 
 //cambiar valor de retorno a int
@@ -289,10 +297,10 @@ t_PCB procesarPCB(t_PCB pcb){
 
 void serializar_PCB(char* res, t_PCB* pcb){		//terminar!
 
-	string_append(&res,intToChar(pcb.PC));		//pongo el PC
-	string_append(&res,intToChar(pcb.PID));		//pongo el PID
+	string_append(&res,intToChar4(pcb->PC));		//pongo el PC
+	string_append(&res,intToChar4(pcb->PID));		//pongo el PID
 	//serializar paginas de codigo
-	string_append(&res,intToChar(pcb.cantidad_paginas));	//pongo la cantidad de paginas
+	string_append(&res,intToChar4(pcb->cantidad_paginas));	//pongo la cantidad de paginas
 	//serializar indice etiquetas
 	//serializar indice stack
 
@@ -310,18 +318,43 @@ void serializar_PCB(char* res, t_PCB* pcb){		//terminar!
 //
 //}
 
+void warnDebug() {
+	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
+	log_info(activeLogger,
+			"Para ingresar manualmente un archivo: Cambiar true por false en cpu.c -> #define DEBUG_IGNORE_UMC, y despues recompilar.");
+	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
+}
+
+void establecerConexionConUMC(){
+	if(!DEBUG_IGNORE_UMC){
+			conectar_umc();
+			hacer_handshake_umc();
+		}
+		else{
+			warnDebug();
+		}
+}
+
+void inicializar(){
+	pcbAuxiliar = malloc(sizeof(t_PCB));
+	crearLogs(string_from_format("cpu_%d",getpid()),"CPU");
+	log_info(activeLogger,"Soy CPU de process ID %d.", getpid());
+	inicializar_primitivas();
+}
+
+void finalizar(){
+	destruirLogs();
+	free(pcbAuxiliar);
+	liberar_primitivas();
+}
+
 int main()
 {
-	pcbAuxiliar = malloc(sizeof(t_PCB));
-
-	crearLogs(string_from_format("CPU_%d",getpid()),"CPU");
-	log_info(activeLogger,"Soy CPU de process ID %d.", getpid());
-
-	inicializar_primitivas();
+	inicializar();
 
 	//conectarse a umc
-	conectar_umc();
-	hacer_handshake_umc();
+	establecerConexionConUMC();
+
 
 	//conectarse a nucleo
 	conectar_nucleo();
@@ -330,10 +363,6 @@ int main()
 	//CPU se pone a esperar que nucleo le envie PCB
 	esperar_programas();
 
-	destruirLogs();
-
-	free(pcbAuxiliar);
-	liberar_primitivas();
-
-	return 0;
+	finalizar();
+	return EXIT_SUCCESS;
 }

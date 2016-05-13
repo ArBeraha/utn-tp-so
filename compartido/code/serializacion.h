@@ -15,7 +15,6 @@
 #include <commons/collections/list.h>
 #include "CUnit/Basic.h"
 
-void imprimir_serializacion(char* serial, int largo);
 int serializar_int(char* destino,int* fuente);
 int deserializar_int(int* destino, char* fuente);
 int serializar_variable(char* destino,t_variable* fuente);
@@ -32,8 +31,12 @@ int serializar_stack(char* destino, t_stack* fuente);
 int deserializar_stack_item(t_stack_item* destino, char* fuente);
 int deserializar_stack(t_stack* destino, char* fuente);
 
-// Tests
+// Debug
+void imprimir_serializacion(char* serial, int largo);
+
+// Test Call
 int test_serializacion();
+// Tests
 void test_serializar_int();
 void test_serializar_variable();
 void test_serializar_sentencia();

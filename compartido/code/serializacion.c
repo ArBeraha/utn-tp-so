@@ -114,6 +114,18 @@ int deserializar_stack(t_stack* destino, char* fuente) {
 }
 
 /* INICIO DE TESTS */
+int test_serializacion(){
+	CU_initialize_registry();
+	CU_pSuite suite_serializacion = CU_add_suite("Suite de Serializacion", NULL, NULL);
+	CU_add_test(suite_serializacion, "Test de Serializacion de int", test_serializar_int);
+	CU_add_test(suite_serializacion, "Test de Serializacion de variable", test_serializar_variable);
+	CU_add_test(suite_serializacion, "Test de Serializacion de sentencia", test_serializar_sentencia);
+	CU_add_test(suite_serializacion, "Test de Serializacion de list", test_serializar_list);
+	CU_basic_set_mode(CU_BRM_VERBOSE);
+	CU_basic_run_tests();
+	CU_cleanup_registry();
+	return CU_get_error();
+}
 void test_serializar_int(){
 	int a=57,b;
 	char* serial;
@@ -156,17 +168,6 @@ void test_serializar_list(){
 	list_destroy(listB);
 }
 
-int test_serializacion(){
-	CU_initialize_registry();
-	CU_pSuite suite_serializacion = CU_add_suite("Suite de prueba", NULL, NULL);
-	CU_add_test(suite_serializacion, "Test de Serializacion de int", test_serializar_int);
-	CU_add_test(suite_serializacion, "Test de Serializacion de t_variable", test_serializar_variable);
-	CU_add_test(suite_serializacion, "Test de Serializacion de t_sentencia", test_serializar_sentencia);
-	CU_add_test(suite_serializacion, "Test de Serializacion de t_list", test_serializar_list);
-	CU_basic_set_mode(CU_BRM_VERBOSE);
-	CU_basic_run_tests();
-	CU_cleanup_registry();
-	return CU_get_error();
-}
+
 
 

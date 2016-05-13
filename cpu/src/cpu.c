@@ -27,7 +27,6 @@
 /*------------Macros--------------*/
 #define DEBUG_IGNORE_UMC true
 
-
 /*------------Variables Globales--------------*/
 int cliente_nucleo; //cpu es cliente del nucleo
 int cliente_umc; //cpu es cliente de umc
@@ -48,6 +47,7 @@ void pedir_sentencia();
 void parsear();
 void obtenerPCB();
 void esperar_sentencia();
+void obtener_y_parsear();
 
 /*--------FUNCIONES----------*/
 //cambiar el valor de retorno a t_puntero
@@ -62,19 +62,50 @@ void obtener_posicion_de(t_nombre_variable variable){
 	//return variable;
 }
 
-//cambiar valor de retorno a t_valor_variable
-void dereferenciar(t_puntero direccion){
+t_valor_variable dereferenciar(t_puntero direccion){		// TODO terminar - Pido a UMC el valor de la variable de direccion
+	t_valor_variable valor;
 	printf("Dereferenciar %d y su valor es:  \n",direccion);
-	//return &direccion;
+
+	send_w(cliente_umc, headerToMSG(HeaderPedirValorVariable), 1);
+	send_w(cliente_umc,intToChar(direccion),sizeof(t_puntero)); // t_puntero y t_valor_variable es entero de 32 bits -- deberia serializar?
+
+	char* msgSize = recv_waitall_ws(cliente_umc, sizeof(int));
+	int size = char4ToInt(msgSize);
+	char* res = recv_waitall_ws(cliente_umc,sizeof(size)); //recibo el valor de UMC
+
+	valor = charToInt(res);
+	free(msgSize);
+	free(res);
+
+	return valor;
 }
 
-void asignar(t_puntero direccion_variable, t_valor_variable valor){
+void asignar(t_puntero direccion_variable, t_valor_variable valor){	//TODO terminar
 	printf("Asignando en %d el valor %d\n", direccion_variable,valor);
+
+	send_w(cliente_umc,headerToMSG(HeaderAsignarValor), 1);
+	send_w(cliente_umc,intToChar(direccion_variable),sizeof(t_puntero)); //envio la direccion de la variable
+	send_w(cliente_umc,intToChar(valor),sizeof(t_valor_variable));		//envio el valor de la variable
 }
 
-//cambiar valor de retorno a t_valor_variable
-void obtener_valor_compartida(t_nombre_compartida variable){
+
+t_valor_variable obtener_valor_compartida(t_nombre_compartida variable){ 				// Pido a Nucleo el valor de la variable
 	printf("Obtener valor de variable compartida %s y es: %d \n",variable,*variable); // no seria el valor real
+
+	t_valor_variable valor;
+
+	send_w(cliente_nucleo, headerToMSG(HeaderPedirValorVariableCompartida), 1);
+	send_w(cliente_nucleo,variable,sizeof(t_nombre_compartida)); 		//TODO tengo que serializar??
+
+	char* msgSize = recv_waitall_ws(cliente_nucleo, sizeof(int));
+	int size = char4ToInt(msgSize);
+	char* res = recv_waitall_ws(cliente_nucleo,sizeof(size));
+
+	valor = charToInt(res);
+	free(msgSize);
+	free(res);
+
+	return valor;
 
 }
 
@@ -250,11 +281,11 @@ void procesarHeader(char *header){
 	    break;
 
 	case HeaderSentencia:
-		//obtener_y_parsear();
+		obtener_y_parsear();
 		break;
 	default:
 		log_error(activeLogger,"Llego cualquier cosa.");
-		log_error(activeLogger,"Llego el header numero %d y no hay una acciÃ³n definida para Ã©l.",charToInt(header));
+		log_error(activeLogger,"Llego el header numero %d y no hay una accion definida para el.",charToInt(header));
 		exit(EXIT_FAILURE);
 		break;
 	}
@@ -279,7 +310,7 @@ void obtenerPCB(){
 	esperar_sentencia();
 }
 
-void obtener_y_parsear(void){
+void obtener_y_parsear(){
 	char tamanioSentencia;
 	read(cliente_umc, &tamanioSentencia, 1);
 
@@ -354,7 +385,6 @@ int main()
 
 	//conectarse a umc
 	establecerConexionConUMC();
-
 
 	//conectarse a nucleo
 	conectar_nucleo();

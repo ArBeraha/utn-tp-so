@@ -7,6 +7,15 @@
 
 #include "umc.h"
 
+struct timeval newEspera()
+{
+	struct timeval espera;
+	espera.tv_sec = 2; 				//Segundos
+	espera.tv_usec = 500000; 		//Microsegundos
+	return espera;
+}
+
+
 void cargarCFG() {
 	t_config* configUmc;
 	configUmc = config_create("umc.cfg");
@@ -19,6 +28,7 @@ void cargarCFG() {
 	config.entradas_tlb = config_get_int_value(configUmc, "ENTRADAS_TLB");
 	config.retardo = config_get_int_value(configUmc, "RETARDO");
 	config.ip_swap = config_get_string_value(configUmc, "IP_SWAP");
+	config.puerto_cpu = config_get_int_value(configUmc, "PUERTO_CPU");
 }
 
 //0. Funciones auxiliares a las funciones Principales
@@ -372,7 +382,7 @@ void flushMemory(){ //Pone a todas las paginas bit de modificacion en 1
 		int cantidadPaginasDeTabla = list_size(unaTabla);
 		int j;
 
-		for(j=0;j<cantidadPaginasDeTabla;i++){
+		for(j=0;j<cantidadPaginasDeTabla;j++){
 
 			tablaPagina_t* unaPagina = list_get(unaTabla,j);
 			unaPagina->bitModificacion=1;
@@ -470,6 +480,7 @@ void procesarHeader(int cliente, char *header){
 	char* payload;
 	int payload_size;
 	log_debug(bgLogger,"Llego un mensaje con header %d\n",charToInt(header));
+	clientes[cliente].atentido=true;
 
 	switch(charToInt(header)) {
 
@@ -482,11 +493,13 @@ void procesarHeader(int cliente, char *header){
 		log_debug(bgLogger,"Llego un handshake\n");
 		payload_size=1;
 		payload = malloc(payload_size);
-		//read(socketCliente[cliente] , payload, payload_size);
+		read(clientes[cliente].socket , payload, payload_size);
 		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
 		if ( (charToInt(payload)==SOYCPU) || (charToInt(payload)==SOYNUCLEO) ){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
-			//send(socketCliente[cliente], intToChar(SOYUMC), 1, 0);
+			clientes[cliente].identidad = charToInt(payload);
+			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
+
 		}
 		else {
 			log_error(activeLogger,"No es un cliente apropiado! rechazada la conexion\n");
@@ -494,6 +507,7 @@ void procesarHeader(int cliente, char *header){
 			quitarCliente(cliente);
 		}
 		free(payload);
+		clientes[cliente].atentido=false;
 		break;
 
 		case HeaderReservarEspacio:
@@ -648,7 +662,7 @@ int main(void) {
 	cargarCFG();
 
 	crearLogs("Umc","Umc");
-	printf("llegue");
+
 	dump = log_create("dump","UMC",false,LOG_LEVEL_INFO);
 
 	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
@@ -665,11 +679,11 @@ int main(void) {
 
 	test();
 
-
-
-	//pthread_create(&SWAP, NULL, (void*) conexionASwap, NULL);
-
-	//pthread_create(&NUCLEO_CPU, NULL, (void*) servidorCPUyNucleo, NULL); //OJO! A cada cpu hay que atenderla con un hilo
+	servidorCPUyNucleoExtendido();
+//	servidorCPUyNucleo();
+	//pthread_create(&conexCpu, NULL, (void*) servidorCPUyNucleoExtendido, NULL);
+	//pthread_create(&conexSwap, NULL, (void*) conexionASwap, NULL);
+	//pthread_create(&conexNucleo, NULL, (void*) servidorCPUyNucleo, NULL); //OJO! A cada cpu hay que atenderla con un hilo
 
 	//recibirComandos(); //Otro hilo?
 
@@ -689,7 +703,75 @@ int main(void) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // 5.Server de los cpu y de nucleo
+
+void servidorCPUyNucleoExtendido(){
+
+	struct timeval espera = newEspera();
+	int i;
+	char header[1];
+
+	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puerto_cpu,
+				&tamanioDireccionCPU, &activadoCPU);
+	configurarServidorExtendido(&socketNucleo, &direccionNucleo, config.puerto_umc_nucleo,
+					&tamanioDireccionNucleo, &activadoNucleo);
+
+	inicializarClientes();
+	log_info(activeLogger, "Esperando conexiones ...");
+
+	while (1) {
+		FD_ZERO(&socketsParaLectura);
+		FD_SET(socketCPU, &socketsParaLectura);
+		FD_SET(socketNucleo, &socketsParaLectura);
+
+		mayorDescriptor = (socketNucleo>socketCPU) ? socketNucleo : socketCPU;
+		incorporarClientes();
+
+		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, &espera);
+
+		if (tieneLectura(socketNucleo))
+			procesarNuevasConexionesExtendido(&socketNucleo);
+
+		if (tieneLectura(socketCPU))
+			procesarNuevasConexionesExtendido(&socketCPU);
+
+		for (i = 0; i < getMaxClients(); i++) {
+			if (tieneLectura(clientes[i].socket)) {
+				if (read(clientes[i].socket, header, 1) == 0) {
+					log_error(activeLogger,
+					"Un cliente se desconectó.");
+					quitarCliente(i);
+				} else
+					procesarHeader(i, header);
+				}
+			}
+
+			//Hacer algo?
+	}
+}
+
+
 void servidorCPUyNucleo(){
 
 	int mayorDescriptor, i;
@@ -697,7 +779,6 @@ void servidorCPUyNucleo(){
 	char header[1];
 
 	crearLogs("Umc","Umc");
-
 
 	configurarServidor(config.puerto_umc_nucleo);
 	inicializarClientes();

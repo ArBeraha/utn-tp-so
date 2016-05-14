@@ -39,6 +39,7 @@
 typedef struct customConfig {
 	int puerto_umc_nucleo;
 	int puerto_swap;
+	int puerto_cpu;
 
 	int cantidad_marcos;
 	int tamanio_marco;
@@ -74,6 +75,12 @@ typedef struct{ //No hace falta indicar el numero de la pagina, es la posicion
 }tablaPagina_t;
 
 
+//Globales servidor
+int socketCPU, socketNucleo;
+int activadoCPU, activadoNucleo; //No hace falta iniciarlizarlas. Lo hacer la funcion permitir reutilizacion ahora.
+struct sockaddr_in direccionCPU, direccionNucleo;
+unsigned int tamanioDireccionCPU, tamanioDireccionNucleo;
+
 typedef int ansisop_var_t;
 int cliente;
 t_log *activeLogger, *bgLogger;
@@ -94,20 +101,13 @@ int tamanioMemoria;
 
 int tlbHabilitada = 1; //1 ON.  0 OFF
 
-pthread_t SWAP;
-pthread_t NUCLEO_CPU;
+pthread_t conexSwap;
+pthread_t conexNucleo;
+pthread_t conexCpu;
 
 t_log *dump;
 
 
-
-struct timeval newEspera()
-{
-	struct timeval espera;
-	espera.tv_sec = 2; 				//Segundos
-	espera.tv_usec = 500000; 		//Microsegundos
-	return espera;
-}
 
 //Prototipos
 
@@ -136,6 +136,7 @@ void flushTlb(); //TODO
 void flushMemory(); //TODO
 void recibirComandos();
 
+void servidorCPUyNucleoExtendido();
 void servidorCPUyNucleo();
 int getHandshake();
 void handshakearASwap();

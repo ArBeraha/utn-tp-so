@@ -63,7 +63,8 @@ typedef struct{
 	 int pid,
 		 paginaRequerida,
 		 offset,
-		 cantBytes;
+		 cantBytes,
+		 buffer;
 }pedidoLectura_t;
 
 typedef struct{ //No hace falta indicar el numero de la pagina, es la posicion
@@ -104,6 +105,7 @@ int tlbHabilitada = 1; //1 ON.  0 OFF
 pthread_t conexSwap;
 pthread_t conexNucleo;
 pthread_t conexCpu;
+pthread_t consolaUmc;
 
 t_log *dump;
 
@@ -122,8 +124,8 @@ int cantidadMarcosLibres();
 char* buscarEnSwap(int marcoBuscado, pedidoLectura_t pedido); //TODO
 char* agregarAMemoria(tablaPagina_t* paginaBuscada); //TODO
 
-char* devolverPedidoPagina(pedidoLectura_t pedido);
-void almacenarBytesEnUnaPagina(int nroPagina, int offset, int tamanio, int buffer); //TODO
+char* devolverPedidoPagina(pedidoLectura_t pedido);   // todos estos volver a devolver void, devuelven cosas para testear
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido); //TODO
 void finalizarPrograma(int idPrograma); //TODO
 void inicializarPrograma(int idPrograma, int paginasRequeridas); //TODO
 int reservarPagina(int,int);
@@ -138,7 +140,7 @@ void recibirComandos();
 
 void servidorCPUyNucleoExtendido();
 void servidorCPUyNucleo();
-int getHandshake();
+int  getHandshake();
 void handshakearASwap();
 void conectarASwap(); //MOTHER OF DECLARATIVIDAD...
 void realizarConexionASwap();

@@ -198,7 +198,25 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 }
 
 
-void almacenarBytesEnUnaPagina(int nroPagina, int offset, int tamanio, int buffer){
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido){  //TODO Lo deje por la mitad..
+
+	// !!!!!!!!!
+	char* almacenar = malloc(pedido.cantBytes);
+	// almacenar = RECV DE LO QUE SE QUIERE GUARDAR, DE PEDIDO.CANTIDADBYTES de longitud
+
+	if(estaEnTlb(pedido) && tlbHabilitada){
+		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d \n",pedido.pid,pedido.paginaRequerida);
+		int pos = buscarEnTlb(pedido);
+
+		memcpy(memoria[tlb[pos].marcoUtilizado * config.tamanio_marco + pedido.offset], almacenar, pedido.cantBytes);
+
+		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
+
+		return almacenar; //Provisorio, tiene que ser un SEND
+
+		//send_w(cliente, almacenar, 4);
+
+		}
 }
 
 void finalizarPrograma(int idPrograma){
@@ -448,7 +466,7 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 // 4. Procesar headers
 
-int reservarPagina(int cantPaginasPedidas, int pid){
+int reservarPagina(int cantPaginasPedidas, int pid){ // OK
 
 	if(cantidadMarcosLibres()>=cantPaginasPedidas){ //Si alcanzan los marcos libres...
 
@@ -554,9 +572,6 @@ void procesarHeader(int cliente, char *header){
 	}
 }
 
-
-
-
 // FIN 4
 
 
@@ -583,12 +598,12 @@ void test(){
 	printf("Contenido vector en pos 8: %d \n", vectorMarcosOcupados[8]);
 	printf("Contenido vector en pos 9: %d \n", vectorMarcosOcupados[9]);
 
-
 	printf("Pasamos al test de memoria \n \n");
 
 	int test = reservarPagina(3,5);
 
 	if(test){
+
 		tabla5 = list_get(listaTablasPaginas, 5);
 
 		tablaPagina_t* pagina0Tabla5 = list_get(tabla5,0);
@@ -667,9 +682,10 @@ int main(void) {
 
 	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
 
-	int k;
+
 	listaTablasPaginas = list_create();
 
+	int k;
 	for(k=0;k<config.cantidad_marcos;k++){  //COMO MAXIMO ES LA CANTIDAD DE MARCOS, considerando q como minimo una tabla tiene 1 pag
 		t_list* tablaPaginas = list_create();
 		list_add(listaTablasPaginas,tablaPaginas);
@@ -680,12 +696,14 @@ int main(void) {
 	test();
 
 	servidorCPUyNucleoExtendido();
-//	servidorCPUyNucleo();
+
+	//conexionASwap();
 	//pthread_create(&conexCpu, NULL, (void*) servidorCPUyNucleoExtendido, NULL);
-	//pthread_create(&conexSwap, NULL, (void*) conexionASwap, NULL);
+//	pthread_create(&conexSwap, NULL, (void*) conexionASwap, NULL);
 	//pthread_create(&conexNucleo, NULL, (void*) servidorCPUyNucleo, NULL); //OJO! A cada cpu hay que atenderla con un hilo
 
 	//recibirComandos(); //Otro hilo?
+	//pthread_create(&consolaUmc, NULL, (void*) recibirComandos, NULL); //OJO! A cada cpu hay que atenderla con un hilo
 
 	finalizar();
 

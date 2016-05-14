@@ -9,6 +9,7 @@
 
 void imprimir_serializacion(char* serial, int largo) {
 	int i;
+	printf("\nserial=");
 	for (i = 0; i < largo; i++) {
 		printf("[%d]", serial[i]);
 	}
@@ -20,6 +21,14 @@ int serializar_int(char* destino, int* fuente) {
 }
 int deserializar_int(int* destino, char* fuente) {
 	memcpy(destino, fuente, sizeof(int));
+	return sizeof(int);
+}
+int serializar_pint(char* destino, int fuente) {
+	memcpy(destino, &fuente, sizeof(int));
+	return sizeof(int);
+}
+int deserializar_pint(int destino, char* fuente) {
+	memcpy(&destino, fuente, sizeof(int));
 	return sizeof(int);
 }
 int serializar_variable(char* destino, t_variable* fuente) {
@@ -60,7 +69,7 @@ int deserializar_list(t_list* destino, char* fuente, int pesoElemento) {
 	return offset;
 }
 int bytes_list(t_list* fuente, int pesoElemento){
-	return list_size(fuente)*pesoElemento+1;
+	return 1+list_size(fuente)*pesoElemento;
 }
 int bytes_stack_item(t_stack_item* fuente) {
 	return sizeof(int) + bytes_list(fuente->argumentos, sizeof(t_variable))
@@ -68,7 +77,7 @@ int bytes_stack_item(t_stack_item* fuente) {
 			+ sizeof(int) + sizeof(t_variable);
 }
 int bytes_stack(t_stack* fuente) {
-	int i, bytes = 0;
+	int i, bytes = 1;
 	for (i = 0; i < stack_size(fuente); i++) {
 		bytes += bytes_stack_item(list_get(fuente, i));
 	}
@@ -76,11 +85,11 @@ int bytes_stack(t_stack* fuente) {
 }
 int serializar_stack_item(char* destino, t_stack_item* fuente) {
 	int offset = 0;
-	offset += serializar_int(destino, &(fuente->posicion));
+	offset += serializar_int(destino + offset, &(fuente->posicion));
 	offset += serializar_list(destino + offset, fuente->argumentos,	sizeof(t_variable));
 	offset += serializar_list(destino + offset, fuente->identificadores, sizeof(t_identificador));
-	offset += serializar_int(destino, &(fuente->posicionRetorno));
-	offset += serializar_variable(destino, &(fuente->valorRetorno));
+	offset += serializar_int(destino + offset, &(fuente->posicionRetorno));
+	offset += serializar_variable(destino + offset, &(fuente->valorRetorno));
 	return offset; // Retorna el offset
 }
 int serializar_stack(char* destino, t_stack* fuente) {
@@ -186,37 +195,72 @@ void test_serializar_list(){
 	free(serial);
 }
 void test_serializar_stack_item(){
-	/*
 	t_stack_item* itemA, *itemB;
 	t_variable var;
-	var.offset=1;
-	var.pagina=2;
+	var.pagina=1;
+	var.offset=2;
 	var.size=3;
 	itemA = malloc(sizeof(t_stack_item));
 	itemB = malloc(sizeof(t_stack_item));
 	itemA->posicion=5;
+	itemA->posicionRetorno=10;
 	itemA->argumentos = list_create();
 	itemA->identificadores = list_create();
 	itemA->valorRetorno=var;
 	char* serial = malloc(bytes_stack_item(itemA));
 	serializar_stack_item(serial,itemA);
 	imprimir_serializacion(serial,bytes_stack_item(itemA));
-	return;
 	deserializar_stack_item(itemB,serial);
-	CU_ASSERT_EQUAL(itemB->posicion,5)
-	*/
+	CU_ASSERT_EQUAL(itemB->posicion,itemA->posicion);
+	CU_ASSERT_EQUAL(itemB->posicionRetorno,itemA->posicionRetorno);
+	CU_ASSERT_EQUAL(itemB->valorRetorno.pagina,itemA->valorRetorno.pagina);
+	/*stack_destroy_item(itemA);
+	stack_destroy_item(itemB);*/
+	list_destroy(itemA->argumentos);
+	list_destroy(itemA->identificadores);
+	free(itemA);
+	list_destroy(itemB->argumentos);
+	list_destroy(itemB->identificadores);
+	free(itemB);
+	free(serial);
 }
 void test_serializar_stack(){
-	/*
-	t_stack* stack = stack_create();
+	t_stack* stackA = stack_create();
 	t_stack* stackB = stack_create();
-	t_stack_item* item = malloc(sizeof(t_stack_item));
-	item->posicion=5;
-	stack_push(stack,item);
-	char* serial = malloc(bytes_stack(stack));
-	serializar_stack(serial,stack);
+	t_variable var;
+	var.pagina=1;
+	var.offset=2;
+	var.size=3;
+	t_stack_item* itemA = malloc(sizeof(t_stack_item));
+	itemA->posicion=1;
+	itemA->posicionRetorno=10;
+	itemA->argumentos = list_create();
+	itemA->identificadores = list_create();
+	itemA->valorRetorno=var;
+	stack_push(stackA,itemA);
+	t_stack_item* itemB = malloc(sizeof(t_stack_item));
+	itemB->posicion=2;
+	itemB->posicionRetorno=10;
+	itemB->argumentos = list_create();
+	t_variable* arg=malloc(sizeof(t_variable));
+	arg->pagina=11;
+	arg->offset=12;
+	arg->size=13;
+	list_add(itemB->argumentos,arg);
+	itemB->identificadores = list_create();
+	itemB->valorRetorno=var;
+	stack_push(stackA,itemB);
+	char* serial = malloc(bytes_stack(stackA));
+	serializar_stack(serial,stackA);
+	imprimir_serializacion(serial,bytes_stack(stackA));
 	deserializar_stack(stackB,serial);
-	CU_ASSERT_EQUAL(((t_stack_item *)stack_pop(stackB))->posicion,5);*/
+	CU_ASSERT_EQUAL(stack_size(stackA),stack_size(stackB));
+	CU_ASSERT_EQUAL(((t_stack_item *)stack_get(stackB,0))->posicion,1);
+	CU_ASSERT_EQUAL(((t_stack_item *)stack_get(stackB,1))->posicionRetorno,10);
+	CU_ASSERT_EQUAL(((t_variable*)(list_get(((t_stack_item *)stack_get(stackB,1))->argumentos,0)))->pagina,11);
+	stack_destroy(stackA);
+	stack_destroy(stackB);
+	free(serial);
 }
 
 

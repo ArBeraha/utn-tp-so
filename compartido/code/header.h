@@ -20,6 +20,7 @@ typedef enum {
 	HeaderImprimirVariableConsola,
 	HeaderImprimirTextoConsola,
 	HeaderConsolaFinalizarNormalmente,
+	HeaderTamanioPagina,
 	HeaderPCB,
 	HeaderSolicitudSentencia,
 	HeaderSentencia,

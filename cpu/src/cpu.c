@@ -37,7 +37,9 @@ struct sockaddr_in direccionUmc;	  //dbireccion umc
 AnSISOP_funciones funciones;		//funciones de AnSISOP
 AnSISOP_kernel funcionesKernel;		// funciones kernel de AnSISOP
 
-t_PCB* pcbAuxiliar;
+int tamanioPaginas;					//Tamaño de las paginas
+
+t_PCB* pcbActual;
 
 /*------------Declaracion de funciones--------------*/
 void procesarHeader(char*);
@@ -251,6 +253,15 @@ void hacer_handshake_umc(){
 		}
 }
 
+void pedir_tamanio_paginas(){
+	char* solicitud = string_from_format("%c",HeaderTamanioPagina);		//le pido a umc el tamanio de las paginas
+	send_w(cliente_umc,solicitud,sizeof(strlen(solicitud)));
+
+	char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int));			//recibo el tamanio de las paginas
+	tamanioPaginas = char4ToInt(tamanio);
+}
+
+
 void esperar_programas(){
 	log_debug(bgLogger,"Esperando programas de nucleo %d.");
 	char* header;
@@ -291,10 +302,54 @@ void procesarHeader(char *header){
 	}
 }
 
-void pedir_sentencia(){
-	//pedir al UMC la proxima sentencia a ejecutar
-	char* solic = string_from_format("%c",HeaderSolicitudSentencia);
+int longitud_sentencia(t_sentencia* sentencia){
+	return sentencia->offset_fin - sentencia->offset_inicio;
+}
+
+int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino){
+
+	int offsetInicio = fuente->offset_inicio;
+	int numeroPagina = (int) (offsetInicio / tamanioPaginas) ;  //obtengo el numero de pagina
+	int offsetRelativo = (int) offsetInicio % tamanioPaginas;			//obtengo el offset relativo
+
+	int longitud = longitud_sentencia(fuente);
+
+	destino->offset_inicio = offsetRelativo;
+	destino->offset_fin = offsetRelativo + longitud;
+
+	return numeroPagina;
+}
+
+
+void pedir_sentencia(){	//pedir al UMC la proxima sentencia a ejecutar
+
+	int entrada = pcbActual->PC;   													//obtengo la entrada de la instruccion a ejecutar
+
+	t_sentencia* sentenciaActual = list_get(pcbActual->indice_codigo,entrada);		//obtengo el offset de la sentencia
+	t_sentencia* sentenciaParaUMC = malloc(sizeof(t_sentencia));
+
+	int pagina = obtener_offset_relativo(sentenciaActual,sentenciaParaUMC);			//obtengo el offset relativo
+	char* pag = intToChar4(pagina);
+
+	char* solic = string_from_format("%c",HeaderSolicitudSentencia);				//envio el header
 	send_w(cliente_umc,solic,sizeof(strlen(solic)));
+
+	send_w(cliente_umc,pag,sizeof(strlen(pag)));									//envio la pagina
+
+	char* sentencia = string_new();													//envio la info de la sentencia (o solo el offset??)
+	int s = serializar_sentencia(sentencia,sentenciaParaUMC);
+	send_w(cliente_umc,sentencia,sizeof(strlen(sentencia)));
+
+
+	int longitud = longitud_sentencia(sentenciaActual);
+	char* longi =  intToChar4(longitud);
+	send_w(cliente_umc,longi,strlen(longi));										//envio la longitud de la sentencia
+
+	free(sentencia);
+	free(solic);
+	free(pag);
+	free(longi);
+	free(sentenciaParaUMC);
 }
 
 void esperar_sentencia(){
@@ -304,7 +359,7 @@ void esperar_sentencia(){
 }
 
 void obtenerPCB(){
-	//funcion que recibe el pcb
+
 	pedir_sentencia();
 
 	esperar_sentencia();
@@ -315,7 +370,7 @@ void obtener_y_parsear(){
 	read(cliente_umc, &tamanioSentencia, 1);
 
 	char* sentencia = recv_waitall_ws(cliente_umc,tamanioSentencia);
-	//parsear(sentencia);  arreglar! rompe el parser
+	parsear(sentencia);
 	free(sentencia);
 }
 
@@ -367,7 +422,7 @@ void establecerConexionConUMC(){
 }
 
 void inicializar(){
-	pcbAuxiliar = malloc(sizeof(t_PCB));
+	pcbActual = malloc(sizeof(t_PCB));
 	crearLogs(string_from_format("cpu_%d",getpid()),"CPU");
 	log_info(activeLogger,"Soy CPU de process ID %d.", getpid());
 	inicializar_primitivas();
@@ -375,7 +430,10 @@ void inicializar(){
 
 void finalizar(){
 	destruirLogs();
-	free(pcbAuxiliar);
+	free(pcbActual->indice_codigo);
+	free(pcbActual->SP);
+	free(pcbActual->indice_etiquetas);
+	free(pcbActual);
 	liberar_primitivas();
 }
 
@@ -389,6 +447,8 @@ int main()
 	//conectarse a nucleo
 	conectar_nucleo();
 	hacer_handshake_nucleo();
+
+	pedir_tamanio_paginas();
 
 	//CPU se pone a esperar que nucleo le envie PCB
 	esperar_programas();

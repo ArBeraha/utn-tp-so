@@ -41,6 +41,8 @@ void test_serializar_int();
 void test_serializar_variable();
 void test_serializar_sentencia();
 void test_serializar_list();
+void test_serializar_stack_item();
+void test_serializar_stack();
 
 #endif /* SERIALIZACION_H_ */
 

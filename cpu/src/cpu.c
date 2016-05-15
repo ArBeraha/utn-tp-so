@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <commons/string.h>
 #include <commons/log.h>
+#include <commons/config.h>
 #include <parser/parser.h>
 #include <string.h>
 #include "handshake.h"
@@ -22,6 +23,16 @@
 #include "log.h"
 #include "commonTypes.h"
 #include "serializacion.h"
+
+typedef struct customConfig {
+	int puertoNucleo;
+	char* ipNucleo;
+	int puertoUMC;
+	char* ipUMC;
+} customConfig_t;
+
+t_config* configCPU;
+customConfig_t config;
 
 /*------------Macros--------------*/
 #define DEBUG_IGNORE_UMC true
@@ -49,6 +60,15 @@ void parsear();
 void obtenerPCB();
 void esperar_sentencia();
 void obtener_y_parsear();
+
+void cargarConfig(){
+	t_config* configCPU;
+	configCPU = config_create("cpu.cfg");
+	config.puertoNucleo = config_get_int_value(configCPU, "PUERTO_NUCLEO");
+	config.ipNucleo = config_get_string_value(configCPU, "IP_NUCLEO");
+	config.puertoUMC = config_get_int_value(configCPU, "PUERTP_UMC");
+	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
+}
 
 /*--------FUNCIONES----------*/
 //cambiar el valor de retorno a t_puntero
@@ -109,7 +129,6 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida variable){ 				// 
 }
 
 t_valor_variable asignar_valor_compartida(t_nombre_compartida variable, t_valor_variable valor){
-
 	printf("Asignar el valor %d a la variable compartida %s \n",valor,variable);
 
 	send_w(cliente_nucleo, headerToMSG(HeaderAsignarValorVariableCompartida), 1);		//envio el header
@@ -222,7 +241,7 @@ int getHandshake(int cli){
 }
 
 void conectar_nucleo(){
-	direccionNucleo = crearDireccionParaCliente(8088,"127.0.0.1"); //TODO cambiar ip
+	direccionNucleo = crearDireccionParaCliente(config.puertoNucleo,config.ipNucleo);
 	cliente_nucleo = socket_w();
 	connect_w(cliente_nucleo,&direccionNucleo); //conecto cpu a la direccion 'direccionNucleo'
 
@@ -242,7 +261,7 @@ void hacer_handshake_nucleo(){
 }
 
 void conectar_umc(){
-	direccionUmc = crearDireccionParaCliente(8081,"127.0.0.1"); //TODO cambiar ip
+	direccionUmc = crearDireccionParaCliente(config.puertoUMC,config.ipUMC);
 	cliente_umc = socket_w();
 	connect_w(cliente_umc,&direccionUmc); //conecto cpu a la direccion 'direccionUmc'
 
@@ -290,7 +309,7 @@ void procesarHeader(char *header){
 		break;
 
 	case HeaderHandshake:
-		log_error(activeLogger,"Segunda vez que se recibe un headerHandshake acÃ¡.");
+		log_error(activeLogger,"Segunda vez que se recibe un headerHandshake acá!.");
 		exit(EXIT_FAILURE);
 		break;
 
@@ -314,7 +333,6 @@ int longitud_sentencia(t_sentencia* sentencia){
 }
 
 int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino){
-
 	int offsetInicio = fuente->offset_inicio;
 	int numeroPagina = (int) (offsetInicio / tamanioPaginas) ;  //obtengo el numero de pagina
 	int offsetRelativo = (int) offsetInicio % tamanioPaginas;			//obtengo el offset relativo
@@ -328,13 +346,11 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino){
 }
 
 int cantidad_paginas_ocupa(t_sentencia* sentencia){ //precondicion: el offset debe ser el relativo
-
 	int cant= (int)longitud_sentencia(sentencia)/tamanioPaginas;
 	return cant + 1;
 }
 
 int queda_espacio_en_pagina(t_sentencia* sentencia){ //precondicion: el offset debe ser el relativo
-
 	int longitud = longitud_sentencia(sentencia);
 	int desp = sentencia->offset_inicio + longitud;
 	return tamanioPaginas - desp;;
@@ -409,9 +425,7 @@ void esperar_sentencia(){
 }
 
 void obtenerPCB(){
-
 	pedir_sentencia();
-
 	esperar_sentencia();
 }
 
@@ -424,7 +438,7 @@ void obtener_y_parsear(){
 	free(sentencia);
 }
 
-t_PCB procesarPCB(t_PCB pcb){
+t_PCB procesarPCB(t_PCB pcb){ //FIXME
 	t_PCB nuevoPCB;	//incrementar registro
 	nuevoPCB = pcb;
 	nuevoPCB.PC++;
@@ -471,7 +485,13 @@ void establecerConexionConUMC(){
 		}
 }
 
+void establecerConexionConNucleo(){
+	conectar_nucleo();
+	hacer_handshake_nucleo();
+}
+
 void inicializar(){
+	cargarConfig();
 	pcbActual = malloc(sizeof(t_PCB));
 	crearLogs(string_from_format("cpu_%d",getpid()),"CPU");
 	log_info(activeLogger,"Soy CPU de process ID %d.", getpid());
@@ -479,7 +499,7 @@ void inicializar(){
 }
 
 void finalizar(){
-	destruirLogs();
+	destruirLogs(); //fixme: no hay que usar las funciones que nos dan ellos?
 	free(pcbActual->indice_codigo);
 	free(pcbActual->SP);
 	free(pcbActual->indice_etiquetas);
@@ -490,12 +510,12 @@ void finalizar(){
 int main()
 {
 	inicializar();
+
 	//conectarse a umc
 	establecerConexionConUMC();
 
 	//conectarse a nucleo
-	conectar_nucleo();
-	hacer_handshake_nucleo();
+	establecerConexionConNucleo();
 
 	pedir_tamanio_paginas();
 

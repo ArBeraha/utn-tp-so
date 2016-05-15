@@ -15,7 +15,6 @@
 #include <commons/string.h>
 #include <commons/log.h>
 #include <parser/parser.h>
-#include <parser/metadata_program.h>
 #include <string.h>
 #include "handshake.h"
 #include "header.h"
@@ -73,7 +72,7 @@ t_valor_variable dereferenciar(t_puntero direccion){		// TODO terminar - Pido a 
 
 	char* msgSize = recv_waitall_ws(cliente_umc, sizeof(int));
 	int size = char4ToInt(msgSize);
-	char* res = recv_waitall_ws(cliente_umc,sizeof(size)); //recibo el valor de UMC
+	char* res = recv_waitall_ws(cliente_umc,size); //recibo el valor de UMC
 
 	valor = charToInt(res);
 	free(msgSize);
@@ -97,11 +96,11 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida variable){ 				// 
 	t_valor_variable valor;
 
 	send_w(cliente_nucleo, headerToMSG(HeaderPedirValorVariableCompartida), 1);
-	send_w(cliente_nucleo,variable,sizeof(t_nombre_compartida)); 		//TODO tengo que serializar??
+	send_w(cliente_nucleo,variable,strlen(variable)); 		//TODO tengo que serializar??
 
 	char* msgSize = recv_waitall_ws(cliente_nucleo, sizeof(int));
 	int size = char4ToInt(msgSize);
-	char* res = recv_waitall_ws(cliente_nucleo,sizeof(size));
+	char* res = recv_waitall_ws(cliente_nucleo,size);
 
 	valor = charToInt(res);
 	free(msgSize);
@@ -112,8 +111,20 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida variable){ 				// 
 }
 
 //cambiar valor de retorno a t_valor_variable
-void asignar_valor_compartida(t_nombre_compartida variable, t_valor_variable valor){
+t_valor_variable asignar_valor_compartida(t_nombre_compartida variable, t_valor_variable valor){
+
 	printf("Asignar el valor %d a la variable compartida %s \n",valor,variable);
+
+	send_w(cliente_nucleo, headerToMSG(HeaderAsignarValorVariableCompartida), 1);		//envio el header
+
+	send_w(cliente_nucleo,variable,strlen(variable));						//envio el nombre de la variable
+
+	char* valor_envio = intToChar4(valor);
+	send_w(cliente_nucleo,valor_envio,strlen(valor_envio));								//envio el valor
+
+	//TODO tengo que esperar a que nucleo me informe que se asigno?
+
+	return valor;
 }
 
 //cambiar valor de retorno a t_puntero_instruccion
@@ -320,8 +331,28 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino){
 	return numeroPagina;
 }
 
+int cantidad_paginas_ocupa(t_sentencia* sentencia){ //precondicion: el offset debe ser el relativo
+
+	int cant= (int)longitud_sentencia(sentencia)/tamanioPaginas;
+	return cant + 1;
+}
+
+int queda_espacio_en_pagina(t_sentencia* sentencia){ //precondicion: el offset debe ser el relativo
+
+	int longitud = longitud_sentencia(sentencia);
+	int desp = sentencia->offset_inicio + longitud;
+	return tamanioPaginas - desp;;
+}
+
+void enviar_pagina(int pagina){
+	char* pag = intToChar4(pagina);
+	send_w(cliente_umc,pag,sizeof(strlen(pag)));									//envio la pagina
+	free(pag);
+}
 
 void pedir_sentencia(){	//pedir al UMC la proxima sentencia a ejecutar
+
+	//TODO solo aplica al caso en que la instruccion ocupe UNA SOLA PAGINA
 
 	int entrada = pcbActual->PC;   													//obtengo la entrada de la instruccion a ejecutar
 
@@ -329,25 +360,22 @@ void pedir_sentencia(){	//pedir al UMC la proxima sentencia a ejecutar
 	t_sentencia* sentenciaParaUMC = malloc(sizeof(t_sentencia));
 
 	int pagina = obtener_offset_relativo(sentenciaActual,sentenciaParaUMC);			//obtengo el offset relativo
-	char* pag = intToChar4(pagina);
 
 	char* solic = string_from_format("%c",HeaderSolicitudSentencia);				//envio el header
 	send_w(cliente_umc,solic,sizeof(strlen(solic)));
 
-	send_w(cliente_umc,pag,sizeof(strlen(pag)));									//envio la pagina
+	enviar_pagina(pagina);
 
 	char* sentencia = string_new();													//envio la info de la sentencia (o solo el offset??)
 	int s = serializar_sentencia(sentencia,sentenciaParaUMC);
-	send_w(cliente_umc,sentencia,sizeof(strlen(sentencia)));
-
 
 	int longitud = longitud_sentencia(sentenciaActual);
 	char* longi =  intToChar4(longitud);
-	send_w(cliente_umc,longi,strlen(longi));										//envio la longitud de la sentencia
+	send_w(cliente_umc,longi,strlen(longi));												//envio la longitud de la sentencia
 
 	free(sentencia);
 	free(solic);
-	free(pag);
+
 	free(longi);
 	free(sentenciaParaUMC);
 }

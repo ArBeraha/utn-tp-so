@@ -27,6 +27,7 @@ typedef enum {
 	HeaderPedirValorVariable,
 	HeaderPedirValorVariableCompartida,
 	HeaderAsignarValor,
+	HeaderAsignarValorVariableCompartida,
 	HeaderConsolaFinalizarRechazado,
 	HeaderPedirPagina,
 	HeaderLiberarRecursosPagina,

@@ -1,55 +1,10 @@
 /*
  * cpu.c
- *
  *  Created on: 16/4/2016
  *      Author: utnso
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <commons/string.h>
-#include <commons/log.h>
-#include <commons/config.h>
-#include <parser/parser.h>
-#include <string.h>
-#include "handshake.h"
-#include "header.h"
-#include "cliente-servidor.h"
-#include "log.h"
-#include "commonTypes.h"
-#include "serializacion.h"
-
-typedef struct customConfig {
-	int puertoNucleo;
-	char* ipNucleo;
-	int puertoUMC;
-	char* ipUMC;
-} customConfig_t;
-
-t_config* configCPU;
-customConfig_t config;
-
-/*------------Macros--------------*/
-#define DEBUG_IGNORE_UMC true
-
-/*------------Variables Globales--------------*/
-int cliente_nucleo; //cpu es cliente del nucleo
-int cliente_umc; //cpu es cliente de umc
-
-struct sockaddr_in direccionNucleo;   //direccion del nucleo
-struct sockaddr_in direccionUmc;	  //dbireccion umc
-
-AnSISOP_funciones funciones;		//funciones de AnSISOP
-AnSISOP_kernel funcionesKernel;		// funciones kernel de AnSISOP
-
-int tamanioPaginas;					//Tamaño de las paginas
-
-t_PCB* pcbActual;
+#include "cpu.h"
 
 /*------------Declaracion de funciones--------------*/
 void procesarHeader(char*);
@@ -61,14 +16,6 @@ void obtenerPCB();
 void esperar_sentencia();
 void obtener_y_parsear();
 
-void cargarConfig(){
-	t_config* configCPU;
-	configCPU = config_create("cpu.cfg");
-	config.puertoNucleo = config_get_int_value(configCPU, "PUERTO_NUCLEO");
-	config.ipNucleo = config_get_string_value(configCPU, "IP_NUCLEO");
-	config.puertoUMC = config_get_int_value(configCPU, "PUERTP_UMC");
-	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
-}
 
 void informarInstruccionTerminada(){
 	//TODO enviar a nucleo un header para decirle q se corrio una instruccion ansisop.
@@ -483,7 +430,6 @@ t_PCB procesarPCB(t_PCB pcb){
 	nuevoPCB.PC++;
 	return nuevoPCB;
 }
-
 void serializar_PCB(char* res, t_PCB* pcb){		//terminar!
 
 	string_append(&res,intToChar4(pcb->PC));		//pongo el PC
@@ -494,7 +440,6 @@ void serializar_PCB(char* res, t_PCB* pcb){		//terminar!
 	//serializar indice stack
 
 }
-
 //void deserializar_PCB(char* mensaje, t_PCB* pcb){
 //	//t_PCB* newPCB = malloc(24);
 //
@@ -507,13 +452,13 @@ void serializar_PCB(char* res, t_PCB* pcb){		//terminar!
 //
 //}
 
+// ***** Funciones de conexiones ***** //
 void warnDebug() {
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 	log_info(activeLogger,
 			"Para ingresar manualmente un archivo: Cambiar true por false en cpu.c -> #define DEBUG_IGNORE_UMC, y despues recompilar.");
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 }
-
 void establecerConexionConUMC(){
 	if(!DEBUG_IGNORE_UMC){
 			conectar_umc();
@@ -523,12 +468,20 @@ void establecerConexionConUMC(){
 			warnDebug();
 		}
 }
-
 void establecerConexionConNucleo(){
 	conectar_nucleo();
 	hacer_handshake_nucleo();
 }
 
+// ***** Funciones de inicializacion y finalizacion ***** //
+void cargarConfig(){
+	t_config* configCPU;
+	configCPU = config_create("cpu.cfg");
+	config.puertoNucleo = config_get_int_value(configCPU, "PUERTO_NUCLEO");
+	config.ipNucleo = config_get_string_value(configCPU, "IP_NUCLEO");
+	config.puertoUMC = config_get_int_value(configCPU, "PUERTP_UMC");
+	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
+}
 void inicializar(){
 	cargarConfig();
 	pcbActual = malloc(sizeof(t_PCB));
@@ -536,7 +489,6 @@ void inicializar(){
 	log_info(activeLogger,"Soy CPU de process ID %d.", getpid());
 	inicializar_primitivas();
 }
-
 void finalizar(){
 	destruirLogs(); //fixme: no hay que usar las funciones que nos dan ellos?
 	pcb_destroy(pcbActual);

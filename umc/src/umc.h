@@ -63,8 +63,7 @@ typedef struct{
 	 int pid,
 		 paginaRequerida,
 		 offset,
-		 cantBytes,
-		 buffer;
+		 cantBytes;
 }pedidoLectura_t;
 
 typedef struct{ //No hace falta indicar el numero de la pagina, es la posicion
@@ -86,7 +85,7 @@ typedef int ansisop_var_t;
 int cliente;
 t_log *activeLogger, *bgLogger;
 char* memoria;
-
+//int* memoria;
 
 char* pedidoPaginaPid ;
 char* pedidoPaginaTamanioContenido;
@@ -125,11 +124,16 @@ char* buscarEnSwap(int marcoBuscado, pedidoLectura_t pedido); //TODO
 char* agregarAMemoria(tablaPagina_t* paginaBuscada); //TODO
 
 char* devolverPedidoPagina(pedidoLectura_t pedido);   // todos estos volver a devolver void, devuelven cosas para testear
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido); //TODO
+
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int buffer); //TODO
 void finalizarPrograma(int idPrograma); //TODO
 void inicializarPrograma(int idPrograma, int paginasRequeridas); //TODO
 int reservarPagina(int,int);
 
+void devolverTodasLasPaginas();
+void devolverPaginasDePid(int pid);
+void devolverTodaLaMemoria();
+void devolverMemoriaDePid(int pid);
 void inicializarTlb();
 void fRetardo();
 void dumpEstructuraMemoria(); //TODO

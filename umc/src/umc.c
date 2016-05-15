@@ -19,16 +19,16 @@ struct timeval newEspera()
 void cargarCFG() {
 	t_config* configUmc;
 	configUmc = config_create("umc.cfg");
+
 	config.puerto_swap = config_get_int_value(configUmc, "PUERTO_SWAP");
 	config.puerto_umc_nucleo= config_get_int_value(configUmc, "PUERTO_UMC_NUCLEO");
-
 	config.cantidad_marcos = config_get_int_value(configUmc, "CANTIDAD_MARCOS");
 	config.tamanio_marco = config_get_int_value(configUmc, "TAMANIO_MARCO");
-
 	config.entradas_tlb = config_get_int_value(configUmc, "ENTRADAS_TLB");
 	config.retardo = config_get_int_value(configUmc, "RETARDO");
 	config.ip_swap = config_get_string_value(configUmc, "IP_SWAP");
-	config.puerto_cpu = config_get_int_value(configUmc, "PUERTO_CPU");
+	config.puerto_cpu = config_get_int_value(configUmc, "PUERTO_UMC_CPU");
+
 }
 
 //0. Funciones auxiliares a las funciones Principales
@@ -70,7 +70,7 @@ int existePaginaBuscadaEnTabla(int pag, t_list* tablaPaginaBuscada){
 
 char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido){
 	int pos = marcoBuscado * config.tamanio_marco;
-	return memoria[pos];
+	return &memoria[pos];  //TODO VER!
 }
 
 int buscarPrimerMarcoLibre(){
@@ -120,7 +120,6 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 	}
 	// TODO NO ENCONTRO ESPACIO EN LA TLB, ES HORA DE LA CACERIA...
 
-
 }
 
 
@@ -137,11 +136,12 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 	//SI ESTA EN TLB DEVUELVO
 
 	if(estaEnTlb(pedido) && tlbHabilitada){
-		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d \n",pedido.pid,pedido.paginaRequerida);
+		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d PARA LECTURA \n",pedido.pid,pedido.paginaRequerida);
 		int pos = buscarEnTlb(pedido);
 
 		char* contenido = malloc(pedido.cantBytes + 1);
-		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset,pedido.cantBytes);
+
+		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes); // FALLANDO
 		contenido[pedido.cantBytes]='\0';
 
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
@@ -198,25 +198,69 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 }
 
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido){  //TODO Lo deje por la mitad..
-
-	// !!!!!!!!!
-	char* almacenar = malloc(pedido.cantBytes);
-	// almacenar = RECV DE LO QUE SE QUIERE GUARDAR, DE PEDIDO.CANTIDADBYTES de longitud
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int buffer){  //TODO Lo deje por la mitad..
 
 	if(estaEnTlb(pedido) && tlbHabilitada){
-		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d \n",pedido.pid,pedido.paginaRequerida);
+		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d PARA ESCRITURA \n",pedido.pid,pedido.paginaRequerida);
+
 		int pos = buscarEnTlb(pedido);
 
-		memcpy(memoria[tlb[pos].marcoUtilizado * config.tamanio_marco + pedido.offset], almacenar, pedido.cantBytes);
+		printf("Posicion TLB: %d \n",pos);
+
+		char* str = malloc(sizeof(buffer));
+		snprintf(str, sizeof(buffer), "%d", buffer);
+
+		memcpy(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, str, sizeof(buffer));
+
 
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
 
-		return almacenar; //Provisorio, tiene que ser un SEND
+		printf("Lo que acabo de almacenar: %s .\n ",memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset);
+		printf("Ahora llamo a la funcion devolverPedidoPagina (conecto las dos func) \n \n");
+		return (devolverPedidoPagina(pedido)); //Provisorio para testear
 
-		//send_w(cliente, almacenar, 4);
-
-		}
+	}
+//	else{
+//		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas",pedido.pid,pedido.paginaRequerida);
+//		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
+//		t_list* tablaPaginaBuscada = list_get(listaTablasPaginas, pedido.pid);
+//
+//			if(existePaginaBuscadaEnTabla(pedido.paginaRequerida,tablaPaginaBuscada)){ //Si la pagina existe dentro de la tabla particular
+//				tablaPagina_t* paginaBuscada = list_get(tablaPaginaBuscada, pedido.paginaRequerida);
+//
+//	//SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
+//				if(paginaBuscada->bitPresencia){
+//
+//					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+//
+//					char* contenido = malloc(pedido.cantBytes + 1);
+//					memcpy(contenido,memoria+paginaBuscada->marcoUtilizado * config.tamanio_marco+pedido.offset,pedido.cantBytes);
+//					contenido[pedido.cantBytes]='\0';
+//
+//					printf("marco tlb: %d \n", paginaBuscada->marcoUtilizado);
+//
+//					agregarATlb(paginaBuscada,pedido.pid);
+//
+//					//send_w(cliente, devolucion, 4);
+//					return contenido; //Provisorio, tiene que ser un SEND
+//				}
+//	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y TODO LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
+//				else{
+//					char* devolucion = buscarEnSwap(paginaBuscada->marcoUtilizado,pedido);
+//					send_w(cliente, devolucion, 4);
+//					agregarAMemoria(paginaBuscada);
+//				}
+//			}// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
+//			else{
+//					send_w(cliente, intToChar(HeaderNoExistePagina), 4);
+//			}
+//			// SI NO EXISTE LA TABLA DE PAGINAS EN LA LISTA TOTAL DE PAGS
+//		}
+//		else{
+//				send_w(cliente,intToChar(HeaderNoExisteTablaDePag), 4);
+//		}
+//	}
+	return NULL;
 }
 
 void finalizarPrograma(int idPrograma){
@@ -310,6 +354,7 @@ void devolverTodaLaMemoria(){ //OK
 			printf("\n");
 		}
 	}
+	printf("\n");
 }
 
 void devolverMemoriaDePid(int pid){ //OK
@@ -338,11 +383,11 @@ void devolverMemoriaDePid(int pid){ //OK
 
 
 		}
-
+		printf("\n");
 	}
 	else{
-		printf("El pid supera la cantidad de tablas");
-		log_info(dump, "El pid supera la cantidad de tablas");
+		printf("El pid supera la cantidad de tablas \n");
+		log_info(dump, "El pid supera la cantidad de tablas ");
 	}
 }
 
@@ -662,6 +707,23 @@ void test(){
 	printf("Tlb deberia ser (5,1,5) y es : Pid: %d, Pagina: %d, Marco: %d \n", tlb[0].pid, tlb[0].pagina, tlb[0].marcoUtilizado);
 	printf("--***---\n");
 
+	printf(" -------------------------------------------  \n \n");
+
+	printf("Pedido escritura \n");
+	pedidoLectura_t pedido2;
+	pedido2.pid=2;
+	pedido2.paginaRequerida=1;
+	pedido2.offset = 0;
+	pedido2.cantBytes = 4;
+	reservarPagina(2,2);
+	tlb[2].pagina=1;
+	tlb[2].pid = 2;
+	tlb[2].marcoUtilizado=7;
+	printf("Devolucion: %s \n", almacenarBytesEnUnaPagina(pedido2,258));
+	printf("Ahora devuelvo toda la memoria para ver que no haya nada raro.. \n");
+	devolverTodaLaMemoria();
+
+
 }
 
 void finalizar() {
@@ -676,12 +738,12 @@ int main(void) {
 
 	cargarCFG();
 
+	printf("aa \n");
 	crearLogs("Umc","Umc");
 
 	dump = log_create("dump","UMC",false,LOG_LEVEL_INFO);
 
 	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
-
 
 	listaTablasPaginas = list_create();
 
@@ -695,7 +757,7 @@ int main(void) {
 
 	test();
 
-	servidorCPUyNucleoExtendido();
+//	servidorCPUyNucleoExtendido();
 
 	//conexionASwap();
 	//pthread_create(&conexCpu, NULL, (void*) servidorCPUyNucleoExtendido, NULL);
@@ -705,7 +767,7 @@ int main(void) {
 	//recibirComandos(); //Otro hilo?
 	//pthread_create(&consolaUmc, NULL, (void*) recibirComandos, NULL); //OJO! A cada cpu hay que atenderla con un hilo
 
-	finalizar();
+	//finalizar();
 
 	return 0;
 }

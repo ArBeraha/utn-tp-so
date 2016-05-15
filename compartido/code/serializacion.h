@@ -30,6 +30,9 @@ int serializar_stack_item(char* destino, t_stack_item* fuente);
 int serializar_stack(char* destino, t_stack* fuente);
 int deserializar_stack_item(t_stack_item* destino, char* fuente);
 int deserializar_stack(t_stack* destino, char* fuente);
+int serializar_dictionary(char* destino, t_dictionary* fuente, int pesoData);
+int deserializar_dictionary(t_dictionary* destino, char* fuente, int pesoData);
+int bytes_dictionary(t_dictionary* fuente, int pesoData);
 
 // Debug
 void imprimir_serializacion(char* serial, int largo);
@@ -41,8 +44,10 @@ void test_serializar_int();
 void test_serializar_variable();
 void test_serializar_sentencia();
 void test_serializar_list();
+void test_serializar_dictionary();
 void test_serializar_stack_item();
 void test_serializar_stack();
+void test_serializar_PCB();
 
 #endif /* SERIALIZACION_H_ */
 

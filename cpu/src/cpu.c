@@ -344,15 +344,26 @@ int queda_espacio_en_pagina(t_sentencia* sentencia){ //precondicion: el offset d
 	return tamanioPaginas - desp;;
 }
 
-void enviar_pagina(int pagina){
+void enviar_pagina(int pagina){				//envio la pagina
 	char* pag = intToChar4(pagina);
-	send_w(cliente_umc,pag,sizeof(strlen(pag)));									//envio la pagina
+	send_w(cliente_umc,pag,sizeof(strlen(pag)));
 	free(pag);
 }
 
-void pedir_sentencia(){	//pedir al UMC la proxima sentencia a ejecutar
+void enviar_longitud(int longitud){		//envio la longitud de la sentencia
+	char* longi =  intToChar4(longitud);
+	send_w(cliente_umc,longi,strlen(longi));
+	free(longi);
+}
 
-	//TODO solo aplica al caso en que la instruccion ocupe UNA SOLA PAGINA
+void enviar_sentencia(t_sentencia* sentencia){
+	char* envio = string_new();
+	int s = serializar_sentencia(envio,sentencia);
+	send_w(cliente_umc,envio,strlen(envio));
+}
+
+
+void pedir_sentencia(){	//pedir al UMC la proxima sentencia a ejecutar
 
 	int entrada = pcbActual->PC;   													//obtengo la entrada de la instruccion a ejecutar
 
@@ -361,22 +372,38 @@ void pedir_sentencia(){	//pedir al UMC la proxima sentencia a ejecutar
 
 	int pagina = obtener_offset_relativo(sentenciaActual,sentenciaParaUMC);			//obtengo el offset relativo
 
-	char* solic = string_from_format("%c",HeaderSolicitudSentencia);				//envio el header
-	send_w(cliente_umc,solic,sizeof(strlen(solic)));
+	send_w(cliente_umc, headerToMSG(HeaderSolicitudSentencia), 1);    			//envio el header
 
-	enviar_pagina(pagina);
+	char* sentencia = string_new();
 
-	char* sentencia = string_new();													//envio la info de la sentencia (o solo el offset??)
-	int s = serializar_sentencia(sentencia,sentenciaParaUMC);
+	int i = 0;
+	int longitud_restante = longitud_sentencia(sentenciaParaUMC);
+	int cantidad_pags =cantidad_paginas_ocupa(sentenciaParaUMC);
+	printf("La instruccion ocupa %d paginas\n", cantidad_pags);
 
-	int longitud = longitud_sentencia(sentenciaActual);
-	char* longi =  intToChar4(longitud);
-	send_w(cliente_umc,longi,strlen(longi));												//envio la longitud de la sentencia
+	while(i< cantidad_pags ){			//me fijo si ocupa mas de una pagina
 
+		printf("envie la pag: %d\n",pagina + i);
+
+		if(longitud_restante > tamanioPaginas){						//si me paso de la pagina, acorto el offset fin
+			longitud_restante = longitud_restante - tamanioPaginas;
+			sentenciaParaUMC->offset_fin = tamanioPaginas;
+			printf("offset: %d,pagina: %d, size: %d\n",sentenciaParaUMC->offset_inicio, pagina + i, tamanioPaginas);
+			sentenciaParaUMC->offset_inicio = 0;
+		}
+		else{													//si no me paso, sigo igual y terminaria el while
+			sentenciaParaUMC->offset_fin = longitud_restante;
+			printf("offset: %d,pagina: %d, size: %d\n",sentenciaParaUMC->offset_inicio, pagina + i, longitud_restante);
+
+		}
+		enviar_pagina(pagina);
+		enviar_longitud(longitud_restante);
+		enviar_sentencia(sentenciaParaUMC);
+
+		i++;
+	}
 	free(sentencia);
-	free(solic);
-
-	free(longi);
+	free(sentenciaActual);
 	free(sentenciaParaUMC);
 }
 
@@ -468,7 +495,6 @@ void finalizar(){
 int main()
 {
 	inicializar();
-
 	//conectarse a umc
 	establecerConexionConUMC();
 

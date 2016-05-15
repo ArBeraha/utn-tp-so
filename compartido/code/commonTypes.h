@@ -8,6 +8,8 @@
 #ifndef OTROS_COMMONTYPES_H_
 #define OTROS_COMMONTYPES_H_
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <commons/collections/list.h>
 #include <commons/collections/dictionary.h>
 #include "stack.h" // Ya que no tenemos pila, hice un nuevo tipo que funciona de esa manera: t_stack
@@ -49,5 +51,8 @@ typedef struct {
 	t_list* indice_codigo; // lista de t_sentencias que indican la posicion absoluta de cada sentencia
 	t_dictionary* indice_etiquetas; // diccionario [Etiqueta,Posicion de la sentencia a saltar]
 } t_PCB;
+
+
+void pcb_destroy(t_PCB* pcb);
 
 #endif /* OTROS_COMMONTYPES_H_ */

@@ -500,10 +500,7 @@ void inicializar(){
 
 void finalizar(){
 	destruirLogs(); //fixme: no hay que usar las funciones que nos dan ellos?
-	free(pcbActual->indice_codigo);
-	free(pcbActual->SP);
-	free(pcbActual->indice_etiquetas);
-	free(pcbActual);
+	pcb_destroy(pcbActual);
 	liberar_primitivas();
 }
 

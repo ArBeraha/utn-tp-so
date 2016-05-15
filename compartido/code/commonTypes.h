@@ -29,14 +29,9 @@ typedef struct {
 } __attribute__((packed)) t_sentencia;
 
 typedef struct {
-	char ID;
-	t_variable variable;
-} __attribute__((packed)) t_identificador;
-
-typedef struct {
 	int posicion;
 	t_list* argumentos; // lista de t_variable
-	t_list* identificadores;  // lista de t_identificador
+	t_dictionary* identificadores;  // dictionary de ["Identificador",t_variable]
 	int posicionRetorno;
 	t_variable valorRetorno;
 } t_stack_item;

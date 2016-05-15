@@ -92,11 +92,10 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor){	//TODO termi
 
 t_valor_variable obtener_valor_compartida(t_nombre_compartida variable){ 				// Pido a Nucleo el valor de la variable
 	printf("Obtener valor de variable compartida %s y es: %d \n",variable,*variable); // no seria el valor real
-
 	t_valor_variable valor;
 
 	send_w(cliente_nucleo, headerToMSG(HeaderPedirValorVariableCompartida), 1);
-	send_w(cliente_nucleo,variable,strlen(variable)); 		//TODO tengo que serializar??
+	send_w(cliente_nucleo,variable,sizeof(t_nombre_compartida));
 
 	char* msgSize = recv_waitall_ws(cliente_nucleo, sizeof(int));
 	int size = char4ToInt(msgSize);
@@ -107,22 +106,20 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida variable){ 				// 
 	free(res);
 
 	return valor;
-
 }
 
-//cambiar valor de retorno a t_valor_variable
 t_valor_variable asignar_valor_compartida(t_nombre_compartida variable, t_valor_variable valor){
 
 	printf("Asignar el valor %d a la variable compartida %s \n",valor,variable);
 
 	send_w(cliente_nucleo, headerToMSG(HeaderAsignarValorVariableCompartida), 1);		//envio el header
 
-	send_w(cliente_nucleo,variable,strlen(variable));						//envio el nombre de la variable
+	send_w(cliente_nucleo,variable,sizeof(t_nombre_compartida));						//envio el nombre de la variable
 
 	char* valor_envio = intToChar4(valor);
-	send_w(cliente_nucleo,valor_envio,strlen(valor_envio));								//envio el valor
+	send_w(cliente_nucleo,valor_envio,sizeof(int));								//envio el valor
 
-	//TODO tengo que esperar a que nucleo me informe que se asigno?
+	//TODO esperar a que nucleo informe la asignacion, para no usar un valor antiguo.
 
 	return valor;
 }
@@ -149,12 +146,12 @@ void imprimir(t_valor_variable valor){
 }
 
 void imprimir_texto(char* texto){
-	int size = strlen(texto);
+	int size = strlen(texto)+1; // El strlen no cuenta el \0. strlen("hola\0") = 4.
 	log_debug(activeLogger, "Se envio a nucleo la cadena: %s", texto);
 	send_w(cliente_nucleo, headerToMSG(HeaderImprimirTextoNucleo), 1);
 	send_w(cliente_nucleo, intToChar4(size), sizeof(int));
 	send_w(cliente_nucleo, texto, size); 		//envio a nucleo la cadena a imprimir
-	// ??? free(texto); //como no se que onda lo que hace la blbioteca, no se si tire segment fault al hacer free. Una vez q este todoo andando probar hacer free aca
+	// TODO ??? free(texto); //como no se que onda lo que hace la blbioteca, no se si tire segment fault al hacer free. Una vez q este todoo andando probar hacer free aca
 }
 
 //cambiar valor de retorno a int
@@ -265,11 +262,10 @@ void hacer_handshake_umc(){
 }
 
 void pedir_tamanio_paginas(){
-	char* solicitud = string_from_format("%c",HeaderTamanioPagina);		//le pido a umc el tamanio de las paginas
-	send_w(cliente_umc,solicitud,sizeof(strlen(solicitud)));
-
-	char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int));			//recibo el tamanio de las paginas
+	send_w(cliente_umc,headerToMSG(HeaderTamanioPagina),1); //le pido a umc el tamanio de las paginas
+	char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
 	tamanioPaginas = char4ToInt(tamanio);
+	free(tamanio);
 }
 
 
@@ -346,26 +342,25 @@ int queda_espacio_en_pagina(t_sentencia* sentencia){ //precondicion: el offset d
 
 void enviar_pagina(int pagina){				//envio la pagina
 	char* pag = intToChar4(pagina);
-	send_w(cliente_umc,pag,sizeof(strlen(pag)));
+	send_w(cliente_umc,pag,sizeof(int));
 	free(pag);
 }
 
 void enviar_longitud(int longitud){		//envio la longitud de la sentencia
 	char* longi =  intToChar4(longitud);
-	send_w(cliente_umc,longi,strlen(longi));
+	send_w(cliente_umc,longi,sizeof(int));
 	free(longi);
 }
 
 void enviar_sentencia(t_sentencia* sentencia){
 	char* envio = string_new();
 	int s = serializar_sentencia(envio,sentencia);
-	send_w(cliente_umc,envio,strlen(envio));
+	send_w(cliente_umc,envio,sizeof(t_sentencia));
 }
 
 
 void pedir_sentencia(){	//pedir al UMC la proxima sentencia a ejecutar
-
-	int entrada = pcbActual->PC;   													//obtengo la entrada de la instruccion a ejecutar
+	int entrada = pcbActual->PC;   				//obtengo la entrada de la instruccion a ejecutar
 
 	t_sentencia* sentenciaActual = list_get(pcbActual->indice_codigo,entrada);		//obtengo el offset de la sentencia
 	t_sentencia* sentenciaParaUMC = malloc(sizeof(t_sentencia));

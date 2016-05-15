@@ -70,16 +70,31 @@ void cargarConfig(){
 	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
 }
 
+void informarInstruccionTerminada(){
+	//TODO enviar a nucleo un header para decirle q se corrio una instruccion ansisop.
+}
+void setearPC(t_PCB* pcb,int pc){
+	pcb->PC=pc;
+}
+
+void incrementarPC(t_PCB* pcb){
+	pcb->PC++;
+}
+
 /*--------FUNCIONES----------*/
 //cambiar el valor de retorno a t_puntero
 void definir_variable(t_nombre_variable variable){
 	printf("Definir la variable %c \n",variable);
+	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
 	//return variable;
 }
 
 //cambiar valor de retorno a t_puntero
 void obtener_posicion_de(t_nombre_variable variable){
 	printf("Obtener posicion de %c \n",variable);
+	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
 	//return variable;
 }
 
@@ -97,7 +112,8 @@ t_valor_variable dereferenciar(t_puntero direccion){		// TODO terminar - Pido a 
 	valor = charToInt(res);
 	free(msgSize);
 	free(res);
-
+	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
 	return valor;
 }
 
@@ -107,6 +123,8 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor){	//TODO termi
 	send_w(cliente_umc,headerToMSG(HeaderAsignarValor), 1);
 	send_w(cliente_umc,intToChar(direccion_variable),sizeof(t_puntero)); //envio la direccion de la variable
 	send_w(cliente_umc,intToChar(valor),sizeof(t_valor_variable));		//envio el valor de la variable
+	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
 }
 
 
@@ -124,7 +142,8 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida variable){ 				// 
 	valor = charToInt(res);
 	free(msgSize);
 	free(res);
-
+	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
 	return valor;
 }
 
@@ -139,29 +158,40 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida variable, t_valor_
 	send_w(cliente_nucleo,valor_envio,sizeof(int));								//envio el valor
 
 	//TODO esperar a que nucleo informe la asignacion, para no usar un valor antiguo.
-
+	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
 	return valor;
 }
 
 //cambiar valor de retorno a t_puntero_instruccion
 void irAlLaber(t_nombre_etiqueta etiqueta){
 	printf("Obtener puntero de %s",etiqueta);
+	int posicionEtiqueta; // TODO acá va la de la etiqueta
+	setearPC(pcbActual,posicionEtiqueta);
+	informarInstruccionTerminada();
 }
 
 //cambiar valor de retorno a t_puntero_instruccion
-void llamar_sin_retorno(t_nombre_etiqueta etiqueta){
-	printf("Llamar a funcion %s\n", etiqueta);
+void llamar_sin_retorno(t_nombre_etiqueta nombreFuncion){
+	printf("Llamar a funcion %s\n", nombreFuncion);
+	int posicionFuncion; // TODO acá va la de la funcion
+	setearPC(pcbActual,posicionFuncion);
+	informarInstruccionTerminada();
 }
 
 //cambiar valor de retorno a t_puntero_instruccion
 void retornar(t_valor_variable variable){
 	printf("Cambiar entorno actual usando el PC de %d \n",variable);
+	setearPC(pcbActual,(int)variable);
+	informarInstruccionTerminada();
 }
 
 void imprimir(t_valor_variable valor){
 	printf("Imprimir %d\n",valor);
 	//header enviar valor de variable
 	send_w(cliente_nucleo,intToChar(valor),sizeof(t_valor_variable));
+	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
 }
 
 void imprimir_texto(char* texto){
@@ -171,17 +201,24 @@ void imprimir_texto(char* texto){
 	send_w(cliente_nucleo, intToChar4(size), sizeof(int));
 	send_w(cliente_nucleo, texto, size); 		//envio a nucleo la cadena a imprimir
 	// TODO ??? free(texto); //como no se que onda lo que hace la blbioteca, no se si tire segment fault al hacer free. Una vez q este todoo andando probar hacer free aca
+	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
 }
 
 //cambiar valor de retorno a int
 void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo){
 	printf("Informar a nucleo que el programa quiere usar '%s' durante %d unidades de tiempo\n",dispositivo,tiempo);
+	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
 }
 
 void wait(t_nombre_semaforo identificador_semaforo){
 	printf("Comunicar nucleo de hacer wait con semaforo: %s", identificador_semaforo);
 	//header hace wait
 	send_w(cliente_nucleo,identificador_semaforo, sizeof(identificador_semaforo));
+	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
+
 }
 
 
@@ -189,10 +226,12 @@ void signal(t_nombre_semaforo identificador_semaforo){
 	printf("Comunicar nucleo de hacer signal con semaforo: %s", identificador_semaforo);
 	//header hace signal
 	send_w(cliente_nucleo,identificador_semaforo, sizeof(identificador_semaforo));
+	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
 }
 
 void inicializar_primitivas(){
-
+	log_info(bgLogger,"Inicianlizando primitivas...");
 	funciones.AnSISOP_definirVariable = &definir_variable;
 	funciones.AnSISOP_obtenerPosicionVariable = &obtener_posicion_de;
 	funciones.AnSISOP_dereferenciar= &dereferenciar;
@@ -207,7 +246,6 @@ void inicializar_primitivas(){
 	funciones.AnSISOP_entradaSalida=&entrada_salida;
 	funcionesKernel.AnSISOP_wait= &wait;
 	funcionesKernel.AnSISOP_signal=&signal;
-
 	log_info(activeLogger,"Primitivas Inicializadas");
 }
 
@@ -438,7 +476,8 @@ void obtener_y_parsear(){
 	free(sentencia);
 }
 
-t_PCB procesarPCB(t_PCB pcb){ //FIXME
+// @Emi: retornaria un PCB nuevo con el PC actualizado, manteniendo el viejo. Como no se si la necesitas para algo, la dejo acá
+t_PCB procesarPCB(t_PCB pcb){
 	t_PCB nuevoPCB;	//incrementar registro
 	nuevoPCB = pcb;
 	nuevoPCB.PC++;

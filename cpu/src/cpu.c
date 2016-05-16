@@ -34,7 +34,6 @@ void instruccionTerminada(char* instr){
 /*--------FUNCIONES----------*/
 //cambiar el valor de retorno a t_puntero
 void definir_variable(t_nombre_variable variable){
-	log_info(activeLogger,"Definir la variable |%c|.",variable);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Definir_variable");

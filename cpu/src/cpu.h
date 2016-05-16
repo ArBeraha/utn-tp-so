@@ -53,6 +53,7 @@ AnSISOP_kernel funcionesKernel;		// funciones kernel de AnSISOP
 int tamanioPaginas;					//Tamaño de las paginas
 
 t_PCB* pcbActual;
+t_stack* stack;
 
 
 #endif /* CPU_H_ */

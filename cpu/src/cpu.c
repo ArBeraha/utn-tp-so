@@ -8,7 +8,7 @@
 
 /*------------Declaracion de funciones--------------*/
 void procesarHeader(char*);
-t_PCB procesarPCB();
+//t_PCB procesarPCB();
 void esperar_programas();
 void pedir_sentencia();
 void parsear();
@@ -28,12 +28,16 @@ void incrementarPC(t_PCB* pcb){
 	pcb->PC++;
 }
 
+void instruccionTerminada(char* instr){
+	log_debug(activeLogger, "%s finalizó OK.", instr);
+}
 /*--------FUNCIONES----------*/
 //cambiar el valor de retorno a t_puntero
 void definir_variable(t_nombre_variable variable){
 	printf("Definir la variable %c \n",variable);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
+	instruccionTerminada("Definir_variable");
 	//return variable;
 }
 
@@ -42,6 +46,7 @@ void obtener_posicion_de(t_nombre_variable variable){
 	printf("Obtener posicion de %c \n",variable);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
+	instruccionTerminada("obtener_posicion_de");
 	//return variable;
 }
 
@@ -61,6 +66,7 @@ t_valor_variable dereferenciar(t_puntero direccion){		// TODO terminar - Pido a 
 	free(res);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
+	instruccionTerminada("Dereferenciar");
 	return valor;
 }
 
@@ -72,6 +78,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor){	//TODO termi
 	send_w(cliente_umc,intToChar(valor),sizeof(t_valor_variable));		//envio el valor de la variable
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
+	instruccionTerminada("Asignar");
 }
 
 
@@ -91,6 +98,7 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida variable){ 				// 
 	free(res);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
+	instruccionTerminada("Obtener_valor_compartida");
 	return valor;
 }
 
@@ -107,6 +115,7 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida variable, t_valor_
 	//TODO esperar a que nucleo informe la asignacion, para no usar un valor antiguo.
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
+	instruccionTerminada("asignar_valor_compartida");
 	return valor;
 }
 
@@ -116,6 +125,7 @@ void irAlLaber(t_nombre_etiqueta etiqueta){
 	int posicionEtiqueta; // TODO acá va la de la etiqueta
 	setearPC(pcbActual,posicionEtiqueta);
 	informarInstruccionTerminada();
+	instruccionTerminada("ir_al_laber");
 }
 
 //cambiar valor de retorno a t_puntero_instruccion
@@ -124,6 +134,7 @@ void llamar_sin_retorno(t_nombre_etiqueta nombreFuncion){
 	int posicionFuncion; // TODO acá va la de la funcion
 	setearPC(pcbActual,posicionFuncion);
 	informarInstruccionTerminada();
+	instruccionTerminada("Llamar_sin_retorno");
 }
 
 //cambiar valor de retorno a t_puntero_instruccion
@@ -131,6 +142,7 @@ void retornar(t_valor_variable variable){
 	printf("Cambiar entorno actual usando el PC de %d \n",variable);
 	setearPC(pcbActual,(int)variable);
 	informarInstruccionTerminada();
+	instruccionTerminada("Retornar");
 }
 
 void imprimir(t_valor_variable valor){
@@ -139,6 +151,7 @@ void imprimir(t_valor_variable valor){
 	send_w(cliente_nucleo,intToChar(valor),sizeof(t_valor_variable));
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
+	instruccionTerminada("Imprimir");
 }
 
 void imprimir_texto(char* texto){
@@ -150,6 +163,7 @@ void imprimir_texto(char* texto){
 	// TODO ??? free(texto); //como no se que onda lo que hace la blbioteca, no se si tire segment fault al hacer free. Una vez q este todoo andando probar hacer free aca
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
+	instruccionTerminada("Imprimir texto");
 }
 
 //cambiar valor de retorno a int
@@ -157,6 +171,7 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo){
 	printf("Informar a nucleo que el programa quiere usar '%s' durante %d unidades de tiempo\n",dispositivo,tiempo);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
+	instruccionTerminada("Entrada-Salida");
 }
 
 void wait(t_nombre_semaforo identificador_semaforo){
@@ -165,7 +180,7 @@ void wait(t_nombre_semaforo identificador_semaforo){
 	send_w(cliente_nucleo,identificador_semaforo, sizeof(identificador_semaforo));
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
-
+	instruccionTerminada("wait");
 }
 
 
@@ -174,9 +189,11 @@ void signal(t_nombre_semaforo identificador_semaforo){
 	//header hace signal
 	send_w(cliente_nucleo,identificador_semaforo, sizeof(identificador_semaforo));
 	incrementarPC(pcbActual);
-	informarInstruccionTerminada();
+	instruccionTerminada("Signal");
 }
 
+
+/* ------ Funciones para usar con el parser ----- */
 void inicializar_primitivas(){
 	log_info(bgLogger,"Inicianlizando primitivas...");
 	funciones.AnSISOP_definirVariable = &definir_variable;
@@ -197,6 +214,7 @@ void inicializar_primitivas(){
 }
 
 void liberar_primitivas(){
+	log_debug(bgLogger, "Liberando primitivas...");
 	free(funciones.AnSISOP_definirVariable );
 	free(funciones.AnSISOP_obtenerPosicionVariable  );
 	free(funciones.AnSISOP_dereferenciar );
@@ -211,10 +229,11 @@ void liberar_primitivas(){
 	free(funciones.AnSISOP_entradaSalida);
 	free(funcionesKernel.AnSISOP_wait);
 	free(funcionesKernel.AnSISOP_signal);
+	log_debug(bgLogger, "Primitivas liberadas...");
 }
 
 void parsear(char* const sentencia){
-	printf("Ejecutando: %s\n",sentencia);
+	log_info(activeLogger,"Ejecutando: %s\n",sentencia);
 	analizadorLinea(sentencia,&funciones,&funcionesKernel);
 }
 
@@ -229,7 +248,6 @@ void conectar_nucleo(){
 	direccionNucleo = crearDireccionParaCliente(config.puertoNucleo,config.ipNucleo);
 	cliente_nucleo = socket_w();
 	connect_w(cliente_nucleo,&direccionNucleo); //conecto cpu a la direccion 'direccionNucleo'
-
 	log_info(activeLogger,"Exito al conectar con NUCLEO!!");
 }
 
@@ -241,7 +259,7 @@ void hacer_handshake_nucleo(){
 		perror("Se esperaba que CPU se conecte con el nucleo.");
 	}
 	else{
-		log_info(activeLogger,"Exito al hacer handshake");
+		log_info(bgLogger,"Exito al hacer handshake con nucleo.");
 	}
 }
 
@@ -249,7 +267,6 @@ void conectar_umc(){
 	direccionUmc = crearDireccionParaCliente(config.puertoUMC,config.ipUMC);
 	cliente_umc = socket_w();
 	connect_w(cliente_umc,&direccionUmc); //conecto cpu a la direccion 'direccionUmc'
-
 	log_info(activeLogger,"Exito al conectar con UMC!!");
 }
 
@@ -261,7 +278,7 @@ void hacer_handshake_umc(){
 		perror("Se esperaba que CPU se conecte con UMC.");
 	}
 	else{
-			log_info(activeLogger,"Exito al hacer handshake");
+			log_info(bgLogger,"Exito al hacer handshake con UMC.");
 		}
 }
 
@@ -269,6 +286,7 @@ void pedir_tamanio_paginas(){
 	send_w(cliente_umc,headerToMSG(HeaderTamanioPagina),1); //le pido a umc el tamanio de las paginas
 	char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
 	tamanioPaginas = char4ToInt(tamanio);
+	log_debug(activeLogger, "El tamaño de paginas es: %d", tamanioPaginas);
 	free(tamanio);
 }
 
@@ -355,10 +373,9 @@ void enviar_longitud(int longitud){		//envio la longitud de la sentencia
 
 void enviar_sentencia(t_sentencia* sentencia){
 	char* envio = string_new();
-	int s = serializar_sentencia(envio,sentencia);
-	send_w(cliente_umc,envio,sizeof(t_sentencia));
+	int size = serializar_sentencia(envio,sentencia);
+	send_w(cliente_umc,envio,size);
 }
-
 
 void pedir_sentencia(){	//pedir al UMC la proxima sentencia a ejecutar
 	int entrada = pcbActual->PC;   				//obtengo la entrada de la instruccion a ejecutar
@@ -424,22 +441,23 @@ void obtener_y_parsear(){
 }
 
 // @Emi: retornaria un PCB nuevo con el PC actualizado, manteniendo el viejo. Como no se si la necesitas para algo, la dejo acá
-t_PCB procesarPCB(t_PCB pcb){
-	t_PCB nuevoPCB;	//incrementar registro
-	nuevoPCB = pcb;
-	nuevoPCB.PC++;
-	return nuevoPCB;
-}
-void serializar_PCB(char* res, t_PCB* pcb){		//terminar!
-
-	string_append(&res,intToChar4(pcb->PC));		//pongo el PC
-	string_append(&res,intToChar4(pcb->PID));		//pongo el PID
-	//serializar paginas de codigo
-	string_append(&res,intToChar4(pcb->cantidad_paginas));	//pongo la cantidad de paginas
-	//serializar indice etiquetas
-	//serializar indice stack
-
-}
+//t_PCB procesarPCB(t_PCB pcb){
+//	t_PCB nuevoPCB;	//incrementar registro
+//	nuevoPCB = pcb;
+//	nuevoPCB.PC++;
+//	return nuevoPCB;
+//}
+// @emi las comento porque sino me dice que redefinen las de ari y no compila.
+//void serializar_PCB(char* res, t_PCB* pcb){		//terminar!
+//
+//	string_append(&res,intToChar4(pcb->PC));		//pongo el PC
+//	string_append(&res,intToChar4(pcb->PID));		//pongo el PID
+//	//serializar paginas de codigo
+//	string_append(&res,intToChar4(pcb->cantidad_paginas));	//pongo la cantidad de paginas
+//	//serializar indice etiquetas
+//	//serializar indice stack
+//
+//}
 //void deserializar_PCB(char* mensaje, t_PCB* pcb){
 //	//t_PCB* newPCB = malloc(24);
 //

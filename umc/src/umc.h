@@ -125,7 +125,7 @@ char* agregarAMemoria(tablaPagina_t* paginaBuscada); //TODO
 
 char* devolverPedidoPagina(pedidoLectura_t pedido);   // todos estos volver a devolver void, devuelven cosas para testear
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int buffer); //TODO
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer);
 void finalizarPrograma(int idPrograma); //TODO
 void inicializarPrograma(int idPrograma, int paginasRequeridas); //TODO
 int reservarPagina(int,int);

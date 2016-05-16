@@ -198,7 +198,7 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 }
 
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int buffer){  //TODO Lo deje por la mitad..
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){  //TODO Lo deje por la mitad..
 
 	if(estaEnTlb(pedido) && tlbHabilitada){
 		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d PARA ESCRITURA \n",pedido.pid,pedido.paginaRequerida);
@@ -207,11 +207,14 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int buffer){  //TODO Lo 
 
 		printf("Posicion TLB: %d \n",pos);
 
-		char* str = malloc(sizeof(buffer));
-		snprintf(str, sizeof(buffer), "%d", buffer);
+//		char* str = malloc(sizeof(buffer));
+//		snprintf(str, sizeof(buffer), "%d", buffer);
 
-		memcpy(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, str, sizeof(buffer));
+		char* almacenar = malloc(sizeof(buffer)); //size?
+//		memcpy(almacenar,buffer,sizeof(buffer)); //size?
+		almacenar = buffer;
 
+		memcpy(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, almacenar, sizeof(almacenar)); //mandarle size? ...
 
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
 
@@ -324,7 +327,7 @@ void devolverPaginasDePid(int pid){ //OK
 
 }
 
-void devolverTodaLaMemoria(){ //OK
+void devolverTodaLaMemoria(){
 
 	int cantidadTablas = list_size(listaTablasPaginas);
 	int i;
@@ -712,17 +715,40 @@ void test(){
 	printf("Pedido escritura \n");
 	pedidoLectura_t pedido2;
 	pedido2.pid=2;
-	pedido2.paginaRequerida=1;
+	pedido2.paginaRequerida=0;
 	pedido2.offset = 0;
 	pedido2.cantBytes = 4;
+
 	reservarPagina(2,2);
-	tlb[2].pagina=1;
+	tlb[2].pagina=0;
 	tlb[2].pid = 2;
 	tlb[2].marcoUtilizado=7;
-	printf("Devolucion: %s \n", almacenarBytesEnUnaPagina(pedido2,258));
-	printf("Ahora devuelvo toda la memoria para ver que no haya nada raro.. \n");
-	devolverTodaLaMemoria();
 
+	pedidoLectura_t pedido3;
+	pedido3.pid=2;
+	pedido3.paginaRequerida = 1;
+	pedido3.offset = 6;
+	pedido3.cantBytes = 4;
+
+	tlb[5].pagina=1;
+	tlb[5].pid = 2;
+	tlb[5].marcoUtilizado=7;
+
+
+	printf("\n \n \n \n");
+	printf("Primer pedido de escritura: \n");
+	printf("Devolucion1: %s \n", almacenarBytesEnUnaPagina(pedido2,4,"3"));
+
+	printf("\n \n \n \n");
+	printf("Segundo pedido de escritura: \n");
+	printf("Devolucion2: %s \n", almacenarBytesEnUnaPagina(pedido3,4,"31"));
+
+//	printf("Devolucion: %s \n", almacenarBytesEnUnaPagina(pedido2,4,'abc'));
+
+
+	printf("Ahora devuelvo toda la memoria para ver que no haya nada raro.. \n");
+
+	devolverTodaLaMemoria();
 
 }
 
@@ -738,7 +764,6 @@ int main(void) {
 
 	cargarCFG();
 
-	printf("aa \n");
 	crearLogs("Umc","Umc");
 
 	dump = log_create("dump","UMC",false,LOG_LEVEL_INFO);

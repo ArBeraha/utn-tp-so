@@ -19,18 +19,9 @@ int stack_size(t_stack* stack){
 void* stack_pop(t_stack* stack) {
 	return list_remove((t_list*)stack, stack_size(stack)-1);
 }
-void stack_destroy(t_stack* stack){
-	//todo fix memory leak de los items
-	list_destroy((t_list*)stack);
-}
+
 void* stack_get(t_stack* stack, int i){
 	return list_get((t_list*)stack,i);
 }
 
-/*
-void stack_destroy_item(t_stack_item* item){
-	list_destroy(item->argumentos);
-	list_destroy(item->identificadores);
-	free(item);
-}
-*/
+// El destroy esta en commonTypes.c

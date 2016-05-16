@@ -192,8 +192,9 @@ int deserializar_dictionary(t_dictionary* destino, char* fuente, int pesoData){
 	//destino = dictionary_create();
 	for (i=0; i< fuente[0]; i++){
 		int len=fuente[offset++];
-		key = malloc(len);
+		key = malloc(len+1);
 		memcpy(key,fuente+offset,len);
+		key[len]='\0';
 		offset+=len;
 		data = malloc(pesoData);
 		memcpy(data,fuente+offset,pesoData);
@@ -216,6 +217,7 @@ int test_serializacion(){
 	CU_add_test(suite_serializacion, "Test de Serializacion de stack item", test_serializar_stack_item);
 	CU_add_test(suite_serializacion, "Test de Serializacion de stack", test_serializar_stack);
 	CU_add_test(suite_serializacion, "Test de Serializacion de PCB", test_serializar_PCB);
+	CU_add_test(suite_serializacion, "Test de Serializacion de dictionary", test_serializar_dictionary);
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
@@ -299,6 +301,9 @@ void test_serializar_dictionary(){
 	deserializar_dictionary(dic2,serial,sizeof(t_variable));
 	CU_ASSERT_EQUAL(((t_variable*)dictionary_get(dic2,"aaa"))->pagina,2);
 	CU_ASSERT_EQUAL(((t_variable*)dictionary_get(dic2,"b"))->pagina,12);
+	dictionary_destroy(dic);
+	dictionary_destroy(dic2);
+	free(serial);
 }
 void test_serializar_stack_item(){
 	t_stack_item* itemA, *itemB;
@@ -311,7 +316,7 @@ void test_serializar_stack_item(){
 	itemA->posicion=5;
 	itemA->posicionRetorno=10;
 	itemA->argumentos = list_create();
-	itemA->identificadores = dictionary_create();//list_create();
+	itemA->identificadores = dictionary_create();
 	itemA->valorRetorno=var;
 	//itemB->argumentos=list_create();
 	//itemB->identificadores = dictionary_create();
@@ -328,14 +333,8 @@ void test_serializar_stack_item(){
 	CU_ASSERT_EQUAL(itemB->posicionRetorno,itemA->posicionRetorno);
 	CU_ASSERT_EQUAL(itemB->valorRetorno.pagina,itemA->valorRetorno.pagina);
 	CU_ASSERT_EQUAL(((t_variable*)dictionary_get(itemB->identificadores,"a"))->pagina,8);
-	/*stack_destroy_item(itemA);
-	stack_destroy_item(itemB);*/
-	list_destroy(itemA->argumentos);
-	dictionary_destroy(itemA->identificadores);
-	free(itemA);
-	list_destroy(itemB->argumentos);
-	dictionary_destroy(itemB->identificadores);
-	free(itemB);
+	stack_item_destroy(itemA);
+	stack_item_destroy(itemB);
 	free(serial);
 }
 void test_serializar_stack(){
@@ -363,6 +362,7 @@ void test_serializar_stack(){
 	arg->size=13;
 	list_add(itemB->argumentos,arg);
 	itemB->valorRetorno=var;
+	dictionary_put(itemB->identificadores,"k",arg);
 	stack_push(stackA,itemB);
 	char* serial = malloc(bytes_stack(stackA));
 	serializar_stack(serial,stackA);
@@ -372,6 +372,7 @@ void test_serializar_stack(){
 	CU_ASSERT_EQUAL(((t_stack_item *)stack_get(stackB,0))->posicion,1);
 	CU_ASSERT_EQUAL(((t_stack_item *)stack_get(stackB,1))->posicionRetorno,10);
 	CU_ASSERT_EQUAL(((t_variable*)(list_get(((t_stack_item *)stack_get(stackB,1))->argumentos,0)))->pagina,11);
+	CU_ASSERT_EQUAL(((t_variable*)(dictionary_get(((t_stack_item *)stack_get(stackB,1))->identificadores,"k")))->pagina,11);
 	/*Liberar las estructuras internas*/
 	stack_destroy(stackA);
 	stack_destroy(stackB);
@@ -431,8 +432,8 @@ void test_serializar_PCB(){
 	CU_ASSERT_EQUAL(((t_sentencia*)list_get(pcb->indice_codigo,0))->offset_fin,99);
 	CU_ASSERT_EQUAL(((*(int*)dictionary_get(pcb2->indice_etiquetas,"SALTO"))),267)
 	/*Liberar las estructuras internas*/
-	free(pcb);
-	free(pcb2);
+	pcb_destroy(pcb);
+	pcb_destroy(pcb2);
 	free(serial);
 }
 

@@ -49,5 +49,6 @@ typedef struct {
 
 
 void pcb_destroy(t_PCB* pcb);
+void stack_item_destroy(t_stack_item* item);
 
 #endif /* OTROS_COMMONTYPES_H_ */

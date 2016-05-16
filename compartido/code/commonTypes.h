@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <commons/collections/list.h>
 #include <commons/collections/dictionary.h>
-#include "stack.h" // Ya que no tenemos pila, hice un nuevo tipo que funciona de esa manera: t_stack
+
 
 typedef int ansisop_var_t;
 
@@ -28,6 +28,8 @@ typedef struct {
 	int offset_fin;
 } __attribute__((packed)) t_sentencia;
 
+typedef t_list t_stack;
+
 typedef struct {
 	int posicion;
 	t_list* argumentos; // lista de t_variable
@@ -35,8 +37,6 @@ typedef struct {
 	int posicionRetorno;
 	t_variable valorRetorno;
 } t_stack_item;
-
-
 
 typedef struct {
 	int PID; // identificador único
@@ -49,6 +49,13 @@ typedef struct {
 
 
 void pcb_destroy(t_PCB* pcb);
+t_stack* stack_create();
+void stack_push(t_stack*,t_stack_item*);
+int stack_size(t_stack*);
+t_stack_item* stack_pop(t_stack*);
+t_stack_item* stack_get(t_stack*,int);
+void stack_destroy(t_stack*); //todo fix memory leak de los items
 void stack_item_destroy(t_stack_item* item);
+
 
 #endif /* OTROS_COMMONTYPES_H_ */

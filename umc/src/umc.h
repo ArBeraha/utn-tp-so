@@ -34,6 +34,7 @@
 #include "commonTypes.h"
 #include <math.h>
 #include "CUnit/Basic.h"
+#include <mcheck.h>
 
 
 typedef struct customConfig {
@@ -108,6 +109,7 @@ pthread_t consolaUmc;
 
 t_log *dump;
 
+char* ultimoByteOcupado;
 
 
 //Prototipos
@@ -125,28 +127,30 @@ char* agregarAMemoria(tablaPagina_t* paginaBuscada); //TODO
 
 char* devolverPedidoPagina(pedidoLectura_t pedido);   // todos estos volver a devolver void, devuelven cosas para testear
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer);
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer); //TODO
+char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* buffer); //TODO
 void finalizarPrograma(int idPrograma); //TODO
 void inicializarPrograma(int idPrograma, int paginasRequeridas); //TODO
 int reservarPagina(int,int);
 
+void imprimirRegionMemoria(char* region, int size);
 void devolverTodasLasPaginas();
 void devolverPaginasDePid(int pid);
 void devolverTodaLaMemoria();
 void devolverMemoriaDePid(int pid);
 void inicializarTlb();
 void fRetardo();
-void dumpEstructuraMemoria(); //TODO
-void dumpContenidoMemoria(); //TODO
-void flushTlb(); //TODO
-void flushMemory(); //TODO
+void dumpEstructuraMemoria();
+void dumpContenidoMemoria();
+void flushTlb();
+void flushMemory();
 void recibirComandos();
 
 void servidorCPUyNucleoExtendido();
 void servidorCPUyNucleo();
 int  getHandshake();
 void handshakearASwap();
-void conectarASwap(); //MOTHER OF DECLARATIVIDAD...
+void conectarASwap(); //MOTHER OF EXPRESIVIDAD... ver si puedo mejorar estos nombres
 void realizarConexionASwap();
 void escucharPedidosDeSwap();
 void conexionASwap();

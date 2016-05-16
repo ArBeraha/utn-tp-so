@@ -197,73 +197,154 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 	}
 }
 
+void cambiarUltimoByte(int marco, int cantidad){
+	int nuevoValor = *(ultimoByteOcupado+marco) + cantidad;
+	ultimoByteOcupado[marco*sizeof(int)] = nuevoValor;
+}
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){  //TODO Lo deje por la mitad..
+char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* buffer){  //TODO Falta lo de swap
 
 	if(estaEnTlb(pedido) && tlbHabilitada){
+
 		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d PARA ESCRITURA \n",pedido.pid,pedido.paginaRequerida);
 
 		int pos = buscarEnTlb(pedido);
 
-		printf("Posicion TLB: %d \n",pos);
+		int ultimaPosEscrita = *(ultimoByteOcupado+tlb[pos].marcoUtilizado);
 
-//		char* str = malloc(sizeof(buffer));
-//		snprintf(str, sizeof(buffer), "%d", buffer);
+		pedido.offset = ultimaPosEscrita+1;
 
-		char* almacenar = malloc(sizeof(buffer)); //size?
-//		memcpy(almacenar,buffer,sizeof(buffer)); //size?
-		almacenar = buffer;
+		printf("Ultima pos escrita: %d \n",ultimaPosEscrita);
 
-		memcpy(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, almacenar, sizeof(almacenar)); //mandarle size? ...
+		printf("Posicion encontrada en la TLB: %d \n \n",pos);
+
+		memcpy(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset,buffer, strlen(buffer));
+
+		cambiarUltimoByte(tlb[pos].marcoUtilizado, strlen(buffer));
+
+		printf("Ahora el ultimo byte escrito deberia ser 2: %d \n",ultimoByteOcupado[tlb[pos].marcoUtilizado*sizeof(int)]);
 
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
 
-		printf("Lo que acabo de almacenar: %s .\n ",memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset);
+		printf("Lo que acabo de almacenar: %s .\n \n ",memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset);
+
 		printf("Ahora llamo a la funcion devolverPedidoPagina (conecto las dos func) \n \n");
 		return (devolverPedidoPagina(pedido)); //Provisorio para testear
 
 	}
-//	else{
-//		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas",pedido.pid,pedido.paginaRequerida);
-//		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
-//		t_list* tablaPaginaBuscada = list_get(listaTablasPaginas, pedido.pid);
-//
-//			if(existePaginaBuscadaEnTabla(pedido.paginaRequerida,tablaPaginaBuscada)){ //Si la pagina existe dentro de la tabla particular
-//				tablaPagina_t* paginaBuscada = list_get(tablaPaginaBuscada, pedido.paginaRequerida);
-//
-//	//SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
-//				if(paginaBuscada->bitPresencia){
-//
-//					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
-//
-//					char* contenido = malloc(pedido.cantBytes + 1);
-//					memcpy(contenido,memoria+paginaBuscada->marcoUtilizado * config.tamanio_marco+pedido.offset,pedido.cantBytes);
-//					contenido[pedido.cantBytes]='\0';
-//
-//					printf("marco tlb: %d \n", paginaBuscada->marcoUtilizado);
-//
-//					agregarATlb(paginaBuscada,pedido.pid);
-//
-//					//send_w(cliente, devolucion, 4);
-//					return contenido; //Provisorio, tiene que ser un SEND
-//				}
-//	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y TODO LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
-//				else{
-//					char* devolucion = buscarEnSwap(paginaBuscada->marcoUtilizado,pedido);
-//					send_w(cliente, devolucion, 4);
-//					agregarAMemoria(paginaBuscada);
-//				}
-//			}// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
-//			else{
-//					send_w(cliente, intToChar(HeaderNoExistePagina), 4);
-//			}
-//			// SI NO EXISTE LA TABLA DE PAGINAS EN LA LISTA TOTAL DE PAGS
-//		}
-//		else{
-//				send_w(cliente,intToChar(HeaderNoExisteTablaDePag), 4);
-//		}
-//	}
-	return NULL;
+	else{
+		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas",pedido.pid,pedido.paginaRequerida);
+		printf("PID: %d \n",pedido.pid);
+		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
+		t_list* tablaPaginaBuscada = list_get(listaTablasPaginas, pedido.pid);
+
+			if(existePaginaBuscadaEnTabla(pedido.paginaRequerida,tablaPaginaBuscada)){ //Si la pagina existe dentro de la tabla particular
+				tablaPagina_t* paginaBuscada = list_get(tablaPaginaBuscada, pedido.paginaRequerida);
+
+	//SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
+				if(paginaBuscada->bitPresencia){
+
+					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Escribiendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+
+					int ultimaPosEscrita = *(ultimoByteOcupado+paginaBuscada->marcoUtilizado);
+
+					pedido.offset = ultimaPosEscrita+1;
+
+					memcpy(memoria+paginaBuscada->marcoUtilizado*config.tamanio_marco+pedido.offset, buffer, strlen(buffer)); //size??? PARA QUE??
+
+					printf("Marco de la pagina: %d \n", paginaBuscada->marcoUtilizado);
+
+					printf("Lo que acabo de almacenar: %s .\n \n ",memoria+paginaBuscada->marcoUtilizado*config.tamanio_marco+pedido.offset);
+					printf("Ahora llamo a la funcion devolverPedidoPagina (conecto las dos func) \n \n");
+
+					agregarATlb(paginaBuscada,pedido.pid);
+
+					//send_w(cliente, devolucion, 4);
+					return (devolverPedidoPagina(pedido)); //Provisorio para testear
+
+				}
+	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y TODO LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
+				else{
+					char* devolucion = buscarEnSwap(paginaBuscada->marcoUtilizado,pedido);
+					send_w(cliente, devolucion, 4);
+					agregarAMemoria(paginaBuscada);
+				}
+			}// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
+			else{
+					send_w(cliente, intToChar(HeaderNoExistePagina), 4);
+			}
+			// SI NO EXISTE LA TABLA DE PAGINAS EN LA LISTA TOTAL DE PAGS
+		}
+		else{
+				send_w(cliente,intToChar(HeaderNoExisteTablaDePag), 4);
+		}
+	}
+	return "Error ifs";
+}
+
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){  //TODO Falta lo de swap
+
+	if(estaEnTlb(pedido) && tlbHabilitada){
+
+		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d PARA ESCRITURA \n",pedido.pid,pedido.paginaRequerida);
+
+		int pos = buscarEnTlb(pedido);
+
+		printf("Posicion encontrada en la TLB: %d \n \n",pos);
+
+		memcpy(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, buffer, strlen(buffer)); //size??? PARA QUE??
+
+		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
+
+		printf("Lo que acabo de almacenar: %s .\n \n ",memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset);
+		printf("Ahora llamo a la funcion devolverPedidoPagina (conecto las dos func) \n \n");
+		return (devolverPedidoPagina(pedido)); //Provisorio para testear
+
+	}
+	else{
+		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas",pedido.pid,pedido.paginaRequerida);
+		printf("PID: %d \n",pedido.pid);
+		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
+		t_list* tablaPaginaBuscada = list_get(listaTablasPaginas, pedido.pid);
+
+			if(existePaginaBuscadaEnTabla(pedido.paginaRequerida,tablaPaginaBuscada)){ //Si la pagina existe dentro de la tabla particular
+				tablaPagina_t* paginaBuscada = list_get(tablaPaginaBuscada, pedido.paginaRequerida);
+
+	//SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
+				if(paginaBuscada->bitPresencia){
+
+					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Escribiendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+
+					memcpy(memoria+paginaBuscada->marcoUtilizado*config.tamanio_marco+pedido.offset, buffer, strlen(buffer)); //size??? PARA QUE??
+
+					printf("Marco de la pagina: %d \n", paginaBuscada->marcoUtilizado);
+
+					printf("Lo que acabo de almacenar: %s .\n \n ",memoria+paginaBuscada->marcoUtilizado*config.tamanio_marco+pedido.offset);
+					printf("Ahora llamo a la funcion devolverPedidoPagina (conecto las dos func) \n \n");
+
+					agregarATlb(paginaBuscada,pedido.pid);
+
+					//send_w(cliente, devolucion, 4);
+					return (devolverPedidoPagina(pedido)); //Provisorio para testear
+
+				}
+	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y TODO LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
+				else{
+					char* devolucion = buscarEnSwap(paginaBuscada->marcoUtilizado,pedido);
+					send_w(cliente, devolucion, 4);
+					agregarAMemoria(paginaBuscada);
+				}
+			}// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
+			else{
+					send_w(cliente, intToChar(HeaderNoExistePagina), 4);
+			}
+			// SI NO EXISTE LA TABLA DE PAGINAS EN LA LISTA TOTAL DE PAGS
+		}
+		else{
+				send_w(cliente,intToChar(HeaderNoExisteTablaDePag), 4);
+		}
+	}
+	return "Error ifs";
 }
 
 void finalizarPrograma(int idPrograma){
@@ -327,6 +408,13 @@ void devolverPaginasDePid(int pid){ //OK
 
 }
 
+void imprimirRegionMemoria(char* region, int size){
+	int i;
+	for(i=0;i<size;i++){
+			putchar(region[i]);
+	}
+}
+
 void devolverTodaLaMemoria(){
 
 	int cantidadTablas = list_size(listaTablasPaginas);
@@ -351,7 +439,8 @@ void devolverTodaLaMemoria(){
 			memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
 			contenido[config.tamanio_marco]='\0';
 
-			printf("%s",contenido);
+			imprimirRegionMemoria(contenido,config.tamanio_marco);
+
 			log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: %s ",i, unaPagina->nroPagina,unaPagina->marcoUtilizado,contenido);
 
 			printf("\n");
@@ -504,6 +593,9 @@ void crearMemoriaYTlbYTablaPaginas(){
 	log_info(activeLogger,"Creado el vector de marcos ocupados \n");
 
 	memset(vectorMarcosOcupados,0,sizeof(int) * config.cantidad_marcos);
+
+	ultimoByteOcupado = malloc(config.cantidad_marcos * sizeof(int));
+	memset(ultimoByteOcupado,0,sizeof(int) * config.cantidad_marcos);
 
 }
 
@@ -719,7 +811,7 @@ void test(){
 	pedido2.offset = 0;
 	pedido2.cantBytes = 4;
 
-	reservarPagina(2,2);
+	reservarPagina(3,2);
 	tlb[2].pagina=0;
 	tlb[2].pid = 2;
 	tlb[2].marcoUtilizado=7;
@@ -727,7 +819,7 @@ void test(){
 	pedidoLectura_t pedido3;
 	pedido3.pid=2;
 	pedido3.paginaRequerida = 1;
-	pedido3.offset = 6;
+	pedido3.offset = 2;
 	pedido3.cantBytes = 4;
 
 	tlb[5].pagina=1;
@@ -741,7 +833,7 @@ void test(){
 
 	printf("\n \n \n \n");
 	printf("Segundo pedido de escritura: \n");
-	printf("Devolucion2: %s \n", almacenarBytesEnUnaPagina(pedido3,4,"31"));
+	printf("Devolucion2: %s \n", almacenarBytesEnUnaPagina(pedido3,4,"311"));
 
 //	printf("Devolucion: %s \n", almacenarBytesEnUnaPagina(pedido2,4,'abc'));
 
@@ -750,6 +842,40 @@ void test(){
 
 	devolverTodaLaMemoria();
 
+	printf("Limpio la tlb y vuelvo a pedir, deberia encontrarla en tabla paginas.. \n");
+	inicializarTlb();
+	pedidoLectura_t pedido4;
+	pedido4.pid=2;
+	pedido4.paginaRequerida = 1;
+	pedido4.offset = 0;
+	pedido4.cantBytes = 4;
+	printf("----La tlb[0] estaba vacia: pid:%d, pag:%d, marco:%d \n", tlb[0].pid,tlb[0].pagina,tlb[0].marcoUtilizado);
+	printf("Devolucion3: %s \n", almacenarBytesEnUnaPagina(pedido4,4,"44"));
+	printf("----La tlb[0] ahora ocupada: pid:%d, pag:%d, marco:%d \n", tlb[0].pid,tlb[0].pagina,tlb[0].marcoUtilizado);
+
+
+	printf("Vuelvo a devolver la memoria entera \n");
+	devolverTodaLaMemoria();
+
+	printf(" -------------------------------------------  \n \n");
+
+	pedidoLectura_t pedido5;
+	pedido5.pid=7;
+	pedido5.paginaRequerida = 1;
+	pedido5.offset = 4;
+	pedido5.cantBytes = 4;
+
+	tlb[1].pid = 7;
+	tlb[1].pagina = 1;
+	tlb[1].marcoUtilizado = 11;
+
+	int pudo = reservarPagina(3,7);
+
+	printf("Asignando memoria contigua \n \n");
+
+	printf("Devolucion 4: %s \n", almacenarBytesEnUnaPaginaContiguo(pedido5,4,"27"));
+
+	devolverTodaLaMemoria();
 }
 
 void finalizar() {

@@ -37,7 +37,10 @@ typedef enum {
 	HeaderErrorNoHayPaginas,
 	HeaderTeReservePagina,
 	HeaderNoExistePagina,
-	HeaderNoExisteTablaDePag
+	HeaderNoExisteTablaDePag,
+	HeaderSignal,
+	HeaderWait,
+	headerTermineInstruccion
 } header_t;
 
 char* headerToMSG(header_t header);

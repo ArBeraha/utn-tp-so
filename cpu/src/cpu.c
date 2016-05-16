@@ -16,25 +16,25 @@ void obtenerPCB();
 void esperar_sentencia();
 void obtener_y_parsear();
 
-
+/*----- Operaciones sobre el PC y avisos por quantum -----*/
 void informarInstruccionTerminada(){
-	//TODO enviar a nucleo un header para decirle q se corrio una instruccion ansisop.
+	// Le aviso a nucleo que termino una instruccion, para que calcule cuanto quantum le queda al proceso ansisop.
+	send_w(cliente_nucleo,headerToMSG(headerTermineInstruccion),1);
 }
 void setearPC(t_PCB* pcb,int pc){
 	pcb->PC=pc;
 }
-
 void incrementarPC(t_PCB* pcb){
 	pcb->PC++;
 }
-
 void instruccionTerminada(char* instr){
 	log_debug(activeLogger, "%s finalizó OK.", instr);
 }
+
 /*--------FUNCIONES----------*/
 //cambiar el valor de retorno a t_puntero
 void definir_variable(t_nombre_variable variable){
-	printf("Definir la variable %c \n",variable);
+	log_info(activeLogger,"Definir la variable |%c|.",variable);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Definir_variable");
@@ -43,7 +43,7 @@ void definir_variable(t_nombre_variable variable){
 
 //cambiar valor de retorno a t_puntero
 void obtener_posicion_de(t_nombre_variable variable){
-	printf("Obtener posicion de %c \n",variable);
+	log_info(activeLogger,"Obtener posicion de |%c|.",variable);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("obtener_posicion_de");
@@ -52,7 +52,7 @@ void obtener_posicion_de(t_nombre_variable variable){
 
 t_valor_variable dereferenciar(t_puntero direccion){		// TODO terminar - Pido a UMC el valor de la variable de direccion
 	t_valor_variable valor;
-	printf("Dereferenciar %d y su valor es:  \n",direccion);
+	log_info(activeLogger,"Dereferenciar |%d| y su valor es:  ",direccion);
 
 	send_w(cliente_umc, headerToMSG(HeaderPedirValorVariable), 1);
 	send_w(cliente_umc,intToChar(direccion),sizeof(t_puntero)); // t_puntero y t_valor_variable es entero de 32 bits -- deberia serializar?
@@ -71,8 +71,7 @@ t_valor_variable dereferenciar(t_puntero direccion){		// TODO terminar - Pido a 
 }
 
 void asignar(t_puntero direccion_variable, t_valor_variable valor){	//TODO terminar
-	printf("Asignando en %d el valor %d\n", direccion_variable,valor);
-
+	log_info(activeLogger,"Asignando en |%d| el valor |%d|", direccion_variable,valor);
 	send_w(cliente_umc,headerToMSG(HeaderAsignarValor), 1);
 	send_w(cliente_umc,intToChar(direccion_variable),sizeof(t_puntero)); //envio la direccion de la variable
 	send_w(cliente_umc,intToChar(valor),sizeof(t_valor_variable));		//envio el valor de la variable
@@ -83,7 +82,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor){	//TODO termi
 
 
 t_valor_variable obtener_valor_compartida(t_nombre_compartida variable){ 				// Pido a Nucleo el valor de la variable
-	printf("Obtener valor de variable compartida %s y es: %d \n",variable,*variable); // no seria el valor real
+	log_info(activeLogger,"Obtener valor de variable compartida %s y es: |%d|.",variable,*variable); // no seria el valor real
 	t_valor_variable valor;
 
 	send_w(cliente_nucleo, headerToMSG(HeaderPedirValorVariableCompartida), 1);
@@ -103,7 +102,7 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida variable){ 				// 
 }
 
 t_valor_variable asignar_valor_compartida(t_nombre_compartida variable, t_valor_variable valor){
-	printf("Asignar el valor %d a la variable compartida %s \n",valor,variable);
+	log_info(activeLogger,"Asignar el valor |%d| a la variable compartida |%s|.",valor,variable);
 
 	send_w(cliente_nucleo, headerToMSG(HeaderAsignarValorVariableCompartida), 1);		//envio el header
 
@@ -121,8 +120,8 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida variable, t_valor_
 
 //cambiar valor de retorno a t_puntero_instruccion
 void irAlLaber(t_nombre_etiqueta etiqueta){
-	printf("Obtener puntero de %s",etiqueta);
-	int posicionEtiqueta; // TODO acá va la de la etiqueta
+	log_info(activeLogger,"Obtener puntero de |%s|.",etiqueta);
+	int posicionEtiqueta=0; // TODO acá va la de la etiqueta
 	setearPC(pcbActual,posicionEtiqueta);
 	informarInstruccionTerminada();
 	instruccionTerminada("ir_al_laber");
@@ -130,8 +129,8 @@ void irAlLaber(t_nombre_etiqueta etiqueta){
 
 //cambiar valor de retorno a t_puntero_instruccion
 void llamar_sin_retorno(t_nombre_etiqueta nombreFuncion){
-	printf("Llamar a funcion %s\n", nombreFuncion);
-	int posicionFuncion; // TODO acá va la de la funcion
+	log_info(activeLogger,"Llamar a funcion |%s|.", nombreFuncion);
+	int posicionFuncion=0; // TODO acá va la de la funcion
 	setearPC(pcbActual,posicionFuncion);
 	informarInstruccionTerminada();
 	instruccionTerminada("Llamar_sin_retorno");
@@ -139,14 +138,14 @@ void llamar_sin_retorno(t_nombre_etiqueta nombreFuncion){
 
 //cambiar valor de retorno a t_puntero_instruccion
 void retornar(t_valor_variable variable){
-	printf("Cambiar entorno actual usando el PC de %d \n",variable);
+	log_info(activeLogger,"Cambiar entorno actual usando el PC de |%d| a |%d|.",pcbActual->PC,variable);
 	setearPC(pcbActual,(int)variable);
 	informarInstruccionTerminada();
 	instruccionTerminada("Retornar");
 }
 
 void imprimir(t_valor_variable valor){
-	printf("Imprimir %d\n",valor);
+	log_info(activeLogger,"Imprimir |%d|\n",valor);
 	//header enviar valor de variable
 	send_w(cliente_nucleo,intToChar(valor),sizeof(t_valor_variable));
 	incrementarPC(pcbActual);
@@ -156,10 +155,11 @@ void imprimir(t_valor_variable valor){
 
 void imprimir_texto(char* texto){
 	int size = strlen(texto)+1; // El strlen no cuenta el \0. strlen("hola\0") = 4.
-	log_debug(activeLogger, "Se envio a nucleo la cadena: %s", texto);
+	log_debug(activeLogger, "Enviando a nucleo la cadena: |%s|...", texto);
 	send_w(cliente_nucleo, headerToMSG(HeaderImprimirTextoNucleo), 1);
 	send_w(cliente_nucleo, intToChar4(size), sizeof(int));
 	send_w(cliente_nucleo, texto, size); 		//envio a nucleo la cadena a imprimir
+	log_debug(activeLogger, "Se envio a nucleo la cadena: |%s|.", texto);
 	// TODO ??? free(texto); //como no se que onda lo que hace la blbioteca, no se si tire segment fault al hacer free. Una vez q este todoo andando probar hacer free aca
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
@@ -168,15 +168,15 @@ void imprimir_texto(char* texto){
 
 //cambiar valor de retorno a int
 void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo){
-	printf("Informar a nucleo que el programa quiere usar '%s' durante %d unidades de tiempo\n",dispositivo,tiempo);
+	log_info(activeLogger,"Informar a nucleo que el programa quiere usar |%s| durante |%d| unidades de tiempo",dispositivo,tiempo);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Entrada-Salida");
 }
 
 void wait(t_nombre_semaforo identificador_semaforo){
-	printf("Comunicar nucleo de hacer wait con semaforo: %s", identificador_semaforo);
-	//header hace wait
+	log_info(activeLogger,"Comunicar nucleo de hacer wait con semaforo: |%s|", identificador_semaforo);
+	send_w(cliente_nucleo,headerToMSG(HeaderWait),1);
 	send_w(cliente_nucleo,identificador_semaforo, sizeof(identificador_semaforo));
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
@@ -185,8 +185,8 @@ void wait(t_nombre_semaforo identificador_semaforo){
 
 
 void signal(t_nombre_semaforo identificador_semaforo){
-	printf("Comunicar nucleo de hacer signal con semaforo: %s", identificador_semaforo);
-	//header hace signal
+	log_info(activeLogger,"Comunicar nucleo de hacer signal con semaforo: |%s|", identificador_semaforo);
+	send_w(cliente_nucleo,headerToMSG(HeaderSignal),1);
 	send_w(cliente_nucleo,identificador_semaforo, sizeof(identificador_semaforo));
 	incrementarPC(pcbActual);
 	instruccionTerminada("Signal");

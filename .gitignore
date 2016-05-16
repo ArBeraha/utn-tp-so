@@ -48,3 +48,6 @@
 /Remote*/
 /compartido/Debug/
 *.log
+dump
+*.*~
+*~

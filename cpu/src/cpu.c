@@ -425,9 +425,18 @@ void esperar_sentencia(){
 	free(header);
 }
 
-void obtenerPCB(){
+void obtenerPCB(){		//recibo el pcb que me manda nucleo
+
+	char* pcb = recv_waitall_ws(cliente_nucleo,sizeof(t_PCB));
+	int p = deserializar_PCB(pcbActual,pcb);	//reemplazo en el pcb actual de cpu que tiene como variable global
+
+	free(pcb);
+
+	pcbActual->PC++;			//incremento el program counter
+
 	pedir_sentencia();
 	esperar_sentencia();
+
 }
 
 void obtener_y_parsear(){
@@ -438,36 +447,6 @@ void obtener_y_parsear(){
 	parsear(sentencia);
 	free(sentencia);
 }
-
-// @Emi: retornaria un PCB nuevo con el PC actualizado, manteniendo el viejo. Como no se si la necesitas para algo, la dejo acá
-//t_PCB procesarPCB(t_PCB pcb){
-//	t_PCB nuevoPCB;	//incrementar registro
-//	nuevoPCB = pcb;
-//	nuevoPCB.PC++;
-//	return nuevoPCB;
-//}
-// @emi las comento porque sino me dice que redefinen las de ari y no compila.
-//void serializar_PCB(char* res, t_PCB* pcb){		//terminar!
-//
-//	string_append(&res,intToChar4(pcb->PC));		//pongo el PC
-//	string_append(&res,intToChar4(pcb->PID));		//pongo el PID
-//	//serializar paginas de codigo
-//	string_append(&res,intToChar4(pcb->cantidad_paginas));	//pongo la cantidad de paginas
-//	//serializar indice etiquetas
-//	//serializar indice stack
-//
-//}
-//void deserializar_PCB(char* mensaje, t_PCB* pcb){
-//	//t_PCB* newPCB = malloc(24);
-//
-//	pcb->PC = atoi(string_substring(mensaje,0,3));	//pongo el PC
-//	pcb->PID = atoi(string_substring(mensaje,4,8));
-//
-//	//deserializar indices de codigo
-//
-//	pcb->cantidad_paginas = atoi(string_substring(mensaje,13,16));
-//
-//}
 
 // ***** Funciones de conexiones ***** //
 void warnDebug() {

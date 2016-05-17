@@ -6,6 +6,7 @@
  */
 
 
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <commons/log.h>
@@ -210,7 +211,7 @@ void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
 	agregarProceso(pid, paginasAIniciar);
 
 	} else {
-		//Avisar que no hay espacio por sockets URGENTE
+		//send_w(cliente, headerToMSG(HeaderNoHayEspacio), 1);
 		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
 		log_error(activeLogger, "Fallo iniciacion del programa %d ", pid);
 
@@ -249,27 +250,26 @@ void agregarProceso(int pid, int paginasAIniciar) {
 			if (fueAgregado == -1) {
 				printf("Error al iniciar el proceso\n");
 				respuesta[0] = 'M';
-				send_w(cliente, respuesta, 1);
+				//send_w(cliente, headerToMSG(HeaderErrorParaIniciar), 1);
 				return;
 			} else {
 				printf("Proceso agregado exitosamente\n");
 				//Actualizo el espacio disponible
 				espacioDisponible -= paginasAIniciar;
 				log_info(activeLogger,
-						"mProc %d - Byte Inicial:%d Tamanio:%d Iniciado correctamente.",
+						"El programa %d - Byte Inicial:%d Tamanio:%d Iniciado correctamente.",
 						pid, proceso->numInicialMarco * tamanioPag,
 						proceso->cantMarcos * tamanioPag);
-				respuesta[0] = 'B';
-				send_w(cliente, (void*) respuesta, 1);
+				//send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
 				return;
 
 			}
 		}
 	}
-	char * respuesta = malloc(1);
+
 	printf("Hay que compactar\n");
-	respuesta[0] = 'B';
-	send_w(cliente, (void*) respuesta, 1);
+
+	//send_w(cliente, headerToMSG(HeaderHayQueCompactar), 1);
 
 	return;
 }

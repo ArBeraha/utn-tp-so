@@ -75,3 +75,7 @@ No es la idea que sea algo exacto para que se de tal cual a rajatabla. Solamente
 
 ## Paginacion por demanda en 5 minutos
 https://www.youtube.com/watch?v=dOVrEbZVeoU
+
+## Algoritmos de reemplazo de páginas (PPT con ejemplos)
+Incluye LRU, CLOCK y CLOCK MEJORADO, entre otros.
+[![Link de la PPT :)](https://drive.google.com/open?id=0B0X0toyFFvk5SlVGWGtWWXhPZm8)](https://drive.google.com/open?id=0B0X0toyFFvk5SlVGWGtWWXhPZm8)

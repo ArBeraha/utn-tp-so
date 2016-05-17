@@ -8,7 +8,6 @@
 
 /*------------Declaracion de funciones--------------*/
 void procesarHeader(char*);
-//t_PCB procesarPCB();
 void esperar_programas();
 void pedir_sentencia();
 void parsear();
@@ -432,7 +431,7 @@ void obtenerPCB(){		//recibo el pcb que me manda nucleo
 
 	free(pcb);
 
-	pcbActual->PC++;			//incremento el program counter
+	incrementarPC(pcbActual);			//incremento el program counter
 
 	pedir_sentencia();
 	esperar_sentencia();

@@ -18,7 +18,9 @@ en el home:
 Salvo el primero, los demas se corren desde la carpeta Debug del modulo correspondiente. Para que anden hay que cerrar y volver a abrir la consola despues de editar el archivo.
 
 Otro comando útil es 'cat', que muestra el contenido de un archivo en pantalla:cat umc.log (mostraria el log de umc en la consola.)
+
 Para borrar los logs, estando en la carpeta Debug del modulo: rm -rf *.log
+
 La joya: el comando grep sirve para filtrar lineas que cumplan con un patron. Por ejemplo, si quiero filtrar los errores del log de nucleo: cat nucleo.log | grep ERROR    (distingue entre mayusculas y minusculas! ojo con eso!)
 
 # Como agregar todo esto en eclipse

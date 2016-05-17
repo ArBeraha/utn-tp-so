@@ -141,24 +141,29 @@ void rechazarProceso(int PID) {
 int crearProceso(int consola) {
 	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = malloc(sizeof(t_proceso));
+	pcb_create(&(proceso->PCB));
 	proceso->PCB.PID = list_add(listaProcesos, proceso);
 	pthread_mutex_unlock(&lockProccessList);
-	proceso->PCB.PC = SIN_ASIGNAR;
-	proceso->PCB.SP = (t_stack*) SIN_ASIGNAR;
 	proceso->estado = NEW;
 	proceso->consola = consola;
 	proceso->cpu = SIN_ASIGNAR;
-	char* codigo = getScript(consola);
-	// Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
-	if (!pedirPaginas(proceso->PCB.PID, codigo)) {
-		printf("rechazado");
-		rechazarProceso(proceso->PCB.PID);
-		log_info(activeLogger, "UMC no da paginas para el proceso %d!",
-				proceso->PCB.PID);
-		log_info(activeLogger, "Se rechazo el proceso %d.", proceso->PCB.PID);
-	}
+	// Agrego esta condicion por que de otra manera crearProceso era intesteable debido el getScript()
+	if (!CU_is_test_running()) {
+		char* codigo = getScript(consola);
+		asignarMetadataProceso(proceso, codigo);
 
-	free(codigo);
+		// Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
+		if (!pedirPaginas(proceso->PCB.PID, codigo)) {
+			printf("rechazado");
+			rechazarProceso(proceso->PCB.PID);
+			log_info(activeLogger, "UMC no da paginas para el proceso %d!",
+					proceso->PCB.PID);
+			log_info(activeLogger, "Se rechazo el proceso %d.",
+					proceso->PCB.PID);
+		}
+
+		free(codigo);
+	}
 	return proceso->PCB.PID;
 }
 
@@ -306,6 +311,7 @@ void cargarCFG() {
 	t_config* configNucleo;
 	configNucleo = config_create("nucleo.cfg");
 	config.puertoConsola = config_get_int_value(configNucleo, "PUERTO_PROG");
+	return;
 	config.puertoCPU = config_get_int_value(configNucleo, "PUERTO_CPU");
 	config.quantum = config_get_int_value(configNucleo, "QUANTUM");
 	config.queantum_sleep = config_get_int_value(configNucleo, "QUANTUM_SLEEP");
@@ -412,6 +418,82 @@ void finalizar() {
 	pthread_attr_destroy(&detachedAttr);
 }
 
+void asignarMetadataProceso(t_proceso* p, char* codigo){
+	int i;
+	t_medatada_program* metadata = metadata_desde_literal(codigo);
+	t_sentencia* sentencia;
+	for (i=0; i<metadata->instrucciones_size;i++){
+		sentencia = malloc(sizeof(t_sentencia));
+		sentencia->offset_inicio =  metadata->instrucciones_serializado[i].start;
+		sentencia->offset_fin = sentencia->offset_inicio + metadata->instrucciones_serializado[i].offset;
+		list_add(p->PCB.indice_codigo,sentencia);
+	}
+
+//	/*
+//	for (i=0; i<metadata.etiquetas_size;i++){
+//		dictionary_put(p->PCB.indice_etiquetas,,)
+//	}
+//
+//	p->PCB.indice_codigo = meta*/
+}
+
+void test_cicloDeVidaProcesos(){
+	int consola=1, cpu=2;
+	queue_push(colaCPU,(void*)cpu);
+
+	t_proceso* proceso = list_get(listaProcesos,crearProceso(consola));
+
+	proceso->estado = READY;
+
+	ejecutarProceso(proceso->PCB.PID,(int)queue_pop(colaCPU));
+	CU_ASSERT_EQUAL(proceso->estado,EXEC);
+	CU_ASSERT_EQUAL(proceso->cpu,2)
+	CU_ASSERT_TRUE(queue_is_empty(colaCPU));
+
+	bloquearProceso(proceso->PCB.PID,1);
+	CU_ASSERT_FALSE(queue_is_empty(colaCPU));
+	CU_ASSERT_EQUAL(proceso->estado,BLOCK);
+
+	desbloquearProceso(proceso->PCB.PID);
+	CU_ASSERT_EQUAL(proceso->estado,READY);
+
+	finalizarProceso(proceso->PCB.PID);
+	CU_ASSERT_EQUAL(proceso->estado,EXIT);
+	CU_ASSERT_FALSE(queue_is_empty(colaSalida));
+
+	destruirProceso(proceso->PCB.PID);
+	CU_ASSERT_TRUE(list_is_empty(listaProcesos));
+
+	// NO TENEMOS MANERA DE AVISARLE A LA QUEUE QUE SAQUE EL PID DE LA POSICION DONDE SE ENCUENTRA
+	// HABRA QUE CHEQUEAR CADA VEZ QUE SE SACA UN ELEMENTO SI ESTE REALMENTE EXISTE EN EL SISTEMA
+	//CU_ASSERT_TRUE(queue_is_empty(colaSalida));
+	//CU_ASSERT_TRUE(queue_is_empty(colaListos));
+}
+
+void test_obtenerMetadata(){
+	t_proceso* proceso = malloc(sizeof(t_proceso));
+	t_sentencia* sentencia;
+	pcb_create(&proceso->PCB);
+	asignarMetadataProceso(proceso,"begin\nvariables a, b\na = 3\nb = 5\na = b + 12\nend\n");
+	sentencia=(t_sentencia*)list_get(proceso->PCB.indice_codigo,0);
+	CU_ASSERT_EQUAL(sentencia->offset_inicio,6);
+	CU_ASSERT_EQUAL(sentencia->offset_fin,6+15);
+	sentencia=(t_sentencia*)list_get(proceso->PCB.indice_codigo,1);
+	CU_ASSERT_EQUAL(sentencia->offset_inicio,21);
+	CU_ASSERT_EQUAL(sentencia->offset_fin,21+6);
+}
+
+int test_nucleo(){
+	CU_initialize_registry();
+	CU_pSuite suite_nucleo = CU_add_suite("Suite de Nucleo", NULL, NULL);
+	CU_add_test(suite_nucleo, "Test del ciclo de vida de los procesos", test_cicloDeVidaProcesos);
+	CU_add_test(suite_nucleo, "Test de obtencion de la metadata", test_obtenerMetadata);
+	CU_basic_set_mode(CU_BRM_VERBOSE);
+	CU_basic_run_tests();
+	CU_cleanup_registry();
+	return CU_get_error();
+}
+
 int main(void) {
 	system("clear");
 	int i;
@@ -422,9 +504,19 @@ int main(void) {
 	colaListos = queue_create();
 	colaSalida = queue_create();
 	pthread_mutex_init(&lockProccessList, NULL);
-
 	cargarCFG();
 	configHilos();
+
+	// INICIO TEST SERIALIZACION
+	if (test_serializacion()!=CUE_SUCCESS){
+		printf("%s",CU_get_error_msg());
+		return EXIT_FAILURE;
+	}
+	// INICIO TEST NUCLEO
+	if (test_nucleo()!=CUE_SUCCESS){
+		printf("%s",CU_get_error_msg());
+		return EXIT_FAILURE;
+	}
 
 	crearLogs("Nucleo", "Nucleo");
 

@@ -27,11 +27,13 @@
 #include <commons/collections/queue.h>
 #include <commons/collections/list.h>
 #include <math.h>
+#include <parser/metadata_program.h>
 #include "handshake.h"
 #include "header.h"
 #include "cliente-servidor.h"
 #include "log.h"
 #include "commonTypes.h"
+#include "serializacion.h"
 
 /* ---------- INICIO DEBUG ---------- */
 // Es util para debugear sin tener una consola extra con UMC abierto.
@@ -98,5 +100,6 @@ typedef struct customConfig {
 
 customConfig_t config;
 t_config* configNucleo;
+
 
 #endif /* NUCLEO_H_ */

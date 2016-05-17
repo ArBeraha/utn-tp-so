@@ -47,7 +47,7 @@ typedef struct {
 	t_dictionary* indice_etiquetas; // diccionario [Etiqueta,Posicion de la sentencia a saltar]
 } t_PCB;
 
-
+void pcb_create(t_PCB* pcb);
 void pcb_destroy(t_PCB* pcb);
 t_stack* stack_create();
 void stack_push(t_stack*,t_stack_item*);

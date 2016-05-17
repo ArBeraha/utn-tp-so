@@ -238,6 +238,9 @@ void test_serializar_int(){
 void test_serializar_variable(){
 	t_variable* varA=malloc(sizeof(t_variable));
 	t_variable*	varB=malloc(sizeof(t_variable));
+	varA->pagina=1;
+	varA->offset=2;
+	varA->size=3;
 	char* serial=malloc(sizeof(t_variable));
 	serializar_variable(serial,varA);
 	imprimir_serializacion(serial,sizeof(t_variable));

@@ -48,6 +48,7 @@ typedef struct customConfig {
 	int entradas_tlb;
 	int retardo;
 	char* ip_swap;
+	char* algoritmo_tlb;
 } customConfig_t;
 
 customConfig_t config;
@@ -111,9 +112,12 @@ t_log *dump;
 
 char* ultimoByteOcupado;
 
+char* vectorClientes;
 
 //Prototipos
 
+void sacarEntradaConLru(tablaPagina_t* pagina,int pidParam); //TODO
+void sacarEntradaConClock(tablaPagina_t* pagina,int pidParam); //TODO
 int estaEnTlb(pedidoLectura_t pedido);
 int buscarEnTlb(pedidoLectura_t pedido);
 int existePidEnListadeTablas(int pid);
@@ -127,10 +131,10 @@ char* agregarAMemoria(tablaPagina_t* paginaBuscada); //TODO
 
 char* devolverPedidoPagina(pedidoLectura_t pedido);   // todos estos volver a devolver void, devuelven cosas para testear
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer); //TODO
-char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* buffer); //TODO
-void finalizarPrograma(int idPrograma); //TODO
-void inicializarPrograma(int idPrograma, int paginasRequeridas); //TODO
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer);
+char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* buffer);
+void finalizarPrograma(int idPrograma);
+void inicializarPrograma(int idPrograma, char* contenido);
 int reservarPagina(int,int);
 
 void imprimirRegionMemoria(char* region, int size);

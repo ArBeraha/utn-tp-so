@@ -3,6 +3,25 @@
 # Mandar archivos ansisop a rolete :D
 [![Link](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/Mandar-archivos-a-lo-loco)](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/Mandar-archivos-a-lo-loco)
 
+# Agregas alias, comandos útiles
+en el home:
+
+    sudo leafpad .bashrc
+
+    al final agregar:
+    alias tp='cd /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel'
+    alias nucleo='clear && make clean && make all && ./nucleo'
+    alias consola='clear && make clean && make all && ./consola'
+    alias cpu='clear && make clean && make all && ./cpu'
+    alias umc='clear && make clean && make all && ./umc'
+    alias swap='clear && make clean && make all && ./swap'
+Salvo el primero, los demas se corren desde la carpeta Debug del modulo correspondiente. Para que anden hay que cerrar y volver a abrir la consola despues de editar el archivo.
+
+Otro comando útil es 'cat', que muestra el contenido de un archivo en pantalla:cat umc.log (mostraria el log de umc en la consola.)
+
+Para borrar los logs, estando en la carpeta Debug del modulo: rm -rf *.log
+
+La joya: el comando grep sirve para filtrar lineas que cumplan con un patron. Por ejemplo, si quiero filtrar los errores del log de nucleo: cat nucleo.log | grep ERROR    (distingue entre mayusculas y minusculas! ojo con eso!)
 
 # Como agregar todo esto en eclipse
 
@@ -56,3 +75,7 @@ No es la idea que sea algo exacto para que se de tal cual a rajatabla. Solamente
 
 ## Paginacion por demanda en 5 minutos
 https://www.youtube.com/watch?v=dOVrEbZVeoU
+
+## Algoritmos de reemplazo de páginas (PPT con ejemplos)
+Incluye LRU, CLOCK y CLOCK MEJORADO, entre otros.
+[![Link de la PPT :)](https://drive.google.com/open?id=0B0X0toyFFvk5SlVGWGtWWXhPZm8)](https://drive.google.com/open?id=0B0X0toyFFvk5SlVGWGtWWXhPZm8)

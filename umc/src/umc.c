@@ -28,6 +28,7 @@ void cargarCFG() {
 	config.retardo = config_get_int_value(configUmc, "RETARDO");
 	config.ip_swap = config_get_string_value(configUmc, "IP_SWAP");
 	config.puerto_cpu = config_get_int_value(configUmc, "PUERTO_UMC_CPU");
+	config.algoritmo_tlb = config_get_string_value(configUmc, "ALGORITMO_TLB");
 
 }
 
@@ -106,6 +107,12 @@ int cantidadMarcosLibres(){
 //			marcoUtilizado;
 //	}tlb_t;
 
+void sacarEntradaConLru(tablaPagina_t* pagina,int pidParam){ //Y la agrega tmb...
+}
+
+void sacarEntradaConClock(tablaPagina_t* pagina,int pidParam){
+}
+
 void agregarATlb(tablaPagina_t* pagina,int pidParam){
 
 	int i;
@@ -119,6 +126,12 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 		}
 	}
 	// TODO NO ENCONTRO ESPACIO EN LA TLB, ES HORA DE LA CACERIA...
+	if(strcmp(config.algoritmo_tlb,"LRU")){
+		sacarEntradaConLru(pagina,pidParam);
+	}else{
+		if(strcmp(config.algoritmo_tlb,"CLOCK"))
+			sacarEntradaConClock(pagina,pidParam);
+	}
 
 }
 
@@ -202,6 +215,29 @@ void cambiarUltimoByte(int marco, int cantidad){
 	ultimoByteOcupado[marco*sizeof(int)] = nuevoValor;
 }
 
+void inicializarPrograma(int idPrograma, char* contenido){
+
+	//En el procesar header hacer: recv de idPrograma y recv de contenido
+	int cantPagsNecesarias = (strlen(contenido) + config.tamanio_marco -1 ) / config.tamanio_marco; //Division entera que redondea para arriba
+
+	reservarPagina(cantPagsNecesarias,idPrograma);
+
+	int i;
+	for(i=0;i<cantPagsNecesarias;i++){
+
+		char* auxiliar = malloc(config.tamanio_marco);
+		memcpy(auxiliar,(contenido + (i*config.tamanio_marco)),config.tamanio_marco);
+
+		pedidoLectura_t pedido;
+		pedido.pid = idPrograma;
+		pedido.paginaRequerida = i;
+		pedido.cantBytes = config.tamanio_marco;
+
+		almacenarBytesEnUnaPaginaContiguo(pedido,config.tamanio_marco,auxiliar);
+	}
+
+}
+
 char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* buffer){  //TODO Falta lo de swap
 
 	if(estaEnTlb(pedido) && tlbHabilitada){
@@ -211,14 +247,18 @@ char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* 
 		int pos = buscarEnTlb(pedido);
 
 		int ultimaPosEscrita = *(ultimoByteOcupado+tlb[pos].marcoUtilizado);
+		printf("ultimo bye ocupado: %s \n",ultimaPosEscrita);
 
-		pedido.offset = ultimaPosEscrita+1;
+		if(ultimaPosEscrita==0){
+			pedido.offset = ultimaPosEscrita;
+		} else{
+			pedido.offset = ultimaPosEscrita+1;
+		}
 
-		printf("Ultima pos escrita: %d \n",ultimaPosEscrita);
 
 		printf("Posicion encontrada en la TLB: %d \n \n",pos);
 
-		memcpy(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset,buffer, strlen(buffer));
+		memcpy(memoria+(tlb[pos].marcoUtilizado*config.tamanio_marco)+pedido.offset,buffer, strlen(buffer));
 
 		cambiarUltimoByte(tlb[pos].marcoUtilizado, strlen(buffer));
 
@@ -248,7 +288,14 @@ char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* 
 
 					int ultimaPosEscrita = *(ultimoByteOcupado+paginaBuscada->marcoUtilizado);
 
-					pedido.offset = ultimaPosEscrita+1;
+					if(ultimaPosEscrita==0){
+						pedido.offset = ultimaPosEscrita;
+					} else{
+						pedido.offset = ultimaPosEscrita+1;
+					}
+
+
+					printf("----------Ultima pos escrita: %d \n",ultimaPosEscrita);
 
 					memcpy(memoria+paginaBuscada->marcoUtilizado*config.tamanio_marco+pedido.offset, buffer, strlen(buffer)); //size??? PARA QUE??
 
@@ -348,10 +395,10 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 }
 
 void finalizarPrograma(int idPrograma){
+	list_destroy(list_get(listaTablasPaginas,idPrograma));
 }
 
-void inicializarPrograma(int idPrograma, int paginasRequeridas){
-}
+
 
 
 //FIN 1
@@ -597,6 +644,9 @@ void crearMemoriaYTlbYTablaPaginas(){
 	ultimoByteOcupado = malloc(config.cantidad_marcos * sizeof(int));
 	memset(ultimoByteOcupado,0,sizeof(int) * config.cantidad_marcos);
 
+	vectorClientes = malloc(MAXCLIENTS * sizeof(int));
+	memset(vectorClientes,-1, MAXCLIENTS * sizeof(int));
+
 }
 
 
@@ -653,11 +703,16 @@ void procesarHeader(int cliente, char *header){
 		payload = malloc(payload_size);
 		read(clientes[cliente].socket , payload, payload_size);
 		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
-		if ( (charToInt(payload)==SOYCPU) || (charToInt(payload)==SOYNUCLEO) ){
+		if (charToInt(payload)==SOYCPU){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
 			clientes[cliente].identidad = charToInt(payload);
 			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
+//			vectorClientes[clientes[cliente].identidad] =
 
+		}else if(charToInt(payload)==SOYNUCLEO){
+			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
+			clientes[cliente].identidad = charToInt(payload);
+			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
 		}
 		else {
 			log_error(activeLogger,"No es un cliente apropiado! rechazada la conexion\n");
@@ -876,6 +931,25 @@ void test(){
 	printf("Devolucion 4: %s \n", almacenarBytesEnUnaPaginaContiguo(pedido5,4,"27"));
 
 	devolverTodaLaMemoria();
+
+	printf(" -------------------------------------------  \n \n");
+	printf(" -------------------------------------------  \n \n");
+
+	printf("Test inicializar programa \n \n ");
+
+	inicializarPrograma(4,"123456789123456789123456789123456789123456789123456789123456789"); //36 bytes
+
+	devolverTodaLaMemoria();
+	devolverTodasLasPaginas();
+
+	printf("\n \n");
+	printf("Y si finalizo, la tabla de pags y de memoria: \n \n");
+
+	finalizarPrograma(4);
+	devolverTodaLaMemoria();
+	devolverTodasLasPaginas();
+
+
 }
 
 void finalizar() {

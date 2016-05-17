@@ -3,7 +3,7 @@
 # Mandar archivos ansisop a rolete :D
 [![Link](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/Mandar-archivos-a-lo-loco)](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/Mandar-archivos-a-lo-loco)
 
-# Agregas alias
+# Agregas alias, comandos útiles
 en el home:
 
     sudo leafpad .bashrc

@@ -100,6 +100,29 @@ void procesarHeader(int cliente, char* header)
     }
 
 
+
+
+
+
+//Comprueba si hay fragmentacion externa
+int hayFragmentacionExterna(int paginasAIniciar) {
+	int cantidadHuecos = list_size(espacioDisponible);
+	int i;
+	int flag = 1;
+	for (i = 0; i < cantidadHuecos; i++) {
+		t_disponibles* datosHueco = (t_disponibles*) list_get(
+				espacioDisponible, i);
+		if (datosHueco->totalMarcos >= paginasAIniciar) {
+			flag = 0;
+		}
+	}
+	return flag;
+}
+
+
+
+
+/********************************************************************************************************************/
 void funcionamientoSwap()
 {
 
@@ -171,16 +194,31 @@ void funcionamientoSwap()
 
 
 
-		/*
-		 FUNCIONES PRINCIPALES DE SWAP
+
+		 //FUNCIONES PRINCIPALES DE SWAP
 
 
-		void asignarEspacioANuevoProceso(){
-			//buscarHueco();
-			//Opcion A: bool? hayFragmentacionExterna(); si entonces compactar(); //usleep(retCompactacion) para procesos que llegan mientras swapeo?
-			//Opcion B:si no hay espacio total disponible rechazarProceso()? y cancelar inicializacion
+void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
+
+	if (paginasAIniciar <= espacioDisponible) {
+	//Me fijo si hay fragmentacion para asi ver si necesito compactar
+	if (hayFragmentacionExterna(paginasAIniciar)) {
+	 compactar();
+	}
+	//Agrego el proceso a la lista de espacio utilizado y actualizo la de espacio disponible. Ademas informa
+	//de que la operacion fue exitosa
+	agregarProceso(pid, paginasAIniciar);
+
+	} else {
+		//Avisar que no hay espacio por sockets
+		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
+		log_error(activeLogger, "Fallo iniciacion del programa %d ", pid);
+  
+				}
+			}
 
 
+/*
 		}
 
 		void leerPagina(){
@@ -207,4 +245,3 @@ int main()
 
 	return 0;
 }
-

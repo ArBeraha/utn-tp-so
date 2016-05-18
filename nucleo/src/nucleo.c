@@ -136,12 +136,12 @@ void rechazarProceso(int PID) {
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
 	free(proceso); // Destruir Proceso y PCB
 }
-
 int crearProceso(int consola) {
 	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	proceso->PCB = pcb_create();
-	proceso->PCB->PID = list_add(listaProcesos, proceso);
+	proceso->PCB->PID = (int)proceso;
+	list_add(listaProcesos, proceso);
 	pthread_mutex_unlock(&lockProccessList);
 	proceso->estado = NEW;
 	proceso->consola = consola;
@@ -165,18 +165,17 @@ int crearProceso(int consola) {
 	}
 	return proceso->PCB->PID;
 }
-
 void cargarProceso(int consola) {
 	// Crea un hilo que crea el proceso y se banca esperar a que umc le de paginas.
 	// Mientras tanto, el planificador sigue andando.
 	pthread_create(&crearProcesos, &detachedAttr, (void*) crearProceso,
 			(void*) consola);
 }
-
 void ejecutarProceso(int PID, int cpu) {
-	pthread_mutex_lock(&lockProccessList);
+	/*pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_get(listaProcesos, PID);
-	pthread_mutex_unlock(&lockProccessList);
+	pthread_mutex_unlock(&lockProccessList);*/
+	t_proceso* proceso = (t_proceso*)PID;
 	if (proceso->estado != READY)
 		log_warning(activeLogger, "Ejecucion del proceso %d sin estar listo!",
 				PID);
@@ -184,21 +183,21 @@ void ejecutarProceso(int PID, int cpu) {
 	proceso->cpu = cpu;
 	// todo: mandarProcesoCpu(cpu, proceso->PCB);
 }
-
 void finalizarProceso(int PID) {
-	pthread_mutex_lock(&lockProccessList);
+	/*pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_get(listaProcesos, PID);
-	pthread_mutex_unlock(&lockProccessList);
+	pthread_mutex_unlock(&lockProccessList);*/
+	t_proceso* proceso = (t_proceso*)PID;
 	queue_push(colaCPU, (int*) proceso->cpu); // Disponemos de nuevo de la CPU
 	proceso->cpu = SIN_ASIGNAR;
 	proceso->estado = EXIT;
 	queue_push(colaSalida, (void*) PID);
 }
-
 void destruirProceso(int PID) {
-	pthread_mutex_lock(&lockProccessList);
+	/*pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_remove(listaProcesos, PID);
-	pthread_mutex_unlock(&lockProccessList);
+	pthread_mutex_unlock(&lockProccessList);*/
+	t_proceso* proceso = (t_proceso*)PID;
 	if (proceso->estado != EXIT)
 		log_warning(activeLogger,
 				"Se esta destruyendo el proceso %d que no libero sus recursos!",
@@ -210,7 +209,6 @@ void destruirProceso(int PID) {
 	pcb_destroy(proceso->PCB);
 	free(proceso); // Destruir Proceso y PCB
 }
-
 void actualizarPCB(t_PCB PCB){ //
 	// Cuando CPU me actualice la PCB del proceso me manda una PCB (no un puntero)
 	pthread_mutex_lock(&lockProccessList);
@@ -218,11 +216,9 @@ void actualizarPCB(t_PCB PCB){ //
 	pthread_mutex_unlock(&lockProccessList);
 	//proceso->PCB=PCB;
 }
-
 bool terminoQuantum(t_proceso* proceso){
 	return (!(proceso->PCB->PC%config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
 }
-
 void expulsarProceso(t_proceso* proceso){
 	if (proceso->estado!=EXEC)
 		log_warning(activeLogger, "Expulsion del proceso %d sin estar ejecutandose!",proceso->PCB->PID);
@@ -231,7 +227,6 @@ void expulsarProceso(t_proceso* proceso){
 	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
 	proceso->cpu = SIN_ASIGNAR;
 }
-
 int cantidadProcesos(){
 	int cantidad;
 	pthread_mutex_lock(&lockProccessList);
@@ -239,7 +234,6 @@ int cantidadProcesos(){
 	 // El unlock se hace dos o tres lineas despues de llamar a esta funcion
 	return cantidad;
 }
-
 void planificacionFIFO(){
 	if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
 		ejecutarProceso((int) queue_pop(colaListos), (int) queue_pop(colaCPU));
@@ -247,7 +241,6 @@ void planificacionFIFO(){
 	if (!queue_is_empty(colaSalida))
 		destruirProceso((int) queue_pop(colaSalida));
 }
-
 void planificacionRR(){
 	int i;
 	for(i=0;i<cantidadProcesos();i++){ // Con cantidadProcesos() se evitan condiciones de carrera.
@@ -260,7 +253,6 @@ void planificacionRR(){
 	}
 	planificacionFIFO();
 }
-
 void planificarProcesos() {
 	switch (algoritmo) {
 	// Procesos especificos
@@ -275,11 +267,11 @@ void planificarProcesos() {
 	//Planificar IO
 	dictionary_iterator(tablaIO,(void*)planificarIO);
 }
-
 void bloquearProceso(int PID, char* IO) {
-	pthread_mutex_lock(&lockProccessList);
+	/*pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_get(listaProcesos, PID);
-	pthread_mutex_unlock(&lockProccessList);
+	pthread_mutex_unlock(&lockProccessList);*/
+	t_proceso* proceso = (t_proceso*)PID;
 	if (proceso->estado != EXEC)
 		log_warning(activeLogger,
 				"El proceso %d se bloqueo pese a que no estaba ejecutando!",
@@ -288,38 +280,35 @@ void bloquearProceso(int PID, char* IO) {
 	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
 	proceso->cpu = SIN_ASIGNAR;
 	if (dictionary_has_key(tablaIO,IO))
-		queue_push(((t_IO*)dictionary_get(tablaIO,IO))->cola,PID);
+		queue_push(((t_IO*)dictionary_get(tablaIO,IO))->cola,(t_proceso*)PID);
 }
-
 void planificarIO(char* io_id, t_IO* io) {
 	if (io->estado == INACTIVE) {
 		io->estado = ACTIVE;
 		t_bloqueo* info = malloc(sizeof(t_bloqueo));
 		info->IO=io;
-		info->PID=queue_pop(io->cola);
+		info->PID=(int)queue_pop(io->cola);
 		pthread_create(&hiloBloqueos, &detachedAttr, (void*) bloqueo, info);
 	}
 }
-
 void bloqueo(t_bloqueo* info){
 	sleep(info->IO->retardo);
 	desbloquearProceso(info->PID);
 	info->IO->estado = INACTIVE;
 	free(info);
 }
-
 void desbloquearProceso(int PID) {
-	pthread_mutex_lock(&lockProccessList);
+	/*pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_get(listaProcesos, PID);
-	pthread_mutex_unlock(&lockProccessList);
+	pthread_mutex_unlock(&lockProccessList);*/
+	t_proceso* proceso = (t_proceso*)PID;
 	if (proceso->estado != BLOCK)
 		log_warning(activeLogger,
 				"Desbloqueando el proceso %d sin estar bloqueado!", PID);
 	proceso->estado = READY;
-	queue_push(colaListos, (void*) PID);
+	queue_push(colaListos, (t_proceso*) PID);
 }
 /* ---------- FIN PARA PLANIFICACION ---------- */
-
 void cargarCFG() {
 	t_config* configNucleo;
 	configNucleo = config_create("nucleo.cfg");
@@ -357,14 +346,12 @@ void cargarCFG() {
 	}
 	config_destroy(configNucleo);
 }
-
 void configHilos(){
 	pthread_attr_init(&detachedAttr);
 	pthread_attr_setdetachstate(&detachedAttr,PTHREAD_CREATE_DETACHED);
 	pthread_mutex_init(&lockProccessList,NULL);
 	pthread_mutex_init(&lock_UMC_conection,NULL);
 }
-
 void procesarHeader(int cliente, char *header) {
 	// Segun el protocolo procesamos el header del mensaje recibido
 	char* payload;
@@ -424,14 +411,12 @@ void procesarHeader(int cliente, char *header) {
 		break;
 	}
 }
-
 struct timeval newEspera() {
 	struct timeval espera;
 	espera.tv_sec = 2; 				//Segundos
 	espera.tv_usec = 500000; 		//Microsegundos
 	return espera;
 }
-
 void finalizar() {
 	destruirLogs();
 	list_destroy(listaProcesos);
@@ -442,7 +427,6 @@ void finalizar() {
 	pthread_mutex_destroy(&lock_UMC_conection);
 	pthread_attr_destroy(&detachedAttr);
 }
-
 void asignarMetadataProceso(t_proceso* p, char* codigo) {
 	int i;
 	t_medatada_program* metadata = metadata_desde_literal(codigo);
@@ -471,12 +455,11 @@ void asignarMetadataProceso(t_proceso* p, char* codigo) {
 	}
 	free(metadata);
 }
-
 void test_cicloDeVidaProcesos(){
 	int consola=1, cpu=2;
 	queue_push(colaCPU,(void*)cpu);
 
-	t_proceso* proceso = list_get(listaProcesos,crearProceso(consola));
+	t_proceso* proceso = (t_proceso*)crearProceso(consola);
 
 	proceso->estado = READY;
 
@@ -505,7 +488,6 @@ void test_cicloDeVidaProcesos(){
 	//CU_ASSERT_TRUE(queue_is_empty(colaListos));
 	dictionary_remove(tablaIO,"Scanner");
 }
-
 void test_bloqueosIO(){
 	int consola=1, cpu=2;
 	queue_push(colaCPU,(void*)cpu);
@@ -516,7 +498,7 @@ void test_bloqueosIO(){
 	io->estado = INACTIVE;
 	dictionary_put(tablaIO, "Scanner", io);
 
-	t_proceso* proceso = list_get(listaProcesos,crearProceso(consola));
+	t_proceso* proceso = (t_proceso*)crearProceso(consola);
 	proceso->estado = READY;
 
 	ejecutarProceso(proceso->PCB->PID,(int)queue_pop(colaCPU));
@@ -528,7 +510,6 @@ void test_bloqueosIO(){
 	CU_ASSERT_EQUAL(io->estado,INACTIVE);
 	dictionary_remove(tablaIO,"Scanner");
 }
-
 void test_obtenerMetadata(){
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	t_sentencia* sentencia;
@@ -546,7 +527,6 @@ void test_obtenerMetadata(){
 	pcb_destroy(proceso->PCB);
 	free(proceso);
 }
-
 int test_nucleo(){
 	CU_initialize_registry();
 	CU_pSuite suite_nucleo = CU_add_suite("Suite de Nucleo", NULL, NULL);
@@ -558,7 +538,6 @@ int test_nucleo(){
 	CU_cleanup_registry();
 	return CU_get_error();
 }
-
 int main(void) {
 	system("clear");
 	int i;

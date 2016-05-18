@@ -287,8 +287,7 @@ void bloquearProceso(int PID, char* IO) {
 	proceso->estado = BLOCK;
 	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
 	proceso->cpu = SIN_ASIGNAR;
-
-	if (!CU_is_test_running())
+	if (dictionary_has_key(tablaIO,IO))
 		queue_push(((t_IO*)dictionary_get(tablaIO,IO))->cola,PID);
 }
 
@@ -486,7 +485,7 @@ void test_cicloDeVidaProcesos(){
 	CU_ASSERT_EQUAL(proceso->cpu,2)
 	CU_ASSERT_TRUE(queue_is_empty(colaCPU));
 
-	bloquearProceso(proceso->PCB->PID,1);
+	bloquearProceso(proceso->PCB->PID,"Scanner");
 	CU_ASSERT_FALSE(queue_is_empty(colaCPU));
 	CU_ASSERT_EQUAL(proceso->estado,BLOCK);
 
@@ -504,12 +503,36 @@ void test_cicloDeVidaProcesos(){
 	// HABRA QUE CHEQUEAR CADA VEZ QUE SE SACA UN ELEMENTO SI ESTE REALMENTE EXISTE EN EL SISTEMA
 	//CU_ASSERT_TRUE(queue_is_empty(colaSalida));
 	//CU_ASSERT_TRUE(queue_is_empty(colaListos));
+	dictionary_remove(tablaIO,"Scanner");
+}
+
+void test_bloqueosIO(){
+	int consola=1, cpu=2;
+	queue_push(colaCPU,(void*)cpu);
+
+	t_IO* io = malloc(sizeof(t_IO));
+	io->retardo = 1;
+	io->cola = queue_create();
+	io->estado = INACTIVE;
+	dictionary_put(tablaIO, "Scanner", io);
+
+	t_proceso* proceso = list_get(listaProcesos,crearProceso(consola));
+	proceso->estado = READY;
+
+	ejecutarProceso(proceso->PCB->PID,(int)queue_pop(colaCPU));
+	bloquearProceso(proceso->PCB->PID,"Scanner");
+	dictionary_iterator(tablaIO,(void*)planificarIO);
+	CU_ASSERT_EQUAL(io->estado,ACTIVE);
+	pthread_join(hiloBloqueos,NULL);
+	CU_ASSERT_EQUAL(proceso->estado,READY);
+	CU_ASSERT_EQUAL(io->estado,INACTIVE);
+	dictionary_remove(tablaIO,"Scanner");
 }
 
 void test_obtenerMetadata(){
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	t_sentencia* sentencia;
-	pcb_create(&proceso->PCB);
+	proceso->PCB = pcb_create();
 	asignarMetadataProceso(proceso,"begin\nvariables a, b\na = 3\n:salto1\nb = 5\n:salto2\na = b + 12\nend\n");
 	sentencia=(t_sentencia*)list_get(proceso->PCB->indice_codigo,0);
 	CU_ASSERT_EQUAL(sentencia->offset_inicio,6);
@@ -529,6 +552,7 @@ int test_nucleo(){
 	CU_pSuite suite_nucleo = CU_add_suite("Suite de Nucleo", NULL, NULL);
 	CU_add_test(suite_nucleo, "Test del ciclo de vida de los procesos", test_cicloDeVidaProcesos);
 	CU_add_test(suite_nucleo, "Test de obtencion de la metadata", test_obtenerMetadata);
+	CU_add_test(suite_nucleo, "Test de bloqueos [Puede tardar un poco]", test_bloqueosIO);
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
 	CU_cleanup_registry();
@@ -572,9 +596,7 @@ int main(void) {
 	inicializarClientes();
 	log_info(activeLogger, "Esperando conexiones ...");
 
-
 	conectarAUMC();
-
 
 	while (1) {
 		FD_ZERO(&socketsParaLectura);

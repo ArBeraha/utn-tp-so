@@ -122,7 +122,6 @@ void imprimirTexto(int cliente) {
 }
 /*  ----------FIN CONSOLA ---------- */
 
-
 /*  ----------INICIO PARA PLANIFICACION ---------- */
 void rechazarProceso(int PID) {
 	pthread_mutex_lock(&lockProccessList);
@@ -301,37 +300,41 @@ void desbloquearProceso(int PID) {
 }
 /* ---------- FIN PARA PLANIFICACION ---------- */
 
-
-
-// Funcion para obtener los Int de los array de configuracion
-int AsciiToInt(char* var){
-	return atoi(var);
-}
-
 void cargarCFG() {
 	t_config* configNucleo;
 	configNucleo = config_create("nucleo.cfg");
 	config.puertoConsola = config_get_int_value(configNucleo, "PUERTO_PROG");
-	return;
 	config.puertoCPU = config_get_int_value(configNucleo, "PUERTO_CPU");
 	config.quantum = config_get_int_value(configNucleo, "QUANTUM");
 	config.queantum_sleep = config_get_int_value(configNucleo, "QUANTUM_SLEEP");
 	config.sem_ids =	config_get_array_value(configNucleo, "SEM_ID");
-	//retorna chars, no int, pero como internamente son lo mismo, entender un puntero como a char* o a int* es indistinto
 	config.semInit = config_get_array_value(configNucleo, "SEM_INIT");
 	config.io_ids = config_get_array_value(configNucleo, "IO_ID");
-	//retorna chars, no int, pero como internamente son lo mismo, entender un puntero como a char* o a int* es indistinto
 	config.ioSleep = config_get_array_value(configNucleo, "IO_SLEEP");
 	config.sharedVars = config_get_array_value(configNucleo, "SHARED_VARS");
 	config.ipUMC = config_get_string_value(configNucleo, "IP_UMC");
 	config.puertoUMC = config_get_int_value(configNucleo, "PUERTO_UMC");
-	/*
-		Ejemplo de array 'int'
-	printf("SEM_ID[2]=%d\n",AsciiToInt(config.semInit[2]));
-		Ejemplo de array de Strings
-	printf("IO_ID[2]=%s\n",config.io_ids[2]);
 
-	*/
+	// Cargamos los IO
+	int i=0;
+	while (config.io_ids[i]!='\0'){
+		t_IO* io = malloc(sizeof(t_IO));
+		io->retardo=atoi(config.ioSleep[i]);
+		io->cola=queue_create();
+		dictionary_put(tablaIO,config.io_ids[i],io);
+		//printf("ID:%s SLEEP:%d\n",config.io_ids[i],io->retardo);
+		i++;
+	}
+	// Cargamos los SEM
+	i=0;
+	while (config.sem_ids[i]!='\0'){
+		int* init= malloc(sizeof(int));
+		*init=atoi(config.semInit[i]);
+		dictionary_put(tablaSEM,config.sem_ids[i],init);
+		//printf("SEM:%s INIT:%d\n",config.sem_ids[i],*init);
+		i++;
+	}
+	config_destroy(configNucleo);
 }
 
 void configHilos(){
@@ -519,6 +522,8 @@ int main(void) {
 	colaCPU = queue_create();
 	colaListos = queue_create();
 	colaSalida = queue_create();
+	tablaIO = dictionary_create();
+	tablaSEM = dictionary_create();
 	pthread_mutex_init(&lockProccessList, NULL);
 	cargarCFG();
 	configHilos();

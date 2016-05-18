@@ -78,9 +78,17 @@ typedef struct {
 
 t_queue* colaListos;
 t_queue* colaSalida;
-t_queue* colaCPU; //Mejor tener una cola que tener que crear un struct t_cpu que diga la disponibilidad
+t_queue* colaCPU;
 t_list* listaProcesos;
-// Falta la cola de bloqueados para cada IO
+
+t_list* listaIOActivos;
+t_dictionary* tablaIO;
+typedef struct {
+	int retardo;
+	t_queue* cola;
+} t_IO;
+
+t_dictionary* tablaSEM;
 
 typedef struct customConfig {
 	int puertoConsola;

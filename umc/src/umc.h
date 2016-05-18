@@ -116,6 +116,9 @@ char* vectorClientes;
 
 int retardoMemoria;
 
+
+pthread_mutex_t lock_accesoMemoria;
+
 //Prototipos
 
 void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam); //TODO

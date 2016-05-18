@@ -166,6 +166,9 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 
 		char* contenido = malloc(pedido.cantBytes + 1);
 
+		printf("Accediendo a memoria... \n");
+		usleep(retardoMemoria);
+
 		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes); // FALLANDO
 		contenido[pedido.cantBytes]='\0';
 
@@ -270,6 +273,9 @@ char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* 
 
 		printf("Posicion encontrada en la TLB: %d \n \n",pos);
 
+		printf("Accediendo a memoria... \n ");
+		usleep(retardoMemoria);
+
 		memcpy(memoria+(tlb[pos].marcoUtilizado*config.tamanio_marco)+pedido.offset,buffer, strlen(buffer));
 
 		cambiarUltimoByte(tlb[pos].marcoUtilizado, strlen(buffer));
@@ -308,6 +314,9 @@ char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* 
 
 
 					printf("----------Ultima pos escrita: %d \n",ultimaPosEscrita);
+
+					printf("Accediendo a memoria... \n ");
+					usleep(retardoMemoria);
 
 					memcpy(memoria+paginaBuscada->marcoUtilizado*config.tamanio_marco+pedido.offset, buffer, strlen(buffer)); //size??? PARA QUE??
 
@@ -351,6 +360,9 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 
 		printf("Posicion encontrada en la TLB: %d \n \n",pos);
 
+		printf("Accediendo a memoria... \n ");
+		usleep(retardoMemoria);
+
 		memcpy(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, buffer, strlen(buffer)); //size??? PARA QUE??
 
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
@@ -374,6 +386,9 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 
 					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Escribiendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
+					printf("Accediendo a memoria... \n ");
+					usleep(retardoMemoria);
+
 					memcpy(memoria+paginaBuscada->marcoUtilizado*config.tamanio_marco+pedido.offset, buffer, strlen(buffer)); //size??? PARA QUE??
 
 					printf("Marco de la pagina: %d \n", paginaBuscada->marcoUtilizado);
@@ -391,6 +406,8 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 				else{
 					char* devolucion = buscarEnSwap(paginaBuscada->marcoUtilizado,pedido);
 					send_w(cliente, devolucion, 4);
+					printf("Accediendo a memoria... \n");
+					usleep(retardoMemoria);
 					agregarAMemoria(paginaBuscada);
 				}
 			}// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
@@ -406,12 +423,23 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 	return "Error ifs";
 }
 
-void finalizarPrograma(int idPrograma){
-	list_destroy(list_get(listaTablasPaginas,idPrograma));
+void sacarMarcosOcupados(int idPrograma){
+	t_list* auxiliar = list_create();
+	auxiliar = list_get(listaTablasPaginas,idPrograma);
+
+	tablaPagina_t* tabla = malloc(sizeof(tablaPagina_t));
+	int i;
+	int size = list_size(auxiliar);
+	for(i=0;i<size;i++){
+		tabla = list_get(auxiliar,i);
+		vectorMarcosOcupados[tabla->marcoUtilizado] = 0;
+	}
 }
 
-
-
+void finalizarPrograma(int idPrograma){
+	sacarMarcosOcupados(idPrograma);
+	list_destroy(list_get(listaTablasPaginas,idPrograma));
+}
 
 //FIN 1
 
@@ -486,6 +514,9 @@ void devolverTodaLaMemoria(){
 			tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
 			unaPagina = list_get(unaTabla,j);
 			//Hago un solo print f de las caracteristicas
+			printf("Accediendo a memoria... \n ");
+			usleep(retardoMemoria);
+
 			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",i, unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
 			char* contenido = malloc(config.tamanio_marco+1);
@@ -514,6 +545,9 @@ void devolverMemoriaDePid(int pid){ //OK
 		for(i=0;i<cantidadPaginasDeTabla;i++){
 			tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
 			unaPagina = list_get(unaTabla,i);
+
+			printf("Accediendo a memoria... \n ");
+			usleep(retardoMemoria);
 
 			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
@@ -699,6 +733,12 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 // 4. Procesar headers
 
+int primerNumeroPaginaLibre(int pid){
+	t_list* auxiliar = list_create();
+	auxiliar= list_get(listaTablasPaginas,pid);
+	return list_size(auxiliar);
+}
+
 int reservarPagina(int cantPaginasPedidas, int pid){ // OK
 
 	if(cantidadMarcosLibres()>=cantPaginasPedidas){ //Si alcanzan los marcos libres...
@@ -712,14 +752,21 @@ int reservarPagina(int cantPaginasPedidas, int pid){ // OK
 			vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
 			printf("Marco seleccionado numero: %d (deberia ser 4, 5 y 6)\n", unMarcoNuevo);
 
-			nuevaPag->nroPagina = i;
+			int posicion;
+			if(existePidEnListadeTablas(pid)){
+				posicion = primerNumeroPaginaLibre(pid);
+			}else{
+				posicion = i;
+			}
+
+			nuevaPag->nroPagina = posicion;
 			nuevaPag->marcoUtilizado = unMarcoNuevo;
 			nuevaPag->bitPresencia=1;
 			nuevaPag->bitModificacion=0;
 			nuevaPag->bitUso=1;
 
 			t_list* tablaPag = list_get(listaTablasPaginas,pid);
-			list_add_in_index(tablaPag,i,nuevaPag);
+			list_add_in_index(tablaPag,posicion,nuevaPag);
 		}
 		return 1;
 	}
@@ -752,9 +799,10 @@ void procesarHeader(int cliente, char *header){
 			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
 //			vectorClientes[clientes[cliente].identidad] =
 
+
 		}else if(charToInt(payload)==SOYNUCLEO){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
-			clientes[cliente].identidad = charToInt(payload);
+//			clientes[cliente].identidad = charToInt(payload);
 			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
 		}
 		else {
@@ -995,7 +1043,17 @@ void test(){
 	printf(" -------------------------------------------  \n \n");
 	printf(" -------------------------------------------  \n \n");
 
+
+//	finalizarPrograma(2);  //ESTO ANDA OK PERO LO COMENTE PARA QUE SEA MAS FACIL TESTEAR EL QUE SIGUE DE RESERV PAGINAS
+//	printf("Finaliza el pid 2 y ahora los marcos deberian ser 0 y: %d, %d, %d \n",vectorMarcosOcupados[7],vectorMarcosOcupados[8],vectorMarcosOcupados[9]);
+
+	printf(" -------------------------------------------  \n \n");
+	printf(" -------------------------------------------  \n \n");
+
+	reservarPagina(2,2);  //TODO CORREGIR ESTO!!
 	recibirComandos();
+
+
 
 }
 

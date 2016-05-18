@@ -55,6 +55,7 @@ int umc; //se usa para ser cliente de UMC
 
 // Hilos
 pthread_t crearProcesos; // 1..n instancias. Este hilo crear procesos nuevos para evitar un bloqueo del planificador. Sin este hilo, el principal llama al hilo UMC para pedir paginas y debe bloquearse hasta tener la respuesta!
+pthread_t hiloBloqueos;
 pthread_attr_t detachedAttr; // Config para todos los hilos!
 // Semaforos
 pthread_mutex_t lockProccessList, lock_UMC_conection;
@@ -81,14 +82,22 @@ t_queue* colaSalida;
 t_queue* colaCPU;
 t_list* listaProcesos;
 
-t_list* listaIOActivos;
 t_dictionary* tablaIO;
+
+typedef enum {ACTIVE, INACTIVE} t_IO_estado;
+
 typedef struct {
 	int retardo;
+	t_IO_estado estado;
 	t_queue* cola;
 } t_IO;
 
 t_dictionary* tablaSEM;
+
+typedef struct {
+	t_IO* IO;
+	int PID;
+} t_bloqueo;
 
 typedef struct customConfig {
 	int puertoConsola;
@@ -129,7 +138,7 @@ int crearProceso(int consola);
 void cargarProceso(int consola);
 void ejecutarProceso(int PID, int cpu);
 void rechazarProceso(int PID);
-void bloquearProceso(int PID, int IO);
+void bloquearProceso(int PID, char* IO);
 void desbloquearProceso(int PID);
 void finalizarProceso(int PID);
 void destruirProceso(int PID);
@@ -143,6 +152,8 @@ void planificarProcesos();
 int getConsolaAsociada(int cliente);
 char* getScript(int consola);
 void asignarMetadataProceso(t_proceso* p, char* codigo);
+void bloqueo(t_bloqueo* info);
+void planificarIO(char* io_id, t_IO* io);
 //Tests
 int test_nucleo();
 void test_cicloDeVidaProcesos();

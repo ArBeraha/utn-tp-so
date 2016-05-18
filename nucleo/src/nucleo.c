@@ -271,10 +271,12 @@ void planificarProcesos() {
 		planificacionFIFO();
 		break;
 	}
-	//printf("planificando...\n");
+
+	//Planificar IO
+	dictionary_iterator(tablaIO,(void*)planificarIO);
 }
 
-void bloquearProceso(int PID, int IO) {
+void bloquearProceso(int PID, char* IO) {
 	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_get(listaProcesos, PID);
 	pthread_mutex_unlock(&lockProccessList);
@@ -285,7 +287,26 @@ void bloquearProceso(int PID, int IO) {
 	proceso->estado = BLOCK;
 	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
 	proceso->cpu = SIN_ASIGNAR;
-	// todo: Añadir a la cola de ese IO
+
+	if (!CU_is_test_running())
+		queue_push(((t_IO*)dictionary_get(tablaIO,IO))->cola,PID);
+}
+
+void planificarIO(char* io_id, t_IO* io) {
+	if (io->estado == INACTIVE) {
+		io->estado = ACTIVE;
+		t_bloqueo* info = malloc(sizeof(t_bloqueo));
+		info->IO=io;
+		info->PID=queue_pop(io->cola);
+		pthread_create(&hiloBloqueos, &detachedAttr, (void*) bloqueo, info);
+	}
+}
+
+void bloqueo(t_bloqueo* info){
+	sleep(info->IO->retardo);
+	desbloquearProceso(info->PID);
+	info->IO->estado = INACTIVE;
+	free(info);
 }
 
 void desbloquearProceso(int PID) {
@@ -307,7 +328,7 @@ void cargarCFG() {
 	config.puertoCPU = config_get_int_value(configNucleo, "PUERTO_CPU");
 	config.quantum = config_get_int_value(configNucleo, "QUANTUM");
 	config.queantum_sleep = config_get_int_value(configNucleo, "QUANTUM_SLEEP");
-	config.sem_ids =	config_get_array_value(configNucleo, "SEM_ID");
+	config.sem_ids = config_get_array_value(configNucleo, "SEM_ID");
 	config.semInit = config_get_array_value(configNucleo, "SEM_INIT");
 	config.io_ids = config_get_array_value(configNucleo, "IO_ID");
 	config.ioSleep = config_get_array_value(configNucleo, "IO_SLEEP");
@@ -316,21 +337,22 @@ void cargarCFG() {
 	config.puertoUMC = config_get_int_value(configNucleo, "PUERTO_UMC");
 
 	// Cargamos los IO
-	int i=0;
-	while (config.io_ids[i]!='\0'){
+	int i = 0;
+	while (config.io_ids[i] != '\0') {
 		t_IO* io = malloc(sizeof(t_IO));
-		io->retardo=atoi(config.ioSleep[i]);
-		io->cola=queue_create();
-		dictionary_put(tablaIO,config.io_ids[i],io);
+		io->retardo = atoi(config.ioSleep[i]);
+		io->cola = queue_create();
+		io->estado = INACTIVE;
+		dictionary_put(tablaIO, config.io_ids[i], io);
 		//printf("ID:%s SLEEP:%d\n",config.io_ids[i],io->retardo);
 		i++;
 	}
 	// Cargamos los SEM
-	i=0;
-	while (config.sem_ids[i]!='\0'){
-		int* init= malloc(sizeof(int));
-		*init=atoi(config.semInit[i]);
-		dictionary_put(tablaSEM,config.sem_ids[i],init);
+	i = 0;
+	while (config.sem_ids[i] != '\0') {
+		int* init = malloc(sizeof(int));
+		*init = atoi(config.semInit[i]);
+		dictionary_put(tablaSEM, config.sem_ids[i], init);
 		//printf("SEM:%s INIT:%d\n",config.sem_ids[i],*init);
 		i++;
 	}

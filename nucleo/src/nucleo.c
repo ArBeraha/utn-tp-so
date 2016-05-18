@@ -418,15 +418,31 @@ void finalizar() {
 	pthread_attr_destroy(&detachedAttr);
 }
 
-void asignarMetadataProceso(t_proceso* p, char* codigo){
+void asignarMetadataProceso(t_proceso* p, char* codigo) {
 	int i;
 	t_medatada_program* metadata = metadata_desde_literal(codigo);
 	t_sentencia* sentencia;
-	for (i=0; i<metadata->instrucciones_size;i++){
+	for (i = 0; i < metadata->instrucciones_size; i++) {
 		sentencia = malloc(sizeof(t_sentencia));
-		sentencia->offset_inicio =  metadata->instrucciones_serializado[i].start;
-		sentencia->offset_fin = sentencia->offset_inicio + metadata->instrucciones_serializado[i].offset;
-		list_add(p->PCB.indice_codigo,sentencia);
+		sentencia->offset_inicio = metadata->instrucciones_serializado[i].start;
+		sentencia->offset_fin = sentencia->offset_inicio
+				+ metadata->instrucciones_serializado[i].offset;
+		list_add(p->PCB.indice_codigo, sentencia);
+	}
+	int longitud = 0;
+	for (i = 0; i < metadata->etiquetas_size; i++) {
+		if (metadata->etiquetas[i] == '\0') {
+			char* etiqueta = malloc(longitud + 1);
+			memcpy(etiqueta, metadata->etiquetas + i - longitud, longitud+1);
+			int* salto = malloc(sizeof(int));
+			memcpy(salto, metadata->etiquetas + i + 1, sizeof(int));
+			//imprimir_serializacion(etiqueta,longitud);
+			//printf("Etiqueta:%s Salto: %d\n",etiqueta,*salto);
+			dictionary_put(p->PCB.indice_etiquetas, etiqueta, salto);
+			i += sizeof(int);
+			longitud = 0;
+		} else
+			longitud++;
 	}
 }
 
@@ -467,13 +483,15 @@ void test_obtenerMetadata(){
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	t_sentencia* sentencia;
 	pcb_create(&proceso->PCB);
-	asignarMetadataProceso(proceso,"begin\nvariables a, b\na = 3\nb = 5\na = b + 12\nend\n");
+	asignarMetadataProceso(proceso,"begin\nvariables a, b\na = 3\n:salto1\nb = 5\n:salto2\na = b + 12\nend\n");
 	sentencia=(t_sentencia*)list_get(proceso->PCB.indice_codigo,0);
 	CU_ASSERT_EQUAL(sentencia->offset_inicio,6);
 	CU_ASSERT_EQUAL(sentencia->offset_fin,6+15);
 	sentencia=(t_sentencia*)list_get(proceso->PCB.indice_codigo,1);
 	CU_ASSERT_EQUAL(sentencia->offset_inicio,21);
 	CU_ASSERT_EQUAL(sentencia->offset_fin,21+6);
+	CU_ASSERT_EQUAL((*(int*)dictionary_get(proceso->PCB.indice_etiquetas,"salto1")),2);
+	CU_ASSERT_EQUAL((*(int*)dictionary_get(proceso->PCB.indice_etiquetas,"salto2")),3);
 }
 
 int test_nucleo(){

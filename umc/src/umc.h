@@ -114,10 +114,12 @@ char* ultimoByteOcupado;
 
 char* vectorClientes;
 
+int retardoMemoria;
+
 //Prototipos
 
-void sacarEntradaConLru(tablaPagina_t* pagina,int pidParam); //TODO
-void sacarEntradaConClock(tablaPagina_t* pagina,int pidParam); //TODO
+void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam); //TODO
+void reemplazarEntradaConClock(tablaPagina_t* pagina,int pidParam); //TODO
 int estaEnTlb(pedidoLectura_t pedido);
 int buscarEnTlb(pedidoLectura_t pedido);
 int existePidEnListadeTablas(int pid);

@@ -141,8 +141,8 @@ void rechazarProceso(int PID) {
 int crearProceso(int consola) {
 	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = malloc(sizeof(t_proceso));
-	pcb_create(&(proceso->PCB));
-	proceso->PCB.PID = list_add(listaProcesos, proceso);
+	proceso->PCB = pcb_create();
+	proceso->PCB->PID = list_add(listaProcesos, proceso);
 	pthread_mutex_unlock(&lockProccessList);
 	proceso->estado = NEW;
 	proceso->consola = consola;
@@ -153,18 +153,18 @@ int crearProceso(int consola) {
 		asignarMetadataProceso(proceso, codigo);
 
 		// Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
-		if (!pedirPaginas(proceso->PCB.PID, codigo)) {
+		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
 			printf("rechazado");
-			rechazarProceso(proceso->PCB.PID);
+			rechazarProceso(proceso->PCB->PID);
 			log_info(activeLogger, "UMC no da paginas para el proceso %d!",
-					proceso->PCB.PID);
+					proceso->PCB->PID);
 			log_info(activeLogger, "Se rechazo el proceso %d.",
-					proceso->PCB.PID);
+					proceso->PCB->PID);
 		}
 
 		free(codigo);
 	}
-	return proceso->PCB.PID;
+	return proceso->PCB->PID;
 }
 
 void cargarProceso(int consola) {
@@ -208,26 +208,27 @@ void destruirProceso(int PID) {
 			intToChar(HeaderConsolaFinalizarNormalmente), 1, 0); // Le decimos adios a la consola
 	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
+	pcb_destroy(proceso->PCB);
 	free(proceso); // Destruir Proceso y PCB
 }
 
 void actualizarPCB(t_PCB PCB){ //
 	// Cuando CPU me actualice la PCB del proceso me manda una PCB (no un puntero)
 	pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_get(listaProcesos, PCB.PID);
+	//t_proceso* proceso = list_get(listaProcesos, PCB->PID);
 	pthread_mutex_unlock(&lockProccessList);
-	proceso->PCB=PCB;
+	//proceso->PCB=PCB;
 }
 
 bool terminoQuantum(t_proceso* proceso){
-	return (!(proceso->PCB.PC%config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
+	return (!(proceso->PCB->PC%config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
 }
 
 void expulsarProceso(t_proceso* proceso){
 	if (proceso->estado!=EXEC)
-		log_warning(activeLogger, "Expulsion del proceso %d sin estar ejecutandose!",proceso->PCB.PID);
+		log_warning(activeLogger, "Expulsion del proceso %d sin estar ejecutandose!",proceso->PCB->PID);
 	proceso->estado=READY;
-	queue_push(colaListos, (void*) proceso->PCB.PID);
+	queue_push(colaListos, (void*) proceso->PCB->PID);
 	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
 	proceso->cpu = SIN_ASIGNAR;
 }
@@ -427,7 +428,7 @@ void asignarMetadataProceso(t_proceso* p, char* codigo) {
 		sentencia->offset_inicio = metadata->instrucciones_serializado[i].start;
 		sentencia->offset_fin = sentencia->offset_inicio
 				+ metadata->instrucciones_serializado[i].offset;
-		list_add(p->PCB.indice_codigo, sentencia);
+		list_add(p->PCB->indice_codigo, sentencia);
 	}
 	int longitud = 0;
 	for (i = 0; i < metadata->etiquetas_size; i++) {
@@ -438,12 +439,13 @@ void asignarMetadataProceso(t_proceso* p, char* codigo) {
 			memcpy(salto, metadata->etiquetas + i + 1, sizeof(int));
 			//imprimir_serializacion(etiqueta,longitud);
 			//printf("Etiqueta:%s Salto: %d\n",etiqueta,*salto);
-			dictionary_put(p->PCB.indice_etiquetas, etiqueta, salto);
+			dictionary_put(p->PCB->indice_etiquetas, etiqueta, salto);
 			i += sizeof(int);
 			longitud = 0;
 		} else
 			longitud++;
 	}
+	free(metadata);
 }
 
 void test_cicloDeVidaProcesos(){
@@ -454,23 +456,23 @@ void test_cicloDeVidaProcesos(){
 
 	proceso->estado = READY;
 
-	ejecutarProceso(proceso->PCB.PID,(int)queue_pop(colaCPU));
+	ejecutarProceso(proceso->PCB->PID,(int)queue_pop(colaCPU));
 	CU_ASSERT_EQUAL(proceso->estado,EXEC);
 	CU_ASSERT_EQUAL(proceso->cpu,2)
 	CU_ASSERT_TRUE(queue_is_empty(colaCPU));
 
-	bloquearProceso(proceso->PCB.PID,1);
+	bloquearProceso(proceso->PCB->PID,1);
 	CU_ASSERT_FALSE(queue_is_empty(colaCPU));
 	CU_ASSERT_EQUAL(proceso->estado,BLOCK);
 
-	desbloquearProceso(proceso->PCB.PID);
+	desbloquearProceso(proceso->PCB->PID);
 	CU_ASSERT_EQUAL(proceso->estado,READY);
 
-	finalizarProceso(proceso->PCB.PID);
+	finalizarProceso(proceso->PCB->PID);
 	CU_ASSERT_EQUAL(proceso->estado,EXIT);
 	CU_ASSERT_FALSE(queue_is_empty(colaSalida));
 
-	destruirProceso(proceso->PCB.PID);
+	destruirProceso(proceso->PCB->PID);
 	CU_ASSERT_TRUE(list_is_empty(listaProcesos));
 
 	// NO TENEMOS MANERA DE AVISARLE A LA QUEUE QUE SAQUE EL PID DE LA POSICION DONDE SE ENCUENTRA
@@ -484,14 +486,17 @@ void test_obtenerMetadata(){
 	t_sentencia* sentencia;
 	pcb_create(&proceso->PCB);
 	asignarMetadataProceso(proceso,"begin\nvariables a, b\na = 3\n:salto1\nb = 5\n:salto2\na = b + 12\nend\n");
-	sentencia=(t_sentencia*)list_get(proceso->PCB.indice_codigo,0);
+	sentencia=(t_sentencia*)list_get(proceso->PCB->indice_codigo,0);
 	CU_ASSERT_EQUAL(sentencia->offset_inicio,6);
 	CU_ASSERT_EQUAL(sentencia->offset_fin,6+15);
-	sentencia=(t_sentencia*)list_get(proceso->PCB.indice_codigo,1);
+	sentencia=(t_sentencia*)list_get(proceso->PCB->indice_codigo,1);
 	CU_ASSERT_EQUAL(sentencia->offset_inicio,21);
 	CU_ASSERT_EQUAL(sentencia->offset_fin,21+6);
-	CU_ASSERT_EQUAL((*(int*)dictionary_get(proceso->PCB.indice_etiquetas,"salto1")),2);
-	CU_ASSERT_EQUAL((*(int*)dictionary_get(proceso->PCB.indice_etiquetas,"salto2")),3);
+	CU_ASSERT_EQUAL((*(int*)dictionary_get(proceso->PCB->indice_etiquetas,"salto1")),2);
+	CU_ASSERT_EQUAL((*(int*)dictionary_get(proceso->PCB->indice_etiquetas,"salto2")),3);
+	free(sentencia);
+	pcb_destroy(proceso->PCB);
+	free(proceso);
 }
 
 int test_nucleo(){

@@ -37,16 +37,17 @@ void stack_destroy(t_stack* stack){
 	list_destroy((t_list*)stack);
 }
 
-void pcb_create(t_PCB* pcb) {
+t_PCB* pcb_create() {
 	// NO SE USA PARA DESERIALIZAR YA QUE DESERIALIZAR_PCB() YA CREA LAS ESTRUCTURAS DINAMICAS
 	// POR ENDE ES UN METODO EXCLUSIVO DE NUCLEO (referenciar a un issue para cambiar esto)
-	//pcb = malloc(sizeof(t_PCB));
+	t_PCB* pcb = malloc(sizeof(t_PCB));
 	pcb->PC=0;
 	pcb->PID=0;
 	pcb->cantidad_paginas=0;
 	pcb->SP = stack_create();
 	pcb->indice_codigo = list_create();
 	pcb->indice_etiquetas = dictionary_create();
+	return pcb;
 }
 
 void pcb_destroy(t_PCB* pcb){

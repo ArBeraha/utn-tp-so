@@ -73,7 +73,7 @@ typedef struct {
 	int consola; // Indice de socketCliente
 	int cpu; // Indice de socketCliente, legible solo cuando estado sea EXEC
 	t_proceso_estado estado;
-	t_PCB PCB;
+	t_PCB* PCB;
 } t_proceso;
 
 t_queue* colaListos;

@@ -185,14 +185,27 @@ void ejecutarProceso(int PID, int cpu) {
 }
 void finalizarProceso(int PID) {
 	/*pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_get(listaProcesos, PID);
-	pthread_mutex_unlock(&lockProccessList);*/
-	t_proceso* proceso = (t_proceso*)PID;
+	 t_proceso* proceso = list_get(listaProcesos, PID);
+	 pthread_mutex_unlock(&lockProccessList);*/
+	t_proceso* proceso = (t_proceso*) PID;
 	queue_push(colaCPU, (int*) proceso->cpu); // Disponemos de nuevo de la CPU
 	proceso->cpu = SIN_ASIGNAR;
 	proceso->estado = EXIT;
 	queue_push(colaSalida, (void*) PID);
+	list_remove_by_value(listaProcesos, (void*) PID);
+
 }
+
+list_remove_by_value(t_list* lista, void* value) {
+	int i;
+	for (i = 0; i < list_size(lista); i++) {
+		if (list_get(lista, i) == value) {
+			list_remove(lista, i);
+			break;
+		}
+	}
+}
+
 void destruirProceso(int PID) {
 	/*pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = list_remove(listaProcesos, PID);
@@ -505,7 +518,7 @@ void test_bloqueosIO(){
 	bloquearProceso(proceso->PCB->PID,"Scanner");
 	dictionary_iterator(tablaIO,(void*)planificarIO);
 	CU_ASSERT_EQUAL(io->estado,ACTIVE);
-	pthread_join(hiloBloqueos,NULL);
+	sleep(io->retardo*2);
 	CU_ASSERT_EQUAL(proceso->estado,READY);
 	CU_ASSERT_EQUAL(io->estado,INACTIVE);
 	dictionary_remove(tablaIO,"Scanner");
@@ -564,7 +577,7 @@ int main(void) {
 		return EXIT_FAILURE;
 	}
 
-	system("clear");
+	//system("clear");
 	crearLogs("Nucleo", "Nucleo");
 
 	configurarServidorExtendido(&socketConsola, &direccionConsola,

@@ -48,18 +48,33 @@ void obtener_posicion_de(t_nombre_variable variable){
 	//return variable;
 }
 
+void enviar_direccion_umc(t_puntero direccion){
+	t_stack_item* stack = stack_get(pcbActual->SP,direccion);
+	t_variable pedido= stack->valorRetorno;
+
+	char* mensaje;
+	serializar_variable(mensaje,&pedido);
+
+	send_w(cliente_umc,mensaje,sizeof(t_variable)); 			// envio el pedido [pag,offset,size]
+
+	stack_destroy(t_stack_item);
+	free(mensaje);
+}
+
 t_valor_variable dereferenciar(t_puntero direccion){		// TODO terminar - Pido a UMC el valor de la variable de direccion
 	t_valor_variable valor;
 	log_info(activeLogger,"Dereferenciar |%d| y su valor es:  ",direccion);
 
 	send_w(cliente_umc, headerToMSG(HeaderPedirValorVariable), 1);
-	send_w(cliente_umc,intToChar(direccion),sizeof(t_puntero)); // t_puntero y t_valor_variable es entero de 32 bits -- deberia serializar?
+
+	enviar_direccion_umc(direccion);
 
 	char* msgSize = recv_waitall_ws(cliente_umc, sizeof(int));
 	int size = char4ToInt(msgSize);
 	char* res = recv_waitall_ws(cliente_umc,size); //recibo el valor de UMC
 
 	valor = charToInt(res);
+
 	free(msgSize);
 	free(res);
 	incrementarPC(pcbActual);
@@ -71,7 +86,9 @@ t_valor_variable dereferenciar(t_puntero direccion){		// TODO terminar - Pido a 
 void asignar(t_puntero direccion_variable, t_valor_variable valor){	//TODO terminar
 	log_info(activeLogger,"Asignando en |%d| el valor |%d|", direccion_variable,valor);
 	send_w(cliente_umc,headerToMSG(HeaderAsignarValor), 1);
-	send_w(cliente_umc,intToChar(direccion_variable),sizeof(t_puntero)); //envio la direccion de la variable
+
+	enviar_direccion_umc(direccion);
+
 	send_w(cliente_umc,intToChar(valor),sizeof(t_valor_variable));		//envio el valor de la variable
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
@@ -357,65 +374,62 @@ int queda_espacio_en_pagina(t_sentencia* sentencia){ //precondicion: el offset d
 	return tamanioPaginas - desp;;
 }
 
-void enviar_pagina(int pagina){				//envio la pagina
-	char* pag = intToChar4(pagina);
-	send_w(cliente_umc,pag,sizeof(int));
-	free(pag);
-}
+void enviar_solicitud(int pagina, int offset, int size){
 
-void enviar_longitud(int longitud){		//envio la longitud de la sentencia
-	char* longi =  intToChar4(longitud);
-	send_w(cliente_umc,longi,sizeof(int));
-	free(longi);
-}
+	t_variable pedido;
+	pedido.offset= offset;
+	pedido.pagina = pagina;
+	pedido.size = size;
 
-void enviar_sentencia(t_sentencia* sentencia){
-	char* envio = string_new();
-	int size = serializar_sentencia(envio,sentencia);
-	send_w(cliente_umc,envio,size);
+	char* solicitud = string_new();
+	serializar_variable(solicitud,&pedido);
+
+	send_w(cliente_umc,solicitud,sizeof(t_variable));
+	free(solicitud);
+
 }
 
 void pedir_sentencia(){	//pedir al UMC la proxima sentencia a ejecutar
 	int entrada = pcbActual->PC;   				//obtengo la entrada de la instruccion a ejecutar
 
 	t_sentencia* sentenciaActual = list_get(pcbActual->indice_codigo,entrada);		//obtengo el offset de la sentencia
-	t_sentencia* sentenciaParaUMC = malloc(sizeof(t_sentencia));
+	t_sentencia* sentenciaAux = malloc(sizeof(t_sentencia));
 
-	int pagina = obtener_offset_relativo(sentenciaActual,sentenciaParaUMC);			//obtengo el offset relativo
+	int pagina = obtener_offset_relativo(sentenciaActual,sentenciaAux);			//obtengo el offset relativo
 
 	send_w(cliente_umc, headerToMSG(HeaderSolicitudSentencia), 1);    			//envio el header
 
-	char* sentencia = string_new();
-
 	int i = 0;
-	int longitud_restante = longitud_sentencia(sentenciaParaUMC);
-	int cantidad_pags =cantidad_paginas_ocupa(sentenciaParaUMC);
+	int longitud_restante = longitud_sentencia(sentenciaAux);					//longitud total de la sentencia
+	int cantidad_pags =cantidad_paginas_ocupa(sentenciaAux);
+
 	printf("La instruccion ocupa %d paginas\n", cantidad_pags);
 
-	while(i< cantidad_pags ){			//me fijo si ocupa mas de una pagina
-
+	while(i< cantidad_pags ){						//me fijo si ocupa mas de una pagina
+													//notar que cuando paso de una pagina a otra, pierdo una unidad del size total
 		printf("envie la pag: %d\n",pagina + i);
 
-		if(longitud_restante > tamanioPaginas){						//si me paso de la pagina, acorto el offset fin
+		if(longitud_restante >= tamanioPaginas){				//si me paso de la pagina, acorto el offset fin
+
 			longitud_restante = longitud_restante - tamanioPaginas;
-			sentenciaParaUMC->offset_fin = tamanioPaginas;
-			printf("offset: %d,pagina: %d, size: %d\n",sentenciaParaUMC->offset_inicio, pagina + i, tamanioPaginas);
-			sentenciaParaUMC->offset_inicio = 0;
-		}
-		else{													//si no me paso, sigo igual y terminaria el while
-			sentenciaParaUMC->offset_fin = longitud_restante;
-			printf("offset: %d,pagina: %d, size: %d\n",sentenciaParaUMC->offset_inicio, pagina + i, longitud_restante);
+			sentenciaAux->offset_fin = tamanioPaginas;
+
+			enviar_solicitud(pagina, sentenciaAux->offset_inicio,longitud_sentencia(sentenciaAux));
+
+			sentenciaAux->offset_inicio = 0;				//como es contiguo, al pasar a la otra pagina, pongo en 0
 
 		}
-		enviar_pagina(pagina);
-		enviar_longitud(longitud_restante);
-		enviar_sentencia(sentenciaParaUMC);
+		else{												//si no me paso, sigo igual y terminaria el while
+			sentenciaAux->offset_fin = longitud_restante;
+
+			enviar_solicitud(pagina, sentenciaAux->offset_inicio,longitud_sentencia(sentenciaAux));
+		}
 
 		i++;
 	}
-	free(sentencia);
+
 	free(sentenciaActual);
-	free(sentenciaParaUMC);
+	free(sentenciaAux);
 }
 
 void esperar_sentencia(){

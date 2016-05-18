@@ -101,5 +101,43 @@ typedef struct customConfig {
 customConfig_t config;
 t_config* configNucleo;
 
+//Firmas
+int getHandshake();
+void warnDebug();
+void imprimirVariable(int cliente);
+void imprimirTexto(int cliente);
+void cargarCFG();
+void configHilos();
+void procesarHeader(int cliente, char *header) ;
+struct timeval newEspera();
+void finalizar();
+//UMC
+bool pedirPaginas(int PID, char* codigo);
+void establecerConexionConUMC();
+void conectarAUMC();
+void handshakearUMC();
+//Procesos
+int crearProceso(int consola);
+void cargarProceso(int consola);
+void ejecutarProceso(int PID, int cpu);
+void rechazarProceso(int PID);
+void bloquearProceso(int PID, int IO);
+void desbloquearProceso(int PID);
+void finalizarProceso(int PID);
+void destruirProceso(int PID);
+void actualizarPCB(t_PCB PCB);
+bool terminoQuantum(t_proceso* proceso);
+void expulsarProceso(t_proceso* proceso);
+int cantidadProcesos();
+void planificacionFIFO();
+void planificacionRR();
+void planificarProcesos();
+int getConsolaAsociada(int cliente);
+char* getScript(int consola);
+void asignarMetadataProceso(t_proceso* p, char* codigo);
+//Tests
+int test_nucleo();
+void test_cicloDeVidaProcesos();
+void test_obtenerMetadata();
 
 #endif /* NUCLEO_H_ */

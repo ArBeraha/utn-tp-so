@@ -428,13 +428,6 @@ void asignarMetadataProceso(t_proceso* p, char* codigo){
 		sentencia->offset_fin = sentencia->offset_inicio + metadata->instrucciones_serializado[i].offset;
 		list_add(p->PCB.indice_codigo,sentencia);
 	}
-
-//	/*
-//	for (i=0; i<metadata.etiquetas_size;i++){
-//		dictionary_put(p->PCB.indice_etiquetas,,)
-//	}
-//
-//	p->PCB.indice_codigo = meta*/
 }
 
 void test_cicloDeVidaProcesos(){
@@ -518,6 +511,7 @@ int main(void) {
 		return EXIT_FAILURE;
 	}
 
+	system("clear");
 	crearLogs("Nucleo", "Nucleo");
 
 	configurarServidorExtendido(&socketConsola, &direccionConsola,

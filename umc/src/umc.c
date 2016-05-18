@@ -56,12 +56,24 @@ int buscarEnTlb(pedidoLectura_t pedido){ //Repito codigo, i know, pero esta solu
 }
 
 int existePidEnListadeTablas(int pid){
-	(list_get(listaTablasPaginas, pid)!=NULL)?1:0; //Va a la posicion de la lista de las tablas de paginas. ==NULL no existe el elemento
-	//(listaTablasPaginas[pid].nroPagina!=-1)?1:0;
+	t_list* lista = list_create();
+	lista=list_get(listaTablasPaginas, pid);
+	if(list_size(lista)==0){
+		return 0;
+	}else{
+		return 1;
+	}
 }
 
 int existePaginaBuscadaEnTabla(int pag, t_list* tablaPaginaBuscada){
-	(list_get(tablaPaginaBuscada,pag))?1:0;   //EN VERDAD DEVUELVE NULL SI NO HAY NADA? ...
+//	(list_get(tablaPaginaBuscada,pag))?1:0;   //EN VERDAD DEVUELVE NULL SI NO HAY NADA? ...
+	tablaPagina_t* tabla = malloc(sizeof(tablaPagina_t));
+		tabla=list_get(tablaPaginaBuscada, pag);
+		if(tabla){
+			return 1;
+		}else{
+			return 0;
+		}
 }
 
 //char* buscarEnTablaMarcos(int marcoBuscado, pedidoLectura_t pedido){ //Ver si necesito o no el pedido, me suena que tenia que hacer algo
@@ -107,10 +119,10 @@ int cantidadMarcosLibres(){
 //			marcoUtilizado;
 //	}tlb_t;
 
-void sacarEntradaConLru(tablaPagina_t* pagina,int pidParam){ //Y la agrega tmb...
+void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam){ //Y la agrega tmb...
 }
 
-void sacarEntradaConClock(tablaPagina_t* pagina,int pidParam){
+void reemplazarEntradaConClock(tablaPagina_t* pagina,int pidParam){
 }
 
 void agregarATlb(tablaPagina_t* pagina,int pidParam){
@@ -127,10 +139,10 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 	}
 	// TODO NO ENCONTRO ESPACIO EN LA TLB, ES HORA DE LA CACERIA...
 	if(strcmp(config.algoritmo_tlb,"LRU")){
-		sacarEntradaConLru(pagina,pidParam);
+		reemplazarEntradaConLru(pagina,pidParam);
 	}else{
 		if(strcmp(config.algoritmo_tlb,"CLOCK"))
-			sacarEntradaConClock(pagina,pidParam);
+		reemplazarEntradaConClock(pagina,pidParam);
 	}
 
 }
@@ -431,28 +443,22 @@ void devolverTodasLasPaginas(){  //OK
 
 void devolverPaginasDePid(int pid){ //OK
 	t_list* unaTabla = malloc(sizeof(t_list));
-	int tamanioLista = list_size(listaTablasPaginas);
 
-	if(pid<=tamanioLista){
-		unaTabla = list_get(listaTablasPaginas,pid);
-		int cantidadPaginasDeTabla = list_size(unaTabla);
-		int i;
+	if(existePidEnListadeTablas(pid)){
 
-		for(i=0;i<cantidadPaginasDeTabla;i++){
-			tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
-			unaPagina = list_get(unaTabla,i);
+			unaTabla = list_get(listaTablasPaginas,pid);
+			int cantidadPaginasDeTabla = list_size(unaTabla);
+			int i;
 
-			printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d \n",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
-			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d \n",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
-		}
-
+			for(i=0;i<cantidadPaginasDeTabla;i++){
+				tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
+				unaPagina = list_get(unaTabla,i);
+				printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d \n",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
+				log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d \n",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
+			}
+	}else{
+		printf("Ese pid no existe o no esta en uso! \n");
 	}
-	else{
-		printf("El pid supera la cantidad de tablas");
-		log_info(dump, "El pid supera la cantidad de tablas");
-
-	}
-
 }
 
 void imprimirRegionMemoria(char* region, int size){
@@ -515,7 +521,7 @@ void devolverMemoriaDePid(int pid){ //OK
 			memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
 			contenido[config.tamanio_marco]='\0';
 
-			printf("%s",contenido);
+			imprimirRegionMemoria(contenido,config.tamanio_marco);
 			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, Contenido: %s ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,contenido);
 
 			printf("\n");
@@ -531,26 +537,40 @@ void devolverMemoriaDePid(int pid){ //OK
 }
 
 void fRetardo(){
-	int nuevoRetardo=-1;
+	char* nuevoRetardo = NULL;
+	size_t bufsize = 64;
 	printf("Ingrese el nuevo valor de Retardo en milisegundos: ");
-	scanf(nuevoRetardo);
-	config.retardo = nuevoRetardo*1000;
+	getline(&nuevoRetardo,&bufsize,stdin);
+	int ret = atoi(nuevoRetardo);
+	retardoMemoria = ret;
 }
 void dumpEstructuraMemoria(){ //Devuelve todas las tablas de paginas o de un solo pid
 	int seleccion=-1;
 	int pidDeseado;
 
-	printf("0. Devolver todas las tablas |  1. Devolver las paginas de un proceso");
-	scanf(seleccion);
+	char* selecc = NULL;
+	char* selecc2 = NULL;
+	size_t bufsize = 64;
+
+	printf("\n");
+	printf("0. Devolver todas las tablas |  1. Devolver las paginas de un proceso \n");
+	printf("Opcion: ");
+	getline(&selecc,&bufsize,stdin);
+	seleccion = atoi(selecc);
 
 	switch(seleccion){
 		case 0:
+			printf("\n");
 			devolverTodasLasPaginas();
-
+			break;
 		case 1:
-			printf("De que PID desea listar las paginas?");
-			scanf(pidDeseado);
+			printf("De que PID desea listar las paginas? \n");
+			printf("Opcion: ");
+			getline(&selecc2,&bufsize,stdin);
+			pidDeseado = atoi(selecc2);
+			printf("\n");
 			devolverPaginasDePid(pidDeseado);
+			break;
 	}
 
 }
@@ -559,17 +579,32 @@ void dumpContenidoMemoria(){ //Devuelve toda la memoria o solo la de un pid
 	int seleccion=-1;
 	int pidDeseado;
 
-	printf("0. Devolver todas la Memoria|  1. Devolver la memoria de un proceso");
-	scanf(seleccion);
+
+	char* selecc = NULL;
+	char* selecc2 = NULL;
+	size_t bufsize = 64;
+
+	printf("\n");
+	printf(" 0. Devolver todas la Memoria|  1. Devolver la memoria de un proceso \n");
+
+
+	printf("Opcion: ");
+	getline(&selecc,&bufsize,stdin);
+	seleccion = atoi(selecc);
 
 	switch(seleccion){
 		case 0:
+			printf("\n");
 			devolverTodaLaMemoria();
-
+			break;
 		case 1:
-			printf("De que PID desea listar la memoria?");
-			scanf(pidDeseado);
+			printf("De que PID desea listar la memoria? \n");
+			printf("Opcion: ");
+			getline(&selecc2,&bufsize,stdin);
+			pidDeseado = atoi(selecc2);
+			printf("\n");
 			devolverMemoriaDePid(pidDeseado);
+			break;
 	}
 }
 void flushTlb(){
@@ -592,19 +627,25 @@ void flushMemory(){ //Pone a todas las paginas bit de modificacion en 1
 	}
 }
 
-void recibirComandos(){
+void recibirComandos(){  //ANDA OK
 	int funcion;
 	do {
+		char* selecc = NULL;
+		size_t bufsize = 64;
+
+		printf(" \n \n");
 		printf("Funciones: 0.salir / 1.retardo / 2.dumpEstructuraMemoria / 3.dumpContenidoMemoria / 4.flushTlb / 5.flushMemory \n");
 		printf("Funcion: ");
-		scanf("%d ",&funcion);
+
+		getline(&selecc,&bufsize,stdin);
+		funcion = atoi(selecc);
 
 		switch(funcion){
-			case 1: fRetardo();
-			case 2: dumpEstructuraMemoria();
-			case 3: dumpContenidoMemoria();
-			case 4: flushTlb();
-			case 5: flushMemory();
+			case 1: fRetardo(); break;
+			case 2: dumpEstructuraMemoria();break;
+			case 3: dumpContenidoMemoria();break;
+			case 4: flushTlb();break;
+			case 5: flushMemory();break;
 			default: break;
 		}
 	}
@@ -646,6 +687,8 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 	vectorClientes = malloc(MAXCLIENTS * sizeof(int));
 	memset(vectorClientes,-1, MAXCLIENTS * sizeof(int));
+
+	retardoMemoria = config.retardo;
 
 }
 
@@ -949,6 +992,10 @@ void test(){
 	devolverTodaLaMemoria();
 	devolverTodasLasPaginas();
 
+	printf(" -------------------------------------------  \n \n");
+	printf(" -------------------------------------------  \n \n");
+
+	recibirComandos();
 
 }
 

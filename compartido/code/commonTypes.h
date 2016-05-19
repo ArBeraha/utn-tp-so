@@ -21,7 +21,7 @@ typedef struct { // El ID queda a cargo del stack, no en todos lados las variabl
 	int pagina;
 	int offset;
 	int size;
-} __attribute__((packed)) t_variable;
+} __attribute__((packed)) t_pedido;
 
 typedef struct {
 	int offset_inicio;
@@ -32,10 +32,10 @@ typedef t_list t_stack;
 
 typedef struct {
 	int posicion;
-	t_list* argumentos; // lista de t_variable
-	t_dictionary* identificadores;  // dictionary de ["Identificador",t_variable]
+	t_list* argumentos; // lista de t_pedido
+	t_dictionary* identificadores;  // dictionary de ["Identificador",t_pedido]
 	int posicionRetorno;
-	t_variable valorRetorno;
+	t_pedido valorRetorno;
 } t_stack_item;
 
 typedef struct {

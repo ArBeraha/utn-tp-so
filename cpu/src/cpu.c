@@ -38,8 +38,8 @@ void desalojarProceso() {
 	free(pcb);
 }
 
-t_variable pedirMemoria() { //TODO hacer que esto pida memoria a umc
-	t_variable var;
+t_pedido pedirMemoria() { //TODO hacer que esto pida memoria a umc
+	t_pedido var;
 	var.offset = 0;
 	var.pagina = 0;
 	var.size = sizeof(int);
@@ -51,7 +51,7 @@ t_variable pedirMemoria() { //TODO hacer que esto pida memoria a umc
 t_puntero definir_variable(t_nombre_variable variable) {
 	incrementarPC(pcbActual);
 
-	t_variable direccion = pedirMemoria();
+	t_pedido direccion = pedirMemoria();
 	t_stack_item* head = stack_pop(stack);
 	list_add(head->argumentos, (void*) &direccion);
 	dictionary_put(head->identificadores, &variable, (void*) &direccion);
@@ -68,7 +68,7 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	t_puntero pointer = -1;
 	t_stack_item* head = stack_pop(stack);
 	if (dictionary_has_key(head, (void*) &variable)) {
-		t_variable* direccion = dictionary_get(head, (void*) &variable);
+		t_pedido* direccion = dictionary_get(head, (void*) &variable);
 		pointer = head->posicion;
 		log_info(activeLogger,
 				"Se encontro la variable |%c| en la posicion |%d|.", variable,
@@ -86,12 +86,12 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 
 void enviar_direccion_umc(t_puntero direccion) {
 	t_stack_item* stackItem = stack_get(pcbActual->SP, direccion);
-	t_variable pedido = stackItem->valorRetorno;
+	t_pedido pedido = stackItem->valorRetorno;
 
 	char* mensaje = NULL;
 	serializar_variable(mensaje, &pedido);
 
-	send_w(cliente_umc, mensaje, sizeof(t_variable)); // envio el pedido [pag,offset,size]
+	send_w(cliente_umc, mensaje, sizeof(t_pedido)); // envio el pedido [pag,offset,size]
 
 	stack_item_destroy(stackItem);
 	free(mensaje);
@@ -431,7 +431,7 @@ int queda_espacio_en_pagina(t_sentencia* sentencia) { //precondicion: el offset 
 
 void enviar_solicitud(int pagina, int offset, int size) {
 
-	t_variable pedido;
+	t_pedido pedido;
 	pedido.offset = offset;
 	pedido.pagina = pagina;
 	pedido.size = size;
@@ -439,7 +439,7 @@ void enviar_solicitud(int pagina, int offset, int size) {
 	char* solicitud = string_new();
 	serializar_variable(solicitud, &pedido);
 
-	send_w(cliente_umc, solicitud, sizeof(t_variable));
+	send_w(cliente_umc, solicitud, sizeof(t_pedido));
 	free(solicitud);
 
 }

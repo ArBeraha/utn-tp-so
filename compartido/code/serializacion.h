@@ -17,8 +17,8 @@
 
 int serializar_int(char* destino,int* fuente);
 int deserializar_int(int* destino, char* fuente);
-int serializar_variable(char* destino,t_variable* fuente);
-int deserializar_variable(t_variable* destino, char* fuente);
+int serializar_variable(char* destino,t_pedido* fuente);
+int deserializar_variable(t_pedido* destino, char* fuente);
 int serializar_sentencia(char* destino,t_sentencia* fuente);
 int deserializar_sentencia(t_sentencia* destino, char* fuente);
 int serializar_list(char* destino,t_list* fuente, int pesoElemento);

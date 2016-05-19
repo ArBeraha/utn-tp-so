@@ -8,24 +8,21 @@ C_SRCS += \
 /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/commonTypes.c \
 /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/header.c \
 /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/log.c \
-/home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/serializacion.c \
-/home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/stack.c 
+/home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/serializacion.c 
 
 OBJS += \
 ./code/cliente-servidor.o \
 ./code/commonTypes.o \
 ./code/header.o \
 ./code/log.o \
-./code/serializacion.o \
-./code/stack.o 
+./code/serializacion.o 
 
 C_DEPS += \
 ./code/cliente-servidor.d \
 ./code/commonTypes.d \
 ./code/header.d \
 ./code/log.d \
-./code/serializacion.d \
-./code/stack.d 
+./code/serializacion.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -58,13 +55,6 @@ code/log.o: /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/com
 	@echo ' '
 
 code/serializacion.o: /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/serializacion.c
-	@echo 'Building file: $<'
-	@echo 'Invoking: GCC C Compiler'
-	gcc -I"/home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
-	@echo 'Finished building: $<'
-	@echo ' '
-
-code/stack.o: /home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code/stack.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
 	gcc -I"/home/utnso/workspace/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/compartido/code" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"

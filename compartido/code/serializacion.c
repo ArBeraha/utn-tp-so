@@ -31,13 +31,13 @@ int deserializar_pint(int destino, char* fuente) {
 	memcpy(&destino, fuente, sizeof(int));
 	return sizeof(int);
 }
-int serializar_variable(char* destino, t_variable* fuente) {
-	memcpy(destino, fuente, sizeof(t_variable));
-	return sizeof(t_variable);
+int serializar_variable(char* destino, t_pedido* fuente) {
+	memcpy(destino, fuente, sizeof(t_pedido));
+	return sizeof(t_pedido);
 }
-int deserializar_variable(t_variable* destino, char* fuente) {
-	memcpy(destino, fuente, sizeof(t_variable));
-	return sizeof(t_variable);
+int deserializar_variable(t_pedido* destino, char* fuente) {
+	memcpy(destino, fuente, sizeof(t_pedido));
+	return sizeof(t_pedido);
 }
 int serializar_sentencia(char* destino, t_sentencia* fuente) {
 	memcpy(destino, fuente, sizeof(t_sentencia));
@@ -72,9 +72,9 @@ int bytes_list(t_list* fuente, int pesoElemento){
 	return 1+list_size(fuente)*pesoElemento;
 }
 int bytes_stack_item(t_stack_item* fuente) {
-	return sizeof(int) + bytes_list(fuente->argumentos, sizeof(t_variable))
-			+ bytes_dictionary(fuente->identificadores, sizeof(t_variable))//bytes_list(fuente->identificadores, sizeof(t_identificador))
-			+ sizeof(int) + sizeof(t_variable);
+	return sizeof(int) + bytes_list(fuente->argumentos, sizeof(t_pedido))
+			+ bytes_dictionary(fuente->identificadores, sizeof(t_pedido))//bytes_list(fuente->identificadores, sizeof(t_identificador))
+			+ sizeof(int) + sizeof(t_pedido);
 }
 int bytes_stack(t_stack* fuente) {
 	int i, bytes = 1;
@@ -86,9 +86,9 @@ int bytes_stack(t_stack* fuente) {
 int serializar_stack_item(char* destino, t_stack_item* fuente) {
 	int offset = 0;
 	offset += serializar_int(destino + offset, &(fuente->posicion));
-	offset += serializar_list(destino + offset, fuente->argumentos,	sizeof(t_variable));
+	offset += serializar_list(destino + offset, fuente->argumentos,	sizeof(t_pedido));
 	//offset += serializar_list(destino + offset, fuente->identificadores, sizeof(t_identificador));
-	offset += serializar_dictionary(destino + offset, fuente->identificadores, sizeof(t_variable));
+	offset += serializar_dictionary(destino + offset, fuente->identificadores, sizeof(t_pedido));
 	offset += serializar_int(destino + offset, &(fuente->posicionRetorno));
 	offset += serializar_variable(destino + offset, &(fuente->valorRetorno));
 	return offset; // Retorna el offset
@@ -106,8 +106,8 @@ int deserializar_stack_item(t_stack_item* destino, char* fuente) {
 	destino->argumentos=list_create();
 	destino->identificadores=dictionary_create();
 	offset += deserializar_int(&destino->posicion, fuente + offset);
-	offset += deserializar_list(destino->argumentos, fuente + offset, sizeof(t_variable));
-	offset += deserializar_dictionary(destino->identificadores, fuente + offset, sizeof(t_variable));
+	offset += deserializar_list(destino->argumentos, fuente + offset, sizeof(t_pedido));
+	offset += deserializar_dictionary(destino->identificadores, fuente + offset, sizeof(t_pedido));
 	offset += deserializar_int(&destino->posicionRetorno, fuente + offset);
 	offset += deserializar_variable(&(destino->valorRetorno), fuente + offset);
 	return offset;
@@ -236,14 +236,14 @@ void test_serializar_int(){
 	free(serial);
 }
 void test_serializar_variable(){
-	t_variable* varA=malloc(sizeof(t_variable));
-	t_variable*	varB=malloc(sizeof(t_variable));
+	t_pedido* varA=malloc(sizeof(t_pedido));
+	t_pedido*	varB=malloc(sizeof(t_pedido));
 	varA->pagina=1;
 	varA->offset=2;
 	varA->size=3;
-	char* serial=malloc(sizeof(t_variable));
+	char* serial=malloc(sizeof(t_pedido));
 	serializar_variable(serial,varA);
-	imprimir_serializacion(serial,sizeof(t_variable));
+	imprimir_serializacion(serial,sizeof(t_pedido));
 	deserializar_variable(varB,serial);
 	CU_ASSERT_EQUAL(varA->offset,varB->offset);
 	CU_ASSERT_EQUAL(varA->pagina,varB->pagina);
@@ -271,14 +271,14 @@ void test_serializar_list(){
 	t_list *listA, *listB = NULL;
 	listA = list_create();
 	listB = list_create();
-	t_variable* var = malloc(sizeof(t_variable));
+	t_pedido* var = malloc(sizeof(t_pedido));
 	var->pagina=2;
 	list_add(listA,var);
-	char *serial = malloc(bytes_list(listA,sizeof(t_variable)));
-	serializar_list(serial,listA,sizeof(t_variable));
-	imprimir_serializacion(serial,sizeof(t_variable));
-	deserializar_list(listB,serial,sizeof(t_variable));
-	CU_ASSERT_EQUAL(((t_variable*)list_get(listB,0))->pagina,2);
+	char *serial = malloc(bytes_list(listA,sizeof(t_pedido)));
+	serializar_list(serial,listA,sizeof(t_pedido));
+	imprimir_serializacion(serial,sizeof(t_pedido));
+	deserializar_list(listB,serial,sizeof(t_pedido));
+	CU_ASSERT_EQUAL(((t_pedido*)list_get(listB,0))->pagina,2);
 	list_destroy(listA);
 	list_destroy(listB);
 	free(var);
@@ -287,30 +287,30 @@ void test_serializar_list(){
 void test_serializar_dictionary(){
 	t_dictionary* dic = dictionary_create();
 	t_dictionary* dic2 = dictionary_create();
-	t_variable* var = malloc(sizeof(t_variable));
+	t_pedido* var = malloc(sizeof(t_pedido));
 	var->offset=1;
 	var->pagina=2;
 	var->size=3;
 	dictionary_put(dic,"aaa",var);
-	t_variable* var2 = malloc(sizeof(t_variable));
+	t_pedido* var2 = malloc(sizeof(t_pedido));
 	var2->offset=11;
 	var2->pagina=12;
 	var2->size=13;
 	dictionary_put(dic,"b",var2);
-	int bytes = bytes_dictionary(dic,sizeof(t_variable));
+	int bytes = bytes_dictionary(dic,sizeof(t_pedido));
 	char* serial = malloc(bytes);
-	serializar_dictionary(serial,dic,sizeof(t_variable));
+	serializar_dictionary(serial,dic,sizeof(t_pedido));
 	imprimir_serializacion(serial,bytes);
-	deserializar_dictionary(dic2,serial,sizeof(t_variable));
-	CU_ASSERT_EQUAL(((t_variable*)dictionary_get(dic2,"aaa"))->pagina,2);
-	CU_ASSERT_EQUAL(((t_variable*)dictionary_get(dic2,"b"))->pagina,12);
+	deserializar_dictionary(dic2,serial,sizeof(t_pedido));
+	CU_ASSERT_EQUAL(((t_pedido*)dictionary_get(dic2,"aaa"))->pagina,2);
+	CU_ASSERT_EQUAL(((t_pedido*)dictionary_get(dic2,"b"))->pagina,12);
 	dictionary_destroy(dic);
 	dictionary_destroy(dic2);
 	free(serial);
 }
 void test_serializar_stack_item(){
 	t_stack_item* itemA, *itemB;
-	t_variable var;
+	t_pedido var;
 	var.pagina=1;
 	var.offset=2;
 	var.size=3;
@@ -323,7 +323,7 @@ void test_serializar_stack_item(){
 	itemA->valorRetorno=var;
 	//itemB->argumentos=list_create();
 	//itemB->identificadores = dictionary_create();
-	t_variable* ident= malloc(sizeof(t_variable));
+	t_pedido* ident= malloc(sizeof(t_pedido));
 	ident->offset=7;
 	ident->pagina=8;
 	ident->size=9;
@@ -335,7 +335,7 @@ void test_serializar_stack_item(){
 	CU_ASSERT_EQUAL(itemB->posicion,itemA->posicion);
 	CU_ASSERT_EQUAL(itemB->posicionRetorno,itemA->posicionRetorno);
 	CU_ASSERT_EQUAL(itemB->valorRetorno.pagina,itemA->valorRetorno.pagina);
-	CU_ASSERT_EQUAL(((t_variable*)dictionary_get(itemB->identificadores,"a"))->pagina,8);
+	CU_ASSERT_EQUAL(((t_pedido*)dictionary_get(itemB->identificadores,"a"))->pagina,8);
 	stack_item_destroy(itemA);
 	stack_item_destroy(itemB);
 	free(serial);
@@ -343,7 +343,7 @@ void test_serializar_stack_item(){
 void test_serializar_stack(){
 	t_stack* stackA = stack_create();
 	t_stack* stackB = stack_create();
-	t_variable var;
+	t_pedido var;
 	var.pagina=1;
 	var.offset=2;
 	var.size=3;
@@ -359,7 +359,7 @@ void test_serializar_stack(){
 	itemB->posicionRetorno=10;
 	itemB->argumentos = list_create();
 	itemB->identificadores = dictionary_create();
-	t_variable* arg=malloc(sizeof(t_variable));
+	t_pedido* arg=malloc(sizeof(t_pedido));
 	arg->pagina=11;
 	arg->offset=12;
 	arg->size=13;
@@ -374,8 +374,8 @@ void test_serializar_stack(){
 	CU_ASSERT_EQUAL(stack_size(stackA),stack_size(stackB));
 	CU_ASSERT_EQUAL(((t_stack_item *)stack_get(stackB,0))->posicion,1);
 	CU_ASSERT_EQUAL(((t_stack_item *)stack_get(stackB,1))->posicionRetorno,10);
-	CU_ASSERT_EQUAL(((t_variable*)(list_get(((t_stack_item *)stack_get(stackB,1))->argumentos,0)))->pagina,11);
-	CU_ASSERT_EQUAL(((t_variable*)(dictionary_get(((t_stack_item *)stack_get(stackB,1))->identificadores,"k")))->pagina,11);
+	CU_ASSERT_EQUAL(((t_pedido*)(list_get(((t_stack_item *)stack_get(stackB,1))->argumentos,0)))->pagina,11);
+	CU_ASSERT_EQUAL(((t_pedido*)(dictionary_get(((t_stack_item *)stack_get(stackB,1))->identificadores,"k")))->pagina,11);
 	/*Liberar las estructuras internas*/
 	stack_destroy(stackA);
 	stack_destroy(stackB);
@@ -386,7 +386,7 @@ void test_serializar_PCB(){
 	t_PCB* pcb = malloc(sizeof(t_PCB));
 	//Creo el pcb->SP
 	pcb->SP = stack_create();
-	t_variable var;
+	t_pedido var;
 	var.pagina=1;
 	var.offset=2;
 	var.size=3;
@@ -402,7 +402,7 @@ void test_serializar_PCB(){
 	itemB->posicionRetorno=10;
 	itemB->argumentos = list_create();
 	itemB->identificadores = dictionary_create();
-	t_variable* arg=malloc(sizeof(t_variable));
+	t_pedido* arg=malloc(sizeof(t_pedido));
 	arg->pagina=11;
 	arg->offset=12;
 	arg->size=13;

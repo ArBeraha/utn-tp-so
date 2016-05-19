@@ -27,7 +27,7 @@ void incrementarPC(t_PCB* pcb){
 	pcb->PC++;
 }
 void instruccionTerminada(char* instr){
-	log_debug(activeLogger, "%s finalizó OK.", instr);
+	log_debug(activeLogger, "La instruccion |%s| finalizó OK.", instr);
 }
 
 /*--------FUNCIONES----------*/
@@ -49,15 +49,15 @@ void obtener_posicion_de(t_nombre_variable variable){
 }
 
 void enviar_direccion_umc(t_puntero direccion){
-	t_stack_item* stack = stack_get(pcbActual->SP,direccion);
-	t_variable pedido= stack->valorRetorno;
+	t_stack_item* stackItem = stack_get(pcbActual->SP,direccion);
+	t_variable pedido= stackItem->valorRetorno;
 
 	char* mensaje;
 	serializar_variable(mensaje,&pedido);
 
 	send_w(cliente_umc,mensaje,sizeof(t_variable)); 			// envio el pedido [pag,offset,size]
 
-	stack_destroy(t_stack_item);
+	stack_item_destroy(stackItem);
 	free(mensaje);
 }
 
@@ -89,7 +89,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor){	//TODO termi
 
 	enviar_direccion_umc(direccion);
 
-	send_w(cliente_umc,intToChar(valor),sizeof(t_valor_variable));		//envio el valor de la variable
+	send_w(cliente_umc,intToChar4(valor),sizeof(t_valor_variable));		//envio el valor de la variable
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Asignar");
@@ -248,7 +248,7 @@ void liberar_primitivas(){
 }
 
 void parsear(char* const sentencia){
-	log_info(activeLogger,"Ejecutando: %s\n",sentencia);
+	log_info(activeLogger,"Ejecutando la setencia |%s|...",sentencia);
 	analizadorLinea(sentencia,&funciones,&funcionesKernel);
 }
 

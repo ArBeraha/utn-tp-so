@@ -19,6 +19,7 @@ void obtener_y_parsear();
 void informarInstruccionTerminada(){
 	// Le aviso a nucleo que termino una instruccion, para que calcule cuanto quantum le queda al proceso ansisop.
 	send_w(cliente_nucleo,headerToMSG(headerTermineInstruccion),1);
+	// Acá nucleo tiene que mandarme el header que corresponda, segun si tengo que seguir ejecutando instrucciones o tengo que desalojar.
 }
 void setearPC(t_PCB* pcb,int pc){
 	pcb->PC=pc;
@@ -29,30 +30,64 @@ void incrementarPC(t_PCB* pcb){
 void instruccionTerminada(char* instr){
 	log_debug(activeLogger, "La instruccion |%s| finalizó OK.", instr);
 }
+void desalojarProceso(){
+	char* pcb = NULL;
+	int size = serializar_PCB(pcb,pcbActual);
+	send_w(cliente_nucleo,pcb,size); //Envio a nucleo el PCB con el PC actualizado.
+	// Nucleo no puede hacer pbc->pc+=quantum porque el quantum puede variar en tiempo de ejecución.
+	free(pcb);
+}
+
+t_variable pedirMemoria(){ //TODO hacer que esto pida memoria a umc
+	t_variable var;
+	var.offset=0;
+	var.pagina=0;
+	var.size=sizeof(int);
+	return var;
+}
 
 /*--------FUNCIONES----------*/
 //cambiar el valor de retorno a t_puntero
-void definir_variable(t_nombre_variable variable){
+t_puntero definir_variable(t_nombre_variable variable){
 	incrementarPC(pcbActual);
+
+	t_variable direccion = pedirMemoria();
+	t_stack_item* head = stack_pop(stack);
+	list_add(head->argumentos, (void*)&direccion);
+	dictionary_put(head->identificadores,&variable,(void*)&direccion);
+	stack_push(stack, head);
+
 	informarInstruccionTerminada();
 	instruccionTerminada("Definir_variable");
-	//return variable;
+	return head->posicion;
 }
 
-//cambiar valor de retorno a t_puntero
-void obtener_posicion_de(t_nombre_variable variable){
+t_puntero obtener_posicion_de(t_nombre_variable variable){
 	log_info(activeLogger,"Obtener posicion de |%c|.",variable);
+
+	t_puntero pointer = -1;
+	t_stack_item* head = stack_pop(stack);
+	if(dictionary_has_key(head,(void*)&variable)){
+		t_variable* direccion = dictionary_get(head,(void*)&variable);
+		pointer = head->posicion;
+		log_info(activeLogger, "Se encontro la variable |%c| en la posicion |%d|.", variable, pointer);
+	}
+	else{
+		log_info(activeLogger, "No se encontro la variable |%c|., variable");
+	}
+	stack_push(stack, head);
+
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("obtener_posicion_de");
-	//return variable;
+	return pointer;
 }
 
 void enviar_direccion_umc(t_puntero direccion){
 	t_stack_item* stackItem = stack_get(pcbActual->SP,direccion);
 	t_variable pedido= stackItem->valorRetorno;
 
-	char* mensaje;
+	char* mensaje = NULL;
 	serializar_variable(mensaje,&pedido);
 
 	send_w(cliente_umc,mensaje,sizeof(t_variable)); 			// envio el pedido [pag,offset,size]
@@ -87,12 +122,12 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor){	//TODO termi
 	log_info(activeLogger,"Asignando en |%d| el valor |%d|", direccion_variable,valor);
 	send_w(cliente_umc,headerToMSG(HeaderAsignarValor), 1);
 
-	enviar_direccion_umc(direccion);
+	enviar_direccion_umc(direccion_variable);
 
 	send_w(cliente_umc,intToChar4(valor),sizeof(t_valor_variable));		//envio el valor de la variable
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
-	instruccionTerminada("Asignar");
+	instruccionTerminada("Asignar.");
 }
 
 
@@ -301,7 +336,7 @@ void pedir_tamanio_paginas(){
 	send_w(cliente_umc,headerToMSG(HeaderTamanioPagina),1); //le pido a umc el tamanio de las paginas
 	char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
 	tamanioPaginas = char4ToInt(tamanio);
-	log_debug(activeLogger, "El tamaño de paginas es: %d", tamanioPaginas);
+	log_debug(activeLogger, "El tamaño de paginas es: |%d|", tamanioPaginas);
 	free(tamanio);
 }
 
@@ -338,9 +373,14 @@ void procesarHeader(char *header){
 	case HeaderSentencia:
 		obtener_y_parsear();
 		break;
+
+	case HeaderDesalojarProceso:
+		desalojarProceso();
+		break;
+
 	default:
 		log_error(activeLogger,"Llego cualquier cosa.");
-		log_error(activeLogger,"Llego el header numero %d y no hay una accion definida para el.",charToInt(header));
+		log_error(activeLogger,"Llego el header numero |%d| y no hay una accion definida para el.",charToInt(header));
 		exit(EXIT_FAILURE);
 		break;
 	}
@@ -403,11 +443,11 @@ void pedir_sentencia(){	//pedir al UMC la proxima sentencia a ejecutar
 	int longitud_restante = longitud_sentencia(sentenciaAux);					//longitud total de la sentencia
 	int cantidad_pags =cantidad_paginas_ocupa(sentenciaAux);
 
-	printf("La instruccion ocupa %d paginas\n", cantidad_pags);
+	log_debug(bgLogger,"La instruccion ocupa |%d| paginas", cantidad_pags);
 
 	while(i< cantidad_pags ){						//me fijo si ocupa mas de una pagina
 													//notar que cuando paso de una pagina a otra, pierdo una unidad del size total
-		printf("envie la pag: %d\n",pagina + i);
+		log_debug(bgLogger,"envie la pag: |%d|",pagina + i);
 
 		if(longitud_restante >= tamanioPaginas){				//si me paso de la pagina, acorto el offset fin
 
@@ -439,17 +479,11 @@ void esperar_sentencia(){
 }
 
 void obtenerPCB(){		//recibo el pcb que me manda nucleo
-
 	char* pcb = recv_waitall_ws(cliente_nucleo,sizeof(t_PCB));
-	int p = deserializar_PCB(pcbActual,pcb);	//reemplazo en el pcb actual de cpu que tiene como variable global
-
+	deserializar_PCB(pcbActual,pcb);	//reemplazo en el pcb actual de cpu que tiene como variable global
 	free(pcb);
-
-	incrementarPC(pcbActual);			//incremento el program counter
-
 	pedir_sentencia();
 	esperar_sentencia();
-
 }
 
 void obtener_y_parsear(){

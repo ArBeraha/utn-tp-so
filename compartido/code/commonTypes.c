@@ -40,6 +40,7 @@ void stack_destroy(t_stack* stack){
 t_PCB* pcb_create() {
 	// NO SE USA PARA DESERIALIZAR YA QUE DESERIALIZAR_PCB() YA CREA LAS ESTRUCTURAS DINAMICAS
 	// POR ENDE ES UN METODO EXCLUSIVO DE NUCLEO (referenciar a un issue para cambiar esto)
+	// fixme
 	t_PCB* pcb = malloc(sizeof(t_PCB));
 	pcb->PC=0;
 	pcb->PID=0;

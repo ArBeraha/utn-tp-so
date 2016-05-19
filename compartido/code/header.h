@@ -40,7 +40,8 @@ typedef enum {
 	HeaderNoExisteTablaDePag,
 	HeaderSignal,
 	HeaderWait,
-	headerTermineInstruccion
+	headerTermineInstruccion,
+	HeaderDesalojarProceso
 } header_t;
 
 char* headerToMSG(header_t header);

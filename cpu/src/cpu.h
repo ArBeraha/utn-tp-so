@@ -18,6 +18,9 @@
 #include <commons/string.h>
 #include <commons/log.h>
 #include <commons/config.h>
+#include <commons/collections/dictionary.h>
+#include <commons/collections/queue.h>
+#include <commons/collections/list.h>
 #include <parser/parser.h>
 #include <string.h>
 #include "handshake.h"
@@ -45,7 +48,7 @@ int cliente_nucleo; //cpu es cliente del nucleo
 int cliente_umc; //cpu es cliente de umc
 
 struct sockaddr_in direccionNucleo;   //direccion del nucleo
-struct sockaddr_in direccionUmc;	  //dbireccion umc
+struct sockaddr_in direccionUmc;	  //direccion umc
 
 AnSISOP_funciones funciones;		//funciones de AnSISOP
 AnSISOP_kernel funcionesKernel;		// funciones kernel de AnSISOP

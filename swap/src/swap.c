@@ -32,18 +32,25 @@
 #define PUERTO_SWAP 8082
 int cliente;
 
-/* la estructura que de cada proceso de procese(? */
-typedef struct infoProcesos {
+typedef struct control{
 	int pid;
-	int numInicialMarco;
-	int cantMarcos;
-} t_infoProcesos;
+	int numPagina; //numInicialMarco
+	int posPagina; //marcoInicial
+	int cantidadMarcos;
+} t_control;
 
+typedef struct datoPedido{
+int operacion;
+int pid;
+int pagina;
+int tamanio;
+}t_datosPedido;
 
-typedef struct disponibles {
-	int marcoInicial;
-	int totalMarcos;
-} t_disponibles;
+t_bitarray* espacio; //Bitmap de espacio utilizado
+t_list* espacioUtilizado;
+
+int espacioLibre;
+int espacioOcupado;
 
 struct t_config* archSwap; //archivo de configuracion
 
@@ -51,8 +58,6 @@ char* nomArchivo; //nombre del archivo vacio que creare mediante dd
 char* ddComand; // comando a mandar a consola para crear archivo mediante dd
 
 
-struct t_list* espacioUtilizado; //lista de paginas usadas
-struct t_list* espacioDisponible; //lista de paginas no usadas
 
 
 
@@ -100,25 +105,46 @@ void procesarHeader(int cliente, char* header)
     	}
     }
 
+int espaciosDisponibles (t_bitarray* unEspacio)
+{
+  int i;
+  int espacioSinUtilizar=0;
+  for(i=0; i<(bitarray_get_max_bit(unEspacio)); i++)
+  {
+	  if (bitarray_test_bit(unEspacio, i)==0) espacioSinUtilizar++ ;
+  }
+  return espacioSinUtilizar;
+}
+
+int espaciosUtilizados (t_bitarray* unEspacio)
+{
+  int i;
+  int espacioUtilizado=0;
+  for(i=0; i<(bitarray_get_max_bit(unEspacio)); i++)
+  {
+	  if (bitarray_test_bit(unEspacio, i)==0) espacioUtilizado++ ;
+  }
+  return espacioUtilizado;
+}
 
 
 
 
 
 //Comprueba si hay fragmentacion externa
-int hayFragmentacionExterna(int paginasAIniciar) {
-	int cantidadHuecos = list_size(espacioDisponible);
-	int i;
-	int flag = 1;
-	for (i = 0; i < cantidadHuecos; i++) {
-		t_disponibles* hueco = (t_disponibles*) list_get(
-				espacioDisponible, i);
-		if (hueco->totalMarcos >= paginasAIniciar) {
-			flag = 0;
-		}
-	}
-	return flag;
-}
+//int hayFragmentacionExterna(int paginasAIniciar) {
+//	int cantidadHuecos = espaciosDisponibles (t_bitarray* espacio);
+//	int i;
+//	int flag = 1;
+//	for (i = 0; i < cantidadHuecos; i++) {
+//		t_disponibles* hueco = (t_disponibles*) list_get(
+//				espacioDisponible, i);
+//		if (hueco->totalMarcos >= paginasAIniciar) {
+//			flag = 0;
+//		}
+//	}
+//	return flag;
+//}
 
 
 
@@ -161,14 +187,14 @@ void funcionamientoSwap()
 
 
 
-		/* listas manejo de paginas */
-		espacioUtilizado = list_create();
-		espacioDisponible = list_create();
+		
+		//espacioUtilizado = list_create();
+		//espacioDisponible = list_create();
 
-		t_disponibles* disponibles = malloc(sizeof(t_disponibles));
-		disponibles->marcoInicial = 0; //primer marco
-		disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
-		list_add(espacioDisponible, disponibles);
+		//t_disponibles* disponibles = malloc(sizeof(t_disponibles));
+		//disponibles->marcoInicial = 0; //primer marco
+		//disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
+		//list_add(espacioDisponible, disponibles);
 
 
 
@@ -199,80 +225,80 @@ void funcionamientoSwap()
 		 //FUNCIONES PRINCIPALES DE SWAP
 
 
-void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
+//void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
 
-	if (paginasAIniciar <= espacioDisponible) {
+//	if (paginasAIniciar <= espacioDisponible) {
 	//Me fijo si hay fragmentacion para asi ver si necesito compactar
-	if (hayFragmentacionExterna(paginasAIniciar)) {
-	 compactar();
-	}
+//	if (hayFragmentacionExterna(paginasAIniciar)) {
+//	 compactar();
+//	}
 	//Agrego el proceso a la lista de espacio utilizado y actualizo la de espacio disponible. Ademas informa
 	//de que la operacion fue exitosa
-	agregarProceso(pid, paginasAIniciar);
+//	agregarProceso(pid, paginasAIniciar);
 
-	} else {
+//	} else {
 		//send_w(cliente, headerToMSG(HeaderNoHayEspacio), 1);
-		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
-		log_error(activeLogger, "Fallo iniciacion del programa %d ", pid);
+//		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
+//		log_error(activeLogger, "Fallo iniciacion del programa %d ", pid);
 
 				}
 			}
-void agregarProceso(int pid, int paginasAIniciar) {
+//void agregarProceso(int pid, int paginasAIniciar) {
 
 	//Calculo la cantidad de elementos que tiene la lista de espacio disponible
-	int cantidadHuecos = list_size(espacioDisponible);
-	//Recorro la lista de espacio disponible hasta que encuentro un elemento que tenga la cantidad de marcas necesarios
-	int i;
-	for (i = 0; i < cantidadHuecos; i++) {
-		t_disponibles* hueco = (t_disponibles*) list_get(
-				espacioDisponible, i);
-		if (hueco->totalMarcos >= paginasAIniciar) {
+//	int cantidadHuecos = espaciosDisponibles (t_bitarray* espacio);
+	//Recorro  espacio disponible hasta que encuentro un elemento que tenga la cantidad de marcas necesarios //REFACTOR
+//	int i;
+//	for (i = 0; i < cantidadHuecos; i++) {
+//		t_disponibles* hueco = (t_disponibles*) list_get(
+//				espacioDisponible, i);
+//		if (hueco->totalMarcos >= paginasAIniciar) {
 			//Asigno el marco inicial de espacio disponible como marco inicial del proceso
 			// y modifico los valores del elemento de espacio disponible
-			int marcoInicial = hueco->marcoInicial;
-			hueco->totalMarcos -= paginasAIniciar;
-			hueco->marcoInicial += paginasAIniciar;
-			list_replace(espacioDisponible, i, (void*) hueco);
+//			int marcoInicial = hueco->marcoInicial;
+//			hueco->totalMarcos -= paginasAIniciar;
+//			hueco->marcoInicial += paginasAIniciar;
+//			list_replace(espacioDisponible, i, (void*) hueco);
 
 			//Si el espacio disponible quedo sin marcos se elimina de la lista
-			if (hueco->totalMarcos == 0) {
-				list_remove(espacioDisponible, i);
-			}
-			//Definimos la estructura del nuevo proceso con los datos correspondientes y lo agregamos a la lista de espacio utilizado
-			t_infoProcesos* proceso = (t_infoProcesos*) malloc(
-					sizeof(t_infoProcesos));
-			proceso->pid = pid;
-			proceso->numInicialMarco = marcoInicial;
-			proceso->cantMarcos = paginasAIniciar;
-			int fueAgregado = list_add(espacioUtilizado,
-					(void*) proceso);
-			char * respuesta = malloc(1);
-			if (fueAgregado == -1) {
-				printf("Error al iniciar el proceso\n");
-				respuesta[0] = 'M';
+//			if (hueco->totalMarcos == 0) {
+//				list_remove(espacioDisponible, i);
+//			}
+			//Definimos la estructura del nuevo proceso con los datos correspondientes y lo agregamos al espacio utilizado
+//			t_infoProcesos* proceso = (t_infoProcesos*) malloc(
+//					sizeof(t_infoProcesos));
+//			proceso->pid = pid;
+//			proceso->numInicialMarco = marcoInicial;
+//			proceso->cantMarcos = paginasAIniciar;
+//			int fueAgregado = list_add(espacioUtilizado,
+//					(void*) proceso);
+//			char * respuesta = malloc(1);
+//			if (fueAgregado == -1) {
+//				printf("Error al iniciar el proceso\n");
+//				respuesta[0] = 'M';
 				//send_w(cliente, headerToMSG(HeaderErrorParaIniciar), 1);
-				return;
-			} else {
-				printf("Proceso agregado exitosamente\n");
+//				return;
+//			} else {
+//				printf("Proceso agregado exitosamente\n");
 				//Actualizo el espacio disponible
-				espacioDisponible -= paginasAIniciar;
-				log_info(activeLogger,
-						"El programa %d - Byte Inicial:%d Tamanio:%d Iniciado correctamente.",
-						pid, proceso->numInicialMarco * tamanioPag,
-						proceso->cantMarcos * tamanioPag);
+//				espacioDisponible -= paginasAIniciar;
+//				log_info(activeLogger,
+//						"El programa %d - Byte Inicial:%d Tamanio:%d Iniciado correctamente.",
+//						pid, proceso->numInicialMarco * tamanioPag,
+//						proceso->cantMarcos * tamanioPag);
 				//send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
-				return;
+//				return;
 
-			}
-		}
-	}
+//			}
+//		}
+//	}
 
-	printf("Hay que compactar\n");
+//	printf("Hay que compactar\n");
 
 	//send_w(cliente, headerToMSG(HeaderHayQueCompactar), 1);
 
-	return;
-}
+//	return;
+//}
 
 /*
 		}

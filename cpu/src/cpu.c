@@ -51,7 +51,7 @@ t_pedido pedirMemoria() { //TODO hacer que esto pida memoria a umc
 
 /*--------Primitivas----------*/
 
-//cambiar el valor de retorno a t_puntero
+//cambiar el valor de retorno a t_puntero. Directiva 1
 t_puntero definir_variable(t_nombre_variable variable) {
 	incrementarPC(pcbActual);
 
@@ -66,6 +66,7 @@ t_puntero definir_variable(t_nombre_variable variable) {
 	return head->posicion;
 }
 
+// Directiva 2.
 t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	log_info(activeLogger, "Obtener posicion de |%c|.", variable);
 	t_puntero pointer = -1;
@@ -99,21 +100,16 @@ void enviar_direccion_umc(t_puntero direccion) {
 	free(mensaje);
 }
 
-t_valor_variable dereferenciar(t_puntero direccion) {// TODO terminar - Pido a UMC el valor de la variable de direccion
+// directiva 3
+t_valor_variable dereferenciar(t_puntero direccion) {// Pido a UMC el valor de la variable de direccion
 	t_valor_variable valor;
 	log_info(activeLogger, "Dereferenciar |%d| y su valor es:  ", direccion);
 
 	send_w(cliente_umc, headerToMSG(HeaderPedirValorVariable), 1);
-
 	enviar_direccion_umc(direccion);
-
-	char* msgSize = recv_waitall_ws(cliente_umc, sizeof(int));
-	int size = char4ToInt(msgSize);
-	char* res = recv_waitall_ws(cliente_umc, size); //recibo el valor de UMC
-
+	char* res = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
 	valor = charToInt(res);
 
-	free(msgSize);
 	free(res);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();

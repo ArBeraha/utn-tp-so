@@ -237,7 +237,7 @@ void inicializarPrograma(int idPrograma, char* contenido){
 		pedido.paginaRequerida = i;
 		pedido.cantBytes = config.tamanio_marco;
 
-		almacenarBytesEnUnaPaginaContiguo(pedido,config.tamanio_marco,auxiliar);
+		char* loQueGrabe = almacenarBytesEnUnaPaginaContiguo(pedido,config.tamanio_marco,auxiliar);
 	}
 }
 
@@ -766,6 +766,22 @@ void esperar_header(int cliente) {
 	}
 }
 
+char* getScript(int clienteNucleo) {
+	log_debug(bgLogger, "Recibiendo archivo de nucleo %d...");
+	char scriptSize;
+	char* script;
+	int size;
+	read(clientes[clienteNucleo].socket, &scriptSize, sizeof(int));
+	size = char4ToInt(&scriptSize);
+	printf("%d",size);
+	log_debug(bgLogger, "Nucleo envió un archivo de tamaño: %d", size);
+	printf("Size:%d\n", size);
+	script = malloc(sizeof(char) * size);
+	read(clientes[clienteNucleo].socket, script, size);
+	log_info(activeLogger, "Script de nucleo %d recibido:\n%s", clienteNucleo, script);
+	clientes[clienteNucleo].atentido=false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
+	return script;
+}
 
 void procesarHeader(int cliente, char *header){
 	// Segun el protocolo procesamos el header del mensaje recibido
@@ -791,8 +807,7 @@ void procesarHeader(int cliente, char *header){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
 			clientes[cliente].identidad = charToInt(payload);
 			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
-			pthread_create(vectorHilosCpu[cliente],NULL,esperar_header,cliente);
-
+			pthread_create(&vectorHilosCpu[cliente],NULL,(void*)esperar_header,(void*)cliente);
 
 		}else if(charToInt(payload)==SOYNUCLEO){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
@@ -828,14 +843,20 @@ void procesarHeader(int cliente, char *header){
 			};
 
 
-		case HeaderPedirContenidoPagina:
+		case HeaderPedirValorVariable:
 			log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
 			pedidoLectura_t pedido;
 			pedido.pid = recv_waitall_ws(cliente, sizeof(int));
 			pedido.paginaRequerida = recv_waitall_ws(cliente, sizeof(int));
 			pedido.offset = recv_waitall_ws(cliente, sizeof(int));
 			pedido.cantBytes = recv_waitall_ws(cliente, sizeof(int));
-			devolverPedidoPagina(pedido);
+			send_w(cliente,devolverPedidoPagina(pedido),sizeof(int));
+
+//		case HeaderInicializarPrograma:
+//			char* idPrograma = recv_waitall_ws(cliente,4);
+//			char* contenido = getScript(cliente);
+
+//			inicializarPrograma(idPrograma,contenido);
 
 		case HeaderGrabarPagina:
 			log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
@@ -1236,7 +1257,7 @@ void escucharPedidosDeSwap(){
 	char* header;
 	while(true){
 		if (cliente!=0){ // Solo si esta conextado
-			//header = recv_waitall_ws(cliente,sizeof(char)); ESTO NO ME PERMITE CHEQUEAR SI SE DESCONECTO!!
+//			header = recv_waitall_ws(cliente,sizeof(char)); //ESTO NO ME PERMITE CHEQUEAR SI SE DESCONECTO!!
 			header = malloc(1);
 			int bytesRecibidos = recv(cliente, header, 1, MSG_WAITALL);
 			if (bytesRecibidos <= 0){

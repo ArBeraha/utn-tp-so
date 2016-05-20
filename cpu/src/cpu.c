@@ -67,8 +67,8 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 
 	t_puntero pointer = -1;
 	t_stack_item* head = stack_pop(stack);
-	if (dictionary_has_key(head, (void*) &variable)) {
-		t_pedido* direccion = dictionary_get(head, (void*) &variable);
+	if (dictionary_has_key(head, &variable)) {
+		t_pedido* direccion = dictionary_get(head, &variable);
 		pointer = head->posicion;
 		log_info(activeLogger,
 				"Se encontro la variable |%c| en la posicion |%d|.", variable,

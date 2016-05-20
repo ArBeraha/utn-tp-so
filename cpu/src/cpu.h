@@ -42,6 +42,8 @@ customConfig_t config;
 
 /*------------Macros--------------*/
 #define DEBUG_IGNORE_UMC true
+#define DEBUG_NO_PROGRAMS true
+
 
 /*------------Variables Globales--------------*/
 int cliente_nucleo; //cpu es cliente del nucleo

@@ -323,11 +323,12 @@ void pedir_tamanio_paginas() {
 void esperar_programas() {
 	log_debug(bgLogger, "Esperando programas de nucleo.");
 	char* header;
-	while (false) {
+	while (!DEBUG_NO_PROGRAMS) {
 		header = recv_waitall_ws(cliente_nucleo, 1);
 		procesarHeader(header);
 		free(header);
 	}
+	log_debug(bgLogger, "Ya no se esperan programas de nucleo.");
 }
 
 void procesarHeader(char *header) {
@@ -508,7 +509,7 @@ void conectar_nucleo() {
 			config.ipNucleo);
 	cliente_nucleo = socket_w();
 	connect_w(cliente_nucleo, &direccionNucleo); //conecto cpu a la direccion 'direccionNucleo'
-	log_info(activeLogger, "Exito al conectar con NUCLEO!!");
+	log_info(activeLogger, "Conectado a nucleo!");
 }
 
 void hacer_handshake_nucleo() {
@@ -526,7 +527,7 @@ void conectar_umc() {
 	direccionUmc = crearDireccionParaCliente(config.puertoUMC, config.ipUMC);
 	cliente_umc = socket_w();
 	connect_w(cliente_umc, &direccionUmc); //conecto cpu a la direccion 'direccionUmc'
-	log_info(activeLogger, "Exito al conectar con UMC!!");
+	log_info(activeLogger, "Conectado a UMC!");
 }
 
 void hacer_handshake_umc() {
@@ -555,16 +556,12 @@ void establecerConexionConNucleo() {
 
 // ***** Funciones de inicializacion y finalizacion ***** //
 void cargarConfig() { //fixme se rompe porque si!
-//	t_config* configCPU;
-//	configCPU = config_create("cpu.cfg");
-//	config.puertoNucleo = config_get_int_value(configCPU, "PUERTO_NUCLEO");
-//	config.ipNucleo = config_get_string_value(configCPU, "IP_NUCLEO");
-//	config.puertoUMC = config_get_int_value(configCPU, "PUERTP_UMC");
-//	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
-	config.puertoNucleo=8080;
-	config.ipNucleo="127.0.0.1";
-	config.puertoUMC=8081;
-	config.ipUMC="127.0.0.1";
+	t_config* configCPU;
+	configCPU = config_create("cpu.cfg");
+	config.puertoNucleo = config_get_int_value(configCPU, "PUERTO_NUCLEO");
+	config.ipNucleo = config_get_string_value(configCPU, "IP_NUCLEO");
+	config.puertoUMC = config_get_int_value(configCPU, "PUERTO_UMC");
+	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
 }
 void inicializar() {
 	cargarConfig();

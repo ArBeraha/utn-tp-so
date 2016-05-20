@@ -532,13 +532,17 @@ void establecerConexionConNucleo() {
 }
 
 // ***** Funciones de inicializacion y finalizacion ***** //
-void cargarConfig() {
-	t_config* configCPU;
-	configCPU = config_create("cpu.cfg");
-	config.puertoNucleo = config_get_int_value(configCPU, "PUERTO_NUCLEO");
-	config.ipNucleo = config_get_string_value(configCPU, "IP_NUCLEO");
-	config.puertoUMC = config_get_int_value(configCPU, "PUERTP_UMC");
-	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
+void cargarConfig() { //fixme se rompe porque si!
+//	t_config* configCPU;
+//	configCPU = config_create("cpu.cfg");
+//	config.puertoNucleo = config_get_int_value(configCPU, "PUERTO_NUCLEO");
+//	config.ipNucleo = config_get_string_value(configCPU, "IP_NUCLEO");
+//	config.puertoUMC = config_get_int_value(configCPU, "PUERTP_UMC");
+//	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
+	config.puertoNucleo=8080;
+	config.ipNucleo="127.0.0.1";
+	config.puertoUMC=8081;
+	config.ipUMC="127.0.0.1";
 }
 void inicializar() {
 	cargarConfig();

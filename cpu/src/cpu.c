@@ -571,9 +571,13 @@ void inicializar() {
 	inicializar_primitivas();
 }
 void finalizar() {
-	destruirLogs(); //fixme: no hay que usar las funciones que nos dan ellos?
-	pcb_destroy(pcbActual);
+	if(!DEBUG_NO_PROGRAMS){
+		log_debug(activeLogger,"Destruyendo pcb...");
+		pcb_destroy(pcbActual);
+		log_debug(activeLogger,"PCB Destruido...");
+	}
 	liberar_primitivas();
+	destruirLogs();
 }
 
 int main() {

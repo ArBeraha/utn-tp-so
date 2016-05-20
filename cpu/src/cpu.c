@@ -68,11 +68,9 @@ t_puntero definir_variable(t_nombre_variable variable) {
 
 t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	log_info(activeLogger, "Obtener posicion de |%c|.", variable);
-
 	t_puntero pointer = -1;
 	t_stack_item* head = stack_pop(stack);
-	if (dictionary_has_key(head, &variable)) {
-		t_pedido* direccion = dictionary_get(head, &variable);
+	if (dictionary_has_key(head->identificadores, &variable)) {
 		pointer = head->posicion;
 		log_info(activeLogger,
 				"Se encontro la variable |%c| en la posicion |%d|.", variable,
@@ -138,7 +136,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {//TODO termi
 
 t_valor_variable obtener_valor_compartida(t_nombre_compartida variable) { // Pido a Nucleo el valor de la variable
 	log_info(activeLogger,
-			"Obtener valor de variable compartida %s y es: |%d|.", variable,
+			"Obtener valor de variable compartida |%s| y es: |%d|.", variable,
 			*variable); // no seria el valor real
 	t_valor_variable valor;
 

@@ -103,12 +103,13 @@ void enviar_direccion_umc(t_puntero direccion) {
 // directiva 3
 t_valor_variable dereferenciar(t_puntero direccion) {// Pido a UMC el valor de la variable de direccion
 	t_valor_variable valor;
-	log_info(activeLogger, "Dereferenciar |%d| y su valor es:  ", direccion);
+	log_info(activeLogger, "Dereferenciar |%d|.", direccion);
 
 	send_w(cliente_umc, headerToMSG(HeaderPedirValorVariable), 1);
 	enviar_direccion_umc(direccion);
 	char* res = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
 	valor = charToInt(res);
+	log_info(activeLogger, "|%d| dereferenciada! Su valor es |%d|.", direccion, valor);
 
 	free(res);
 	incrementarPC(pcbActual);
@@ -117,7 +118,7 @@ t_valor_variable dereferenciar(t_puntero direccion) {// Pido a UMC el valor de l
 	return valor;
 }
 
-void asignar(t_puntero direccion_variable, t_valor_variable valor) {//TODO terminar
+void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	log_info(activeLogger, "Asignando en |%d| el valor |%d|",
 			direccion_variable, valor);
 	send_w(cliente_umc, headerToMSG(HeaderAsignarValor), 1);
@@ -307,17 +308,22 @@ void parsear(char* const sentencia) {
 /*--------Funciones----------*/
 
 void pedir_tamanio_paginas() {
-	send_w(cliente_umc, headerToMSG(HeaderTamanioPagina), 1); //le pido a umc el tamanio de las paginas
-	char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
-	tamanioPaginas = char4ToInt(tamanio);
-	log_debug(activeLogger, "El tamaño de paginas es: |%d|", tamanioPaginas);
-	free(tamanio);
+	if(!DEBUG_IGNORE_UMC){
+		send_w(cliente_umc, headerToMSG(HeaderTamanioPagina), 1); //le pido a umc el tamanio de las paginas
+		char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
+		tamanioPaginas = char4ToInt(tamanio);
+		log_debug(activeLogger, "El tamaño de paginas es: |%d|", tamanioPaginas);
+		free(tamanio);
+	}else{
+		tamanioPaginas = -1;
+		log_debug(activeLogger, "UMC DEBUG ACTIVADO! tamanioPaginas va a valer -1.");
+	}
 }
 
 void esperar_programas() {
-	log_debug(bgLogger, "Esperando programas de nucleo %d.");
+	log_debug(bgLogger, "Esperando programas de nucleo.");
 	char* header;
-	while (1) {
+	while (false) {
 		header = recv_waitall_ws(cliente_nucleo, 1);
 		procesarHeader(header);
 		free(header);

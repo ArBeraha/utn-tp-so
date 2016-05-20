@@ -128,6 +128,7 @@ void configHilos();
 void procesarHeader(int cliente, char *header) ;
 struct timeval newEspera();
 void finalizar();
+void list_remove_by_value(t_list* list,void* value);
 //UMC
 bool pedirPaginas(int PID, char* codigo);
 void establecerConexionConUMC();

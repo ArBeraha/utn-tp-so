@@ -124,9 +124,9 @@ void imprimirTexto(int cliente) {
 
 /*  ----------INICIO PARA PLANIFICACION ---------- */
 void rechazarProceso(int PID) {
-	pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_remove(listaProcesos, PID);
-	pthread_mutex_unlock(&lockProccessList);
+	//pthread_mutex_lock(&lockProccessList);
+	t_proceso* proceso = (t_proceso*) PID;
+	//pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != NEW)
 		log_warning(activeLogger,
 				"Se esta rechazando el proceso %d ya aceptado!", PID);
@@ -134,31 +134,31 @@ void rechazarProceso(int PID) {
 			intToChar(HeaderConsolaFinalizarRechazado), 1, 0); // Le decimos adios a la consola
 	log_info(bgLogger,"Consola avisada sobre la finalización del proceso ansisop.");
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
+	list_remove_by_value(listaProcesos, (void*)PID);
 	free(proceso); // Destruir Proceso y PCB
 }
 int crearProceso(int consola) {
-	pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	proceso->PCB = pcb_create();
 	proceso->PCB->PID = (int)proceso;
+	printf("SE CREO EL PROCESO PID:%d",proceso->PCB->PID);
+	pthread_mutex_lock(&lockProccessList);
 	list_add(listaProcesos, proceso);
 	pthread_mutex_unlock(&lockProccessList);
 	proceso->estado = NEW;
 	proceso->consola = consola;
-	proceso->cpu = SIN_ASIGNAR;
+	proceso->cpu = SIN_ASIGNAR;//SIN_ASIGNAR;
 	// Agrego esta condicion por que de otra manera crearProceso era intesteable debido el getScript()
 	if (!CU_is_test_running()) {
 		char* codigo = getScript(consola);
 		asignarMetadataProceso(proceso, codigo);
-
 		// Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
 		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
-			printf("rechazado");
-			rechazarProceso(proceso->PCB->PID);
 			log_info(activeLogger, "UMC no da paginas para el proceso %d!",
-					proceso->PCB->PID);
+								proceso->PCB->PID);
 			log_info(activeLogger, "Se rechazo el proceso %d.",
-					proceso->PCB->PID);
+								proceso->PCB->PID);
+			rechazarProceso(proceso->PCB->PID); // Despues de esta instruccion ya no tenemos acceso al proceso
 		}
 
 		free(codigo);
@@ -196,11 +196,11 @@ void finalizarProceso(int PID) {
 
 }
 
-list_remove_by_value(t_list* lista, void* value) {
+void list_remove_by_value(t_list* list, void* value) {
 	int i;
-	for (i = 0; i < list_size(lista); i++) {
-		if (list_get(lista, i) == value) {
-			list_remove(lista, i);
+	for (i = 0; i < list_size(list); i++) {
+		if (list_get(list, i) == value) {
+			list_remove(list, i);
 			break;
 		}
 	}

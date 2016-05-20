@@ -76,11 +76,6 @@ int existePaginaBuscadaEnTabla(int pag, t_list* tablaPaginaBuscada){
 		}
 }
 
-//char* buscarEnTablaMarcos(int marcoBuscado, pedidoLectura_t pedido){ //Ver si necesito o no el pedido, me suena que tenia que hacer algo
-//	marco_t* marcoEnTabla = list_get(tablaMarcos,marcoBuscado);
-//	return (marcoEnTabla->direccionContenido);
-//}
-
 char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido){
 	int pos = marcoBuscado * config.tamanio_marco;
 	return &memoria[pos];  //TODO VER!
@@ -112,12 +107,6 @@ int cantidadMarcosLibres(){
 
 
 // 1. Funciones principales
-//
-//typedef struct tlbStruct{
-//		int pid,
-//			pagina,
-//			marcoUtilizado;
-//	}tlb_t;
 
 void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam){ //Y la agrega tmb...
 }
@@ -250,7 +239,6 @@ void inicializarPrograma(int idPrograma, char* contenido){
 
 		almacenarBytesEnUnaPaginaContiguo(pedido,config.tamanio_marco,auxiliar);
 	}
-
 }
 
 char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* buffer){  //TODO Falta lo de swap
@@ -559,8 +547,6 @@ void devolverMemoriaDePid(int pid){ //OK
 			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, Contenido: %s ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,contenido);
 
 			printf("\n");
-
-
 		}
 		printf("\n");
 	}
@@ -578,6 +564,7 @@ void fRetardo(){
 	int ret = atoi(nuevoRetardo);
 	retardoMemoria = ret;
 }
+
 void dumpEstructuraMemoria(){ //Devuelve todas las tablas de paginas o de un solo pid
 	int seleccion=-1;
 	int pidDeseado;
@@ -606,7 +593,6 @@ void dumpEstructuraMemoria(){ //Devuelve todas las tablas de paginas o de un sol
 			devolverPaginasDePid(pidDeseado);
 			break;
 	}
-
 }
 
 void dumpContenidoMemoria(){ //Devuelve toda la memoria o solo la de un pid
@@ -725,10 +711,6 @@ void crearMemoriaYTlbYTablaPaginas(){
 	retardoMemoria = config.retardo;
 
 }
-
-
-
-
 // FIN 3
 
 // 4. Procesar headers
@@ -773,6 +755,18 @@ int reservarPagina(int cantPaginasPedidas, int pid){ // OK
 	else return 0; // No hay marcos libres
 }
 
+
+void esperar_header(int cliente) {
+	log_debug(bgLogger, "Esperando header del cliente: %d., cliente");
+	char* header;
+	while (1) {
+		header = recv_waitall_ws(clientes[cliente].socket, 1);
+		procesarHeader(cliente,header);
+		free(header);
+	}
+}
+
+
 void procesarHeader(int cliente, char *header){
 	// Segun el protocolo procesamos el header del mensaje recibido
 	char* payload;
@@ -797,12 +791,12 @@ void procesarHeader(int cliente, char *header){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
 			clientes[cliente].identidad = charToInt(payload);
 			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
-//			vectorClientes[clientes[cliente].identidad] =
+			pthread_create(vectorHilosCpu[cliente],NULL,esperar_header,cliente);
 
 
 		}else if(charToInt(payload)==SOYNUCLEO){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
-//			clientes[cliente].identidad = charToInt(payload);
+			clientes[cliente].identidad = charToInt(payload);
 			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
 		}
 		else {
@@ -1036,7 +1030,7 @@ void test(){
 	printf("\n \n");
 	printf("Y si finalizo, la tabla de pags y de memoria: \n \n");
 
-	finalizarPrograma(4);
+//	finalizarPrograma(4);
 	devolverTodaLaMemoria();
 	devolverTodasLasPaginas();
 
@@ -1050,8 +1044,7 @@ void test(){
 	printf(" -------------------------------------------  \n \n");
 	printf(" -------------------------------------------  \n \n");
 
-	reservarPagina(2,2);  //TODO CORREGIR ESTO!!
-	recibirComandos();
+	reservarPagina(3,5);
 
 
 
@@ -1087,17 +1080,13 @@ int main(void) {
 
 	test();
 
-//	servidorCPUyNucleoExtendido();
+	pthread_create(&hiloRecibirComandos,NULL,(void*)recibirComandos,NULL);
 
-	//conexionASwap();
-	//pthread_create(&conexCpu, NULL, (void*) servidorCPUyNucleoExtendido, NULL);
-//	pthread_create(&conexSwap, NULL, (void*) conexionASwap, NULL);
-	//pthread_create(&conexNucleo, NULL, (void*) servidorCPUyNucleo, NULL); //OJO! A cada cpu hay que atenderla con un hilo
+	servidorCPUyNucleoExtendido();
 
-	//recibirComandos(); //Otro hilo?
-	//pthread_create(&consolaUmc, NULL, (void*) recibirComandos, NULL); //OJO! A cada cpu hay que atenderla con un hilo
+//	conexionASwap();
 
-	//finalizar();
+	finalizar();
 
 	return 0;
 }
@@ -1271,33 +1260,3 @@ void conexionASwap(){ //Creada para unir las dos funciones y crear un hilo
 }
 
 // FIN 6
-
-
-
-
-/*Ari's tips
- Ro, yo lo veo así al asunto, las páginas no existen antes que te pidan algo,
- sólo vas a tener la tabla de marcos que es la memoria real,  la tabla de páginas
- para mi debería ser una lista, ya que para cada proceso vamos a saber en tiempo
- de ejecución cuantas páginas necesita. Una vez que te piden espacio creas una tabla
- de paginas(lista) y recorres el array de marcos y cada espacio que encontras
- (no necesariamente contiguo) agregas un nodo a la lista con presencia 1, una vez que
- terminaste el array de marcos y faltan páginas por ubicar llamas al swap para ver si
- existe espacio en el almacenamiento secundario (y el swap hace algo parecido y te responde),
- esos nodos van a tener presencia 0
-finalmente respondes si pudiste o no ubicar la cantidad de páginas solicitadas
- */
-
-/*
- Entonces, cada vez que me piden paginas creo una nueva lista de paginas para ese PID
-
- Los marcos sin usar los tengo en un cola, asi es mas rapdio, para agarrar uno: queue_pop(marcosLibres)
-
- struct marco{
-     int indice;
-     int uso;
-     void* contenido;
-}
-
-
- */

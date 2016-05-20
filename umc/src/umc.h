@@ -119,6 +119,11 @@ int retardoMemoria;
 
 pthread_mutex_t lock_accesoMemoria;
 
+pthread_t vectorHilosCpu[MAXCLIENTS];
+
+pthread_t hiloRecibirComandos;
+
+
 //Prototipos
 
 void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam); //TODO

@@ -42,7 +42,7 @@ customConfig_t config;
 
 /*------------Macros--------------*/
 #define DEBUG_IGNORE_UMC true
-#define DEBUG_NO_PROGRAMS true
+#define DEBUG_NO_PROGRAMS false
 
 
 /*------------Variables Globales--------------*/

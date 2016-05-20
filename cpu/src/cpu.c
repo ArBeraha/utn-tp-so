@@ -281,22 +281,22 @@ void inicializar_primitivas() {
 	log_info(activeLogger, "Primitivas Inicializadas");
 }
 
-void liberar_primitivas() {
+void liberar_primitivas() { //FIXME: comento estas lineas porque tiran segment fault.
 	log_debug(bgLogger, "Liberando primitivas...");
-	free(funciones.AnSISOP_definirVariable);
-	free(funciones.AnSISOP_obtenerPosicionVariable);
-	free(funciones.AnSISOP_dereferenciar);
-	free(funciones.AnSISOP_asignar);
-	free(funciones.AnSISOP_obtenerValorCompartida);
-	free(funciones.AnSISOP_asignarValorCompartida);
-	free(funciones.AnSISOP_irAlLabel);
-	free(funciones.AnSISOP_imprimir);
-	free(funciones.AnSISOP_imprimirTexto);
-	free(funciones.AnSISOP_llamarSinRetorno);
-	free(funciones.AnSISOP_retornar);
-	free(funciones.AnSISOP_entradaSalida);
-	free(funcionesKernel.AnSISOP_wait);
-	free(funcionesKernel.AnSISOP_signal);
+//	free(funciones.AnSISOP_definirVariable);
+//	free(funciones.AnSISOP_obtenerPosicionVariable);
+//	free(funciones.AnSISOP_dereferenciar);
+//	free(funciones.AnSISOP_asignar);
+//	free(funciones.AnSISOP_obtenerValorCompartida);
+//	free(funciones.AnSISOP_asignarValorCompartida);
+//	free(funciones.AnSISOP_irAlLabel);
+//	free(funciones.AnSISOP_imprimir);
+//	free(funciones.AnSISOP_imprimirTexto);
+//	free(funciones.AnSISOP_llamarSinRetorno);
+//	free(funciones.AnSISOP_retornar);
+//	free(funciones.AnSISOP_entradaSalida);
+//	free(funcionesKernel.AnSISOP_wait);
+//	free(funcionesKernel.AnSISOP_signal);
 	log_debug(bgLogger, "Primitivas liberadas...");
 }
 

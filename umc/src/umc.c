@@ -710,6 +710,8 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 	retardoMemoria = config.retardo;
 
+	vectorHilosCpu = malloc(sizeof(pthread_t) * MAXCLIENTS);
+
 }
 // FIN 3
 
@@ -846,10 +848,10 @@ void procesarHeader(int cliente, char *header){
 		case HeaderPedirValorVariable:
 			log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
 			pedidoLectura_t pedido;
-			pedido.pid = recv_waitall_ws(cliente, sizeof(int));
-			pedido.paginaRequerida = recv_waitall_ws(cliente, sizeof(int));
-			pedido.offset = recv_waitall_ws(cliente, sizeof(int));
-			pedido.cantBytes = recv_waitall_ws(cliente, sizeof(int));
+			pedido.pid = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+			pedido.paginaRequerida = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+			pedido.offset = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+			pedido.cantBytes = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
 			send_w(cliente,devolverPedidoPagina(pedido),sizeof(int));
 
 //		case HeaderInicializarPrograma:

@@ -27,6 +27,7 @@ void setearPC(t_PCB* pcb, int pc) {
 void incrementarPC(t_PCB* pcb) {
 	pcb->PC++;
 }
+
 void instruccionTerminada(char* instr) {
 	log_debug(activeLogger, "La instruccion |%s| finalizó OK.", instr);
 }
@@ -47,6 +48,9 @@ t_pedido pedirMemoria() { //TODO hacer que esto pida memoria a umc
 }
 
 /*--------FUNCIONES----------*/
+
+/*--------Primitivas----------*/
+
 //cambiar el valor de retorno a t_puntero
 t_puntero definir_variable(t_nombre_variable variable) {
 	incrementarPC(pcbActual);
@@ -88,7 +92,7 @@ void enviar_direccion_umc(t_puntero direccion) {
 	t_stack_item* stackItem = stack_get(pcbActual->SP, direccion);
 	t_pedido pedido = stackItem->valorRetorno;
 
-	char* mensaje = NULL;
+	char* mensaje = string_new();
 	serializar_variable(mensaje, &pedido);
 
 	send_w(cliente_umc, mensaje, sizeof(t_pedido)); // envio el pedido [pag,offset,size]
@@ -195,10 +199,15 @@ void llamar_sin_retorno(t_nombre_etiqueta nombreFuncion) {
 
 //cambiar valor de retorno a t_puntero_instruccion
 void retornar(t_valor_variable variable) {
+
+	t_stack_item* stackItem; //TODO obtener stack!!
+	t_puntero_instruccion retorno = stackItem->posicionRetorno;
+
 	log_info(activeLogger,
 			"Cambiar entorno actual usando el PC de |%d| a |%d|.",
-			pcbActual->PC, variable);
-	setearPC(pcbActual, (int) variable);
+			pcbActual->PC, retorno);
+
+	setearPC(pcbActual, retorno);
 	informarInstruccionTerminada();
 	instruccionTerminada("Retornar");
 }
@@ -302,48 +311,6 @@ void parsear(char* const sentencia) {
 }
 
 /*--------Funciones----------*/
-
-int getHandshake(int cli) {
-	char* handshake = recv_nowait_ws(cli, 1);
-	return charToInt(handshake);
-}
-
-void conectar_nucleo() {
-	direccionNucleo = crearDireccionParaCliente(config.puertoNucleo,
-			config.ipNucleo);
-	cliente_nucleo = socket_w();
-	connect_w(cliente_nucleo, &direccionNucleo); //conecto cpu a la direccion 'direccionNucleo'
-	log_info(activeLogger, "Exito al conectar con NUCLEO!!");
-}
-
-void hacer_handshake_nucleo() {
-	char* hand = string_from_format("%c%c", HeaderHandshake, SOYCPU);
-	send_w(cliente_nucleo, hand, 2);
-
-	if (getHandshake(cliente_nucleo) != SOYNUCLEO) {
-		perror("Se esperaba que CPU se conecte con el nucleo.");
-	} else {
-		log_info(bgLogger, "Exito al hacer handshake con nucleo.");
-	}
-}
-
-void conectar_umc() {
-	direccionUmc = crearDireccionParaCliente(config.puertoUMC, config.ipUMC);
-	cliente_umc = socket_w();
-	connect_w(cliente_umc, &direccionUmc); //conecto cpu a la direccion 'direccionUmc'
-	log_info(activeLogger, "Exito al conectar con UMC!!");
-}
-
-void hacer_handshake_umc() {
-	char *hand = string_from_format("%c%c", HeaderHandshake, SOYCPU);
-	send_w(cliente_umc, hand, 2);
-
-	if (getHandshake(cliente_umc) != SOYUMC) {
-		perror("Se esperaba que CPU se conecte con UMC.");
-	} else {
-		log_info(bgLogger, "Exito al hacer handshake con UMC.");
-	}
-}
 
 void pedir_tamanio_paginas() {
 	send_w(cliente_umc, headerToMSG(HeaderTamanioPagina), 1); //le pido a umc el tamanio de las paginas
@@ -497,9 +464,20 @@ void esperar_sentencia() {
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	char* pcb = recv_waitall_ws(cliente_nucleo, sizeof(t_PCB));
 	deserializar_PCB(pcbActual, pcb);//reemplazo en el pcb actual de cpu que tiene como variable global
+
+	stack = pcbActual->SP;
+
 	free(pcb);
 	pedir_sentencia();
 	esperar_sentencia();
+}
+
+void enviarPCB(){
+	char* pcb = string_new();
+	serializar_PCB(pcb,pcbActual);
+
+	send_w(cliente_nucleo,pcb,sizeof(t_PCB));
+	free(pcb);
 }
 
 void obtener_y_parsear() {
@@ -512,12 +490,56 @@ void obtener_y_parsear() {
 }
 
 // ***** Funciones de conexiones ***** //
+
+int getHandshake(int cli) {
+	char* handshake = recv_nowait_ws(cli, 1);
+	return charToInt(handshake);
+}
+
 void warnDebug() {
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 	log_info(activeLogger,
 			"Para ingresar manualmente un archivo: Cambiar true por false en cpu.c -> #define DEBUG_IGNORE_UMC, y despues recompilar.");
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 }
+
+void conectar_nucleo() {
+	direccionNucleo = crearDireccionParaCliente(config.puertoNucleo,
+			config.ipNucleo);
+	cliente_nucleo = socket_w();
+	connect_w(cliente_nucleo, &direccionNucleo); //conecto cpu a la direccion 'direccionNucleo'
+	log_info(activeLogger, "Exito al conectar con NUCLEO!!");
+}
+
+void hacer_handshake_nucleo() {
+	char* hand = string_from_format("%c%c", HeaderHandshake, SOYCPU);
+	send_w(cliente_nucleo, hand, 2);
+
+	if (getHandshake(cliente_nucleo) != SOYNUCLEO) {
+		perror("Se esperaba que CPU se conecte con el nucleo.");
+	} else {
+		log_info(bgLogger, "Exito al hacer handshake con nucleo.");
+	}
+}
+
+void conectar_umc() {
+	direccionUmc = crearDireccionParaCliente(config.puertoUMC, config.ipUMC);
+	cliente_umc = socket_w();
+	connect_w(cliente_umc, &direccionUmc); //conecto cpu a la direccion 'direccionUmc'
+	log_info(activeLogger, "Exito al conectar con UMC!!");
+}
+
+void hacer_handshake_umc() {
+	char *hand = string_from_format("%c%c", HeaderHandshake, SOYCPU);
+	send_w(cliente_umc, hand, 2);
+
+	if (getHandshake(cliente_umc) != SOYUMC) {
+		perror("Se esperaba que CPU se conecte con UMC.");
+	} else {
+		log_info(bgLogger, "Exito al hacer handshake con UMC.");
+	}
+}
+
 void establecerConexionConUMC() {
 	if (!DEBUG_IGNORE_UMC) {
 		conectar_umc();

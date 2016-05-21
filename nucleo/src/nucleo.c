@@ -335,7 +335,7 @@ void cargarCFG() {
 	config.ioSleep = config_get_array_value(configNucleo, "IO_SLEEP");
 	config.sharedVars = config_get_array_value(configNucleo, "SHARED_VARS");
 //	config.ipUMC = config_get_string_value(configNucleo, "IP_UMC");
-	config.ipUMC="127.0.0.1";
+	config.ipUMC="127.0.0.1"; //fixme
 	config.puertoUMC = config_get_int_value(configNucleo, "PUERTO_UMC");
 
 	// Cargamos los IO

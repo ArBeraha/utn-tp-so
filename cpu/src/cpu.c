@@ -51,7 +51,8 @@ t_pedido pedirMemoria() { //TODO hacer que esto pida memoria a umc
 
 /*--------Primitivas----------*/
 
-//cambiar el valor de retorno a t_puntero. Directiva 1
+// Directiva 1.
+//cambiar el valor de retorno a t_puntero.
 t_puntero definir_variable(t_nombre_variable variable) {
 	incrementarPC(pcbActual);
 
@@ -66,11 +67,32 @@ t_puntero definir_variable(t_nombre_variable variable) {
 	return head->posicion;
 }
 
-// Directiva 2.
-t_puntero obtener_posicion_de(t_nombre_variable variable) {
+bool tiene_la_variable(t_stack_item* item, t_nombre_variable* variable){
+	return dictionary_has_key(item->identificadores, variable);;
+}
+
+t_puntero obtener_posicion_de(t_nombre_variable variable) {			//dejo comentada la otra solucion por si las dudas
 	log_info(activeLogger, "Obtener posicion de |%c|.", variable);
 	t_puntero pointer = -1;
-	t_stack_item* head = stack_pop(stack);
+												//se puede hacer con list_find, pero no se como usarlo
+	t_stack_item* aux;
+	int i;
+	for(i=0; i < list_size(stack); i++){		//recorres el segmento de stack hasta encontrar aquella que coincida con el valor buscado
+		aux = list_get(stack,i);				//si no lo encontras, retorno -1
+		if(tiene_la_variable(aux,&variable)){
+			pointer = aux->posicion;
+		}
+	}
+
+	if(pointer < 0 ){
+		log_info(activeLogger,
+				"Se encontro la variable |%c| en la posicion |%d|.", variable,
+				pointer);
+	} else{
+		log_info(activeLogger, "No se encontro la variable |%c|., variable");
+	}
+
+/*	t_stack_item* head = stack_pop(stack);
 	if (dictionary_has_key(head->identificadores, &variable)) {
 		pointer = head->posicion;
 		log_info(activeLogger,
@@ -79,13 +101,15 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	} else {
 		log_info(activeLogger, "No se encontro la variable |%c|., variable");
 	}
-	stack_push(stack, head);
+	stack_push(stack, head)*/;
 
+	free(aux);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("obtener_posicion_de");
 	return pointer;
 }
+
 
 void enviar_direccion_umc(t_puntero direccion) {
 	t_stack_item* stackItem = stack_get(pcbActual->SP, direccion);
@@ -177,7 +201,9 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida variable,
 //cambiar valor de retorno a t_puntero_instruccion
 void irAlLaber(t_nombre_etiqueta etiqueta) {
 	log_info(activeLogger, "Obtener puntero de |%s|.", etiqueta);
-	int posicionEtiqueta = 0; // TODO acá va la de la etiqueta
+
+	int posicionEtiqueta = (int) dictionary_get(pcbActual->indice_etiquetas, etiqueta); //fix me ! problemas con el f**ng (void*)
+
 	setearPC(pcbActual, posicionEtiqueta);
 	informarInstruccionTerminada();
 	instruccionTerminada("ir_al_laber");
@@ -250,7 +276,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 	instruccionTerminada("wait");
 }
 
-void signal(t_nombre_semaforo identificador_semaforo) {
+void signal_con_semaforo(t_nombre_semaforo identificador_semaforo) {
 	log_info(activeLogger,
 			"Comunicar nucleo de hacer signal con semaforo: |%s|",
 			identificador_semaforo);
@@ -277,7 +303,7 @@ void inicializar_primitivas() {
 	funciones.AnSISOP_retornar = &retornar;
 	funciones.AnSISOP_entradaSalida = &entrada_salida;
 	funcionesKernel.AnSISOP_wait = &wait;
-	funcionesKernel.AnSISOP_signal = &signal;
+	funcionesKernel.AnSISOP_signal = &signal_con_semaforo;
 	log_info(activeLogger, "Primitivas Inicializadas");
 }
 
@@ -578,6 +604,19 @@ void finalizar() {
 	}
 	liberar_primitivas();
 	destruirLogs();
+
+	close(cliente_nucleo);
+	close(cliente_umc);
+	exit(EXIT_SUCCESS);
+}
+
+/*------------otras------------*/
+void handler(int sign){
+	if(sign== SIGUSR1){
+		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
+		finalizar();
+		//desconectar de UMC y Nucleo, pero primero deberia terminar de ejecutar el proceso actual
+	}
 }
 
 int main() {

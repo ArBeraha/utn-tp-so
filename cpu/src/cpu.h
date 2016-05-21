@@ -23,6 +23,8 @@
 #include <commons/collections/list.h>
 #include <parser/parser.h>
 #include <string.h>
+#include <signal.h>
+#include <stdbool.h>
 #include "handshake.h"
 #include "header.h"
 #include "cliente-servidor.h"

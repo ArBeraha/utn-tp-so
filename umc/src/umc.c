@@ -844,6 +844,8 @@ void procesarHeader(int cliente, char *header){
 				send_w(cliente, headerToMSG(HeaderErrorNoHayPaginas), 1);
 			};
 
+		case HeaderTamanioPagina:
+			break;
 
 		case HeaderPedirValorVariable:
 			log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
@@ -1101,7 +1103,7 @@ int main(void) {
 
 	crearMemoriaYTlbYTablaPaginas();
 
-	test();
+//	test();
 
 	pthread_create(&hiloRecibirComandos,NULL,(void*)recibirComandos,NULL);
 

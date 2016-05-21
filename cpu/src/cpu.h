@@ -43,7 +43,7 @@ t_config* configCPU;
 customConfig_t config;
 
 /*------------Macros--------------*/
-#define DEBUG_IGNORE_UMC true
+#define DEBUG_IGNORE_UMC false
 #define DEBUG_NO_PROGRAMS false
 
 

@@ -119,9 +119,9 @@ int retardoMemoria;
 
 pthread_mutex_t lock_accesoMemoria;
 
-//pthread_t vectorHilosCpu[MAXCLIENTS];
+pthread_t vectorHilosCpu[MAXCLIENTS];
 
-pthread_t* vectorHilosCpu;
+//pthread_t* vectorHilosCpu;
 
 pthread_t hiloRecibirComandos;
 

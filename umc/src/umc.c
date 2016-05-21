@@ -710,7 +710,7 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 	retardoMemoria = config.retardo;
 
-	vectorHilosCpu = malloc(sizeof(pthread_t) * MAXCLIENTS);
+//	vectorHilosCpu = malloc(sizeof(pthread_t) * MAXCLIENTS);
 
 }
 // FIN 3
@@ -809,7 +809,7 @@ void procesarHeader(int cliente, char *header){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
 			clientes[cliente].identidad = charToInt(payload);
 			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
-			pthread_create(&vectorHilosCpu[cliente],NULL,(void*)esperar_header,(void*)cliente);
+			pthread_create(&(vectorHilosCpu[cliente]),NULL,(void*)esperar_header,(void*)cliente);
 
 		}else if(charToInt(payload)==SOYNUCLEO){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
@@ -843,6 +843,7 @@ void procesarHeader(int cliente, char *header){
 			else{
 				send_w(cliente, headerToMSG(HeaderErrorNoHayPaginas), 1);
 			};
+			break;
 
 		case HeaderTamanioPagina:
 			break;
@@ -855,7 +856,7 @@ void procesarHeader(int cliente, char *header){
 			pedido.offset = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
 			pedido.cantBytes = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
 			send_w(cliente,devolverPedidoPagina(pedido),sizeof(int));
-
+			break;
 //		case HeaderInicializarPrograma:
 //			char* idPrograma = recv_waitall_ws(cliente,4);
 //			char* contenido = getScript(cliente);
@@ -864,9 +865,11 @@ void procesarHeader(int cliente, char *header){
 
 		case HeaderGrabarPagina:
 			log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
+			break;
 
 		case HeaderLiberarRecursosPagina:
 			log_info(activeLogger,"Se recibio pedido de liberar una pagina, por CPU");
+			break;
 
 		default:
 			log_error(activeLogger,"Llego cualquier cosa.");
@@ -1105,7 +1108,7 @@ int main(void) {
 
 //	test();
 
-	pthread_create(&hiloRecibirComandos,NULL,(void*)recibirComandos,NULL);
+//	pthread_create(&hiloRecibirComandos,NULL,(void*)recibirComandos,NULL);
 
 	servidorCPUyNucleoExtendido();
 

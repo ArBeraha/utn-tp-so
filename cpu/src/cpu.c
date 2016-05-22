@@ -226,14 +226,14 @@ void llamar_sin_retorno(t_nombre_etiqueta nombreFuncion) {
 
 //cambiar valor de retorno a t_puntero_instruccion
 void retornar(t_valor_variable variable) {
-
-	t_stack_item* stackItem; //TODO obtener stack!!
-	t_puntero_instruccion retorno = stackItem->posicionRetorno;
-
+	t_stack_item* head = stack_pop(stack);
+	t_puntero_instruccion retorno = head->posicionRetorno;
 	log_info(activeLogger,
-			"Cambiar entorno actual usando el PC de |%d| a |%d|.",
+			"Cambiar entorno actual modificando el PC de |%d| a |%d|.",
 			pcbActual->PC, retorno);
 
+	// Libero ese nivel del stack, porque termino de ejecutarse la funcion que lo creo y ya no es necesario
+	stack_item_destroy(head);
 	setearPC(pcbActual, retorno);
 	informarInstruccionTerminada();
 	instruccionTerminada("Retornar");

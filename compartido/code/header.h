@@ -49,7 +49,8 @@ typedef enum {
 	HeaderOperacionFinalizarProceso,
 	HeaderErrorParaIniciar,
 	HeaderProcesoAgregado,
-	HeaderNoHayEspacio
+	HeaderNoHayEspacio,
+	HeaderHayQueCompactar
 } header_t;
 
 char* headerToMSG(header_t header);

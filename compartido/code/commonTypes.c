@@ -40,19 +40,27 @@ int stack_memory_size(t_stack* fuente) {
 	for (i = 0; i < stack_size(fuente); i++) {
 		t_stack_item* item = stack_get(fuente, i);
 		bytes +=
-				(list_size(item->argumentos) + list_size(item->identificadores))
+				(list_size(item->argumentos) + dictionary_size(item->identificadores))
 						* sizeof(int);
 	}
 	return bytes;
 }
 
-t_pedido stack_next_pedido(t_stack* fuente, int pagsize) {
-	t_pedido pedido;
+t_pedido* stack_next_pedido(t_stack* fuente, int pagsize) {
+	// Rompe todo si las paginas no son multiplos de 4
+	t_pedido* pedido = malloc(sizeof(t_pedido));
 	int actualSize = stack_memory_size(fuente);
-	pedido.pagina = actualSize / pagsize;
-	pedido.offset = actualSize - pedido.pagina * pagsize;
-	pedido.size = sizeof(int);
+	pedido->pagina = actualSize / pagsize;
+	pedido->offset = actualSize - pedido->pagina * pagsize;
+	pedido->size = sizeof(int);
 	return pedido;
+}
+
+t_stack_item* stack_item_create(){
+	t_stack_item* item = malloc(sizeof(t_stack_item));
+	item->argumentos = list_create();
+	item->identificadores = dictionary_create();
+	return item;
 }
 
 

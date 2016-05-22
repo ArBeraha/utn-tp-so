@@ -16,6 +16,7 @@
 #include <commons/process.h>
 #include <commons/txt.h>
 #include <commons/collections/list.h>
+#include <commons/bitarray.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <errno.h>
@@ -32,15 +33,14 @@
 #define PUERTO_SWAP 8082
 int cliente;
 
-typedef struct control{
+typedef struct infoProceso{
 	int pid;
-	int numPagina; //numInicialMarco
-	int posPagina; //marcoInicial
-	int cantidadMarcos;
-} t_control;
+	int numPagina;
+	int posPagina;
+	int cantidadDePaginas;
+} t_infoProceso;
 
 typedef struct datoPedido{
-int operacion;
 int pid;
 int pagina;
 int tamanio;
@@ -48,6 +48,8 @@ int tamanio;
 
 t_bitarray* espacio; //Bitmap de espacio utilizado
 t_list* espacioUtilizado;
+int espacioDisponible;
+
 
 int espacioLibre;
 int espacioOcupado;
@@ -57,8 +59,14 @@ struct t_config* archSwap; //archivo de configuracion
 char* nomArchivo; //nombre del archivo vacio que creare mediante dd
 char* ddComand; // comando a mandar a consola para crear archivo mediante dd
 
-
-
+char* nombreArchivo;
+char* puertoEscucha;
+char* nomSwap;
+int cantPaginasSwap;
+int tamanioPag;
+int retCompactacion;
+char* cantPag;
+char* tamPag;
 
 
 // FUNCIONES UTILES
@@ -79,7 +87,7 @@ void procesarHeader(int cliente, char* header)
     		log_debug(bgLogger, "Llego un handshake");
     		payload_size = 1;;
     		payload = malloc(payload_size);
-    		//read(socketCliente[cliente], payload, payload_size);
+    		read(cliente, payload, payload_size);
     		payload= recv_waitall_ws(cliente,payload_size);
     		log_debug(bgLogger, "Llego un mensaje con payload %d",
     				charToInt(payload));
@@ -95,6 +103,44 @@ void procesarHeader(int cliente, char* header)
     		}
     		free(payload);
     		break;
+
+    	case HeaderOperacionIniciarProceso:
+    	    log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
+    		t_datosPedido pedido;
+    		pedido.pid = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+    		pedido.pagina = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+    		pedido.tamanio = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+    		asignarEspacioANuevoProceso(pedido.pid, pedido.pagina);
+    		break;
+
+
+    	case HeaderOperacionLectura:
+    		log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
+    		t_datosPedido pedido;
+    		pedido.pid = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+    		pedido.pagina = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+    		pedido.tamanio = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+    		leerPagina(pedido.pid, pedido.pagina);
+    		break;
+
+    	case HeaderOperacionEscritura:
+		    log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
+		    t_datosPedido pedido;
+		    pedido.pid = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+		    pedido.pagina = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+		    pedido.tamanio = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+		    escribirPagina(pedido.pid, pedido.pagina, pedido.tamanio);
+		    break;
+
+    	case HeaderOperacionFinalizarProceso:
+    		log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
+    	    t_datosPedido pedido;
+    	    pedido.pid = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+    		pedido.pagina = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+    		pedido.tamanio = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
+    		escribirPagina(pedido.pid, pedido.pagina, pedido.tamanio);
+    		break;
+
 
 
     	default:
@@ -132,19 +178,20 @@ int espaciosUtilizados (t_bitarray* unEspacio)
 
 
 //Comprueba si hay fragmentacion externa
-//int hayFragmentacionExterna(int paginasAIniciar) {
-//	int cantidadHuecos = espaciosDisponibles (t_bitarray* espacio);
-//	int i;
-//	int flag = 1;
-//	for (i = 0; i < cantidadHuecos; i++) {
-//		t_disponibles* hueco = (t_disponibles*) list_get(
-//				espacioDisponible, i);
-//		if (hueco->totalMarcos >= paginasAIniciar) {
-//			flag = 0;
-//		}
-//	}
-//	return flag;
-//}
+int hayFragmentacionExterna(int paginasAIniciar) {
+	int cantidadHuecos = bitarray_get_max_bit(espacio);
+	int i=0;
+	int flag = 1;
+	int hueco;
+	for (i = 0; i < cantidadHuecos; i++) {
+		if(bitarray_test_bit(espacio,i)==0) hueco++;
+
+		if (hueco>= paginasAIniciar) {
+			flag = 0;
+		}
+	}
+	return flag;
+}
 
 
 
@@ -156,11 +203,11 @@ void funcionamientoSwap()
 	/*asignemos el archivo de configuracion "vamo' a asignarlo"*/
 		archSwap = config_create("archivoConfigSwap");
 
-		char* puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
-		char* nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");
-		int cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
-		int tamanioPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
-		int retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
+		puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
+		nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");
+		cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
+		tamanioPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
+		retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
 
 		// lo voy a usar para comando dd que requiere strings para mandar por comando a consola
 		char* cantPag = config_get_string_value(archSwap, "CANTIDAD_PAGINAS");
@@ -179,22 +226,18 @@ void funcionamientoSwap()
 		string_append(&ddComand, "dd if=/dev/zero of="); //crea archivo input vacio
 		string_append(&ddComand, nomArchivo); //con el nombre de la swap
 		string_append(&ddComand, " bs="); //defino tamaño del archivo (de la memoria swap)
-		string_append(&ddComand, tamPag);
-		string_append(&ddComand, " count=");
-		string_append(&ddComand, cantPag); //cuyo tamaño va a ser igual al tamaño de las paginas*cantidad de paginas
+		string_append(&ddComand, tamPag); //Lo siguiente no va ya que ahora mi memoria se divide en paginas, no bytes
+		//string_append(&ddComand, " count=");
+		//string_append(&ddComand, cantPag); //cuyo tamaño va a ser igual al tamaño de las paginas*cantidad de paginas
 		printf("%s\n", ddComand);
 		system(ddComand); //ejecuto comando
 
 
 
-		
-		//espacioUtilizado = list_create();
-		//espacioDisponible = list_create();
+		/* bitarray manejo de paginas */
+		bitarray_create(espacio,cantPaginasSwap);
+		espacioUtilizado = list_create();
 
-		//t_disponibles* disponibles = malloc(sizeof(t_disponibles));
-		//disponibles->marcoInicial = 0; //primer marco
-		//disponibles->totalMarcos = cantPaginasSwap; //todos los marcos que son la misma cantidad que paginas
-		//list_add(espacioDisponible, disponibles);
 
 
 
@@ -214,114 +257,119 @@ void funcionamientoSwap()
 
 		while (1){
 			header=recv_waitall_ws(cliente,1);
-			procesarHeader(cliente,header);
+			procesarHeader(cliente,header); //Incluye deserializacion
         }
 
 
 
 
-
-
+}
 		 //FUNCIONES PRINCIPALES DE SWAP
 
 
-//void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
+void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
 
-//	if (paginasAIniciar <= espacioDisponible) {
+	if (paginasAIniciar <= espacioDisponible) {
 	//Me fijo si hay fragmentacion para asi ver si necesito compactar
-//	if (hayFragmentacionExterna(paginasAIniciar)) {
-//	 compactar();
-//	}
+	if (hayFragmentacionExterna(paginasAIniciar)) {
+	 compactar();
+	}
 	//Agrego el proceso a la lista de espacio utilizado y actualizo la de espacio disponible. Ademas informa
 	//de que la operacion fue exitosa
-//	agregarProceso(pid, paginasAIniciar);
+	agregarProceso(pid, paginasAIniciar);
 
-//	} else {
-		//send_w(cliente, headerToMSG(HeaderNoHayEspacio), 1);
-//		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
-//		log_error(activeLogger, "Fallo iniciacion del programa %d ", pid);
+	} else {
+		send_w(cliente, headerToMSG(HeaderNoHayEspacio), 1);
+		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
+		log_error(activeLogger, "Fallo iniciacion del programa %d ", pid);
 
 				}
 			}
-//void agregarProceso(int pid, int paginasAIniciar) {
+void agregarProceso(int pid, int paginasAIniciar) {
 
-	//Calculo la cantidad de elementos que tiene la lista de espacio disponible
-//	int cantidadHuecos = espaciosDisponibles (t_bitarray* espacio);
 	//Recorro  espacio disponible hasta que encuentro un elemento que tenga la cantidad de marcas necesarios //REFACTOR
-//	int i;
-//	for (i = 0; i < cantidadHuecos; i++) {
-//		t_disponibles* hueco = (t_disponibles*) list_get(
-//				espacioDisponible, i);
-//		if (hueco->totalMarcos >= paginasAIniciar) {
-			//Asigno el marco inicial de espacio disponible como marco inicial del proceso
-			// y modifico los valores del elemento de espacio disponible
-//			int marcoInicial = hueco->marcoInicial;
-//			hueco->totalMarcos -= paginasAIniciar;
-//			hueco->marcoInicial += paginasAIniciar;
-//			list_replace(espacioDisponible, i, (void*) hueco);
+	int cantidadHuecos;
+	int i;
+	int totalMarcos;
+	int marcoInicial;
+	//Recorro el bitarray hasta que encuentro un hueco ocupado
+	for (i = 0; i < cantidadHuecos; i++) {
+		//Recorro el bitarray hasta que encuentro un hueco ocupado
+		if(bitarray_test_bit(espacio,i)==0) totalMarcos++;
+        //Si ese hueco me permite alojar las paginas
+		if (totalMarcos>= paginasAIniciar) {
+			//alojo el proceso
+			        //hueco->totalMarcos -= paginasAIniciar;
+			        //hueco->marcoInicial += paginasAIniciar;
+			        //list_replace(espacioDisponible, i, (void*) hueco);
+            //totalMarcos-=paginasAIniciar;?????
+            //bitarray_set_bit(espacio, i) //TODO
+
+
 
 			//Si el espacio disponible quedo sin marcos se elimina de la lista
-//			if (hueco->totalMarcos == 0) {
-//				list_remove(espacioDisponible, i);
-//			}
+			//if (hueco->totalMarcos == 0) { //TODO
+				list_remove(espacioDisponible, i);
+			}
 			//Definimos la estructura del nuevo proceso con los datos correspondientes y lo agregamos al espacio utilizado
-//			t_infoProcesos* proceso = (t_infoProcesos*) malloc(
-//					sizeof(t_infoProcesos));
-//			proceso->pid = pid;
-//			proceso->numInicialMarco = marcoInicial;
-//			proceso->cantMarcos = paginasAIniciar;
-//			int fueAgregado = list_add(espacioUtilizado,
-//					(void*) proceso);
-//			char * respuesta = malloc(1);
-//			if (fueAgregado == -1) {
-//				printf("Error al iniciar el proceso\n");
-//				respuesta[0] = 'M';
-				//send_w(cliente, headerToMSG(HeaderErrorParaIniciar), 1);
-//				return;
-//			} else {
-//				printf("Proceso agregado exitosamente\n");
+			t_infoProceso* proceso = (t_infoProceso*) malloc(
+					sizeof(t_infoProceso));
+			proceso->pid = pid;
+			proceso->posPagina = marcoInicial;
+			proceso->cantidadDePaginas = paginasAIniciar;
+			int fueAgregado = list_add(espacioUtilizado,
+					(void*) proceso);
+			if (fueAgregado == -1) {
+				printf("Error al iniciar el proceso\n");
+				send_w(cliente, headerToMSG(HeaderErrorParaIniciar), 1);
+				return;
+			} else {
+				printf("Proceso agregado exitosamente\n");
 				//Actualizo el espacio disponible
-//				espacioDisponible -= paginasAIniciar;
-//				log_info(activeLogger,
-//						"El programa %d - Byte Inicial:%d Tamanio:%d Iniciado correctamente.",
-//						pid, proceso->numInicialMarco * tamanioPag,
-//						proceso->cantMarcos * tamanioPag);
-				//send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
-//				return;
+				espacioDisponible -= paginasAIniciar;
+				log_info(activeLogger,
+						"El programa %d - Pagina Inicial:%d Tamanio:%d Iniciado correctamente.",
+						pid, proceso->posPagina,
+						proceso->cantidadDePaginas * tamanioPag);
+				send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
+				return;
 
-//			}
-//		}
-//	}
+			}
+		}
+		marcoInicial++;
 
-//	printf("Hay que compactar\n");
+
+	printf("Hay que compactar\n");
 
 	//send_w(cliente, headerToMSG(HeaderHayQueCompactar), 1);
 
-//	return;
-//}
+	return;
+  }
 
-/*
+
+
+
+		void leerPagina (pid, paginaALeer)
+		{
+
 		}
 
-		void leerPagina(){
-			mando contenido de pagina por sockets?
+		void escribirPagina(int pid, int paginaAEscribir, int tamanio)
+		{
+
 		}
 
-		void escribirPagina(){
-		  si ya esta escrita sobreescribir();
+		void finalizarProceso(int pid)
+		{
+
 		}
 
-		void finalizarProceso(){
-		 borrar de la particion de swap
-		 marcar paginas ocupadas como disponibles
-		}
-
-        */
-
-}
 
 
-int main()
+
+
+
+int main(int argc, char** argv)
 {
     funcionamientoSwap();
 

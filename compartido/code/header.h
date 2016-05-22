@@ -41,7 +41,15 @@ typedef enum {
 	HeaderSignal,
 	HeaderWait,
 	headerTermineInstruccion,
-	HeaderDesalojarProceso
+	HeaderDesalojarProceso,
+	//Para Swap
+	HeaderOperacionIniciarProceso,
+	HeaderOperacionLectura,
+	HeaderOperacionEscritura,
+	HeaderOperacionFinalizarProceso,
+	HeaderErrorParaIniciar,
+	HeaderProcesoAgregado,
+	HeaderNoHayEspacio
 } header_t;
 
 char* headerToMSG(header_t header);

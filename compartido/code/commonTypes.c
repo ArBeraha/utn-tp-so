@@ -25,7 +25,7 @@ t_stack_item* stack_get(t_stack* stack, int i){
 }
 
 t_stack_item* stack_head(t_stack* stack){
-	return stack_get(stack,0);
+	return stack_get(stack,stack_size(stack)-1);
 }
 
 

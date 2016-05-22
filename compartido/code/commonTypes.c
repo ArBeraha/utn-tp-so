@@ -35,6 +35,27 @@ void stack_item_destroy(t_stack_item* item){
 	free(item);
 }
 
+int stack_memory_size(t_stack* fuente) {
+	int i, bytes = 0;
+	for (i = 0; i < stack_size(fuente); i++) {
+		t_stack_item* item = stack_get(fuente, i);
+		bytes +=
+				(list_size(item->argumentos) + list_size(item->identificadores))
+						* sizeof(int);
+	}
+	return bytes;
+}
+
+t_pedido stack_next_pedido(t_stack* fuente, int pagsize) {
+	t_pedido pedido;
+	int actualSize = stack_memory_size(fuente);
+	pedido.pagina = actualSize / pagsize;
+	pedido.offset = actualSize - pedido.pagina * pagsize;
+	pedido.size = sizeof(int);
+	return pedido;
+}
+
+
 void stack_destroy(t_stack* stack){
 	//todo fix memory leak de los items
 	list_iterate((t_list*)stack,stack_item_destroy);

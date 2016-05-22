@@ -281,7 +281,7 @@ void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
 	} else {
 		send_w(cliente, headerToMSG(HeaderNoHayEspacio), 1);
 		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
-		log_error(activeLogger, "Fallo iniciacion del programa %d ", pid);
+		log_error(activeLogger, "Fallo la iniciacion del programa %d ", pid);
 
 				}
 			}
@@ -295,6 +295,7 @@ void agregarProceso(int pid, int paginasAIniciar) {
 	int marcoInicial;
 	//Recorro el bitarray hasta que encuentro un hueco ocupado
 	for (i = 0; i < cantidadHuecos; i++) {
+		//Recorro el bitarray hasta que encuentro un hueco ocupado
 		if(bitarray_test_bit(espacio,i)==0) totalMarcos++;
         //Si ese hueco me permite alojar las paginas
 		if (totalMarcos>= paginasAIniciar) {
@@ -309,7 +310,7 @@ void agregarProceso(int pid, int paginasAIniciar) {
 			int fueAgregado = list_add(espacioUtilizado,
 					(void*) proceso);
 			if (fueAgregado == -1) {
-				printf("Error al iniciar el proceso\n");
+				printf("Hubo un error al iniciar el proceso\n");
 				send_w(cliente, headerToMSG(HeaderErrorParaIniciar), 1);
 				return;
 			} else {
@@ -317,7 +318,7 @@ void agregarProceso(int pid, int paginasAIniciar) {
 				//Actualizo el espacio disponible
 				espacioDisponible -= paginasAIniciar;
 				log_info(activeLogger,
-						"El programa %d - Pagina Inicial:%d Tamanio:%d Iniciado correctamente.",
+						"El programa %d cuya Pagina Inicial es:%d y su Tamanio es:%d fue Iniciado correctamente.",
 						pid, proceso->posPagina,
 						proceso->cantidadDePaginas * tamanioPag);
 				send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
@@ -334,7 +335,7 @@ void agregarProceso(int pid, int paginasAIniciar) {
 
 	return;
   }
-
+}
 
 
 

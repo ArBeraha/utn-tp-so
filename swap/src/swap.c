@@ -138,7 +138,7 @@ void procesarHeader(int cliente, char* header)
     	    pedido.pid = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
     		pedido.pagina = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
     		pedido.tamanio = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-    		escribirPagina(pedido.pid, pedido.pagina, pedido.tamanio);
+    		finalizarProceso(pedido.pid);
     		break;
 
 

@@ -68,21 +68,41 @@ t_puntero definir_variable(t_nombre_variable variable) {
 }
 
 bool tiene_la_variable(t_stack_item* item, t_nombre_variable* variable){
-	return dictionary_has_key(item->identificadores, variable);;
+	return dictionary_has_key(item->identificadores, variable);
+}
+
+bool esParametro(t_nombre_variable variable, t_stack_item* item){
+	return false; //TODO verificar si la variable es $0, $1, ...
 }
 
 t_puntero obtener_posicion_de(t_nombre_variable variable) {			//dejo comentada la otra solucion por si las dudas
 	log_info(activeLogger, "Obtener posicion de |%c|.", variable);
 	t_puntero pointer = -1;
-												//se puede hacer con list_find, pero no se como usarlo
-	t_stack_item* aux;
+/*	t_stack_item* aux;     //se puede hacer con list_find, pero no se como usarlo
 	int i;
 	for(i=0; i < list_size(stack); i++){		//recorres el segmento de stack hasta encontrar aquella que coincida con el valor buscado
 		aux = list_get(stack,i);				//si no lo encontras, retorno -1
 		if(tiene_la_variable(aux,&variable)){
 			pointer = aux->posicion;
 		}
+	} */
+
+
+	t_stack_item* aux = stack_get(stack,0);
+	// Verifico que sea variable local
+	if (tiene_la_variable(aux, &variable)) {
+		pointer = aux->posicion;
 	}
+	else{
+		int i;
+		for(i=1; i < list_size(stack) && esParametro(variable,aux);i++){ //chequeo que sea un parametro, llamado $0, $1, ..., o $9.
+			aux = stack_get(stack,i);
+			if (tiene_la_variable(aux, &variable)) {
+				pointer = aux->posicion;
+			} //Si no encuentra, es porque pase un parametro que recibi como parametro para otra funcion, entonces sigo iterando.
+		}
+	}
+
 
 	if(pointer < 0 ){
 		log_info(activeLogger,
@@ -92,18 +112,6 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {			//dejo comentada l
 		log_info(activeLogger, "No se encontro la variable |%c|., variable");
 	}
 
-/*	t_stack_item* head = stack_pop(stack);
-	if (dictionary_has_key(head->identificadores, &variable)) {
-		pointer = head->posicion;
-		log_info(activeLogger,
-				"Se encontro la variable |%c| en la posicion |%d|.", variable,
-				pointer);
-	} else {
-		log_info(activeLogger, "No se encontro la variable |%c|., variable");
-	}
-	stack_push(stack, head)*/;
-
-	free(aux);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("obtener_posicion_de");

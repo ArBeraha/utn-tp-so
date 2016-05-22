@@ -355,6 +355,9 @@ void pedir_tamanio_paginas() {
 void esperar_programas() {
 	log_debug(bgLogger, "Esperando programas de nucleo.");
 	char* header;
+	if(DEBUG_NO_PROGRAMS){
+		log_debug(activeLogger, "DEBUG NO PROGRAMS activado! Ignorando programas...");
+	}
 	while (!DEBUG_NO_PROGRAMS) {
 		header = recv_waitall_ws(cliente_nucleo, 1);
 		procesarHeader(header);

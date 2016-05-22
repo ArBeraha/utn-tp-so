@@ -46,7 +46,7 @@ int pagina;
 int tamanio;
 }t_datosPedido;
 
-t_bitarray* espacio; //Bitmap de espacio utilizado
+t_bitarray* espacio; //Bitmap de espacio utilizado, voy a tener una posicion por cada marco
 t_list* espacioUtilizado;
 int espacioDisponible;
 
@@ -179,14 +179,14 @@ int espaciosUtilizados (t_bitarray* unEspacio)
 
 //Comprueba si hay fragmentacion externa
 int hayFragmentacionExterna(int paginasAIniciar) {
-	int cantidadHuecos = bitarray_get_max_bit(espacio);
+	int cantidadMarcos = bitarray_get_max_bit(espacio);
 	int i=0;
 	int flag = 1;
-	int hueco;
-	for (i = 0; i < cantidadHuecos; i++) {
-		if(bitarray_test_bit(espacio,i)==0) hueco++;
+	int marcos;
+	for (i = 0; i < cantidadMarcos; i++) {
+		if(bitarray_test_bit(espacio,i)==0) marcos++;
 
-		if (hueco>= paginasAIniciar) {
+		if (marcos>= paginasAIniciar) {
 			flag = 0;
 		}
 	}
@@ -288,32 +288,21 @@ void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
 void agregarProceso(int pid, int paginasAIniciar) {
 
 	//Recorro  espacio disponible hasta que encuentro un elemento que tenga la cantidad de marcas necesarios //REFACTOR
-	int cantidadHuecos;
+	int cantidadHuecos = bitarray_get_max_bit(espacio);
 	int i;
+	int j;
 	int totalMarcos;
 	int marcoInicial;
 	//Recorro el bitarray hasta que encuentro un hueco ocupado
 	for (i = 0; i < cantidadHuecos; i++) {
-		//Recorro el bitarray hasta que encuentro un hueco ocupado
 		if(bitarray_test_bit(espacio,i)==0) totalMarcos++;
         //Si ese hueco me permite alojar las paginas
 		if (totalMarcos>= paginasAIniciar) {
-			//alojo el proceso
-			        //hueco->totalMarcos -= paginasAIniciar;
-			        //hueco->marcoInicial += paginasAIniciar;
-			        //list_replace(espacioDisponible, i, (void*) hueco);
-            //totalMarcos-=paginasAIniciar;?????
-            //bitarray_set_bit(espacio, i) //TODO
-
-
-
-			//Si el espacio disponible quedo sin marcos se elimina de la lista
-			//if (hueco->totalMarcos == 0) { //TODO
-				list_remove(espacioDisponible, i);
-			}
+			//alojo el proceso (marco como ocupado)
+			for(j=0; j < totalMarcos; j++)
+            bitarray_set_bit(espacio, j); //Creo que los pone en 1, porque el clean los debe poner en 0
 			//Definimos la estructura del nuevo proceso con los datos correspondientes y lo agregamos al espacio utilizado
-			t_infoProceso* proceso = (t_infoProceso*) malloc(
-					sizeof(t_infoProceso));
+			t_infoProceso* proceso = (t_infoProceso*) malloc(sizeof(t_infoProceso));
 			proceso->pid = pid;
 			proceso->posPagina = marcoInicial;
 			proceso->cantidadDePaginas = paginasAIniciar;
@@ -341,7 +330,7 @@ void agregarProceso(int pid, int paginasAIniciar) {
 
 	printf("Hay que compactar\n");
 
-	//send_w(cliente, headerToMSG(HeaderHayQueCompactar), 1);
+	send_w(cliente, headerToMSG(HeaderHayQueCompactar), 1);
 
 	return;
   }

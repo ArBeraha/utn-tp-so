@@ -38,7 +38,7 @@
 /* ---------- INICIO DEBUG ---------- */
 // Es util para debugear sin tener una consola extra con UMC abierto.
 #define DEBUG_IGNORE_UMC false
-#define DEBUG_IGNORE_UMC_PAGES true
+#define DEBUG_IGNORE_UMC_PAGES false
 /* ---------- INICIO DEBUG ---------- */
 // Para que rompan las listas y vectores
 #define SIN_ASIGNAR -1
@@ -130,7 +130,8 @@ struct timeval newEspera();
 void finalizar();
 void list_remove_by_value(t_list* list,void* value);
 //UMC
-bool pedirPaginas(int PID, char* codigo);
+bool pedirPaginas(int PID);
+void enviarCodigo(int PID, char* codigo);
 void establecerConexionConUMC();
 void conectarAUMC();
 void handshakearUMC();

@@ -66,7 +66,7 @@ t_stack_item* stack_item_create(){
 
 void stack_destroy(t_stack* stack){
 	//todo fix memory leak de los items
-	list_iterate((t_list*)stack,stack_item_destroy);
+	list_iterate((t_list*)stack,(void*)stack_item_destroy);
 	list_destroy((t_list*)stack);
 }
 

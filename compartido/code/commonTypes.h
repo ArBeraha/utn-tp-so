@@ -55,8 +55,10 @@ int stack_size(t_stack*);
 t_stack_item* stack_pop(t_stack*);
 t_stack_item* stack_get(t_stack*,int);
 t_stack_item* stack_head(t_stack* stack);
-void stack_destroy(t_stack*); //todo fix memory leak de los items
+void stack_destroy(t_stack*);
 void stack_item_destroy(t_stack_item* item);
-
+int stack_memory_size(t_stack* fuente);
+t_pedido* stack_next_pedido(t_stack* fuente, int pagsize);
+t_stack_item* stack_item_create();
 
 #endif /* OTROS_COMMONTYPES_H_ */

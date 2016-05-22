@@ -24,6 +24,10 @@ t_stack_item* stack_get(t_stack* stack, int i){
 	return (t_stack_item*)list_get((t_list*)stack,i);
 }
 
+t_stack_item* stack_head(t_stack* stack){
+	return stack_get(stack,0);
+}
+
 
 void stack_item_destroy(t_stack_item* item){
 	list_destroy(item->argumentos);

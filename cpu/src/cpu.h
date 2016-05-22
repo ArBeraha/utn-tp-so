@@ -39,6 +39,11 @@ typedef struct customConfig {
 	char* ipUMC;
 } customConfig_t;
 
+typedef enum {
+	DECLARADA, PARAMETRO, NOEXISTE
+} t_localidad_variable;
+
+
 t_config* configCPU;
 customConfig_t config;
 

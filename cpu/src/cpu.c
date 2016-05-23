@@ -122,7 +122,7 @@ void enviar_direccion_umc(t_puntero direccion) {
 	t_pedido pedido = stackItem->valorRetorno;
 
 	char* mensaje = string_new();
-	serializar_variable(mensaje, &pedido);
+	serializar_pedido(mensaje, &pedido);
 
 	send_w(cliente_umc, mensaje, sizeof(t_pedido)); // envio el pedido [pag,offset,size]
 
@@ -440,7 +440,7 @@ void enviar_solicitud(int pagina, int offset, int size) {
 	pedido.size = size;
 
 	char* solicitud = string_new();
-	serializar_variable(solicitud, &pedido);
+	serializar_pedido(solicitud, &pedido);
 
 	send_w(cliente_umc, solicitud, sizeof(t_pedido));
 	free(solicitud);

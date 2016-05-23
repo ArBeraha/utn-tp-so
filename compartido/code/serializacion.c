@@ -31,11 +31,11 @@ int deserializar_pint(int destino, char* fuente) {
 	memcpy(&destino, fuente, sizeof(int));
 	return sizeof(int);
 }
-int serializar_variable(char* destino, t_pedido* fuente) {
+int serializar_pedido(char* destino, t_pedido* fuente) {
 	memcpy(destino, fuente, sizeof(t_pedido));
 	return sizeof(t_pedido);
 }
-int deserializar_variable(t_pedido* destino, char* fuente) {
+int deserializar_pedido(t_pedido* destino, char* fuente) {
 	memcpy(destino, fuente, sizeof(t_pedido));
 	return sizeof(t_pedido);
 }
@@ -90,7 +90,7 @@ int serializar_stack_item(char* destino, t_stack_item* fuente) {
 	//offset += serializar_list(destino + offset, fuente->identificadores, sizeof(t_identificador));
 	offset += serializar_dictionary(destino + offset, fuente->identificadores, sizeof(t_pedido));
 	offset += serializar_int(destino + offset, &(fuente->posicionRetorno));
-	offset += serializar_variable(destino + offset, &(fuente->valorRetorno));
+	offset += serializar_pedido(destino + offset, &(fuente->valorRetorno));
 	return offset; // Retorna el offset
 }
 int serializar_stack(char* destino, t_stack* fuente) {
@@ -109,7 +109,7 @@ int deserializar_stack_item(t_stack_item* destino, char* fuente) {
 	offset += deserializar_list(destino->argumentos, fuente + offset, sizeof(t_pedido));
 	offset += deserializar_dictionary(destino->identificadores, fuente + offset, sizeof(t_pedido));
 	offset += deserializar_int(&destino->posicionRetorno, fuente + offset);
-	offset += deserializar_variable(&(destino->valorRetorno), fuente + offset);
+	offset += deserializar_pedido(&(destino->valorRetorno), fuente + offset);
 	return offset;
 }
 int deserializar_stack(t_stack* destino, char* fuente) {
@@ -210,7 +210,7 @@ int test_serializacion(){
 	CU_initialize_registry();
 	CU_pSuite suite_serializacion = CU_add_suite("Suite de Serializacion", NULL, NULL);
 	CU_add_test(suite_serializacion, "Test de Serializacion de int", test_serializar_int);
-	CU_add_test(suite_serializacion, "Test de Serializacion de variable", test_serializar_variable);
+	CU_add_test(suite_serializacion, "Test de Serializacion de variable", test_serializar_pedido);
 	CU_add_test(suite_serializacion, "Test de Serializacion de sentencia", test_serializar_sentencia);
 	CU_add_test(suite_serializacion, "Test de Serializacion de list", test_serializar_list);
 	CU_add_test(suite_serializacion, "Test de Serializacion de dictionary", test_serializar_dictionary);
@@ -235,16 +235,16 @@ void test_serializar_int(){
 	CU_ASSERT_EQUAL(b,57);
 	free(serial);
 }
-void test_serializar_variable(){
+void test_serializar_pedido(){
 	t_pedido* varA=malloc(sizeof(t_pedido));
 	t_pedido*	varB=malloc(sizeof(t_pedido));
 	varA->pagina=1;
 	varA->offset=2;
 	varA->size=3;
 	char* serial=malloc(sizeof(t_pedido));
-	serializar_variable(serial,varA);
+	serializar_pedido(serial,varA);
 	imprimir_serializacion(serial,sizeof(t_pedido));
-	deserializar_variable(varB,serial);
+	deserializar_pedido(varB,serial);
 	CU_ASSERT_EQUAL(varA->offset,varB->offset);
 	CU_ASSERT_EQUAL(varA->pagina,varB->pagina);
 	CU_ASSERT_EQUAL(varA->size,varB->size);

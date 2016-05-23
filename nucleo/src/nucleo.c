@@ -53,7 +53,7 @@ void enviarCodigo(int PID, char* codigo) {
 		pedido->offset = 0;
 		pedido->size = tamanio_pagina;
 		char* serial = malloc(sizeof(t_pedido));
-		serializar_variable(serial, pedido);
+		serializar_pedido(serial, pedido);
 		pthread_mutex_lock(&lock_UMC_conection);
 		send_w(umc, headerToMSG(HeaderScript), 1);
 		send_w(umc, intToChar4(PID), sizeof(int));

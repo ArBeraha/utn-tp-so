@@ -17,8 +17,8 @@
 
 int serializar_int(char* destino,int* fuente);
 int deserializar_int(int* destino, char* fuente);
-int serializar_variable(char* destino,t_pedido* fuente);
-int deserializar_variable(t_pedido* destino, char* fuente);
+int serializar_pedido(char* destino,t_pedido* fuente);
+int deserializar_pedido(t_pedido* destino, char* fuente);
 int serializar_sentencia(char* destino,t_sentencia* fuente);
 int deserializar_sentencia(t_sentencia* destino, char* fuente);
 int serializar_list(char* destino,t_list* fuente, int pesoElemento);
@@ -44,7 +44,7 @@ void imprimir_serializacion(char* serial, int largo);
 int test_serializacion();
 // Tests
 void test_serializar_int();
-void test_serializar_variable();
+void test_serializar_pedido();
 void test_serializar_sentencia();
 void test_serializar_list();
 void test_serializar_dictionary();

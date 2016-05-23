@@ -35,6 +35,7 @@ int deserializar_dictionary(t_dictionary* destino, char* fuente, int pesoData);
 int bytes_dictionary(t_dictionary* fuente, int pesoData);
 int serializar_PCB(char* destino,t_PCB* fuente);
 int deserializar_PCB(t_PCB* destino, char* fuente);
+int bytes_PCB(t_PCB* pcb);
 
 // Debug
 void imprimir_serializacion(char* serial, int largo);

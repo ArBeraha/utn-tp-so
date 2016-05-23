@@ -165,37 +165,34 @@ void rechazarProceso(int PID) {
 	pthread_mutex_lock(&lockProccessList);
 	list_remove_by_value(listaProcesos, (void*)PID);
 	pthread_mutex_unlock(&lockProccessList);
+	pcb_destroy(proceso->PCB);
 	free(proceso); // Destruir Proceso y PCB
 }
 int crearProceso(int consola) {
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	proceso->PCB = pcb_create();
 	proceso->PCB->PID = (int)proceso;
-	printf("SE CREO EL PROCESO PID:%d",proceso->PCB->PID);
+	proceso->estado = NEW;
+	proceso->consola = consola;
+	proceso->cpu = SIN_ASIGNAR;
 	pthread_mutex_lock(&lockProccessList);
 	list_add(listaProcesos, proceso);
 	pthread_mutex_unlock(&lockProccessList);
-	proceso->estado = NEW;
-	proceso->consola = consola;
-	proceso->cpu = SIN_ASIGNAR; //SIN_ASIGNAR;
-	// Agrego esta condicion por que de otra manera crearProceso era intesteable debido el getScript()
 	if (!CU_is_test_running()) {
 		char* codigo = getScript(consola);
 		asignarMetadataProceso(proceso, codigo);
 		proceso->PCB->cantidad_paginas = ceil(
 				((double) strlen(codigo)) / ((double) tamanio_pagina));
-		enviarCodigo(proceso->PCB->PID,codigo);
-		// Si la UMC me rechaza la solicitud de paginas, rechazo el proceso
 		if (!pedirPaginas(proceso->PCB->PID)) {
 			log_info(activeLogger,
 					"UMC no da paginas para el proceso %d!. Se rechazo el proceso\n",
 					proceso->PCB->PID);
-			rechazarProceso(proceso->PCB->PID); // Despues de esta instruccion ya no tenemos acceso al proceso
+			rechazarProceso(proceso->PCB->PID);
 		} else
 		{
 			enviarCodigo(proceso->PCB->PID,codigo);
+			proceso->estado = READY;
 		}
-
 		free(codigo);
 	}
 	return proceso->PCB->PID;
@@ -208,21 +205,21 @@ void cargarProceso(int consola) {
 			(void*) consola);
 }
 void ejecutarProceso(int PID, int cpu) {
-	/*pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_get(listaProcesos, PID);
-	pthread_mutex_unlock(&lockProccessList);*/
 	t_proceso* proceso = (t_proceso*)PID;
 	if (proceso->estado != READY)
 		log_warning(activeLogger, "Ejecucion del proceso %d sin estar listo!",
 				PID);
 	proceso->estado = EXEC;
 	proceso->cpu = cpu;
-	// todo: mandarProcesoCpu(cpu, proceso->PCB);
+	char* serialPCB = malloc(bytes_PCB(proceso->PCB));
+	serializar_PCB(serialPCB,proceso->PCB);
+	send_w(clientes[cpu].socket, "HEADER MANDAR A EJECUTAR", 1); //TODO header
+	send_w(clientes[cpu].socket,intToChar4(bytes_PCB(proceso->PCB)), sizeof(int));
+	send_w(clientes[cpu].socket, serialPCB, bytes_PCB(proceso->PCB));
+	free(serialPCB);
 }
+
 void finalizarProceso(int PID) {
-	/*pthread_mutex_lock(&lockProccessList);
-	 t_proceso* proceso = list_get(listaProcesos, PID);
-	 pthread_mutex_unlock(&lockProccessList);*/
 	t_proceso* proceso = (t_proceso*) PID;
 	queue_push(colaCPU, (int*) proceso->cpu); // Disponemos de nuevo de la CPU
 	proceso->cpu = SIN_ASIGNAR;
@@ -231,23 +228,8 @@ void finalizarProceso(int PID) {
 	pthread_mutex_lock(&lockProccessList);
 	list_remove_by_value(listaProcesos, (void*) PID);
 	pthread_mutex_unlock(&lockProccessList);
-
 }
-
-void list_remove_by_value(t_list* list, void* value) {
-	int i;
-	for (i = 0; i < list_size(list); i++) {
-		if (list_get(list, i) == value) {
-			list_remove(list, i);
-			break;
-		}
-	}
-}
-
 void destruirProceso(int PID) {
-	/*pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_remove(listaProcesos, PID);
-	pthread_mutex_unlock(&lockProccessList);*/
 	t_proceso* proceso = (t_proceso*)PID;
 	if (proceso->estado != EXIT)
 		log_warning(activeLogger,
@@ -270,10 +252,12 @@ void actualizarPCB(t_PCB PCB){ //
 bool terminoQuantum(t_proceso* proceso){
 	return (!(proceso->PCB->PC%config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
 }
-void expulsarProceso(t_proceso* proceso){
-	if (proceso->estado!=EXEC)
-		log_warning(activeLogger, "Expulsion del proceso %d sin estar ejecutandose!",proceso->PCB->PID);
-	proceso->estado=READY;
+void expulsarProceso(t_proceso* proceso) {
+	if (proceso->estado != EXEC)
+		log_warning(activeLogger,
+				"Expulsion del proceso %d sin estar ejecutandose!",
+				proceso->PCB->PID);
+	proceso->estado = READY;
 	queue_push(colaListos, (void*) proceso->PCB->PID);
 	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
 	proceso->cpu = SIN_ASIGNAR;
@@ -319,9 +303,6 @@ void planificarProcesos() {
 	dictionary_iterator(tablaIO,(void*)planificarIO);
 }
 void bloquearProceso(int PID, char* IO) {
-	/*pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_get(listaProcesos, PID);
-	pthread_mutex_unlock(&lockProccessList);*/
 	t_proceso* proceso = (t_proceso*)PID;
 	if (proceso->estado != EXEC)
 		log_warning(activeLogger,
@@ -349,9 +330,6 @@ void bloqueo(t_bloqueo* info){
 	free(info);
 }
 void desbloquearProceso(int PID) {
-	/*pthread_mutex_lock(&lockProccessList);
-	t_proceso* proceso = list_get(listaProcesos, PID);
-	pthread_mutex_unlock(&lockProccessList);*/
 	t_proceso* proceso = (t_proceso*)PID;
 	if (proceso->estado != BLOCK)
 		log_warning(activeLogger,
@@ -516,6 +494,7 @@ void test_cicloDeVidaProcesos(){
 	proceso->estado = READY;
 
 	ejecutarProceso(proceso->PCB->PID,(int)queue_pop(colaCPU));
+
 	CU_ASSERT_EQUAL(proceso->estado,EXEC);
 	CU_ASSERT_EQUAL(proceso->cpu,2)
 	CU_ASSERT_TRUE(queue_is_empty(colaCPU));
@@ -534,6 +513,8 @@ void test_cicloDeVidaProcesos(){
 	destruirProceso(proceso->PCB->PID);
 	CU_ASSERT_TRUE(list_is_empty(listaProcesos));
 
+	queue_clean(colaSalida);
+	queue_clean(colaListos);
 	// NO TENEMOS MANERA DE AVISARLE A LA QUEUE QUE SAQUE EL PID DE LA POSICION DONDE SE ENCUENTRA
 	// HABRA QUE CHEQUEAR CADA VEZ QUE SE SACA UN ELEMENTO SI ESTE REALMENTE EXISTE EN EL SISTEMA
 	//CU_ASSERT_TRUE(queue_is_empty(colaSalida));
@@ -604,6 +585,7 @@ int main(void) {
 	pthread_mutex_init(&lockProccessList, NULL);
 	cargarCFG();
 	configHilos();
+	algoritmo=FIFO;
 
 	// INICIO TEST SERIALIZACION
 	if (test_serializacion()!=CUE_SUCCESS){
@@ -655,10 +637,8 @@ int main(void) {
 					procesarHeader(i, header);
 			}
 		}
-
-		//planificarProcesos();
+		planificarProcesos();
 	}
-
 	finalizar();
 	return EXIT_SUCCESS;
 }

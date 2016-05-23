@@ -37,8 +37,8 @@
 
 /* ---------- INICIO DEBUG ---------- */
 // Es util para debugear sin tener una consola extra con UMC abierto.
-#define DEBUG_IGNORE_UMC false
-#define DEBUG_IGNORE_UMC_PAGES false
+#define DEBUG_IGNORE_UMC true
+#define DEBUG_IGNORE_UMC_PAGES true
 /* ---------- INICIO DEBUG ---------- */
 // Para que rompan las listas y vectores
 #define SIN_ASIGNAR -1
@@ -128,7 +128,6 @@ void configHilos();
 void procesarHeader(int cliente, char *header) ;
 struct timeval newEspera();
 void finalizar();
-void list_remove_by_value(t_list* list,void* value);
 //UMC
 bool pedirPaginas(int PID);
 void enviarCodigo(int PID, char* codigo);

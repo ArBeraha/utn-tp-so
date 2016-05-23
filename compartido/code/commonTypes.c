@@ -90,3 +90,13 @@ void pcb_destroy(t_PCB* pcb){
 	dictionary_destroy(pcb->indice_etiquetas);
 	free(pcb);
 }
+
+void list_remove_by_value(t_list* list, void* value) {
+	int i;
+	for (i = 0; i < list_size(list); i++) {
+		if (list_get(list, i) == value) {
+			list_remove(list, i);
+			break;
+		}
+	}
+}

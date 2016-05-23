@@ -58,7 +58,8 @@ t_config* configUmc;
 typedef struct tlbStruct{
 	int pid,
 		pagina,
-		marcoUtilizado;
+		marcoUtilizado,
+		contadorTiempo;
 }tlb_t;
 
 typedef struct{
@@ -84,7 +85,10 @@ struct sockaddr_in direccionCPU, direccionNucleo;
 unsigned int tamanioDireccionCPU, tamanioDireccionNucleo;
 
 typedef int ansisop_var_t;
+
 int cliente;
+int swapServer;
+
 t_log *activeLogger, *bgLogger;
 char* memoria;
 //int* memoria;
@@ -125,6 +129,9 @@ pthread_t vectorHilosCpu[MAXCLIENTS];
 
 pthread_t hiloRecibirComandos;
 
+t_stack* pilaAccesosTlb;
+
+int tiempo;
 
 //Prototipos
 
@@ -146,7 +153,7 @@ char* devolverPedidoPagina(pedidoLectura_t pedido);   // todos estos volver a de
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer);
 char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* buffer);
 void finalizarPrograma(int idPrograma);
-void inicializarPrograma(int idPrograma, char* contenido);
+int inicializarPrograma(int idPrograma, char* contenido);
 int reservarPagina(int,int);
 
 void imprimirRegionMemoria(char* region, int size);

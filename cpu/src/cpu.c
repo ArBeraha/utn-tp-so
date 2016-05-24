@@ -39,7 +39,17 @@ void desalojarProceso() {
 	free(pcb);
 }
 
-t_pedido pedirMemoria() { //TODO hacer que esto pida memoria a umc
+t_pedido maximo(t_pedido pedido1, t_pedido pedido2){ //Determina que pedido está mas lejos respecto del inicio!
+	if(pedido1.pagina>pedido2.pagina){
+		return pedido1;
+	}
+	if(pedido1.pagina==pedido2.pagina){
+		return (pedido1.offset>pedido2.offset?pedido1:pedido2);
+	}
+	return pedido2;
+}
+
+t_pedido calcularNuevaDireccion() { //TODO hacer que esto pida memoria a umc
 	t_pedido var;
 	var.offset = 0;
 	var.pagina = 0;
@@ -56,10 +66,9 @@ t_pedido pedirMemoria() { //TODO hacer que esto pida memoria a umc
 t_puntero definir_variable(t_nombre_variable variable) {
 	incrementarPC(pcbActual);
 
-	t_pedido direccion = pedirMemoria();
+	t_pedido* direccion = stack_next_pedido(stack,tamanioPaginas);
 	t_stack_item* head = stack_pop(stack);
-	list_add(head->argumentos, (void*) &direccion);
-	dictionary_put(head->identificadores, &variable, (void*) &direccion);
+	dictionary_put(head->identificadores, &variable, (void*) direccion);
 	stack_push(stack, head);
 
 	informarInstruccionTerminada();
@@ -126,7 +135,6 @@ void enviar_direccion_umc(t_puntero direccion) {
 
 	send_w(cliente_umc, mensaje, sizeof(t_pedido)); // envio el pedido [pag,offset,size]
 
-	stack_item_destroy(stackItem);
 	free(mensaje);
 }
 
@@ -151,11 +159,11 @@ t_valor_variable dereferenciar(t_puntero direccion) {// Pido a UMC el valor de l
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	log_info(activeLogger, "Asignando en |%d| el valor |%d|",
 			direccion_variable, valor);
+
 	send_w(cliente_umc, headerToMSG(HeaderAsignarValor), 1);
-
 	enviar_direccion_umc(direccion_variable);
-
 	send_w(cliente_umc, intToChar4(valor), sizeof(t_valor_variable));//envio el valor de la variable
+
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Asignar.");
@@ -625,6 +633,9 @@ void handler(int sign){
 		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
 		finalizar();
 		//desconectar de UMC y Nucleo, pero primero deberia terminar de ejecutar el proceso actual
+	}
+	else{
+		log_info(activeLogger, "Recibi la señal numero |%d|, que no es SIGUSER1.", sign);
 	}
 }
 

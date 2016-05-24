@@ -48,7 +48,7 @@ typedef struct customConfig {
 	int entradas_tlb;
 	int retardo;
 	char* ip_swap;
-	char* algoritmo_tlb;
+	char* algoritmo_paginas;
 } customConfig_t;
 
 customConfig_t config;
@@ -58,7 +58,8 @@ t_config* configUmc;
 typedef struct tlbStruct{
 	int pid,
 		pagina,
-		marcoUtilizado;
+		marcoUtilizado,
+		contadorTiempo;
 }tlb_t;
 
 typedef struct{
@@ -84,7 +85,10 @@ struct sockaddr_in direccionCPU, direccionNucleo;
 unsigned int tamanioDireccionCPU, tamanioDireccionNucleo;
 
 typedef int ansisop_var_t;
+
 int cliente;
+int swapServer;
+
 t_log *activeLogger, *bgLogger;
 char* memoria;
 //int* memoria;
@@ -100,8 +104,6 @@ tlb_t* tlb;
 unsigned int* vectorMarcosOcupados; //vectorMarcosOcupados[n]== 1 -> Esta ocupado
 
 int tamanioMemoria;
-
-int tlbHabilitada = 1; //1 ON.  0 OFF
 
 pthread_t conexSwap;
 pthread_t conexNucleo;
@@ -125,6 +127,9 @@ pthread_t vectorHilosCpu[MAXCLIENTS];
 
 pthread_t hiloRecibirComandos;
 
+t_stack* pilaAccesosTlb;
+
+int tiempo;
 
 //Prototipos
 
@@ -138,15 +143,15 @@ char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido);
 int buscarPrimerMarcoLibre();
 int cantidadMarcosLibres();
 
-char* buscarEnSwap(int marcoBuscado, pedidoLectura_t pedido); //TODO
-char* agregarAMemoria(tablaPagina_t* paginaBuscada); //TODO
+tablaPagina_t* buscarEnSwap(int marcoBuscado, pedidoLectura_t pedido); //TODO
+void agregarAMemoria(tablaPagina_t* paginaBuscada, int pid); //TODO
 
 char* devolverPedidoPagina(pedidoLectura_t pedido);   // todos estos volver a devolver void, devuelven cosas para testear
 
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer);
 char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* buffer);
 void finalizarPrograma(int idPrograma);
-void inicializarPrograma(int idPrograma, char* contenido);
+int inicializarPrograma(int idPrograma, char* contenido);
 int reservarPagina(int,int);
 
 void imprimirRegionMemoria(char* region, int size);

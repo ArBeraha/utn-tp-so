@@ -223,7 +223,7 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 }
 
 //Directiva 7
-//cambiar valor de retorno a t_puntero_instruccion
+//TODO cambiar valor de retorno a t_puntero_instruccion
 void irAlLaber(t_nombre_etiqueta etiqueta) {
 	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
 
@@ -236,7 +236,7 @@ void irAlLaber(t_nombre_etiqueta etiqueta) {
 }
 
 //Directiva 8
-//cambiar valor de retorno a t_puntero_instruccion
+//TODO cambiar valor de retorno a t_puntero_instruccion
 void llamar_sin_retorno(t_nombre_etiqueta nombreFuncion) {
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
 	int posicionFuncion = 0; // TODO acá va la de la funcion
@@ -246,12 +246,12 @@ void llamar_sin_retorno(t_nombre_etiqueta nombreFuncion) {
 }
 
 //Directiva 9
-//cambiar valor de retorno a t_puntero_instruccion
+//TODO cambiar valor de retorno a t_puntero_instruccion
 void retornar(t_valor_variable variable) {
 	t_stack_item* head = stack_pop(stack);
 	t_puntero_instruccion retorno = head->posicionRetorno;
 	log_info(activeLogger,
-			"Cambiar entorno actual modificando el PC de |%d| a |%d|.",
+			"Se va a cambiar el PC de |%d| a |%d| debido a la directiva 'retornar'.",
 			pcbActual->PC, retorno);
 
 	// Libero ese nivel del stack, porque termino de ejecutarse la funcion que lo creo y ya no es necesario

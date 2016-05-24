@@ -28,6 +28,7 @@ typedef enum {
 	HeaderPedirValorVariableCompartida,
 	HeaderAsignarValor,
 	HeaderAsignarValorVariableCompartida,
+	HeaderAsigneValorVariableCompartida, // Nucleo -> CPU, tras asignar un valor a una var compartida.
 	HeaderConsolaFinalizarRechazado,
 	HeaderPedirPagina,
 	HeaderLiberarRecursosPagina,

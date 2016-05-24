@@ -186,25 +186,39 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 }
 
 //Directiva 6
-t_valor_variable asignar_valor_compartida(t_nombre_compartida variable,
-		t_valor_variable valor) {
+t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartida,
+		t_valor_variable valorVarCompartida) {
 	log_info(activeLogger,//envio el nombre de la variable
-			"Asignar el valor |%d| a la variable compartida |%s|.", valor,
-			variable);
+			"Asignar el valor |%d| a la variable compartida |%s|.", valorVarCompartida,
+			nombreVarCompartida);
+	int nameSize = strlen(nombreVarCompartida)+1;
 
-	send_w(cliente_nucleo, headerToMSG(HeaderAsignarValorVariableCompartida),
-			1);		//envio el header
+	//envio el header, el tamaño del nombre y el nombre
+	send_w(cliente_nucleo, headerToMSG(HeaderAsignarValorVariableCompartida), 1);
+	send_w(cliente_nucleo, intToChar4(nameSize), sizeof(int));
+	send_w(cliente_nucleo, nombreVarCompartida, nameSize);
 
-	send_w(cliente_nucleo, variable, sizeof(t_nombre_compartida));//envio el nombre de la variable
+	//envio el valor
+	char* valor = intToChar4(valorVarCompartida);
+	send_w(cliente_nucleo, valor, sizeof(int));
 
-	char* valor_envio = intToChar4(valor);
-	send_w(cliente_nucleo, valor_envio, sizeof(int));			//envio el valor
+	//Espero a que nucleo informe la asignacion, para no usar un valor antiguo.
+	char* respuesta = recv_nowait_ws(cliente_nucleo, 1);
+	if(!charToInt(respuesta)==HeaderAsigneValorVariableCompartida){
+		log_error(activeLogger,
+				"Se esperaba que nucleo asigne el valor |%d| a la variable compartida |%s| y no sucedio",
+				valorVarCompartida, nombreVarCompartida);
+		log_info(activeLogger, "Se continua la ejecucion de todas formas");
+	}else{
+		log_info(activeLogger,
+				"Asignado el valor |%d| a la variable compartida |%s|.", valorVarCompartida,
+				nombreVarCompartida);
+	}
 
-	//TODO esperar a que nucleo informe la asignacion, para no usar un valor antiguo.
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("asignar_valor_compartida");
-	return valor;
+	return valorVarCompartida;
 }
 
 //cambiar valor de retorno a t_puntero_instruccion
@@ -562,7 +576,7 @@ void hacer_handshake_nucleo() {
 }
 
 void conectar_umc() {
-	direccionUmc = crearDireccionParaCliente(config.puertoUMC, config.ipUMC);
+	direccionUmc = cchar* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginasrearDireccionParaCliente(config.puertoUMC, config.ipUMC);
 	cliente_umc = socket_w();
 	connect_w(cliente_umc, &direccionUmc); //conecto cpu a la direccion 'direccionUmc'
 	log_info(activeLogger, "Conectado a UMC!");

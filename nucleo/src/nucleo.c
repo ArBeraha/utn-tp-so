@@ -26,7 +26,7 @@ bool pedirPaginas(int PID) {
 		//Estos mutex garantizan que por ejemplo no haga cada hilo un send (esto podria solucionarse tambien juntando los send, pero es innecesario porque si o si hay que sincronizar)
 		//y que no se van a correr los sends de un hilo 1, los del hilo 2, umc responde por hilo 1 (lo primero que le llego) y como corre hilo 2, esa respuesta llega al hilo 2 en vez de al 1.
 		pthread_mutex_lock(&lock_UMC_conection);
-		send_w(umc, headerToMSG(HeaderScript), 1); // fixme Aca hay que usar otro header ya que solo es pedir
+		send_w(umc, headerToMSG(HeaderInicializarPrograma), 1); // fixme Aca hay que usar otro header ya que solo es pedir
 		send_w(umc, intToChar4(PID),sizeof(int)); // La umc necesita el pid para las tablas
 		send_w(umc, intToChar4(paginas), sizeof(int));
 		read(umc, &respuesta, 1);
@@ -374,6 +374,15 @@ void cargarCFG() {
 		//printf("SEM:%s INIT:%d\n",config.sem_ids[i],*init);
 		i++;
 	}
+	// Cargamos las variables compartidas
+	i = 0;
+	while (config.sharedVars[i] != '\0') {
+		int* init = malloc(sizeof(int));
+		*init = 0;
+		dictionary_put(tablaSEM, config.sharedVars[i], init);
+		//printf("SHARED:%s VALUE:%d\n",config.sharedVars[i],*init);
+		i++;
+	}
 	config_destroy(configNucleo);
 }
 void configHilos(){
@@ -582,6 +591,7 @@ int main(void) {
 	colaSalida = queue_create();
 	tablaIO = dictionary_create();
 	tablaSEM = dictionary_create();
+	tablaGlobales = dictionary_create();
 	pthread_mutex_init(&lockProccessList, NULL);
 	cargarCFG();
 	configHilos();

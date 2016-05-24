@@ -94,6 +94,8 @@ typedef struct {
 
 t_dictionary* tablaSEM;
 
+t_dictionary* tablaGlobales;
+
 typedef struct {
 	t_IO* IO;
 	int PID;

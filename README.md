@@ -78,4 +78,4 @@ https://www.youtube.com/watch?v=dOVrEbZVeoU
 
 ## Algoritmos de reemplazo de páginas (PPT con ejemplos)
 Incluye LRU, CLOCK y CLOCK MEJORADO, entre otros.
-[![Link de la PPT :)](https://drive.google.com/open?id=0B0X0toyFFvk5SlVGWGtWWXhPZm8)](https://drive.google.com/open?id=0B0X0toyFFvk5SlVGWGtWWXhPZm8)
+[![Link de la PPT :)](https://drive.google.com/open?id=0B0X0toyFFvk5bzJpRWtEZjVIYVU)](https://drive.google.com/open?id=0B0X0toyFFvk5bzJpRWtEZjVIYVU)

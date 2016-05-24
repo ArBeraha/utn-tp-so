@@ -221,17 +221,20 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 	return valorVarCompartida;
 }
 
+//Directiva 7
 //cambiar valor de retorno a t_puntero_instruccion
 void irAlLaber(t_nombre_etiqueta etiqueta) {
-	log_info(activeLogger, "Obtener puntero de |%s|.", etiqueta);
+	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
 
-	int posicionEtiqueta = (int) dictionary_get(pcbActual->indice_etiquetas, etiqueta); //fix me ! problemas con el f**ng (void*)
+	// Casteo el puntero a void como puntero a int y despunterizo eso: void*->int*, y int*->int.
+	int posicionEtiqueta = *(int*)dictionary_get(pcbActual->indice_etiquetas, etiqueta);
 
 	setearPC(pcbActual, posicionEtiqueta);
 	informarInstruccionTerminada();
 	instruccionTerminada("ir_al_laber");
 }
 
+//Directiva 8
 //cambiar valor de retorno a t_puntero_instruccion
 void llamar_sin_retorno(t_nombre_etiqueta nombreFuncion) {
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
@@ -576,9 +579,9 @@ void hacer_handshake_nucleo() {
 }
 
 void conectar_umc() {
-	direccionUmc = cchar* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginasrearDireccionParaCliente(config.puertoUMC, config.ipUMC);
+	direccionUmc = crearDireccionParaCliente(config.puertoUMC, config.ipUMC);
 	cliente_umc = socket_w();
-	connect_w(cliente_umc, &direccionUmc); //conecto cpu a la direccion 'direccionUmc'
+	connect_w(cliente_umc, &direccionUmc); //conecto umc a la direccion 'direccionUmc'
 	log_info(activeLogger, "Conectado a UMC!");
 }
 

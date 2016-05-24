@@ -165,8 +165,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 // Directiva 5
 t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartida) { // Pido a Nucleo el valor de la variable
 	log_info(activeLogger,
-			"Obtener valor de variable compartida |%s| y es: |%d|.", nombreVarCompartida,
-			*nombreVarCompartida); // no seria el valor real
+			"Obtener valor de variable compartida |%s|.", nombreVarCompartida);
 	t_valor_variable valor;
 	int nameSize = strlen(nombreVarCompartida)+1;
 
@@ -177,6 +176,8 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 	char* value = recv_waitall_ws(cliente_nucleo, sizeof(int));
 	valor = char4ToInt(value);
 
+	log_info(activeLogger,
+				"Valor obtenido: |%s| vale |%d|.", nombreVarCompartida, valor);
 	free(value);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
@@ -187,7 +188,7 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 //Directiva 6
 t_valor_variable asignar_valor_compartida(t_nombre_compartida variable,
 		t_valor_variable valor) {
-	log_info(activeLogger,
+	log_info(activeLogger,//envio el nombre de la variable
 			"Asignar el valor |%d| a la variable compartida |%s|.", valor,
 			variable);
 

@@ -49,14 +49,6 @@ t_pedido maximo(t_pedido pedido1, t_pedido pedido2){ //Determina que pedido est√
 	return pedido2;
 }
 
-t_pedido calcularNuevaDireccion() { //TODO hacer que esto pida memoria a umc
-	t_pedido var;
-	var.offset = 0;
-	var.pagina = 0;
-	var.size = sizeof(int);
-	return var;
-}
-
 /*--------FUNCIONES----------*/
 
 /*--------Primitivas----------*/
@@ -156,6 +148,7 @@ t_valor_variable dereferenciar(t_puntero direccion) {// Pido a UMC el valor de l
 	return valor;
 }
 
+// Directiva 4
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	log_info(activeLogger, "Asignando en |%d| el valor |%d|",
 			direccion_variable, valor);
@@ -169,28 +162,29 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	instruccionTerminada("Asignar.");
 }
 
-t_valor_variable obtener_valor_compartida(t_nombre_compartida variable) { // Pido a Nucleo el valor de la variable
+// Directiva 5
+t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartida) { // Pido a Nucleo el valor de la variable
 	log_info(activeLogger,
-			"Obtener valor de variable compartida |%s| y es: |%d|.", variable,
-			*variable); // no seria el valor real
+			"Obtener valor de variable compartida |%s| y es: |%d|.", nombreVarCompartida,
+			*nombreVarCompartida); // no seria el valor real
 	t_valor_variable valor;
+	int nameSize = strlen(nombreVarCompartida)+1;
 
 	send_w(cliente_nucleo, headerToMSG(HeaderPedirValorVariableCompartida), 1);
-	send_w(cliente_nucleo, variable, sizeof(t_nombre_compartida));
+	send_w(cliente_nucleo, intToChar4(nameSize), sizeof(int));
+	send_w(cliente_nucleo, nombreVarCompartida, nameSize);
 
-	char* msgSize = recv_waitall_ws(cliente_nucleo, sizeof(int));
-	int size = char4ToInt(msgSize);
-	char* res = recv_waitall_ws(cliente_nucleo, size);
+	char* value = recv_waitall_ws(cliente_nucleo, sizeof(int));
+	valor = char4ToInt(value);
 
-	valor = charToInt(res);
-	free(msgSize);
-	free(res);
+	free(value);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Obtener_valor_compartida");
 	return valor;
 }
 
+//Directiva 6
 t_valor_variable asignar_valor_compartida(t_nombre_compartida variable,
 		t_valor_variable valor) {
 	log_info(activeLogger,
@@ -598,7 +592,7 @@ void establecerConexionConNucleo() {
 }
 
 // ***** Funciones de inicializacion y finalizacion ***** //
-void cargarConfig() { //fixme se rompe porque si!
+void cargarConfig() {
 	t_config* configCPU;
 	configCPU = config_create("cpu.cfg");
 	config.puertoNucleo = config_get_int_value(configCPU, "PUERTO_NUCLEO");

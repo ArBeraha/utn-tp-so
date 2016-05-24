@@ -325,11 +325,6 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 	}
 }
 
-//void cambiarUltimoByte(int marco, int cantidad){  // -->> YA NO SE VA A USAR
-//	int nuevoValor = *(ultimoByteOcupado+marco) + cantidad;
-//	ultimoByteOcupado[marco*sizeof(int)] = nuevoValor;
-//}
-
 int inicializarPrograma(int idPrograma, char* contenido){
 
 	send_w(swapServer,intToChar(HeaderConsultaEspacioSwap),4);
@@ -346,26 +341,6 @@ int inicializarPrograma(int idPrograma, char* contenido){
 		return 0;
 	}
 }
-
-//	//En el procesar header hacer: recv de idPrograma y recv de contenido
-//	int cantPagsNecesarias = (strlen(contenido) + config.tamanio_marco -1 ) / config.tamanio_marco; //Division entera que redondea para arriba
-//
-//	reservarPagina(cantPagsNecesarias,idPrograma);
-//
-//	int i;
-//	for(i=0;i<cantPagsNecesarias;i++){
-//
-//		char* auxiliar = malloc(config.tamanio_marco);
-//		memcpy(auxiliar,(contenido + (i*config.tamanio_marco)),config.tamanio_marco);
-//
-//		pedidoLectura_t pedido;
-//		pedido.pid = idPrograma;
-//		pedido.paginaRequerida = i;
-//		pedido.cantBytes = config.tamanio_marco;
-//
-//		char* loQueGrabe = almacenarBytesEnUnaPaginaContiguo(pedido,config.tamanio_marco,auxiliar);
-//	}
-
 
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){  //TODO Falta lo de swap
 
@@ -804,8 +779,6 @@ int reservarPagina(int cantPaginasPedidas, int pid){ // OK
 
 
 
-
-
 void esperar_header(int cliente) {
 	log_debug(bgLogger, "Esperando header del cliente: %d., cliente");
 	char* header;
@@ -930,6 +903,76 @@ void procesarHeader(int cliente, char *header){
 }
 
 // FIN 4
+
+
+void finalizar() {
+	destruirLogs();
+	log_destroy(dump);
+	list_destroy(listaTablasPaginas);
+	free(memoria);
+}
+
+
+int main(void) {
+
+	cargarCFG();
+
+	crearLogs("Umc","Umc");
+
+	dump = log_create("dump","UMC",false,LOG_LEVEL_INFO);
+
+	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
+
+	listaTablasPaginas = list_create();
+
+	int k;
+	for(k=0;k<config.cantidad_marcos;k++){  //COMO MAXIMO ES LA CANTIDAD DE MARCOS, considerando q como minimo una tabla tiene 1 pag
+		t_list* tablaPaginas = list_create();
+		list_add(listaTablasPaginas,tablaPaginas);
+	}
+
+	crearMemoriaYTlbYTablaPaginas();
+
+	test();
+
+//	pthread_create(&hiloRecibirComandos,NULL,(void*)recibirComandos,NULL);
+
+//	servidorCPUyNucleoExtendido();
+
+//	conexionASwap();
+
+	finalizar();
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void test(){
@@ -1185,77 +1228,6 @@ void test(){
 	printf("Pagina a sacar con clock de pid 2: %d \n", sacarConClock(2));
 
 }
-
-void finalizar() {
-	destruirLogs();
-	log_destroy(dump);
-	list_destroy(listaTablasPaginas);
-	free(memoria);
-}
-
-
-int main(void) {
-
-	cargarCFG();
-
-	crearLogs("Umc","Umc");
-
-	dump = log_create("dump","UMC",false,LOG_LEVEL_INFO);
-
-	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
-
-	listaTablasPaginas = list_create();
-
-	int k;
-	for(k=0;k<config.cantidad_marcos;k++){  //COMO MAXIMO ES LA CANTIDAD DE MARCOS, considerando q como minimo una tabla tiene 1 pag
-		t_list* tablaPaginas = list_create();
-		list_add(listaTablasPaginas,tablaPaginas);
-	}
-
-	crearMemoriaYTlbYTablaPaginas();
-
-	test();
-
-//	pthread_create(&hiloRecibirComandos,NULL,(void*)recibirComandos,NULL);
-
-//	servidorCPUyNucleoExtendido();
-
-//	conexionASwap();
-
-	finalizar();
-
-	return 0;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -245,6 +245,7 @@ void llamar_sin_retorno(t_nombre_etiqueta nombreFuncion) {
 	instruccionTerminada("Llamar_sin_retorno");
 }
 
+//Directiva 9
 //cambiar valor de retorno a t_puntero_instruccion
 void retornar(t_valor_variable variable) {
 	t_stack_item* head = stack_pop(stack);
@@ -260,28 +261,41 @@ void retornar(t_valor_variable variable) {
 	instruccionTerminada("Retornar");
 }
 
-void imprimir(t_valor_variable valor) {
-	log_info(activeLogger, "Imprimir |%d|\n", valor);
-	//header enviar valor de variable
-	send_w(cliente_nucleo, intToChar(valor), sizeof(t_valor_variable));
+int digitosDe(t_valor_variable valor){
+	bool esPositivo = valor > 0;
+	int digitos = snprintf(0, 0, "%d", valor);
+	return esPositivo ? digitos : digitos + 1;
+}
+// Directiva 10
+int imprimir(t_valor_variable valor) { //fixme, no era distinto esto?
+	log_info(activeLogger, "Imprimir |%d|", valor);
+	send_w(cliente_nucleo, headerToMSG(HeaderImprimirVariableNucleo), 1);
+	send_w(cliente_nucleo, intToChar4(valor), sizeof(t_valor_variable));
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Imprimir");
+	return digitosDe(valor);
 }
 
-void imprimir_texto(char* texto) {
+//Directiva 11
+int imprimir_texto(char* texto) {
 	int size = strlen(texto) + 1; // El strlen no cuenta el \0. strlen("hola\0") = 4.
 	log_debug(activeLogger, "Enviando a nucleo la cadena: |%s|...", texto);
 	send_w(cliente_nucleo, headerToMSG(HeaderImprimirTextoNucleo), 1);
-	send_w(cliente_nucleo, intToChar4(size), sizeof(int));
+	char* msgSize;
+	serializar_int(msgSize, &size);
+	send_w(cliente_nucleo, msgSize, sizeof(int)); //intToChar4 produce un memory leak si no se usa free
 	send_w(cliente_nucleo, texto, size); //envio a nucleo la cadena a imprimir
 	log_debug(activeLogger, "Se envio a nucleo la cadena: |%s|.", texto);
 	// TODO ??? free(texto); //como no se que onda lo que hace la blbioteca, no se si tire segment fault al hacer free. Una vez q este todoo andando probar hacer free aca
+	free(msgSize);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Imprimir texto");
+	return strlen(texto); //Size tiene el \0, que no se imprime.
 }
 
+// Directiva 12
 //cambiar valor de retorno a int
 void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo) {
 	log_info(activeLogger,
@@ -292,6 +306,7 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo) {
 	instruccionTerminada("Entrada-Salida");
 }
 
+// Directiva 13
 void wait(t_nombre_semaforo identificador_semaforo) {
 	log_info(activeLogger, "Comunicar nucleo de hacer wait con semaforo: |%s|",
 			identificador_semaforo);
@@ -303,6 +318,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 	instruccionTerminada("wait");
 }
 
+// Directiva 14
 void signal_con_semaforo(t_nombre_semaforo identificador_semaforo) {
 	log_info(activeLogger,
 			"Comunicar nucleo de hacer signal con semaforo: |%s|",

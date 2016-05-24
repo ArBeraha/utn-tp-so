@@ -22,10 +22,11 @@ void informarInstruccionTerminada() {
 	// Acá nucleo tiene que mandarme el header que corresponda, segun si tengo que seguir ejecutando instrucciones o tengo que desalojar.
 }
 void setearPC(t_PCB* pcb, int pc) {
+	log_info("Actualizando PC de |%d| a |%d|.", pcb->PC, pc);
 	pcb->PC = pc;
 }
 void incrementarPC(t_PCB* pcb) {
-	pcb->PC++;
+	setearPC(pcb,(pcb->PC)+1);
 }
 
 void instruccionTerminada(char* instr) {

@@ -157,6 +157,11 @@ char* getScript(int consola);
 void asignarMetadataProceso(t_proceso* p, char* codigo);
 void bloqueo(t_bloqueo* info);
 void planificarIO(char* io_id, t_IO* io);
+
+void signalSemaforo(int cliente);
+void waitSemaforo(int cliente);
+void asignarCompartida(int cliente);
+void devolverCompartida(int cliente);
 //Tests
 int test_nucleo();
 void test_cicloDeVidaProcesos();

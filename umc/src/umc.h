@@ -48,7 +48,7 @@ typedef struct customConfig {
 	int entradas_tlb;
 	int retardo;
 	char* ip_swap;
-	char* algoritmo_tlb;
+	char* algoritmo_paginas;
 } customConfig_t;
 
 customConfig_t config;
@@ -105,8 +105,6 @@ unsigned int* vectorMarcosOcupados; //vectorMarcosOcupados[n]== 1 -> Esta ocupad
 
 int tamanioMemoria;
 
-int tlbHabilitada = 1; //1 ON.  0 OFF
-
 pthread_t conexSwap;
 pthread_t conexNucleo;
 pthread_t conexCpu;
@@ -145,8 +143,8 @@ char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido);
 int buscarPrimerMarcoLibre();
 int cantidadMarcosLibres();
 
-char* buscarEnSwap(int marcoBuscado, pedidoLectura_t pedido); //TODO
-char* agregarAMemoria(tablaPagina_t* paginaBuscada); //TODO
+tablaPagina_t* buscarEnSwap(int marcoBuscado, pedidoLectura_t pedido); //TODO
+void agregarAMemoria(tablaPagina_t* paginaBuscada, int pid); //TODO
 
 char* devolverPedidoPagina(pedidoLectura_t pedido);   // todos estos volver a devolver void, devuelven cosas para testear
 

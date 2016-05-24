@@ -26,7 +26,7 @@ bool pedirPaginas(int PID) {
 		//Estos mutex garantizan que por ejemplo no haga cada hilo un send (esto podria solucionarse tambien juntando los send, pero es innecesario porque si o si hay que sincronizar)
 		//y que no se van a correr los sends de un hilo 1, los del hilo 2, umc responde por hilo 1 (lo primero que le llego) y como corre hilo 2, esa respuesta llega al hilo 2 en vez de al 1.
 		pthread_mutex_lock(&lock_UMC_conection);
-		send_w(umc, headerToMSG(HeaderInicializarPrograma), 1); // fixme Aca hay que usar otro header ya que solo es pedir
+		send_w(umc, headerToMSG(HeaderInicializarPrograma), 1);
 		send_w(umc, intToChar4(PID),sizeof(int)); // La umc necesita el pid para las tablas
 		send_w(umc, intToChar4(paginas), sizeof(int));
 		read(umc, &respuesta, 1);
@@ -440,6 +440,22 @@ void procesarHeader(int cliente, char *header) {
 		cargarProceso(cliente);
 		break;
 
+	case HeaderPedirValorVariableCompartida:
+		devolverCompartida(cliente);
+		break;
+
+	case HeaderAsignarValorVariableCompartida:
+		asignarCompartida(cliente);
+		break;
+
+	case HeaderSignal:
+		signalSemaforo(cliente);
+		break;
+
+	case HeaderWait:
+		waitSemaforo(cliente);
+		break;
+
 	default:
 		log_error(activeLogger, "Llego cualquier cosa.");
 		log_error(activeLogger,
@@ -450,6 +466,58 @@ void procesarHeader(int cliente, char *header) {
 		break;
 	}
 }
+
+// Primitivas
+void waitSemaforo(int cliente){
+	// TODO BLOQUEAR CPU SI <=0
+	char* semLen= malloc(sizeof(int));
+	int largo = char4ToInt(semLen);
+	read(clientes[cliente].socket, semLen, sizeof(int));
+	char* sem = malloc(largo);
+	read(clientes[cliente].socket, sem,largo);
+	int* valor = (int*)dictionary_get(tablaSEM,sem);
+	if ((*valor)>0){
+		//CongelarCPU()
+		(*valor)--;
+	}
+}
+void signalSemaforo(int cliente){
+	// TODO DESBLOQUEAR CPU SI >0
+	char* semLen= malloc(sizeof(int));
+	int largo = char4ToInt(semLen);
+	read(clientes[cliente].socket, semLen, sizeof(int));
+	char* sem = malloc(largo);
+	read(clientes[cliente].socket, sem,largo);
+	//if (hayCPUsCongeladas)
+		//descongelarUnaCPU()
+	//else
+	(*(int*)dictionary_get(tablaSEM,sem))++;
+}
+void asignarCompartida(int cliente){
+	char* varLen= malloc(sizeof(int));
+	int largo = char4ToInt(varLen);
+	read(clientes[cliente].socket, varLen, sizeof(int));
+	char* compartida = malloc(largo);
+	read(clientes[cliente].socket, compartida,largo);
+	char* valor = malloc(sizeof(int));
+	read(clientes[cliente].socket, valor, sizeof(int));
+	*(int*)dictionary_get(tablaGlobales,compartida)=char4ToInt(valor);
+	free(varLen);
+	free(compartida);
+	free(valor);
+}
+void devolverCompartida(int cliente){
+	char* varLen= malloc(sizeof(int));
+	int largo = char4ToInt(varLen);
+	read(clientes[cliente].socket, varLen, sizeof(int));
+	char* compartida = malloc(largo);
+	read(clientes[cliente].socket, compartida,largo);
+	//send_w(clientes[cliente].socket, intToChar(HeaderDevolverCompartida),1); TODO crear el header
+	send_w(clientes[cliente].socket, intToChar4(*(int*)dictionary_get(tablaGlobales,compartida)),sizeof(int));
+	free(varLen);
+	free(compartida);
+}
+
 struct timeval newEspera() {
 	struct timeval espera;
 	espera.tv_sec = 2; 				//Segundos

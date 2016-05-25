@@ -131,7 +131,7 @@ void procesarHeader(int cliente, char *header) ;
 struct timeval newEspera();
 void finalizar();
 //UMC
-bool pedirPaginas(int PID);
+bool pedirPaginas(int PID, char* codigo);
 void enviarCodigo(int PID, char* codigo);
 void establecerConexionConUMC();
 void conectarAUMC();

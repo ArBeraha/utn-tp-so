@@ -10,61 +10,43 @@
 int tamanio_pagina = 20; // TODO obtenerlo despues del handshake
 
 /* ---------- INICIO PARA UMC ---------- */
-// Dejo toodo sin espacios en el medio cuestion de que al ver solo las firmas
-// de las funciones, esta parte se saltee rapido. Idealmente,
-// no habria que tocarla mas :)
-bool pedirPaginas(int PID) {
-	int hayMemDisponible;
+bool pedirPaginas(int PID,char* codigo) {
+	t_proceso* proceso = (t_proceso*) PID;
+	char* paginas = intToChar4(proceso->PCB->cantidad_paginas);
+	char* tamanio = intToChar4(strlen(codigo));
+	char* pid = intToChar4(PID);
+	bool hayMemDisponible = false;
 	char respuesta;
-	int paginas = ((t_proceso*) PID)->PCB->cantidad_paginas;
-	 // me la tiene que mandar la umc
 	if (DEBUG_IGNORE_UMC || DEBUG_IGNORE_UMC_PAGES) { // Para DEBUG
 		log_warning(activeLogger,
 				"DEBUG_IGNORE_UMC_PAGES está en true! Se supone que no hay paginas");
-		hayMemDisponible = false;
-	} else {    // Para curso normal del programa
-		//Estos mutex garantizan que por ejemplo no haga cada hilo un send (esto podria solucionarse tambien juntando los send, pero es innecesario porque si o si hay que sincronizar)
-		//y que no se van a correr los sends de un hilo 1, los del hilo 2, umc responde por hilo 1 (lo primero que le llego) y como corre hilo 2, esa respuesta llega al hilo 2 en vez de al 1.
-		pthread_mutex_lock(&lock_UMC_conection);
-		send_w(umc, headerToMSG(HeaderInicializarPrograma), 1);
-		send_w(umc, intToChar4(PID),sizeof(int)); // La umc necesita el pid para las tablas
-		send_w(umc, intToChar4(paginas), sizeof(int));
-		read(umc, &respuesta, 1);
-		pthread_mutex_unlock(&lock_UMC_conection);
-		hayMemDisponible = (int) respuesta;
-		if (hayMemDisponible != 0 && hayMemDisponible != 1) {
-			log_warning(activeLogger,
-					"Umc debería enviar un booleano (0 o 1) y envió %d",
-					hayMemDisponible);
-		}
-		log_debug(bgLogger, "Hay memoria disponible para el proceso %d.", PID);;
-	}
-	return (bool) hayMemDisponible;
-}
-
-void enviarCodigo(int PID, char* codigo) {
-	t_proceso* proceso = (t_proceso*) PID;
-	t_pedido* pedido = malloc(sizeof(t_pedido));
-	int i;
-	for (i = 0; i < proceso->PCB->cantidad_paginas; i++) {
-		char* substr = string_new();
-		substr = string_substring(codigo, i * tamanio_pagina, tamanio_pagina);
-		pedido->pagina = i;
-		pedido->offset = 0;
-		pedido->size = tamanio_pagina;
-		char* serial = malloc(sizeof(t_pedido));
-		serializar_pedido(serial, pedido);
+	} else { /* Para curso normal del programa
+	 Estos mutex garantizan que por ejemplo no haga cada hilo un send (esto podria solucionarse tambien juntando los send, pero es innecesario porque si o si hay que sincronizar)
+	 y que no se van a correr los sends de un hilo 1, los del hilo 2, umc responde por hilo 1 (lo primero que le llego) y como corre hilo 2, esa respuesta llega al hilo 2 en vez de al 1. */
 		pthread_mutex_lock(&lock_UMC_conection);
 		send_w(umc, headerToMSG(HeaderScript), 1);
-		send_w(umc, intToChar4(PID), sizeof(int));
-		send_w(umc, serial, sizeof(t_pedido));
-		send_w(umc, substr, tamanio_pagina);
+		send_w(umc, pid, sizeof(int));
+		send_w(umc, paginas, sizeof(int));
+		send_w(umc, tamanio, sizeof(int));
+		send_w(umc, codigo, strlen(codigo));
+		read(umc, &respuesta, 1);
 		pthread_mutex_unlock(&lock_UMC_conection);
-		free(serial);
-		free(substr);
+		hayMemDisponible = (bool)((int) respuesta);
+		if (hayMemDisponible == true)
+			log_debug(bgLogger, "Hay memoria disponible para el proceso %d.",
+					PID);
+		else if (hayMemDisponible == false)
+			log_debug(bgLogger, "No hay memoria disponible para el proceso %d.",
+					PID);
+		else
+			log_warning(activeLogger, "Umc debería enviar (0 o 1) y envió %d",
+					hayMemDisponible);
 	}
+	free(pid);
+	free(tamanio);
+	free(paginas);
+	return hayMemDisponible;
 }
-
 int getHandshake() {
 	char* handshake = recv_nowait_ws(umc, 1);
 	return charToInt(handshake);
@@ -152,9 +134,7 @@ void imprimirTexto(int cliente) {
 
 /*  ----------INICIO PARA PLANIFICACION ---------- */
 void rechazarProceso(int PID) {
-	//pthread_mutex_lock(&lockProccessList);
 	t_proceso* proceso = (t_proceso*) PID;
-	//pthread_mutex_unlock(&lockProccessList);
 	if (proceso->estado != NEW)
 		log_warning(activeLogger,
 				"Se esta rechazando el proceso %d ya aceptado!", PID);
@@ -166,12 +146,12 @@ void rechazarProceso(int PID) {
 	list_remove_by_value(listaProcesos, (void*)PID);
 	pthread_mutex_unlock(&lockProccessList);
 	pcb_destroy(proceso->PCB);
-	free(proceso); // Destruir Proceso y PCB
+	free(proceso);
 }
 int crearProceso(int consola) {
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	proceso->PCB = pcb_create();
-	proceso->PCB->PID = (int)proceso;
+	proceso->PCB->PID = (int) proceso;
 	proceso->estado = NEW;
 	proceso->consola = consola;
 	proceso->cpu = SIN_ASIGNAR;
@@ -183,16 +163,10 @@ int crearProceso(int consola) {
 		asignarMetadataProceso(proceso, codigo);
 		proceso->PCB->cantidad_paginas = ceil(
 				((double) strlen(codigo)) / ((double) tamanio_pagina));
-		if (!pedirPaginas(proceso->PCB->PID)) {
-			log_info(activeLogger,
-					"UMC no da paginas para el proceso %d!. Se rechazo el proceso\n",
-					proceso->PCB->PID);
-			rechazarProceso(proceso->PCB->PID);
-		} else
-		{
-			enviarCodigo(proceso->PCB->PID,codigo);
+		if (pedirPaginas(proceso->PCB->PID, codigo))
 			proceso->estado = READY;
-		}
+		else
+			rechazarProceso(proceso->PCB->PID);
 		free(codigo);
 	}
 	return proceso->PCB->PID;

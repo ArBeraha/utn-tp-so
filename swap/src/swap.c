@@ -464,7 +464,7 @@ void escribirPagina(int pid, int paginaAEscribir, int tamanio) {
 					pid, marcoInicial * cantPaginasSwap, tamanio, texto);
 	} else {
 		printf("Error al escribir pagina\n");
-		send_w(cliente, headerToMSG(HeaderEscrituraCorrecta), 1);
+		send_w(cliente, headerToMSG(HeaderEscrituraErronea), 1);
 	}
 
 }

@@ -186,7 +186,7 @@ int hayFragmentacionExterna(int paginasAIniciar) {
 	int marcos;
 	for (i = 0; i < cantidadMarcos; i++) {
 		if(bitarray_test_bit(espacio,i)==0) marcos++;
-
+		if(bitarray_test_bit(espacio,i)) marcos=0;
 		if (marcos>= paginasAIniciar) {
 			flag = 0;
 		}
@@ -215,6 +215,31 @@ void sacarElemento(int pid) {
 	list_remove_by_condition(espacioUtilizado,
 			(void*) coincideElPID);
 }
+
+
+//Funcion que busca en la lista de utilizados el proceso con el marco igual o mas proximo (mayor)
+//al numero que se le pasa
+t_infoProceso* elemMIMenor (marcoAComparar) {
+	int cantElementos = list_size(espacioUtilizado);
+	t_infoProceso* elem1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+	int i;
+	for (i = 0; i < cantElementos; i++) {
+		elem1 = list_get(espacioUtilizado, i);
+		if (elem1->posPagina >= marcoAComparar) {
+			break;
+		}
+	}
+	int j;
+	for (j = 0; j < cantElementos; j++) {
+		t_infoProceso* elem2 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+		elem2 = list_get(espacioUtilizado, j);
+		if (elem2->posPagina >= marcoAComparar && elem1->posPagina > elem2->posPagina) {
+			elem1 = elem2;
+		}
+	}
+	return elem1;
+}
+
 
 
 
@@ -386,7 +411,7 @@ char* buffer = malloc(tamanioPag + 1);
 	usleep(retAcceso);
 	//mirar si no se puede leer
 	log_info(activeLogger, "El programa %d cuyo Marco Inicial es:%d de Tamanio:%d .Contenido:%s. Lectura realizada correctamente.",
-			pid, marcoInicial * tamanioPag, string_length(buffer), buffer);
+			pid, marcoInicial , string_length(buffer), buffer);
 	if (exitoAlLeer == 0) // si se leyo bien la pagina
 			{
 		send_w(cliente, headerToMSG(HeaderLecturaCorrecta), 1); //TODO
@@ -406,10 +431,44 @@ char* buffer = malloc(tamanioPag + 1);
 	free(buffer);
 }
 
-		void escribirPagina(int pid, int paginaAEscribir, int tamanio) //TODO
-		{
 
-		}
+void escribirPagina(int pid, int paginaAEscribir, int tamanio) {
+	//Abro el archivo de Swap
+	FILE *archivoSwap;
+	archivoSwap = fopen(nombreArchivo, "r+");
+	if (archivoSwap == NULL) {
+		printf("Error al abrir el archivo para escribir\n");
+	}
+	char* texto = malloc(cantPaginasSwap);
+	recv(cliente, (void*) texto, tamanio, MSG_WAITALL);
+	//Al buffer que me envian para escribir lo lleno de ceros hasta completar el tamaño de página
+	int i;
+	for (i = tamanio; i < cantPaginasSwap; i++) {
+		texto[i] = '\0';
+	}
+	//Me posiciono en la página que quiero escribir y escribo
+	int marcoInicial = buscarMarcoInicial(pid);
+	int marcoAEscribir = (marcoInicial + paginaAEscribir); //TODO: marcoAEscribir señala el final del marco
+	fseek(archivoSwap, marcoAEscribir, SEEK_SET);
+	printf("texto:%s\n", texto);
+	int exitoAlEscribir = fwrite(texto, cantPaginasSwap, 1, archivoSwap);
+
+	fclose(archivoSwap);
+	usleep(retAcceso);
+
+    //Chequeo si escribió
+	if (exitoAlEscribir == 1) {
+	    printf("Pagina escrita exitosamente\n");
+		send_w(cliente, headerToMSG(HeaderEscrituraCorrecta),1 );
+		log_info(activeLogger, "El Programa %d - Byte Inicial:%d Tamanio:%d Contenido:%s. Escritura realizada correctamente.",
+					pid, marcoInicial * cantPaginasSwap, tamanio, texto);
+	} else {
+		printf("Error al escribir pagina\n");
+		send_w(cliente, headerToMSG(HeaderEscrituraCorrecta), 1);
+	}
+
+}
+
 
 
 void finalizarProceso(int pid) {

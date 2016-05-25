@@ -56,6 +56,8 @@ typedef enum {
 	HeaderLecturaCorrecta,
 	HeaderLecturaErronea,
 	HeaderProcesoEliminado
+	HeaderEscrituraCorrecta,
+	HeaderEscrituraErronea
 } header_t;
 
 char* headerToMSG(header_t header);

@@ -12,9 +12,9 @@ int tamanio_pagina = 20; // TODO obtenerlo despues del handshake
 /* ---------- INICIO PARA UMC ---------- */
 bool pedirPaginas(int PID,char* codigo) {
 	t_proceso* proceso = (t_proceso*) PID;
-	char* paginas = intToChar4(proceso->PCB->cantidad_paginas);
-	char* tamanio = intToChar4(strlen(codigo));
-	char* pid = intToChar4(PID);
+	char* serialPaginas = intToChar4(proceso->PCB->cantidad_paginas);
+	char* serialTamanio = intToChar4(strlen(codigo));
+	char* serialPid = intToChar4(PID);
 	bool hayMemDisponible = false;
 	char respuesta;
 	if (DEBUG_IGNORE_UMC || DEBUG_IGNORE_UMC_PAGES) { // Para DEBUG
@@ -25,9 +25,9 @@ bool pedirPaginas(int PID,char* codigo) {
 	 y que no se van a correr los sends de un hilo 1, los del hilo 2, umc responde por hilo 1 (lo primero que le llego) y como corre hilo 2, esa respuesta llega al hilo 2 en vez de al 1. */
 		pthread_mutex_lock(&lock_UMC_conection);
 		send_w(umc, headerToMSG(HeaderScript), 1);
-		send_w(umc, pid, sizeof(int));
-		send_w(umc, paginas, sizeof(int));
-		send_w(umc, tamanio, sizeof(int));
+		send_w(umc, serialPid, sizeof(int));
+		send_w(umc, serialPaginas, sizeof(int));
+		send_w(umc, serialTamanio, sizeof(int));
 		send_w(umc, codigo, strlen(codigo));
 		read(umc, &respuesta, 1);
 		pthread_mutex_unlock(&lock_UMC_conection);
@@ -42,9 +42,9 @@ bool pedirPaginas(int PID,char* codigo) {
 			log_warning(activeLogger, "Umc debería enviar (0 o 1) y envió %d",
 					hayMemDisponible);
 	}
-	free(pid);
-	free(tamanio);
-	free(paginas);
+	free(serialPid);
+	free(serialTamanio);
+	free(serialPaginas);
 	return hayMemDisponible;
 }
 int getHandshake() {
@@ -185,12 +185,15 @@ void ejecutarProceso(int PID, int cpu) {
 				PID);
 	proceso->estado = EXEC;
 	proceso->cpu = cpu;
-	char* serialPCB = malloc(bytes_PCB(proceso->PCB));
+	int bytes = bytes_PCB(proceso->PCB);
+	char* serialPCB = malloc(bytes);
+	char* serialBytes = intToChar4(bytes);
 	serializar_PCB(serialPCB,proceso->PCB);
 	send_w(clientes[cpu].socket, "HEADER MANDAR A EJECUTAR", 1); //TODO header
-	send_w(clientes[cpu].socket,intToChar4(bytes_PCB(proceso->PCB)), sizeof(int));
-	send_w(clientes[cpu].socket, serialPCB, bytes_PCB(proceso->PCB));
+	send_w(clientes[cpu].socket, serialBytes, sizeof(int));
+	send_w(clientes[cpu].socket, serialPCB, bytes);
 	free(serialPCB);
+	free(serialBytes);
 }
 
 void finalizarProceso(int PID) {
@@ -209,12 +212,13 @@ void destruirProceso(int PID) {
 		log_warning(activeLogger,
 				"Se esta destruyendo el proceso %d que no libero sus recursos!",
 				PID);
-	send(clientes[proceso->consola].socket,
-			intToChar(HeaderConsolaFinalizarNormalmente), 1, 0); // Le decimos adios a la consola
+	char* serialHeader = intToChar(HeaderConsolaFinalizarNormalmente);
+	send(clientes[proceso->consola].socket, serialHeader, 1, 0); // Le decimos adios a la consola
 	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
 	pcb_destroy(proceso->PCB);
 	free(proceso); // Destruir Proceso y PCB
+	free(serialHeader);
 }
 void actualizarPCB(t_PCB PCB){ //
 	// Cuando CPU me actualice la PCB del proceso me manda una PCB (no un puntero)
@@ -487,9 +491,11 @@ void devolverCompartida(int cliente){
 	char* compartida = malloc(largo);
 	read(clientes[cliente].socket, compartida,largo);
 	//send_w(clientes[cliente].socket, intToChar(HeaderDevolverCompartida),1); TODO crear el header
-	send_w(clientes[cliente].socket, intToChar4(*(int*)dictionary_get(tablaGlobales,compartida)),sizeof(int));
+	char* valor = intToChar4(*(int*)dictionary_get(tablaGlobales,compartida));
+	send_w(clientes[cliente].socket, valor,sizeof(int));
 	free(varLen);
 	free(compartida);
+	free(valor);
 }
 
 struct timeval newEspera() {

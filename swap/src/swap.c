@@ -65,6 +65,7 @@ char* nomSwap;
 int cantPaginasSwap;
 int tamanioPag;
 int retCompactacion;
+int retAcceso;
 char* cantPag;
 char* tamPag;
 
@@ -193,6 +194,28 @@ int hayFragmentacionExterna(int paginasAIniciar) {
 	return flag;
 }
 
+int buscarMarcoInicial(int pid) {
+	t_infoProceso* datoProceso = buscarProceso(pid);
+	return datoProceso->posPagina;
+}
+
+t_infoProceso* buscarProceso(int pid) {
+	int coincideElPID(t_infoProceso* datoProceso) {
+		return (datoProceso->pid == pid);
+	}
+	t_infoProceso* datoProceso = (t_infoProceso*) list_find(
+			espacioUtilizado, (void*) coincideElPID);
+	return datoProceso;
+}
+
+void sacarElemento(int pid) {
+	int coincideElPID(t_infoProceso* datoProceso) {
+		return (datoProceso->pid == pid);
+	}
+	list_remove_by_condition(espacioUtilizado,
+			(void*) coincideElPID);
+}
+
 
 
 
@@ -208,6 +231,7 @@ void funcionamientoSwap()
 		cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
 		tamanioPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
 		retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
+		retAcceso = config_get_int_value(archSwap, "RETARDO_ACCESO");
 
 		// lo voy a usar para comando dd que requiere strings para mandar por comando a consola
 		char* cantPag = config_get_string_value(archSwap, "CANTIDAD_PAGINAS");
@@ -294,11 +318,13 @@ void agregarProceso(int pid, int paginasAIniciar) {
 	int totalMarcos;
 	int marcoInicial;
 	//Recorro el bitarray hasta que encuentro un hueco ocupado
-	for (i = 0; i < cantidadHuecos; i++) {
+	for (i = 0; i < cantidadHuecos; i++)
+	{
 		//Recorro el bitarray hasta que encuentro un hueco ocupado
 		if(bitarray_test_bit(espacio,i)==0) totalMarcos++;
         //Si ese hueco me permite alojar las paginas
-		if (totalMarcos>= paginasAIniciar) {
+		if (totalMarcos>= paginasAIniciar)
+		{
 			//alojo el proceso (marco como ocupado)
 			for(j=0; j < totalMarcos; j++)
             bitarray_set_bit(espacio, j); //Creo que los pone en 1, porque el clean los debe poner en 0
@@ -307,8 +333,7 @@ void agregarProceso(int pid, int paginasAIniciar) {
 			proceso->pid = pid;
 			proceso->posPagina = marcoInicial;
 			proceso->cantidadDePaginas = paginasAIniciar;
-			int fueAgregado = list_add(espacioUtilizado,
-					(void*) proceso);
+			int fueAgregado = list_add(espacioUtilizado,(void*) proceso);
 			if (fueAgregado == -1) {
 				printf("Hubo un error al iniciar el proceso\n");
 				send_w(cliente, headerToMSG(HeaderErrorParaIniciar), 1);
@@ -318,13 +343,14 @@ void agregarProceso(int pid, int paginasAIniciar) {
 				//Actualizo el espacio disponible
 				espacioDisponible -= paginasAIniciar;
 				log_info(activeLogger,
-						"El programa %d cuya Pagina Inicial es:%d y su Tamanio es:%d fue Iniciado correctamente.",
+						"El programa %d cuyo Marco Inicial es:%d y su Tamanio es:%d fue Iniciado correctamente.",
 						pid, proceso->posPagina,
 						proceso->cantidadDePaginas * tamanioPag);
 				send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
 				return;
 
-			}
+		     }
+
 		}
 		marcoInicial++;
 
@@ -339,20 +365,74 @@ void agregarProceso(int pid, int paginasAIniciar) {
 
 
 
-		void leerPagina (pid, paginaALeer)
+void leerPagina(int pid, int paginaALeer) {
+
+
+char* buffer = malloc(tamanioPag + 1);
+
+//Abro el archivo de Swap
+	FILE *archivoSwap;
+	archivoSwap = fopen(nomArchivo, "r");
+	if (archivoSwap == NULL) {
+		printf("Error al abrir el archivo para leer\n");
+	}
+
+//Me posiciono en la página que quiero leer y guardo lo que leo en el buffer
+	int marcoInicial = buscarMarcoInicial(pid); //TODO
+	int marcoALeer = (marcoInicial + paginaALeer);
+	int exitoAlLeer = fseek(archivoSwap, marcoALeer, SEEK_SET);
+	fread(buffer, tamanioPag, 1, archivoSwap);
+	fclose(archivoSwap);
+	usleep(retAcceso);
+	//mirar si no se puede leer
+	log_info(activeLogger, "El programa %d cuyo Marco Inicial es:%d de Tamanio:%d .Contenido:%s. Lectura realizada correctamente.",
+			pid, marcoInicial * tamanioPag, string_length(buffer), buffer);
+	if (exitoAlLeer == 0) // si se leyo bien la pagina
+			{
+		send_w(cliente, headerToMSG(HeaderLecturaCorrecta), 1); //TODO
+
+		//Envio lo leído a memoria
+		send_w(cliente, (void*) buffer, tamanioPag);
+		buffer[tamanioPag] = '\0';
+		printf("Lectura exitosa : %s\n", buffer);
+
+	} else {
+		send_w(cliente,headerToMSG(HeaderLecturaErronea), 1);  //TODO
+		printf("Error al intentar leer\n");
+
+	}
+
+//Libero el malloc del buffer
+	free(buffer);
+}
+
+		void escribirPagina(int pid, int paginaAEscribir, int tamanio) //TODO
 		{
 
 		}
 
-		void escribirPagina(int pid, int paginaAEscribir, int tamanio)
-		{
 
-		}
+void finalizarProceso(int pid) {
+	//Busco el proceso en la lista de espacio utilizado, guardo sus datos y lo elimino de la lista
+	t_infoProceso* proceso;
+	proceso = buscarProceso(pid); //TODO QUE PASA SI NO LO ENCUENTRA??
 
-		void finalizarProceso(int pid)
-		{
+    //Actualizo la variable espacioDisponible
+	espacioDisponible += proceso->cantidadDePaginas;
+	int i;
+	for (i = proceso->posPagina; i < proceso->cantidadDePaginas; i++)
+	{
+		bitarray_clean_bit(espacio, i);
+	}
+	sacarElemento(pid);
+    usleep(retAcceso);
+	printf("Proceso eliminado exitosamente\n");
+	log_info(activeLogger, "El programa %d - Pagina Inicial:%d Tamanio:%d Eliminado correctamente.",
+	pid, proceso->posPagina, proceso->cantidadDePaginas);
+	send_w(cliente, headerToMSG(HeaderProcesoEliminado), 1);
+	free(proceso);
+			}
 
-		}
 
 
 

@@ -133,7 +133,6 @@ void destruirProceso(int PID);
 void actualizarPCB(t_PCB PCB);
 void expulsarProceso(t_proceso* proceso);
 void asignarMetadataProceso(t_proceso* p, char* codigo);
-void bloqueo(t_bloqueo* info);
 //Planificacion
 int cantidadProcesos();
 void planificacionFIFO();
@@ -143,6 +142,7 @@ void planificarIO(char* io_id, t_IO* io);
 bool terminoQuantum(t_proceso* proceso);
 void asignarCPU(t_proceso* proceso, int cpu);
 void desasignarCPU(t_proceso* proceso);
+void bloqueo(t_bloqueo* info);
 //Primitivas
 void signalSemaforo(int cliente);
 void waitSemaforo(int cliente);
@@ -152,6 +152,7 @@ void imprimirVariable(int cliente);
 void imprimirTexto(int cliente);
 void entradaSalida(int cliente);
 //Tests
+int testear(int(*suite)(void));
 int test_nucleo();
 void test_cicloDeVidaProcesos();
 void test_obtenerMetadata();

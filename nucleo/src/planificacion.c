@@ -6,6 +6,15 @@
  */
 #include "nucleo.h"
 
+static bool matrizEstados[5][5] = {
+		//		     NEW    READY  EXEC   BLOCK  EXIT
+		/* NEW 	 */{ false, true,  false, false, true },
+		/* READY */{ false, false, true,  false, true },
+		/* EXEC  */{ false, true,  false, true,  true },
+		/* BLOCK */{ false, true,  false, false, true },
+		/* EXIT  */{ false, false, false, false, false}
+};
+
 /*  ----------INICIO PLANIFICACION ---------- */
 int cantidadProcesos() {
 	int cantidad;
@@ -67,3 +76,20 @@ void desasignarCPU(t_proceso* proceso){
 	proceso->cpu = SIN_ASIGNAR;
 	clientes[proceso->cpu].pid = (int)NULL;
 }
+void bloqueo(t_bloqueo* info) {
+	sleep(info->IO->retardo);
+	desbloquearProceso(info->PID);
+	info->IO->estado = INACTIVE;
+	free(info);
+}
+void cambiarEstado(t_proceso* proceso, int estado){
+	if (matrizEstados[proceso->estado][estado])
+		proceso->estado = estado;
+	else
+		log_error(activeLogger, "Cambio de estado ILEGAL de:%d a:%d",
+				proceso->estado, estado);
+}
+
+
+
+

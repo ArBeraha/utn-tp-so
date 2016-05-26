@@ -4,11 +4,9 @@
  *  Created on: 25/5/2016
  *      Author: utnso
  */
-
 #include <parser/metadata_program.h>
 #include <math.h>
 #include "nucleo.h"
-
 int tamanio_pagina = 20; // TODO obtenerlo despues del handshake
 
 /*  ----------INICIO PROCESOS---------- */

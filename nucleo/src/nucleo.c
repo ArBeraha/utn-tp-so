@@ -4,7 +4,6 @@
  *  Created on: 16/4/2016
  *      Author: utnso
  */
-
 #include "nucleo.h"
 
 /* ---------- INICIO PARA UMC ---------- */
@@ -84,11 +83,11 @@ void conectarAUMC() {
 	}
 }
 /*  ----------INICIO CONSOLA ---------- */
-int getConsolaAsociada(int cliente) {
-	int PID = charToInt(recv_waitall_ws(cliente, sizeof(int)));
-	t_proceso* proceso = list_get(listaProcesos, PID);
-	return proceso->consola;
-}
+//int getConsolaAsociada(int cliente) {
+//	int PID = charToInt(recv_waitall_ws(cliente, sizeof(int)));
+//	t_proceso* proceso = list_get(listaProcesos, PID);
+//	return proceso->consola;
+//}
 char* getScript(int consola) {
 	log_debug(bgLogger, "Recibiendo archivo de consola %d...", consola);
 	char scriptSize;
@@ -105,27 +104,6 @@ char* getScript(int consola) {
 			script);
 	clientes[consola].atentido = false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
 	return script;
-}
-void imprimirVariable(int cliente) {
-	int consola = getConsolaAsociada(cliente);
-	char* msgValue = recv_waitall_ws(cliente, sizeof(ansisop_var_t));
-	char* name = recv_waitall_ws(cliente, sizeof(char));
-	send_w(consola, headerToMSG(HeaderImprimirVariableConsola), 1);
-	send_w(consola, msgValue, sizeof(ansisop_var_t));
-	send_w(consola, name, sizeof(char));
-	free(msgValue);
-	free(name);
-}
-void imprimirTexto(int cliente) {
-	int consola = getConsolaAsociada(cliente);
-	char* msgSize = recv_waitall_ws(cliente, sizeof(int));
-	int size = char4ToInt(msgSize);
-	char* texto = recv_waitall_ws(cliente, size);
-	send_w(consola, headerToMSG(HeaderImprimirTextoConsola), 1);
-	send_w(consola, msgSize, sizeof(int));
-	send_w(consola, texto, size);
-	free(msgSize);
-	free(texto);
 }
 /*  ----------INICIO NUCLEO ---------- */
 void cargarCFG() {

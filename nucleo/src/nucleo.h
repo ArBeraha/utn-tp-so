@@ -4,7 +4,6 @@
  *  Created on: 25/5/2016
  *      Author: utnso
  */
-
 #ifndef NUCLEO_H_
 #define NUCLEO_H_
 
@@ -121,8 +120,6 @@ void conectarAUMC();
 void handshakearUMC();
 //Consola
 int getConsolaAsociada(int cliente);
-void imprimirVariable(int cliente);
-void imprimirTexto(int cliente);
 //Procesos
 int crearProceso(int consola);
 void cargarProceso(int consola);
@@ -149,6 +146,9 @@ void signalSemaforo(int cliente);
 void waitSemaforo(int cliente);
 void asignarCompartida(int cliente);
 void devolverCompartida(int cliente);
+void imprimirVariable(int cliente);
+void imprimirTexto(int cliente);
+void entradaSalida(int cliente);
 //Tests
 int test_nucleo();
 void test_cicloDeVidaProcesos();

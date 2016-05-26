@@ -32,6 +32,7 @@ int crearProceso(int consola) {
 	proceso->PCB->PID = (int) proceso;
 	proceso->estado = NEW;
 	proceso->consola = consola;
+	clientes[consola].pid = proceso->PCB->PID;
 	proceso->cpu = SIN_ASIGNAR;
 	pthread_mutex_lock(&lockProccessList);
 	list_add(listaProcesos, proceso);
@@ -61,7 +62,7 @@ void ejecutarProceso(int PID, int cpu) {
 		log_warning(activeLogger, "Ejecucion del proceso %d sin estar listo!",
 				PID);
 	proceso->estado = EXEC;
-	proceso->cpu = cpu;
+	asignarCPU(proceso,cpu);
 	int bytes = bytes_PCB(proceso->PCB);
 	char* serialPCB = malloc(bytes);
 	char* serialBytes = intToChar4(bytes);
@@ -75,13 +76,16 @@ void ejecutarProceso(int PID, int cpu) {
 void finalizarProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;
 	queue_push(colaCPU, (int*) proceso->cpu); // Disponemos de nuevo de la CPU
-	proceso->cpu = SIN_ASIGNAR;
+	desasignarCPU(proceso);
 	proceso->estado = EXIT;
 	queue_push(colaSalida, (void*) PID);
 	pthread_mutex_lock(&lockProccessList);
 	list_remove_by_value(listaProcesos, (void*) PID);
 	pthread_mutex_unlock(&lockProccessList);
 }
+
+
+
 void destruirProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;
 	if (proceso->estado != EXIT)
@@ -111,7 +115,7 @@ void expulsarProceso(t_proceso* proceso) {
 	proceso->estado = READY;
 	queue_push(colaListos, (void*) proceso->PCB->PID);
 	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
-	proceso->cpu = SIN_ASIGNAR;
+	desasignarCPU(proceso);
 }
 void bloquearProceso(int PID, char* IO) {
 	t_proceso* proceso = (t_proceso*) PID;
@@ -121,7 +125,7 @@ void bloquearProceso(int PID, char* IO) {
 				PID);
 	proceso->estado = BLOCK;
 	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
-	proceso->cpu = SIN_ASIGNAR;
+	desasignarCPU(proceso);
 	if (dictionary_has_key(tablaIO, IO))
 		queue_push(((t_IO*) dictionary_get(tablaIO, IO))->cola,
 				(t_proceso*) PID);

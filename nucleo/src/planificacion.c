@@ -59,3 +59,11 @@ void planificarIO(char* io_id, t_IO* io) {
 bool terminoQuantum(t_proceso* proceso) {
 	return (!(proceso->PCB->PC % config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
 }
+void asignarCPU(t_proceso* proceso, int cpu){
+	proceso->cpu = cpu;
+	clientes[cpu].pid = proceso->PCB->PID;
+}
+void desasignarCPU(t_proceso* proceso){
+	proceso->cpu = SIN_ASIGNAR;
+	clientes[proceso->cpu].pid = (int)NULL;
+}

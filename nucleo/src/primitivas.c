@@ -58,39 +58,41 @@ void devolverCompartida(int cliente) {
 	free(valor);
 }
 void imprimirVariable(int cliente) {
-	int consola = 666;//= getConsolaAsociada(cliente);
-	char* msgValue = malloc( sizeof(ansisop_var_t));
-	read(cliente, msgValue, sizeof(ansisop_var_t));
+	int consola = ((t_proceso*) clientes[cliente].pid)->consola;
+	char* serialValor = malloc( sizeof(ansisop_var_t));
+	read(cliente, serialValor, sizeof(ansisop_var_t));
 	char* name = malloc(sizeof(char));
 	read(cliente, name, sizeof(char));
 	char* serialHeader = headerToMSG(HeaderImprimirVariableConsola);
 	send_w(consola, serialHeader, 1);
-	send_w(consola, msgValue, sizeof(ansisop_var_t));
+	send_w(consola, serialValor, sizeof(ansisop_var_t));
 	send_w(consola, name, sizeof(char));
 	free(serialHeader);
-	free(msgValue);
+	free(serialValor);
 	free(name);
 }
 void imprimirTexto(int cliente) {
-	int consola = 666; //= getConsolaAsociada(cliente);
-	char* msgSize = malloc(sizeof(int));
-	read(cliente, msgSize, sizeof(int));
-	int size = char4ToInt(msgSize);
+	int consola = ((t_proceso*) clientes[cliente].pid)->consola;
+	char* serialSize = malloc(sizeof(int));
+	read(cliente, serialSize, sizeof(int));
+	int size = char4ToInt(serialSize);
 	char* texto = malloc(size);
 	read(cliente, texto, size);
 	char* serialHeader = headerToMSG(HeaderImprimirTextoConsola);
 	send_w(consola, serialHeader, 1);
-	send_w(consola, msgSize, sizeof(int));
+	send_w(consola, serialSize, sizeof(int));
 	send_w(consola, texto, size);
 	free(serialHeader);
-	free(msgSize);
+	free(serialSize);
 	free(texto);
 }
 void entradaSalida(int cliente) {
 	char* serialSize = malloc(sizeof(int));
 	read(clientes[cliente].socket, serialSize, sizeof(int));
 	int size = char4ToInt(serialSize);
-	char* io = malloc(size);
-	read(clientes[cliente].socket, io, size);
-	bloquearProceso(666,io); //Fixme Necesito obtener el PID de una cpu
+	char* serialIO = malloc(size);
+	read(clientes[cliente].socket, serialIO, size);
+	bloquearProceso(clientes[cliente].pid,serialIO);
+	free(serialSize);
+	free(serialIO);
 }

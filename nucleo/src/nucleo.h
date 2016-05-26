@@ -141,6 +141,8 @@ void planificacionRR();
 void planificarProcesos();
 void planificarIO(char* io_id, t_IO* io);
 bool terminoQuantum(t_proceso* proceso);
+void asignarCPU(t_proceso* proceso, int cpu);
+void desasignarCPU(t_proceso* proceso);
 //Primitivas
 void signalSemaforo(int cliente);
 void waitSemaforo(int cliente);

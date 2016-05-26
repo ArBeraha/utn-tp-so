@@ -271,8 +271,7 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion, t_puntero dondeRetornar
 }
 
 //Directiva 9
-//TODO cambiar valor de retorno a t_puntero_instruccion
-void retornar(t_valor_variable variable) {
+t_puntero_instruccion retornar(t_valor_variable variable) {
 	t_stack_item* head = stack_pop(stack);
 	t_puntero_instruccion retorno = head->posicionRetorno;
 	log_info(activeLogger,
@@ -284,6 +283,7 @@ void retornar(t_valor_variable variable) {
 	setearPC(pcbActual, retorno);
 	informarInstruccionTerminada();
 	instruccionTerminada("Retornar");
+	return retorno;
 }
 
 int digitosDe(t_valor_variable valor){

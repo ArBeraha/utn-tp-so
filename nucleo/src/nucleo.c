@@ -7,10 +7,8 @@
 
 #include "nucleo.h"
 
-int tamanio_pagina = 20; // TODO obtenerlo despues del handshake
-
 /* ---------- INICIO PARA UMC ---------- */
-bool pedirPaginas(int PID,char* codigo) {
+bool pedirPaginas(int PID, char* codigo) {
 	t_proceso* proceso = (t_proceso*) PID;
 	char* serialPaginas = intToChar4(proceso->PCB->cantidad_paginas);
 	char* serialTamanio = intToChar4(strlen(codigo));
@@ -31,7 +29,7 @@ bool pedirPaginas(int PID,char* codigo) {
 		send_w(umc, codigo, strlen(codigo));
 		read(umc, &respuesta, 1);
 		pthread_mutex_unlock(&lock_UMC_conection);
-		hayMemDisponible = (bool)((int) respuesta);
+		hayMemDisponible = (bool) ((int) respuesta);
 		if (hayMemDisponible == true)
 			log_debug(bgLogger, "Hay memoria disponible para el proceso %d.",
 					PID);
@@ -62,7 +60,8 @@ void handshakearUMC() {
 		log_debug(bgLogger, "Núcleo recibió handshake de UMC.");
 }
 void establecerConexionConUMC() {
-	direccionParaUMC = crearDireccionParaCliente(config.puertoUMC, config.ipUMC);
+	direccionParaUMC = crearDireccionParaCliente(config.puertoUMC,
+			config.ipUMC);
 	umc = socket_w();
 	connect_w(umc, &direccionParaUMC);
 }
@@ -84,9 +83,6 @@ void conectarAUMC() {
 		warnDebug();
 	}
 }
-/* ---------- FIN PARA UMC ---------- */
-
-
 /*  ----------INICIO CONSOLA ---------- */
 int getConsolaAsociada(int cliente) {
 	int PID = charToInt(recv_waitall_ws(cliente, sizeof(int)));
@@ -100,13 +96,14 @@ char* getScript(int consola) {
 	int size;
 	read(clientes[consola].socket, &scriptSize, sizeof(int));
 	size = char4ToInt(&scriptSize);
-	printf("%d",size);
+	printf("%d", size);
 	log_debug(bgLogger, "Consola envió un archivo de tamaño: %d", size);
 	printf("Size:%d\n", size);
 	script = malloc(sizeof(char) * size);
 	read(clientes[consola].socket, script, size);
-	log_info(activeLogger, "Script de consola %d recibido:\n%s", consola, script);
-	clientes[consola].atentido=false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
+	log_info(activeLogger, "Script de consola %d recibido:\n%s", consola,
+			script);
+	clientes[consola].atentido = false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
 	return script;
 }
 void imprimirVariable(int cliente) {
@@ -130,192 +127,7 @@ void imprimirTexto(int cliente) {
 	free(msgSize);
 	free(texto);
 }
-/*  ----------FIN CONSOLA ---------- */
-
-/*  ----------INICIO PARA PLANIFICACION ---------- */
-void rechazarProceso(int PID) {
-	t_proceso* proceso = (t_proceso*) PID;
-	if (proceso->estado != NEW)
-		log_warning(activeLogger,
-				"Se esta rechazando el proceso %d ya aceptado!", PID);
-	send(clientes[proceso->consola].socket,
-			intToChar(HeaderConsolaFinalizarRechazado), 1, 0); // Le decimos adios a la consola
-	log_info(bgLogger,"Consola avisada sobre la finalización del proceso ansisop.");
-	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
-	pthread_mutex_lock(&lockProccessList);
-	list_remove_by_value(listaProcesos, (void*)PID);
-	pthread_mutex_unlock(&lockProccessList);
-	pcb_destroy(proceso->PCB);
-	free(proceso);
-}
-int crearProceso(int consola) {
-	t_proceso* proceso = malloc(sizeof(t_proceso));
-	proceso->PCB = pcb_create();
-	proceso->PCB->PID = (int) proceso;
-	proceso->estado = NEW;
-	proceso->consola = consola;
-	proceso->cpu = SIN_ASIGNAR;
-	pthread_mutex_lock(&lockProccessList);
-	list_add(listaProcesos, proceso);
-	pthread_mutex_unlock(&lockProccessList);
-	if (!CU_is_test_running()) {
-		char* codigo = getScript(consola);
-		asignarMetadataProceso(proceso, codigo);
-		proceso->PCB->cantidad_paginas = ceil(
-				((double) strlen(codigo)) / ((double) tamanio_pagina));
-		if (pedirPaginas(proceso->PCB->PID, codigo))
-			proceso->estado = READY;
-		else
-			rechazarProceso(proceso->PCB->PID);
-		free(codigo);
-	}
-	return proceso->PCB->PID;
-}
-
-void cargarProceso(int consola) {
-	// Crea un hilo que crea el proceso y se banca esperar a que umc le de paginas.
-	// Mientras tanto, el planificador sigue andando.
-	pthread_create(&crearProcesos, &detachedAttr, (void*) crearProceso,
-			(void*) consola);
-}
-void ejecutarProceso(int PID, int cpu) {
-	t_proceso* proceso = (t_proceso*)PID;
-	if (proceso->estado != READY)
-		log_warning(activeLogger, "Ejecucion del proceso %d sin estar listo!",
-				PID);
-	proceso->estado = EXEC;
-	proceso->cpu = cpu;
-	int bytes = bytes_PCB(proceso->PCB);
-	char* serialPCB = malloc(bytes);
-	char* serialBytes = intToChar4(bytes);
-	serializar_PCB(serialPCB,proceso->PCB);
-	send_w(clientes[cpu].socket, "HEADER MANDAR A EJECUTAR", 1); //TODO header
-	send_w(clientes[cpu].socket, serialBytes, sizeof(int));
-	send_w(clientes[cpu].socket, serialPCB, bytes);
-	free(serialPCB);
-	free(serialBytes);
-}
-
-void finalizarProceso(int PID) {
-	t_proceso* proceso = (t_proceso*) PID;
-	queue_push(colaCPU, (int*) proceso->cpu); // Disponemos de nuevo de la CPU
-	proceso->cpu = SIN_ASIGNAR;
-	proceso->estado = EXIT;
-	queue_push(colaSalida, (void*) PID);
-	pthread_mutex_lock(&lockProccessList);
-	list_remove_by_value(listaProcesos, (void*) PID);
-	pthread_mutex_unlock(&lockProccessList);
-}
-void destruirProceso(int PID) {
-	t_proceso* proceso = (t_proceso*)PID;
-	if (proceso->estado != EXIT)
-		log_warning(activeLogger,
-				"Se esta destruyendo el proceso %d que no libero sus recursos!",
-				PID);
-	char* serialHeader = intToChar(HeaderConsolaFinalizarNormalmente);
-	send(clientes[proceso->consola].socket, serialHeader, 1, 0); // Le decimos adios a la consola
-	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
-	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
-	pcb_destroy(proceso->PCB);
-	free(proceso); // Destruir Proceso y PCB
-	free(serialHeader);
-}
-void actualizarPCB(t_PCB PCB){ //
-	// Cuando CPU me actualice la PCB del proceso me manda una PCB (no un puntero)
-	pthread_mutex_lock(&lockProccessList);
-	//t_proceso* proceso = list_get(listaProcesos, PCB->PID);
-	pthread_mutex_unlock(&lockProccessList);
-	//proceso->PCB=PCB;
-}
-bool terminoQuantum(t_proceso* proceso){
-	return (!(proceso->PCB->PC%config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
-}
-void expulsarProceso(t_proceso* proceso) {
-	if (proceso->estado != EXEC)
-		log_warning(activeLogger,
-				"Expulsion del proceso %d sin estar ejecutandose!",
-				proceso->PCB->PID);
-	proceso->estado = READY;
-	queue_push(colaListos, (void*) proceso->PCB->PID);
-	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
-	proceso->cpu = SIN_ASIGNAR;
-}
-int cantidadProcesos(){
-	int cantidad;
-	pthread_mutex_lock(&lockProccessList);
-	cantidad = list_size(listaProcesos);
-	 // El unlock se hace dos o tres lineas despues de llamar a esta funcion
-	return cantidad;
-}
-void planificacionFIFO(){
-	if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
-		ejecutarProceso((int) queue_pop(colaListos), (int) queue_pop(colaCPU));
-
-	if (!queue_is_empty(colaSalida))
-		destruirProceso((int) queue_pop(colaSalida));
-}
-void planificacionRR(){
-	int i;
-	for(i=0;i<cantidadProcesos();i++){ // Con cantidadProcesos() se evitan condiciones de carrera.
-		t_proceso* proceso = list_get(listaProcesos,i);
-		pthread_mutex_unlock(&lockProccessList); // El lock se hace en cantidadProcesos()
-		if (proceso->estado==EXEC){
-			if (terminoQuantum(proceso))
-				expulsarProceso(proceso);
-		}
-	}
-	planificacionFIFO();
-}
-void planificarProcesos() {
-	switch (algoritmo) {
-	// Procesos especificos
-	case RR:
-		planificacionRR();
-		break;
-	case FIFO:
-		planificacionFIFO();
-		break;
-	}
-
-	//Planificar IO
-	dictionary_iterator(tablaIO,(void*)planificarIO);
-}
-void bloquearProceso(int PID, char* IO) {
-	t_proceso* proceso = (t_proceso*)PID;
-	if (proceso->estado != EXEC)
-		log_warning(activeLogger,
-				"El proceso %d se bloqueo pese a que no estaba ejecutando!",
-				PID);
-	proceso->estado = BLOCK;
-	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
-	proceso->cpu = SIN_ASIGNAR;
-	if (dictionary_has_key(tablaIO,IO))
-		queue_push(((t_IO*)dictionary_get(tablaIO,IO))->cola,(t_proceso*)PID);
-}
-void planificarIO(char* io_id, t_IO* io) {
-	if (io->estado == INACTIVE) {
-		io->estado = ACTIVE;
-		t_bloqueo* info = malloc(sizeof(t_bloqueo));
-		info->IO=io;
-		info->PID=(int)queue_pop(io->cola);
-		pthread_create(&hiloBloqueos, &detachedAttr, (void*) bloqueo, info);
-	}
-}
-void bloqueo(t_bloqueo* info){
-	sleep(info->IO->retardo);
-	desbloquearProceso(info->PID);
-	info->IO->estado = INACTIVE;
-	free(info);
-}
-void desbloquearProceso(int PID) {
-	t_proceso* proceso = (t_proceso*)PID;
-	if (proceso->estado != BLOCK)
-		log_warning(activeLogger,
-				"Desbloqueando el proceso %d sin estar bloqueado!", PID);
-	proceso->estado = READY;
-	queue_push(colaListos, (t_proceso*) PID);
-}
-/* ---------- FIN PARA PLANIFICACION ---------- */
+/*  ----------INICIO NUCLEO ---------- */
 void cargarCFG() {
 	t_config* configNucleo;
 	configNucleo = config_create("nucleo.cfg");
@@ -329,7 +141,7 @@ void cargarCFG() {
 	config.ioSleep = config_get_array_value(configNucleo, "IO_SLEEP");
 	config.sharedVars = config_get_array_value(configNucleo, "SHARED_VARS");
 //	config.ipUMC = config_get_string_value(configNucleo, "IP_UMC");
-	config.ipUMC="127.0.0.1"; //fixme
+	config.ipUMC = "127.0.0.1"; //fixme
 	config.puertoUMC = config_get_int_value(configNucleo, "PUERTO_UMC");
 
 	// Cargamos los IO
@@ -363,18 +175,34 @@ void cargarCFG() {
 	}
 	config_destroy(configNucleo);
 }
-void configHilos(){
+void configHilos() {
 	pthread_attr_init(&detachedAttr);
-	pthread_attr_setdetachstate(&detachedAttr,PTHREAD_CREATE_DETACHED);
-	pthread_mutex_init(&lockProccessList,NULL);
-	pthread_mutex_init(&lock_UMC_conection,NULL);
+	pthread_attr_setdetachstate(&detachedAttr, PTHREAD_CREATE_DETACHED);
+	pthread_mutex_init(&lockProccessList, NULL);
+	pthread_mutex_init(&lock_UMC_conection, NULL);
+}
+struct timeval newEspera() {
+	struct timeval espera;
+	espera.tv_sec = 2; 				//Segundos
+	espera.tv_usec = 500000; 		//Microsegundos
+	return espera;
+}
+void finalizar() {
+	destruirLogs();
+	list_destroy(listaProcesos);
+	queue_destroy(colaCPU);
+	queue_destroy(colaListos);
+	queue_destroy(colaSalida);
+	pthread_mutex_destroy(&lockProccessList);
+	pthread_mutex_destroy(&lock_UMC_conection);
+	pthread_attr_destroy(&detachedAttr);
 }
 void procesarHeader(int cliente, char *header) {
 	// Segun el protocolo procesamos el header del mensaje recibido
 	char* payload;
 	int payload_size;
 	log_debug(bgLogger, "Llego un mensaje con header %d", charToInt(header));
-	clientes[cliente].atentido=true;
+	clientes[cliente].atentido = true;
 
 	switch (charToInt(header)) {
 
@@ -403,7 +231,7 @@ void procesarHeader(int cliente, char *header) {
 			quitarCliente(cliente);
 		}
 		free(payload);
-		clientes[cliente].atentido=false;
+		clientes[cliente].atentido = false;
 		break;
 
 	case HeaderImprimirVariableNucleo:
@@ -444,190 +272,6 @@ void procesarHeader(int cliente, char *header) {
 		break;
 	}
 }
-
-// Primitivas
-void waitSemaforo(int cliente){
-	// TODO BLOQUEAR CPU SI <=0
-	char* semLen= malloc(sizeof(int));
-	int largo = char4ToInt(semLen);
-	read(clientes[cliente].socket, semLen, sizeof(int));
-	char* sem = malloc(largo);
-	read(clientes[cliente].socket, sem,largo);
-	int* valor = (int*)dictionary_get(tablaSEM,sem);
-	if ((*valor)>0){
-		//CongelarCPU()
-		(*valor)--;
-	}
-}
-void signalSemaforo(int cliente){
-	// TODO DESBLOQUEAR CPU SI >0
-	char* semLen= malloc(sizeof(int));
-	int largo = char4ToInt(semLen);
-	read(clientes[cliente].socket, semLen, sizeof(int));
-	char* sem = malloc(largo);
-	read(clientes[cliente].socket, sem,largo);
-	//if (hayCPUsCongeladas)
-		//descongelarUnaCPU()
-	//else
-	(*(int*)dictionary_get(tablaSEM,sem))++;
-}
-void asignarCompartida(int cliente){
-	char* varLen= malloc(sizeof(int));
-	int largo = char4ToInt(varLen);
-	read(clientes[cliente].socket, varLen, sizeof(int));
-	char* compartida = malloc(largo);
-	read(clientes[cliente].socket, compartida,largo);
-	char* valor = malloc(sizeof(int));
-	read(clientes[cliente].socket, valor, sizeof(int));
-	*(int*)dictionary_get(tablaGlobales,compartida)=char4ToInt(valor);
-	free(varLen);
-	free(compartida);
-	free(valor);
-}
-void devolverCompartida(int cliente){
-	char* varLen= malloc(sizeof(int));
-	int largo = char4ToInt(varLen);
-	read(clientes[cliente].socket, varLen, sizeof(int));
-	char* compartida = malloc(largo);
-	read(clientes[cliente].socket, compartida,largo);
-	//send_w(clientes[cliente].socket, intToChar(HeaderDevolverCompartida),1); TODO crear el header
-	char* valor = intToChar4(*(int*)dictionary_get(tablaGlobales,compartida));
-	send_w(clientes[cliente].socket, valor,sizeof(int));
-	free(varLen);
-	free(compartida);
-	free(valor);
-}
-
-struct timeval newEspera() {
-	struct timeval espera;
-	espera.tv_sec = 2; 				//Segundos
-	espera.tv_usec = 500000; 		//Microsegundos
-	return espera;
-}
-void finalizar() {
-	destruirLogs();
-	list_destroy(listaProcesos);
-	queue_destroy(colaCPU);
-	queue_destroy(colaListos);
-	queue_destroy(colaSalida);
-	pthread_mutex_destroy(&lockProccessList);
-	pthread_mutex_destroy(&lock_UMC_conection);
-	pthread_attr_destroy(&detachedAttr);
-}
-void asignarMetadataProceso(t_proceso* p, char* codigo) {
-	int i;
-	t_medatada_program* metadata = metadata_desde_literal(codigo);
-	t_sentencia* sentencia;
-	for (i = 0; i < metadata->instrucciones_size; i++) {
-		sentencia = malloc(sizeof(t_sentencia));
-		sentencia->offset_inicio = metadata->instrucciones_serializado[i].start;
-		sentencia->offset_fin = sentencia->offset_inicio
-				+ metadata->instrucciones_serializado[i].offset;
-		list_add(p->PCB->indice_codigo, sentencia);
-	}
-	int longitud = 0;
-	for (i = 0; i < metadata->etiquetas_size; i++) {
-		if (metadata->etiquetas[i] == '\0') {
-			char* etiqueta = malloc(longitud + 1);
-			memcpy(etiqueta, metadata->etiquetas + i - longitud, longitud+1);
-			int* salto = malloc(sizeof(int));
-			memcpy(salto, metadata->etiquetas + i + 1, sizeof(int));
-			//imprimir_serializacion(etiqueta,longitud);
-			//printf("Etiqueta:%s Salto: %d\n",etiqueta,*salto);
-			dictionary_put(p->PCB->indice_etiquetas, etiqueta, salto);
-			i += sizeof(int);
-			longitud = 0;
-		} else
-			longitud++;
-	}
-	free(metadata);
-}
-void test_cicloDeVidaProcesos(){
-	int consola=1, cpu=2;
-	queue_push(colaCPU,(void*)cpu);
-
-	t_proceso* proceso = (t_proceso*)crearProceso(consola);
-
-	proceso->estado = READY;
-
-	ejecutarProceso(proceso->PCB->PID,(int)queue_pop(colaCPU));
-
-	CU_ASSERT_EQUAL(proceso->estado,EXEC);
-	CU_ASSERT_EQUAL(proceso->cpu,2)
-	CU_ASSERT_TRUE(queue_is_empty(colaCPU));
-
-	bloquearProceso(proceso->PCB->PID,"Scanner");
-	CU_ASSERT_FALSE(queue_is_empty(colaCPU));
-	CU_ASSERT_EQUAL(proceso->estado,BLOCK);
-
-	desbloquearProceso(proceso->PCB->PID);
-	CU_ASSERT_EQUAL(proceso->estado,READY);
-
-	finalizarProceso(proceso->PCB->PID);
-	CU_ASSERT_EQUAL(proceso->estado,EXIT);
-	CU_ASSERT_FALSE(queue_is_empty(colaSalida));
-
-	destruirProceso(proceso->PCB->PID);
-	CU_ASSERT_TRUE(list_is_empty(listaProcesos));
-
-	queue_clean(colaSalida);
-	queue_clean(colaListos);
-	// NO TENEMOS MANERA DE AVISARLE A LA QUEUE QUE SAQUE EL PID DE LA POSICION DONDE SE ENCUENTRA
-	// HABRA QUE CHEQUEAR CADA VEZ QUE SE SACA UN ELEMENTO SI ESTE REALMENTE EXISTE EN EL SISTEMA
-	//CU_ASSERT_TRUE(queue_is_empty(colaSalida));
-	//CU_ASSERT_TRUE(queue_is_empty(colaListos));
-	dictionary_remove(tablaIO,"Scanner");
-}
-void test_bloqueosIO(){
-	int consola=1, cpu=2;
-	queue_push(colaCPU,(void*)cpu);
-
-	t_IO* io = malloc(sizeof(t_IO));
-	io->retardo = 1;
-	io->cola = queue_create();
-	io->estado = INACTIVE;
-	dictionary_put(tablaIO, "Scanner", io);
-
-	t_proceso* proceso = (t_proceso*)crearProceso(consola);
-	proceso->estado = READY;
-
-	ejecutarProceso(proceso->PCB->PID,(int)queue_pop(colaCPU));
-	bloquearProceso(proceso->PCB->PID,"Scanner");
-	dictionary_iterator(tablaIO,(void*)planificarIO);
-	CU_ASSERT_EQUAL(io->estado,ACTIVE);
-	sleep(io->retardo*2);
-	CU_ASSERT_EQUAL(proceso->estado,READY);
-	CU_ASSERT_EQUAL(io->estado,INACTIVE);
-	dictionary_remove(tablaIO,"Scanner");
-}
-void test_obtenerMetadata(){
-	t_proceso* proceso = malloc(sizeof(t_proceso));
-	t_sentencia* sentencia;
-	proceso->PCB = pcb_create();
-	asignarMetadataProceso(proceso,"begin\nvariables a, b\na = 3\n:salto1\nb = 5\n:salto2\na = b + 12\nend\n");
-	sentencia=(t_sentencia*)list_get(proceso->PCB->indice_codigo,0);
-	CU_ASSERT_EQUAL(sentencia->offset_inicio,6);
-	CU_ASSERT_EQUAL(sentencia->offset_fin,6+15);
-	sentencia=(t_sentencia*)list_get(proceso->PCB->indice_codigo,1);
-	CU_ASSERT_EQUAL(sentencia->offset_inicio,21);
-	CU_ASSERT_EQUAL(sentencia->offset_fin,21+6);
-	CU_ASSERT_EQUAL((*(int*)dictionary_get(proceso->PCB->indice_etiquetas,"salto1")),2);
-	CU_ASSERT_EQUAL((*(int*)dictionary_get(proceso->PCB->indice_etiquetas,"salto2")),3);
-	free(sentencia);
-	pcb_destroy(proceso->PCB);
-	free(proceso);
-}
-int test_nucleo(){
-	CU_initialize_registry();
-	CU_pSuite suite_nucleo = CU_add_suite("Suite de Nucleo", NULL, NULL);
-	CU_add_test(suite_nucleo, "Test del ciclo de vida de los procesos", test_cicloDeVidaProcesos);
-	CU_add_test(suite_nucleo, "Test de obtencion de la metadata", test_obtenerMetadata);
-	CU_add_test(suite_nucleo, "Test de bloqueos [Puede tardar un poco]", test_bloqueosIO);
-	CU_basic_set_mode(CU_BRM_VERBOSE);
-	CU_basic_run_tests();
-	CU_cleanup_registry();
-	return CU_get_error();
-}
 int main(void) {
 	system("clear");
 	int i;
@@ -643,16 +287,16 @@ int main(void) {
 	pthread_mutex_init(&lockProccessList, NULL);
 	cargarCFG();
 	configHilos();
-	algoritmo=FIFO;
+	algoritmo = FIFO;
 
 	// INICIO TEST SERIALIZACION
-	if (test_serializacion()!=CUE_SUCCESS){
-		printf("%s",CU_get_error_msg());
+	if (test_serializacion() != CUE_SUCCESS) {
+		printf("%s", CU_get_error_msg());
 		return EXIT_FAILURE;
 	}
 	// INICIO TEST NUCLEO
-	if (test_nucleo()!=CUE_SUCCESS){
-		printf("%s",CU_get_error_msg());
+	if (test_nucleo() != CUE_SUCCESS) {
+		printf("%s", CU_get_error_msg());
 		return EXIT_FAILURE;
 	}
 
@@ -674,7 +318,8 @@ int main(void) {
 		FD_SET(socketConsola, &socketsParaLectura);
 		FD_SET(socketCPU, &socketsParaLectura);
 
-		mayorDescriptor = (socketConsola>socketCPU) ? socketConsola : socketCPU;
+		mayorDescriptor =
+				(socketConsola > socketCPU) ? socketConsola : socketCPU;
 		incorporarClientes();
 
 		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, &espera);
@@ -688,8 +333,7 @@ int main(void) {
 		for (i = 0; i < getMaxClients(); i++) {
 			if (tieneLectura(clientes[i].socket)) {
 				if (read(clientes[i].socket, header, 1) == 0) {
-					log_error(activeLogger,
-							"Un cliente se desconectó.");
+					log_error(activeLogger, "Un cliente se desconectó.");
 					quitarCliente(i);
 				} else
 					procesarHeader(i, header);

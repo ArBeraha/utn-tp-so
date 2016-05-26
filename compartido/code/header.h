@@ -52,10 +52,10 @@ typedef enum {
 	HeaderErrorParaIniciar,
 	HeaderProcesoAgregado,
 	HeaderNoHayEspacio,
-	HeaderHayQueCompactar
+	HeaderHayQueCompactar,
 	HeaderLecturaCorrecta,
 	HeaderLecturaErronea,
-	HeaderProcesoEliminado
+	HeaderProcesoEliminado,
 	HeaderEscrituraCorrecta,
 	HeaderEscrituraErronea
 } header_t;

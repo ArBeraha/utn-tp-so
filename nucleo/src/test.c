@@ -64,6 +64,7 @@ void test_bloqueosIO() {
 	CU_ASSERT_EQUAL(proceso->estado, READY);
 	CU_ASSERT_EQUAL(io->estado, INACTIVE);
 	dictionary_remove(tablaIO, "Scanner");
+	free(io);
 }
 void test_obtenerMetadata() {
 	t_proceso* proceso = malloc(sizeof(t_proceso));

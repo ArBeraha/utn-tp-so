@@ -6,6 +6,15 @@
  */
 #include "nucleo.h"
 
+static bool matrizEstados[5][5] = {
+		//		     NEW    READY  EXEC   BLOCK  EXIT
+		/* NEW 	 */{ false, true,  false, false, true },
+		/* READY */{ false, false, true,  false, true },
+		/* EXEC  */{ false, true,  false, true,  true },
+		/* BLOCK */{ false, true,  false, false, true },
+		/* EXIT  */{ false, false, false, false, false}
+};
+
 /*  ----------INICIO PLANIFICACION ---------- */
 int cantidadProcesos() {
 	int cantidad;
@@ -59,3 +68,28 @@ void planificarIO(char* io_id, t_IO* io) {
 bool terminoQuantum(t_proceso* proceso) {
 	return (!(proceso->PCB->PC % config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
 }
+void asignarCPU(t_proceso* proceso, int cpu){
+	proceso->cpu = cpu;
+	clientes[cpu].pid = proceso->PCB->PID;
+}
+void desasignarCPU(t_proceso* proceso){
+	proceso->cpu = SIN_ASIGNAR;
+	clientes[proceso->cpu].pid = (int)NULL;
+}
+void bloqueo(t_bloqueo* info) {
+	sleep(info->IO->retardo);
+	desbloquearProceso(info->PID);
+	info->IO->estado = INACTIVE;
+	free(info);
+}
+void cambiarEstado(t_proceso* proceso, int estado){
+	if (matrizEstados[proceso->estado][estado])
+		proceso->estado = estado;
+	else
+		log_error(activeLogger, "Cambio de estado ILEGAL de:%d a:%d",
+				proceso->estado, estado);
+}
+
+
+
+

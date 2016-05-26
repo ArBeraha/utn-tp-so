@@ -118,6 +118,7 @@ void agregarCliente(t_cliente cliente){
 		if( clientes[i].socket == 0 )	{
 			clientes[i] = cliente;
 			clientes[i].atentido=false;
+			clientes[i].pid = (int)NULL;
 			printf("Añadido a la lista de sockets como %d\n" , i);
 			break;
 		}

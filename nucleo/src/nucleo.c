@@ -83,11 +83,6 @@ void conectarAUMC() {
 	}
 }
 /*  ----------INICIO CONSOLA ---------- */
-//int getConsolaAsociada(int cliente) {
-//	int PID = charToInt(recv_waitall_ws(cliente, sizeof(int)));
-//	t_proceso* proceso = list_get(listaProcesos, PID);
-//	return proceso->consola;
-//}
 char* getScript(int consola) {
 	log_debug(bgLogger, "Recibiendo archivo de consola %d...", consola);
 	char scriptSize;

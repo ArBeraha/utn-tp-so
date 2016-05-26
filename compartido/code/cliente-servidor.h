@@ -34,7 +34,7 @@ typedef struct {
 	int socket;
 	int identidad;
 	bool atentido;
-
+	int pid;
 } t_cliente;
 
 t_cliente clientes[MAXCLIENTS];

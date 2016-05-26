@@ -62,9 +62,9 @@ t_pedido* stack_max_pedido(t_stack* stack, int pagsize){ //Retorna el ultimo ped
 	t_stack_item* head = stack_head(stack);
 
 	t_pedido* nextPedido = stack_next_pedido(stack, pagsize);
-	if(pedido->offset>=pagsize){
+	if(pedido->offset>=sizeof(int)){ // "Vuelvo <<un lugar>> para atras respecto del pedido que seguiria"
 		pedido->offset -= sizeof(int);
-	}else{ //fixme: rompe si las pags no son multiplos de 4.
+	}else{ //fixme: rompe si las pags no son multiplos de 4. Lo agrego al final de la ultima pagina, porque el proximo pedido va al inicio de la primera.
 		pedido->pagina -= 1;
 		pedido->offset = pagsize - sizeof(int);
 	}

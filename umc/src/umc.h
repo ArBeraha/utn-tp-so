@@ -143,8 +143,8 @@ char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido);
 int buscarPrimerMarcoLibre();
 int cantidadMarcosLibres();
 
-tablaPagina_t* buscarEnSwap(int marcoBuscado, pedidoLectura_t pedido); //TODO
-void agregarAMemoria(tablaPagina_t* paginaBuscada, int pid); //TODO
+int buscarEnSwap(pedidoLectura_t pedido);
+void agregarAMemoria(pedidoLectura_t pedido, char* contenido);
 
 char* devolverPedidoPagina(pedidoLectura_t pedido);   // todos estos volver a devolver void, devuelven cosas para testear
 

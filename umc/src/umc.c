@@ -241,6 +241,13 @@ void sacarDeMemoria(tablaPagina_t* pagina){
 	pagina->marcoUtilizado=-1;
 }
 
+void enviarASwap(tablaPagina_t* pagina){
+	send_w(swapServer, headerToMSG(HeaderOperacionEscritura), 1); //Swap ya sabe que va a recibir tamanio de un marco
+	char* contenido=NULL;
+	memcpy(contenido,memoria+(pagina->marcoUtilizado * config.tamanio_marco),config.tamanio_marco);
+	send_w(swapServer, contenido, strlen(contenido)); //Swap ya sabe que va a recibir tamanio de un marco
+}
+
 void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 
 	int posicionPaginaSacada=0;
@@ -260,6 +267,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 	tablaPagina_t* paginaASacarDeMemoria = list_get(tablaPaginaAReemplazar, posicionPaginaSacada);
 
 	//TODO TODO TODO ENVIAR A SWAP!!!!!  TODO TODO TODO
+	enviarASwap(paginaASacarDeMemoria);
 	sacarDeMemoria(paginaASacarDeMemoria);
 	paginaASacarDeMemoria->bitPresencia=0;
 	paginaASacarDeMemoria->marcoUtilizado=-1;
@@ -801,7 +809,7 @@ int reservarPagina(int cantPaginasPedidas, int pid){ // OK
 
 			nuevaPag->nroPagina = posicion;
 			nuevaPag->marcoUtilizado = unMarcoNuevo;
-			nuevaPag->bitPresencia=1;
+			nuevaPag->bitPresencia=0;
 			nuevaPag->bitModificacion=0;
 			nuevaPag->bitUso=1;
 
@@ -852,6 +860,11 @@ void procesarHeader(int cliente, char *header){
 	log_debug(bgLogger,"Llego un mensaje con header %d\n",charToInt(header));
 	clientes[cliente].atentido=true;
 
+	char* pidScript = NULL;
+	char* cantidadDePaginasScript = NULL;
+	char* tamanioCodigoScript = NULL;
+	char* codigoScript = NULL;
+
 	switch(charToInt(header)) {
 
 	case HeaderError:
@@ -885,47 +898,90 @@ void procesarHeader(int cliente, char *header){
 		clientes[cliente].atentido=false;
 		break;
 
-		case HeaderReservarEspacio:
-
-			pedidoPaginaPid = recv_waitall_ws(cliente, sizeof(int));
-			pedidoPaginaTamanioContenido = recv_waitall_ws(cliente, sizeof(int));
-			//ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
-			log_info(activeLogger,"Nucleo me pidio memoria");
-
-			int cantPaginasPedidas = ((float)charToInt(pedidoPaginaTamanioContenido) + config.tamanio_marco - 1) / config.tamanio_marco; //A+B-1 / B
-			int pid = charToInt(pedidoPaginaPid);
-
-			//TODO Primero: if swap tiene espacio..
-
-			if(reservarPagina(cantPaginasPedidas,pid)){
-				send_w(cliente, headerToMSG(HeaderTeReservePagina), 1);
-			}
-			else{
-				send_w(cliente, headerToMSG(HeaderErrorNoHayPaginas), 1);
-			};
-			break;
+//		case HeaderReservarEspacio:
+//
+//			pedidoPaginaPid = recv_waitall_ws(cliente, sizeof(int));
+//			pedidoPaginaTamanioContenido = recv_waitall_ws(cliente, sizeof(int));
+//			//ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
+//			log_info(activeLogger,"Nucleo me pidio memoria");
+//
+//			int cantPaginasPedidas = ((float)charToInt(pedidoPaginaTamanioContenido) + config.tamanio_marco - 1) / config.tamanio_marco; //A+B-1 / B
+//			int pid = charToInt(pedidoPaginaPid);
+//
+//			//TODO Primero: if swap tiene espacio..
+//
+//			if(reservarPagina(cantPaginasPedidas,pid)){
+//				send_w(cliente, headerToMSG(HeaderTeReservePagina), 1);
+//			}
+//			else{
+//				send_w(cliente, headerToMSG(HeaderErrorNoHayPaginas), 1);
+//			};
+//			break;
 
 		case HeaderTamanioPagina:
 			break;
 
-		case HeaderPedirValorVariable:
+		case HeaderPedirValorVariable:  //OK
 			log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
-			pedidoLectura_t pedido;
-			pedido.pid = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-			pedido.paginaRequerida = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-			pedido.offset = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-			pedido.cantBytes = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-			send_w(cliente,devolverPedidoPagina(pedido),sizeof(int));
+			t_pedido* pedidoCpu = NULL;
+			char* pedidoSerializado = NULL;
+			char* id = NULL;
+			read(clientes[cliente].socket , id, sizeof(int));
+			read(clientes[cliente].socket , pedidoSerializado, sizeof(t_pedido));
+			read(clientes[cliente].socket , pedidoSerializado, sizeof(t_pedido));
+			deserializar_pedido(pedidoSerializado,pedidoCpu);
+
+			pedidoLectura_t pedidoLectura;
+			pedidoLectura.pid=atoi(id);
+			pedidoLectura.paginaRequerida = pedidoCpu->pagina;
+			pedidoLectura.offset = pedidoCpu->offset;
+			pedidoLectura.cantBytes = pedidoCpu->size;
+
+			send_w(clientes[cliente].socket,devolverPedidoPagina(pedidoLectura),sizeof(int));
 			break;
 
-//		case HeaderInicializarPrograma:
-//			char* idPrograma = recv_waitall_ws(cliente,4);
-//			char* contenido = getScript(cliente);
 
-//			inicializarPrograma(idPrograma,contenido);
+		case HeaderScript: //Inicializar programa  // OK
+			read(clientes[cliente].socket , cantidadDePaginasScript, 4);
+			read(clientes[cliente].socket , tamanioCodigoScript, 4);
+			read(clientes[cliente].socket , pidScript, 4);
+			read(clientes[cliente].socket , codigoScript, atoi(tamanioCodigoScript));
+
+			if(inicializarPrograma(atoi(pidScript),codigoScript)){
+				reservarPagina(atoi(cantidadDePaginasScript),atoi(pidScript));
+				send_w(clientes[cliente].socket,"1",sizeof(int));
+			}else{
+				send_w(clientes[cliente].socket,"0",sizeof(int));
+			}
+			break;
 
 		case HeaderGrabarPagina:
 			log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
+
+			t_pedido* pedidoCpuEscritura = NULL;
+			char* pedidoSerializadoEscritura = NULL;
+			char* idEscritura = NULL;
+			char* bufferEscritura = NULL;
+			char* bufferSizeEscritura = NULL;
+
+			read(clientes[cliente].socket, idEscritura, sizeof(int));
+			read(clientes[cliente].socket, pedidoSerializadoEscritura, sizeof(t_pedido));
+			deserializar_pedido(pedidoCpuEscritura,pedidoSerializadoEscritura);
+			read(clientes[cliente].socket, bufferSizeEscritura, sizeof(int));
+			read(clientes[cliente].socket, bufferEscritura, atoi(bufferSizeEscritura));
+
+			pedidoLectura_t pedidoEscritura;
+			pedidoEscritura.pid = atoi(idEscritura);
+			pedidoEscritura.paginaRequerida = pedidoCpuEscritura->pagina;
+			pedidoEscritura.offset = pedidoCpuEscritura->offset;
+			pedidoEscritura.cantBytes = pedidoCpuEscritura->size;
+
+			if(almacenarBytesEnUnaPagina(pedidoEscritura,strlen(bufferEscritura),bufferEscritura) != NULL){
+				send_w(clientes[cliente].socket, "1",sizeof(int));
+			}
+			else{
+				send_w(clientes[cliente].socket, "0",sizeof(int));
+			}
 			break;
 
 		case HeaderLiberarRecursosPagina:

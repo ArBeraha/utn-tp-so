@@ -35,7 +35,7 @@
 #include <math.h>
 #include "CUnit/Basic.h"
 #include <mcheck.h>
-
+#include "serializacion.h"
 
 typedef struct customConfig {
 	int puerto_umc_nucleo;

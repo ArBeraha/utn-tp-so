@@ -255,9 +255,15 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion, t_puntero dondeRetornar
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
 	int posicionFuncion = 0; // TODO acá va la de la funcion
 
-	t_stack_item* newHead;
-	newHead->posicionRetorno=dondeRetornar;
-
+	t_stack_item* newHead = stack_item_create();
+	//newHead->argumentos; //fixme: ¿Como lleno esto? stack_next_pedido parece ser re util
+						   //aca, pero no se como saber cuantos argumentos tengo :(
+						   //parsear la linea a mano no me parece una solucion, pese a que funcionaria...
+	//newHead->identificadores no tiene nada por ahora. Se va llenando en otras primitivas, a medida que se declaren variables locales.
+	newHead->posicionRetorno = dondeRetornar;
+	newHead->posicion = stack_size(stack); // Si el stack tiene pos 0, size=1, si tiene 0 y 1, size=2,... Da la posicion del lugar nuevo.
+	newHead->valorRetorno = *stack_max_pedido(stack, tamanioPaginas);
+	stack_push(stack, newHead);
 
 	setearPC(pcbActual, posicionFuncion);
 	informarInstruccionTerminada();

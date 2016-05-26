@@ -222,27 +222,39 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 	return valorVarCompartida;
 }
 
-//Directiva 7
-//TODO cambiar valor de retorno a t_puntero_instruccion
-void irAlLaber(t_nombre_etiqueta etiqueta) {
-	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
 
-	// Casteo el puntero a void como puntero a int y despunterizo eso: void*->int*, y int*->int.
-	int posicionEtiqueta = *(int*)dictionary_get(pcbActual->indice_etiquetas, etiqueta);
-
-	setearPC(pcbActual, posicionEtiqueta);
-	informarInstruccionTerminada();
-	instruccionTerminada("ir_al_laber");
+bool existeLabel(t_nombre_variable* etiqueta){
+	return dictionary_has_key(pcbActual->indice_etiquetas, etiqueta);
 }
 
-//Directiva 8
-//TODO cambiar valor de retorno a t_puntero_instruccion
-void llamar_sin_retorno(t_nombre_etiqueta nombreFuncion) {
+//Directiva 7
+t_puntero_instruccion irAlLaber(t_nombre_etiqueta etiqueta) {
+	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
+	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
+	if (existeLabel(&etiqueta)) {
+		// Casteo el puntero a void como puntero a int y despunterizo eso: void*->t_puntero_instruccion*, y t_puntero_instruccion*->t_puntero_instruccion.
+		posicionPrimeraInstrUtil = *(t_puntero_instruccion*) dictionary_get(
+				pcbActual->indice_etiquetas, etiqueta);
+		log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
+				etiqueta, posicionPrimeraInstrUtil);
+	} else {
+		log_info(activeLogger,
+				"La etiqueta |%s| no existe, por lo que la posición a retornar será -1.",
+				etiqueta);
+	}
+	setearPC(pcbActual, posicionPrimeraInstrUtil);
+	informarInstruccionTerminada();
+	instruccionTerminada("ir_al_laber");
+	return posicionPrimeraInstrUtil;
+}
+
+//Directiva 8 (cambio respecto de la version inicial del enunciado! esta version es acorde a la nueva.)
+void llamar_con_retorno(t_nombre_etiqueta nombreFuncion) {
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
 	int posicionFuncion = 0; // TODO acá va la de la funcion
 	setearPC(pcbActual, posicionFuncion);
 	informarInstruccionTerminada();
-	instruccionTerminada("Llamar_sin_retorno");
+	instruccionTerminada("llamar_con_retorno");
 }
 
 //Directiva 9
@@ -342,7 +354,7 @@ void inicializar_primitivas() {
 	funciones.AnSISOP_irAlLabel = &irAlLaber;
 	funciones.AnSISOP_imprimir = &imprimir;
 	funciones.AnSISOP_imprimirTexto = &imprimir_texto;
-	funciones.AnSISOP_llamarSinRetorno = &llamar_sin_retorno;
+	funciones.AnSISOP_llamarSinRetorno = &llamar_con_retorno;
 	funciones.AnSISOP_retornar = &retornar;
 	funciones.AnSISOP_entradaSalida = &entrada_salida;
 	funcionesKernel.AnSISOP_wait = &wait;

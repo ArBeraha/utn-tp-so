@@ -22,7 +22,7 @@ void informarInstruccionTerminada() {
 	// Acá nucleo tiene que mandarme el header que corresponda, segun si tengo que seguir ejecutando instrucciones o tengo que desalojar.
 }
 void setearPC(t_PCB* pcb, int pc) {
-	log_info("Actualizando PC de |%d| a |%d|.", pcb->PC, pc);
+	log_info(activeLogger, "Actualizando PC de |%d| a |%d|.", pcb->PC, pc);
 	pcb->PC = pc;
 }
 void incrementarPC(t_PCB* pcb) {
@@ -223,15 +223,16 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 }
 
 
-bool existeLabel(t_nombre_variable* etiqueta){
+bool existeLabel(t_nombre_etiqueta etiqueta){
 	return dictionary_has_key(pcbActual->indice_etiquetas, etiqueta);
 }
 
 //Directiva 7
-t_puntero_instruccion irAlLaber(t_nombre_etiqueta etiqueta) {
+// fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
+void irAlLaber(t_nombre_etiqueta etiqueta) {
 	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
 	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
-	if (existeLabel(&etiqueta)) {
+	if (existeLabel(etiqueta)) {
 		// Casteo el puntero a void como puntero a int y despunterizo eso: void*->t_puntero_instruccion*, y t_puntero_instruccion*->t_puntero_instruccion.
 		posicionPrimeraInstrUtil = *(t_puntero_instruccion*) dictionary_get(
 				pcbActual->indice_etiquetas, etiqueta);
@@ -245,13 +246,19 @@ t_puntero_instruccion irAlLaber(t_nombre_etiqueta etiqueta) {
 	setearPC(pcbActual, posicionPrimeraInstrUtil);
 	informarInstruccionTerminada();
 	instruccionTerminada("ir_al_laber");
-	return posicionPrimeraInstrUtil;
+	//return posicionPrimeraInstrUtil;
 }
 
-//Directiva 8 (cambio respecto de la version inicial del enunciado! esta version es acorde a la nueva.)
-void llamar_con_retorno(t_nombre_etiqueta nombreFuncion) {
+//Directiva 8
+//Cambio respecto de la version inicial del enunciado! esta version es acorde a la nueva.
+void llamar_con_retorno(t_nombre_etiqueta nombreFuncion, t_puntero dondeRetornar) {
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
 	int posicionFuncion = 0; // TODO acá va la de la funcion
+
+	t_stack_item* newHead;
+	newHead->posicionRetorno=dondeRetornar;
+
+
 	setearPC(pcbActual, posicionFuncion);
 	informarInstruccionTerminada();
 	instruccionTerminada("llamar_con_retorno");
@@ -278,23 +285,26 @@ int digitosDe(t_valor_variable valor){
 	int digitos = snprintf(0, 0, "%d", valor);
 	return esPositivo ? digitos : digitos + 1;
 }
+
 // Directiva 10
-int imprimir(t_valor_variable valor) { //fixme, no era distinto esto?
+// fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
+void imprimir(t_valor_variable valor) { //fixme, no era distinto esto?
 	log_info(activeLogger, "Imprimir |%d|", valor);
 	send_w(cliente_nucleo, headerToMSG(HeaderImprimirVariableNucleo), 1);
 	send_w(cliente_nucleo, intToChar4(valor), sizeof(t_valor_variable));
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Imprimir");
-	return digitosDe(valor);
+	//return digitosDe(valor);
 }
 
 //Directiva 11
-int imprimir_texto(char* texto) {
+// fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
+void imprimir_texto(char* texto) {
 	int size = strlen(texto) + 1; // El strlen no cuenta el \0. strlen("hola\0") = 4.
 	log_debug(activeLogger, "Enviando a nucleo la cadena: |%s|...", texto);
 	send_w(cliente_nucleo, headerToMSG(HeaderImprimirTextoNucleo), 1);
-	char* msgSize;
+	char* msgSize = NULL;
 	serializar_int(msgSize, &size);
 	send_w(cliente_nucleo, msgSize, sizeof(int)); //intToChar4 produce un memory leak si no se usa free
 	send_w(cliente_nucleo, texto, size); //envio a nucleo la cadena a imprimir
@@ -304,7 +314,7 @@ int imprimir_texto(char* texto) {
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Imprimir texto");
-	return strlen(texto); //Size tiene el \0, que no se imprime.
+	//return strlen(texto); //Size tiene el \0, que no se imprime.
 }
 
 // Directiva 12
@@ -354,7 +364,7 @@ void inicializar_primitivas() {
 	funciones.AnSISOP_irAlLabel = &irAlLaber;
 	funciones.AnSISOP_imprimir = &imprimir;
 	funciones.AnSISOP_imprimirTexto = &imprimir_texto;
-	funciones.AnSISOP_llamarSinRetorno = &llamar_con_retorno;
+	funciones.AnSISOP_llamarConRetorno = &llamar_con_retorno;
 	funciones.AnSISOP_retornar = &retornar;
 	funciones.AnSISOP_entradaSalida = &entrada_salida;
 	funcionesKernel.AnSISOP_wait = &wait;
@@ -482,7 +492,6 @@ int queda_espacio_en_pagina(t_sentencia* sentencia) { //precondicion: el offset 
 }
 
 void enviar_solicitud(int pagina, int offset, int size) {
-
 	t_pedido pedido;
 	pedido.offset = offset;
 	pedido.pagina = pagina;
@@ -541,7 +550,9 @@ void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 }
 
 void esperar_sentencia() {
-	char* header = recv_waitall_ws(cliente_nucleo, sizeof(char));
+	log_info(activeLogger, "Esperando sentencia de UMC...");
+	char* header = recv_waitall_ws(cliente_umc, sizeof(char));
+	log_info(activeLogger, "Sentencia de UMC recibida...");
 	procesarHeader(header);
 	free(header);
 }
@@ -566,10 +577,9 @@ void enviarPCB(){
 }
 
 void obtener_y_parsear() {
-	char tamanioSentencia;
-	read(cliente_umc, &tamanioSentencia, 1);
-
-	char* sentencia = recv_waitall_ws(cliente_umc, tamanioSentencia);
+	char* tamanioSentencia = recv_waitall_ws(cliente_umc, sizeof(int));
+	int tamanio = char4ToInt(tamanioSentencia);
+	char* sentencia = recv_waitall_ws(cliente_umc, tamanio);
 	parsear(sentencia);
 	free(sentencia);
 }

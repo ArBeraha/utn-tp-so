@@ -101,3 +101,10 @@ int test_nucleo() {
 	CU_cleanup_registry();
 	return CU_get_error();
 }
+int testear(int(*suite)(void)){
+	if (suite() != CUE_SUCCESS) {
+		printf("%s", CU_get_error_msg());
+		return EXIT_FAILURE;
+	}
+	return 0;
+}

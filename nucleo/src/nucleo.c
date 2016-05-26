@@ -187,6 +187,19 @@ struct timeval newEspera() {
 	espera.tv_usec = 500000; 		//Microsegundos
 	return espera;
 }
+void inicializar(){
+	listaProcesos = list_create();
+	colaCPU = queue_create();
+	colaListos = queue_create();
+	colaSalida = queue_create();
+	tablaIO = dictionary_create();
+	tablaSEM = dictionary_create();
+	tablaGlobales = dictionary_create();
+	pthread_mutex_init(&lockProccessList, NULL);
+	cargarCFG();
+	configHilos();
+	algoritmo = FIFO;
+}
 void finalizar() {
 	destruirLogs();
 	list_destroy(listaProcesos);
@@ -277,29 +290,10 @@ int main(void) {
 	int i;
 	struct timeval espera = newEspera(); // Periodo maximo de espera del select
 	char header[1];
-	listaProcesos = list_create();
-	colaCPU = queue_create();
-	colaListos = queue_create();
-	colaSalida = queue_create();
-	tablaIO = dictionary_create();
-	tablaSEM = dictionary_create();
-	tablaGlobales = dictionary_create();
-	pthread_mutex_init(&lockProccessList, NULL);
-	cargarCFG();
-	configHilos();
-	algoritmo = FIFO;
 
-	// INICIO TEST SERIALIZACION
-	if (test_serializacion() != CUE_SUCCESS) {
-		printf("%s", CU_get_error_msg());
-		return EXIT_FAILURE;
-	}
-	// INICIO TEST NUCLEO
-	if (test_nucleo() != CUE_SUCCESS) {
-		printf("%s", CU_get_error_msg());
-		return EXIT_FAILURE;
-	}
-
+	inicializar();
+	testear(test_serializacion);
+	testear(test_nucleo);
 	//system("clear");
 	crearLogs("Nucleo", "Nucleo");
 
@@ -310,7 +304,6 @@ int main(void) {
 
 	inicializarClientes();
 	log_info(activeLogger, "Esperando conexiones ...");
-
 	conectarAUMC();
 
 	while (1) {

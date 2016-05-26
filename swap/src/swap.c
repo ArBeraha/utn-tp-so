@@ -180,11 +180,11 @@ int espaciosUtilizados (t_bitarray* unEspacio)
 
 //Comprueba si hay fragmentacion externa
 int hayFragmentacionExterna(int paginasAIniciar) {
-	int cantidadMarcos = bitarray_get_max_bit(espacio);
+	int cantidadDePaginas = bitarray_get_max_bit(espacio);
 	int i=0;
 	int flag = 1;
 	int marcos;
-	for (i = 0; i < cantidadMarcos; i++) {
+	for (i = 0; i < cantidadDePaginas; i++) {
 		if(bitarray_test_bit(espacio,i)==0) marcos++;
 		if(bitarray_test_bit(espacio,i)) marcos=0;
 		if (marcos>= paginasAIniciar) {
@@ -439,11 +439,11 @@ void escribirPagina(int pid, int paginaAEscribir, int tamanio) {
 	if (archivoSwap == NULL) {
 		printf("Error al abrir el archivo para escribir\n");
 	}
-	char* texto = malloc(cantPaginasSwap);
+	char* texto = malloc(tamanioPag);
 	recv(cliente, (void*) texto, tamanio, MSG_WAITALL);
 	//Al buffer que me envian para escribir lo lleno de ceros hasta completar el tamaño de página
 	int i;
-	for (i = tamanio; i < cantPaginasSwap; i++) {
+	for (i = tamanio; i < tamanioPag; i++) {
 		texto[i] = '\0';
 	}
 	//Me posiciono en la página que quiero escribir y escribo
@@ -451,7 +451,7 @@ void escribirPagina(int pid, int paginaAEscribir, int tamanio) {
 	int marcoAEscribir = (marcoInicial + paginaAEscribir); //TODO: marcoAEscribir señala el final del marco
 	fseek(archivoSwap, marcoAEscribir, SEEK_SET);
 	printf("texto:%s\n", texto);
-	int exitoAlEscribir = fwrite(texto, cantPaginasSwap, 1, archivoSwap);
+	int exitoAlEscribir = fwrite(texto, tamanioPag, 1, archivoSwap);
 
 	fclose(archivoSwap);
 	usleep(retAcceso);
@@ -460,8 +460,8 @@ void escribirPagina(int pid, int paginaAEscribir, int tamanio) {
 	if (exitoAlEscribir == 1) {
 	    printf("Pagina escrita exitosamente\n");
 		send_w(cliente, headerToMSG(HeaderEscrituraCorrecta),1 );
-		log_info(activeLogger, "El Programa %d - Byte Inicial:%d Tamanio:%d Contenido:%s. Escritura realizada correctamente.",
-					pid, marcoInicial * cantPaginasSwap, tamanio, texto);
+		log_info(activeLogger, "El Programa %d - Pagina Inicial:%d Tamanio:%d Contenido:%s. Escritura realizada correctamente.",
+					pid, marcoInicial, tamanio, texto);
 	} else {
 		printf("Error al escribir pagina\n");
 		send_w(cliente, headerToMSG(HeaderEscrituraErronea), 1);
@@ -490,7 +490,7 @@ void finalizarProceso(int pid) {
 	pid, proceso->posPagina, proceso->cantidadDePaginas);
 	send_w(cliente, headerToMSG(HeaderProcesoEliminado), 1);
 	free(proceso);
-			}
+}
 
 
 

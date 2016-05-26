@@ -26,7 +26,7 @@ void setearPC(t_PCB* pcb, int pc) {
 	pcb->PC = pc;
 }
 void incrementarPC(t_PCB* pcb) {
-	setearPC(pcb,(pcb->PC)+1);
+	setearPC(pcb, (pcb->PC) + 1);
 }
 
 void instruccionTerminada(char* instr) {
@@ -40,12 +40,12 @@ void desalojarProceso() {
 	free(pcb);
 }
 
-t_pedido maximo(t_pedido pedido1, t_pedido pedido2){ //Determina que pedido está mas lejos respecto del inicio!
-	if(pedido1.pagina>pedido2.pagina){
+t_pedido maximo(t_pedido pedido1, t_pedido pedido2) { //Determina que pedido está mas lejos respecto del inicio!
+	if (pedido1.pagina > pedido2.pagina) {
 		return pedido1;
 	}
-	if(pedido1.pagina==pedido2.pagina){
-		return (pedido1.offset>pedido2.offset?pedido1:pedido2);
+	if (pedido1.pagina == pedido2.pagina) {
+		return (pedido1.offset > pedido2.offset ? pedido1 : pedido2);
 	}
 	return pedido2;
 }
@@ -59,7 +59,7 @@ t_pedido maximo(t_pedido pedido1, t_pedido pedido2){ //Determina que pedido est�
 t_puntero definir_variable(t_nombre_variable variable) {
 	incrementarPC(pcbActual);
 
-	t_pedido* direccion = stack_next_pedido(stack,tamanioPaginas);
+	t_pedido* direccion = stack_next_pedido(stack, tamanioPaginas);
 	t_stack_item* head = stack_pop(stack);
 	dictionary_put(head->identificadores, &variable, (void*) direccion);
 	stack_push(stack, head);
@@ -69,30 +69,30 @@ t_puntero definir_variable(t_nombre_variable variable) {
 	return head->posicion;
 }
 
-bool esVariableDeclarada(t_stack_item* item, t_nombre_variable* variable){
+bool esVariableDeclarada(t_stack_item* item, t_nombre_variable* variable) {
 	return dictionary_has_key(item->identificadores, variable);
 }
 
-bool esParametro(t_nombre_variable variable){
-	return (variable>='0' && variable<='9');
+bool esParametro(t_nombre_variable variable) {
+	return (variable >= '0' && variable <= '9');
 }
 
-int tipoVaraible(t_nombre_variable variable,t_stack_item* head){
-	if(esVariableDeclarada(head, &variable)){
+int tipoVaraible(t_nombre_variable variable, t_stack_item* head) {
+	if (esVariableDeclarada(head, &variable)) {
 		return DECLARADA;
-	}else{
-		if(esParametro(variable)){
+	} else {
+		if (esParametro(variable)) {
 			return PARAMETRO;
 		}
 	}
 	return NOEXISTE;
 }
 
-t_puntero obtener_posicion_de(t_nombre_variable variable) {			//dejo comentada la otra solucion por si las dudas
+t_puntero obtener_posicion_de(t_nombre_variable variable) {	//dejo comentada la otra solucion por si las dudas
 	log_info(activeLogger, "Obtener posicion de |%c|.", variable);
 	t_puntero pointer;
 	t_stack_item* head = stack_head(stack);
-	switch(tipoVaraible(variable,head)){
+	switch (tipoVaraible(variable, head)) {
 	case DECLARADA:
 		pointer = head->posicion;
 		break;
@@ -104,11 +104,11 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {			//dejo comentada l
 		break;
 	}
 
-	if(pointer < 0 ){
+	if (pointer < 0) {
 		log_info(activeLogger,
 				"Se encontro la variable |%c| en la posicion |%d|.", variable,
 				pointer);
-	} else{
+	} else {
 		log_info(activeLogger, "No se encontro la variable |%c|., variable");
 	}
 
@@ -117,7 +117,6 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {			//dejo comentada l
 	instruccionTerminada("obtener_posicion_de");
 	return pointer;
 }
-
 
 void enviar_direccion_umc(t_puntero direccion) {
 	t_stack_item* stackItem = stack_get(pcbActual->SP, direccion);
@@ -132,7 +131,7 @@ void enviar_direccion_umc(t_puntero direccion) {
 }
 
 // directiva 3
-t_valor_variable dereferenciar(t_puntero direccion) {// Pido a UMC el valor de la variable de direccion
+t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de la variable de direccion
 	t_valor_variable valor;
 	log_info(activeLogger, "Dereferenciar |%d|.", direccion);
 
@@ -140,7 +139,8 @@ t_valor_variable dereferenciar(t_puntero direccion) {// Pido a UMC el valor de l
 	enviar_direccion_umc(direccion);
 	char* res = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
 	valor = charToInt(res);
-	log_info(activeLogger, "|%d| dereferenciada! Su valor es |%d|.", direccion, valor);
+	log_info(activeLogger, "|%d| dereferenciada! Su valor es |%d|.", direccion,
+			valor);
 
 	free(res);
 	incrementarPC(pcbActual);
@@ -156,7 +156,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 
 	send_w(cliente_umc, headerToMSG(HeaderAsignarValor), 1);
 	enviar_direccion_umc(direccion_variable);
-	send_w(cliente_umc, intToChar4(valor), sizeof(t_valor_variable));//envio el valor de la variable
+	send_w(cliente_umc, intToChar4(valor), sizeof(t_valor_variable)); //envio el valor de la variable
 
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
@@ -164,11 +164,12 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 }
 
 // Directiva 5
-t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartida) { // Pido a Nucleo el valor de la variable
-	log_info(activeLogger,
-			"Obtener valor de variable compartida |%s|.", nombreVarCompartida);
+t_valor_variable obtener_valor_compartida(
+		t_nombre_compartida nombreVarCompartida) { // Pido a Nucleo el valor de la variable
+	log_info(activeLogger, "Obtener valor de variable compartida |%s|.",
+			nombreVarCompartida);
 	t_valor_variable valor;
-	int nameSize = strlen(nombreVarCompartida)+1;
+	int nameSize = strlen(nombreVarCompartida) + 1;
 
 	send_w(cliente_nucleo, headerToMSG(HeaderPedirValorVariableCompartida), 1);
 	send_w(cliente_nucleo, intToChar4(nameSize), sizeof(int));
@@ -177,8 +178,8 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 	char* value = recv_waitall_ws(cliente_nucleo, sizeof(int));
 	valor = char4ToInt(value);
 
-	log_info(activeLogger,
-				"Valor obtenido: |%s| vale |%d|.", nombreVarCompartida, valor);
+	log_info(activeLogger, "Valor obtenido: |%s| vale |%d|.",
+			nombreVarCompartida, valor);
 	free(value);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
@@ -187,15 +188,18 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 }
 
 //Directiva 6
-t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartida,
+t_valor_variable asignar_valor_compartida(
+		t_nombre_compartida nombreVarCompartida,
 		t_valor_variable valorVarCompartida) {
-	log_info(activeLogger,//envio el nombre de la variable
-			"Asignar el valor |%d| a la variable compartida |%s|.", valorVarCompartida,
-			nombreVarCompartida);
-	int nameSize = strlen(nombreVarCompartida)+1;
+	log_info(
+			activeLogger, //envio el nombre de la variable
+			"Asignar el valor |%d| a la variable compartida |%s|.",
+			valorVarCompartida, nombreVarCompartida);
+	int nameSize = strlen(nombreVarCompartida) + 1;
 
 	//envio el header, el tamaño del nombre y el nombre
-	send_w(cliente_nucleo, headerToMSG(HeaderAsignarValorVariableCompartida), 1);
+	send_w(cliente_nucleo, headerToMSG(HeaderAsignarValorVariableCompartida),
+			1);
 	send_w(cliente_nucleo, intToChar4(nameSize), sizeof(int));
 	send_w(cliente_nucleo, nombreVarCompartida, nameSize);
 
@@ -205,15 +209,15 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 
 	//Espero a que nucleo informe la asignacion, para no usar un valor antiguo.
 	char* respuesta = recv_nowait_ws(cliente_nucleo, 1);
-	if(!charToInt(respuesta)==HeaderAsigneValorVariableCompartida){
+	if (!charToInt(respuesta) == HeaderAsigneValorVariableCompartida) {
 		log_error(activeLogger,
 				"Se esperaba que nucleo asigne el valor |%d| a la variable compartida |%s| y no sucedio",
 				valorVarCompartida, nombreVarCompartida);
 		log_info(activeLogger, "Se continua la ejecucion de todas formas");
-	}else{
+	} else {
 		log_info(activeLogger,
-				"Asignado el valor |%d| a la variable compartida |%s|.", valorVarCompartida,
-				nombreVarCompartida);
+				"Asignado el valor |%d| a la variable compartida |%s|.",
+				valorVarCompartida, nombreVarCompartida);
 	}
 
 	incrementarPC(pcbActual);
@@ -222,8 +226,7 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 	return valorVarCompartida;
 }
 
-
-bool existeLabel(t_nombre_etiqueta etiqueta){
+bool existeLabel(t_nombre_etiqueta etiqueta) {
 	return dictionary_has_key(pcbActual->indice_etiquetas, etiqueta);
 }
 
@@ -251,14 +254,15 @@ void irAlLaber(t_nombre_etiqueta etiqueta) {
 
 //Directiva 8
 //Cambio respecto de la version inicial del enunciado! esta version es acorde a la nueva.
-void llamar_con_retorno(t_nombre_etiqueta nombreFuncion, t_puntero dondeRetornar) {
+void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,
+		t_puntero dondeRetornar) {
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
 	int posicionFuncion = 0; // TODO acá va la de la funcion
 
 	t_stack_item* newHead = stack_item_create();
 	//newHead->argumentos; //fixme: ¿Como lleno esto? stack_next_pedido parece ser re util
-						   //aca, pero no se como saber cuantos argumentos tengo :(
-						   //parsear la linea a mano no me parece una solucion, pese a que funcionaria...
+	//aca, pero no se como saber cuantos argumentos tengo :(
+	//parsear la linea a mano no me parece una solucion, pese a que funcionaria...
 	//newHead->identificadores no tiene nada por ahora. Se va llenando en otras primitivas, a medida que se declaren variables locales.
 	newHead->posicionRetorno = dondeRetornar;
 	newHead->posicion = stack_size(stack); // Si el stack tiene pos 0, size=1, si tiene 0 y 1, size=2,... Da la posicion del lugar nuevo.
@@ -286,7 +290,7 @@ t_puntero_instruccion retornar(t_valor_variable variable) {
 	return retorno;
 }
 
-int digitosDe(t_valor_variable valor){
+int digitosDe(t_valor_variable valor) {
 	bool esPositivo = valor > 0;
 	int digitos = snprintf(0, 0, "%d", valor);
 	return esPositivo ? digitos : digitos + 1;
@@ -405,23 +409,26 @@ void parsear(char* const sentencia) {
 /*--------Funciones----------*/
 
 void pedir_tamanio_paginas() {
-	if(!DEBUG_IGNORE_UMC){
+	if (!DEBUG_IGNORE_UMC) {
 		send_w(cliente_umc, headerToMSG(HeaderTamanioPagina), 1); //le pido a umc el tamanio de las paginas
 		char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
 		tamanioPaginas = char4ToInt(tamanio);
-		log_debug(activeLogger, "El tamaño de paginas es: |%d|", tamanioPaginas);
+		log_debug(activeLogger, "El tamaño de paginas es: |%d|",
+				tamanioPaginas);
 		free(tamanio);
-	}else{
+	} else {
 		tamanioPaginas = -1;
-		log_debug(activeLogger, "UMC DEBUG ACTIVADO! tamanioPaginas va a valer -1.");
+		log_debug(activeLogger,
+				"UMC DEBUG ACTIVADO! tamanioPaginas va a valer -1.");
 	}
 }
 
 void esperar_programas() {
 	log_debug(bgLogger, "Esperando programas de nucleo.");
 	char* header;
-	if(DEBUG_NO_PROGRAMS){
-		log_debug(activeLogger, "DEBUG NO PROGRAMS activado! Ignorando programas...");
+	if (DEBUG_NO_PROGRAMS) {
+		log_debug(activeLogger,
+				"DEBUG NO PROGRAMS activado! Ignorando programas...");
 	}
 	while (!DEBUG_NO_PROGRAMS) {
 		header = recv_waitall_ws(cliente_nucleo, 1);
@@ -476,7 +483,7 @@ int longitud_sentencia(t_sentencia* sentencia) {
 int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
 	int offsetInicio = fuente->offset_inicio;
 	int numeroPagina = (int) (offsetInicio / tamanioPaginas); //obtengo el numero de pagina
-	int offsetRelativo = (int) offsetInicio % tamanioPaginas;//obtengo el offset relativo
+	int offsetRelativo = (int) offsetInicio % tamanioPaginas; //obtengo el offset relativo
 
 	int longitud = longitud_sentencia(fuente);
 
@@ -522,7 +529,7 @@ void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 	send_w(cliente_umc, headerToMSG(HeaderSolicitudSentencia), 1); //envio el header
 
 	int i = 0;
-	int longitud_restante = longitud_sentencia(sentenciaAux);//longitud total de la sentencia
+	int longitud_restante = longitud_sentencia(sentenciaAux); //longitud total de la sentencia
 	int cantidad_pags = cantidad_paginas_ocupa(sentenciaAux);
 
 	log_debug(bgLogger, "La instruccion ocupa |%d| paginas", cantidad_pags);
@@ -574,11 +581,11 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	esperar_sentencia();
 }
 
-void enviarPCB(){
+void enviarPCB() {
 	char* pcb = string_new();
-	serializar_PCB(pcb,pcbActual);
+	serializar_PCB(pcb, pcbActual);
 
-	send_w(cliente_nucleo,pcb,sizeof(t_PCB));
+	send_w(cliente_nucleo, pcb, sizeof(t_PCB));
 	free(pcb);
 }
 
@@ -671,10 +678,10 @@ void inicializar() {
 	inicializar_primitivas();
 }
 void finalizar() {
-	if(!DEBUG_NO_PROGRAMS){
-		log_debug(activeLogger,"Destruyendo pcb...");
+	if (!DEBUG_NO_PROGRAMS) {
+		log_debug(activeLogger, "Destruyendo pcb...");
 		pcb_destroy(pcbActual);
-		log_debug(activeLogger,"PCB Destruido...");
+		log_debug(activeLogger, "PCB Destruido...");
 	}
 	liberar_primitivas();
 	destruirLogs();
@@ -685,14 +692,14 @@ void finalizar() {
 }
 
 /*------------otras------------*/
-void handler(int sign){
-	if(sign== SIGUSR1){
+void handler(int sign) {
+	if (sign == SIGUSR1) {
 		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
 		finalizar();
 		//desconectar de UMC y Nucleo, pero primero deberia terminar de ejecutar el proceso actual
-	}
-	else{
-		log_info(activeLogger, "Recibi la señal numero |%d|, que no es SIGUSER1.", sign);
+	} else {
+		log_info(activeLogger,
+				"Recibi la señal numero |%d|, que no es SIGUSER1.", sign);
 	}
 }
 

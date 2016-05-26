@@ -43,14 +43,9 @@ typedef enum {
 	DECLARADA, PARAMETRO, NOEXISTE
 } t_localidad_variable;
 
-
-t_config* configCPU;
-customConfig_t config;
-
 /*------------Macros--------------*/
 #define DEBUG_IGNORE_UMC false
 #define DEBUG_NO_PROGRAMS false
-
 
 /*------------Variables Globales--------------*/
 int cliente_nucleo; //cpu es cliente del nucleo
@@ -66,5 +61,8 @@ int tamanioPaginas;					//Tamaño de las paginas
 
 t_PCB* pcbActual;
 t_stack* stack;
+
+t_config* configCPU;
+customConfig_t config;
 
 #endif /* CPU_H_ */

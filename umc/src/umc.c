@@ -259,6 +259,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 
 	tablaPagina_t* paginaASacarDeMemoria = list_get(tablaPaginaAReemplazar, posicionPaginaSacada);
 
+	//TODO TODO TODO ENVIAR A SWAP!!!!!  TODO TODO TODO
 	sacarDeMemoria(paginaASacarDeMemoria);
 	paginaASacarDeMemoria->bitPresencia=0;
 	paginaASacarDeMemoria->marcoUtilizado=-1;

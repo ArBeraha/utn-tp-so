@@ -56,6 +56,22 @@ t_pedido* stack_next_pedido(t_stack* fuente, int pagsize) {
 	return pedido;
 }
 
+t_pedido* stack_max_pedido(t_stack* stack, int pagsize){ //Retorna el ultimo pedido hecho
+	t_pedido* pedido = malloc(sizeof(t_pedido));
+	int posicionUltimo;
+	t_stack_item* head = stack_head(stack);
+
+	t_pedido* nextPedido = stack_next_pedido(stack, pagsize);
+	if(pedido->offset>=pagsize){
+		pedido->offset -= sizeof(int);
+	}else{ //fixme: rompe si las pags no son multiplos de 4.
+		pedido->pagina -= 1;
+		pedido->offset = pagsize - sizeof(int);
+	}
+	return pedido;
+}
+
+
 t_stack_item* stack_item_create(){
 	t_stack_item* item = malloc(sizeof(t_stack_item));
 	item->argumentos = list_create();

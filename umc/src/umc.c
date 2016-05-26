@@ -144,8 +144,18 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 
 }
 
-tablaPagina_t* buscarEnSwap(int marcoBuscado, pedidoLectura_t pedido){
-	//TODO
+int buscarEnSwap(pedidoLectura_t pedido){
+
+//	send_w(swapServer, headerToMSG(HeaderOperacionLectura), 1);
+//	send_w(swapServer, intToChar(pedido.pid), 1);
+//	send_w(swapServer, intToChar(pedido.paginaRequerida), 1);
+//	char* contenido = recv_waitall_ws(swapServer,config.tamanio_marco);
+
+	char* contenido = "HOLAAA";
+
+	agregarAMemoria(pedido,contenido);
+
+	return 1;
 }
 
 int sacarConClock(int pid){
@@ -225,32 +235,47 @@ int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO Q
 	return -1;
 }
 
-void agregarAMemoria(tablaPagina_t* paginaACargar, int pid){
+void sacarDeMemoria(tablaPagina_t* pagina){
+	memset(memoria+(pagina->marcoUtilizado * config.tamanio_marco),'\0',config.tamanio_marco);
+	vectorMarcosOcupados[pagina->marcoUtilizado]=0;
+	pagina->marcoUtilizado=-1;
+}
+
+void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 
 	int posicionPaginaSacada=0;
 	if(strcmp(config.algoritmo_paginas,"CLOCK")){
-		posicionPaginaSacada=sacarConClock(pid);
+		posicionPaginaSacada=sacarConClock(pedido.pid);
 	}else {
 		if(strcmp(config.algoritmo_paginas,"CLOCK_MODIFICADO")){
-			posicionPaginaSacada=sacarConModificado(pid);
+			posicionPaginaSacada=sacarConModificado(pedido.pid);
 		}
 		else{
 			printf("Error sintaxis algoritmo: CLOCK o CLOCK_MODIFICADO");
 		}
 
 	}
+	t_list* tablaPaginaAReemplazar = list_get(listaTablasPaginas, pedido.pid);
 
-	t_list* tablaPaginaAReemplazar = list_get(listaTablasPaginas, pid);
-	tablaPagina_t* paginaAReemplazar = list_get(tablaPaginaAReemplazar, posicionPaginaSacada);
+	tablaPagina_t* paginaASacarDeMemoria = list_get(tablaPaginaAReemplazar, posicionPaginaSacada);
 
-	paginaAReemplazar->nroPagina = paginaACargar->nroPagina;
-	paginaAReemplazar->marcoUtilizado = paginaACargar->marcoUtilizado;
-	paginaAReemplazar->bitPresencia = 1;
-	paginaAReemplazar->bitModificacion = 0;
-	paginaAReemplazar->bitUso=0;
+	//TODO TODO TODO ENVIAR A SWAP!!!!!  TODO TODO TODO
+	sacarDeMemoria(paginaASacarDeMemoria);
+	paginaASacarDeMemoria->bitPresencia=0;
+	paginaASacarDeMemoria->marcoUtilizado=-1;
+
+	tablaPagina_t* paginaACargar = list_get(tablaPaginaAReemplazar, pedido.paginaRequerida);
+	paginaACargar->marcoUtilizado = buscarPrimerMarcoLibre();
+	paginaACargar->bitPresencia = 1;
+	paginaACargar->bitModificacion = 0;
+	paginaACargar->bitUso=1;
+
+	almacenarBytesEnUnaPagina(pedido,config.tamanio_marco,contenido);
 }
 
 char* devolverPedidoPagina(pedidoLectura_t pedido){
+
+	log_info(activeLogger,"LECTURA DE pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
 	//SI ESTA EN TLB DEVUELVO
 
@@ -284,7 +309,6 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 
 	//SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
 				if(paginaBuscada->bitPresencia){
-
 					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
 					printf("Accediendo a memoria... \n");
@@ -305,12 +329,17 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 				}
 	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y LA CARGO EN MEMORIA Y TLB Y VUELVO A LLAMAR A FUNCION
 				else{
-					tablaPagina_t* devolucion = buscarEnSwap(paginaBuscada->marcoUtilizado,pedido);
-					agregarAMemoria(devolucion,pedido.pid);
-					devolucion->bitPresencia=1;
-					devolucion->bitModificacion=0;
-					agregarATlb(devolucion,pedido.pid);
-					devolverPedidoPagina(pedido);
+					log_info(activeLogger,"Se encontro la pagina pero NO esta en memoria (LECTURA)! Buscando en swap: pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+					flushTlb();
+					int pudo = buscarEnSwap(pedido);
+					if(pudo){
+						agregarATlb(paginaBuscada,pedido.pid);
+						log_info(activeLogger,"Cargada pagina en memoria, agregada a TLB, se vuelve a hacer el pedido de lectura! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+						devolverPedidoPagina(pedido);
+					}
+					else{
+						return "Error busqueda en swap";
+					}
 				}
 			}
 	// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
@@ -343,6 +372,8 @@ int inicializarPrograma(int idPrograma, char* contenido){
 }
 
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){  //TODO Falta lo de swap
+
+	log_info(activeLogger,"ESCRITURA DE pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
 	if(estaEnTlb(pedido) && config.entradas_tlb){
 
@@ -397,9 +428,17 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 				}
 	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y TODO LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
 				else{
-					char* contenidoEnSwap = buscarEnSwap(paginaBuscada->marcoUtilizado,pedido);
-					agregarAMemoria(paginaBuscada,pedido.pid);
-					almacenarBytesEnUnaPagina(pedido,size,buffer);
+					log_info(activeLogger,"Se encontro la pagina pero NO esta en memoria (ESCRITURA)! Buscando en swap: pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+					flushTlb();
+					int pudo = buscarEnSwap(pedido);
+					if(pudo){
+						agregarATlb(paginaBuscada,pedido.pid);
+						log_info(activeLogger,"Cargada pagina en memoria, agregada a TLB, se vuelve a hacer el pedido de escritura! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+						devolverPedidoPagina(pedido);
+					}
+					else{
+						return "Error busqueda en swap";
+					}
 				}
 			}// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
 			else{
@@ -1140,23 +1179,6 @@ void test(){
 	printf(" -------------------------------------------  \n \n");
 	printf(" -------------------------------------------  \n \n");
 
-	printf("Test inicializar programa \n \n ");
-
-//	inicializarPrograma(4,"123456789123456789123456789123456789123456789123456789123456789"); //36 bytes
-
-	devolverTodaLaMemoria();
-	devolverTodasLasPaginas();
-
-	printf("\n \n");
-	printf("Y si finalizo, la tabla de pags y de memoria: \n \n");
-
-//	finalizarPrograma(4);
-	devolverTodaLaMemoria();
-	devolverTodasLasPaginas();
-
-	printf(" -------------------------------------------  \n \n");
-	printf(" -------------------------------------------  \n \n");
-
 
 	flushTlb();
 	tlb[0].pid=1;
@@ -1226,6 +1248,27 @@ void test(){
 
 	printf("Pagina a sacar con clock modificado de pid 2: %d \n", sacarConModificado(2));
 	printf("Pagina a sacar con clock de pid 2: %d \n", sacarConClock(2));
+
+	printf(" -------------------------------------------  \n \n");
+	printf(" -------------------------------------------  \n \n");
+
+	pedidoLectura_t pedido10;
+	tablaPagina_t* pag1 = list_get(tabla,1);
+
+	pag1->bitPresencia=0;
+	pag1->bitUso=0;
+	pag1->bitModificacion=1;
+	pedido10.pid=2;
+	pedido10.paginaRequerida=1;
+	pedido10.cantBytes=5;
+	printf("Lo que habia: %s \n",devolverPedidoPagina(pedido10));
+
+	printf("Bit de presencia ahora de pid 2 pag 1: %d \n", pag2->bitPresencia);
+
+	pag1->bitPresencia=0;
+	sacarDeMemoria(pag1);
+
+	printf("Lo que almacene: %s \n",almacenarBytesEnUnaPagina(pedido10,5,"CHAUU"));
 
 }
 

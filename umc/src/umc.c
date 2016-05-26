@@ -828,12 +828,14 @@ int reservarPagina(int cantPaginasPedidas, int pid){ // OK
 
 void esperar_header(int cliente) {
 	log_debug(bgLogger, "Esperando header del cliente: %d., cliente");
-	char* header;
-	while (1) {
-		header = recv_waitall_ws(clientes[cliente].socket, 1);
-		procesarHeader(cliente,header);
+	char* header = NULL;
+	while (read(clientes[cliente].socket , header, 1) > 0) {
+		procesarHeader(cliente, header);
 		free(header);
 	}
+
+//	log_error(activeLogger, "Un cliente se desconectó."); //TODO NO FUNCA, CIERRA ANTES AL PROGRAMA...
+//	quitarCliente(cliente);
 }
 
 char* getScript(int clienteNucleo) {
@@ -851,6 +853,29 @@ char* getScript(int clienteNucleo) {
 	log_info(activeLogger, "Script de nucleo %d recibido:\n%s", clienteNucleo, script);
 	clientes[clienteNucleo].atentido=false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
 	return script;
+}
+
+void pedidoLectura(){
+	log_info(activeLogger,"Se recibio pedido de lectura");
+	printf("PEDIDO LECTURA 1 \n");
+	t_pedido* pedidoCpu = NULL;
+	char* pedidoSerializado = NULL;
+	char* id = NULL;
+	read(clientes[cliente].socket, id, sizeof(int));
+	printf("PEDIDO LECTURA 2: id: %s \n",id);
+	read(clientes[cliente].socket, pedidoSerializado, sizeof(t_pedido));
+	printf("PEDIDO LECTURA 3 pedido serialziado: %s \n",pedidoSerializado);
+	int pude = deserializar_pedido(pedidoCpu, pedidoSerializado);
+	printf("PEDIDO LECTURA 3,5	 \n");
+
+	pedidoLectura_t pedidoLectura;
+	pedidoLectura.pid = atoi(id);
+	pedidoLectura.paginaRequerida = pedidoCpu->pagina;
+	pedidoLectura.offset = pedidoCpu->offset;
+	pedidoLectura.cantBytes = pedidoCpu->size;
+	printf("PEDIDO LECTURA 4 \n");
+	send_w(clientes[cliente].socket, devolverPedidoPagina(pedidoLectura),pedidoCpu->size);
+	printf("PEDIDO LECTURA 5 \n");
 }
 
 void procesarHeader(int cliente, char *header){
@@ -919,27 +944,13 @@ void procesarHeader(int cliente, char *header){
 //			break;
 
 		case HeaderTamanioPagina:
+			printf("Pedido tamanio de paginas \n");
+			send_w(clientes[cliente].socket,intToChar4(config.tamanio_marco),sizeof(int));
 			break;
 
 		case HeaderPedirValorVariable:  //OK
-			log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
-			t_pedido* pedidoCpu = NULL;
-			char* pedidoSerializado = NULL;
-			char* id = NULL;
-			read(clientes[cliente].socket , id, sizeof(int));
-			read(clientes[cliente].socket , pedidoSerializado, sizeof(t_pedido));
-			read(clientes[cliente].socket , pedidoSerializado, sizeof(t_pedido));
-			deserializar_pedido(pedidoSerializado,pedidoCpu);
-
-			pedidoLectura_t pedidoLectura;
-			pedidoLectura.pid=atoi(id);
-			pedidoLectura.paginaRequerida = pedidoCpu->pagina;
-			pedidoLectura.offset = pedidoCpu->offset;
-			pedidoLectura.cantBytes = pedidoCpu->size;
-
-			send_w(clientes[cliente].socket,devolverPedidoPagina(pedidoLectura),sizeof(int));
+			pedidoLectura();
 			break;
-
 
 		case HeaderScript: //Inicializar programa  // OK
 			read(clientes[cliente].socket , cantidadDePaginasScript, 4);
@@ -1028,11 +1039,11 @@ int main(void) {
 
 	crearMemoriaYTlbYTablaPaginas();
 
-	test();
+//	test();
 
 //	pthread_create(&hiloRecibirComandos,NULL,(void*)recibirComandos,NULL);
 
-//	servidorCPUyNucleoExtendido();
+	servidorCPUyNucleoExtendido();
 
 //	conexionASwap();
 

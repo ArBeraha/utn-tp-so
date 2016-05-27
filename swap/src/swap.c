@@ -7,8 +7,6 @@
 
 
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <commons/log.h>
 #include <commons/string.h>
 #include <commons/config.h>
@@ -29,6 +27,10 @@
 #include "cliente-servidor.h"
 #include "log.h"
 #include "commonTypes.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include "serializacion.h"
+
 
 #define PUERTO_SWAP 8082
 int cliente;
@@ -46,15 +48,20 @@ int pagina;
 int tamanio;
 }t_datosPedido;
 
+t_config* archSwap;
+
 t_bitarray* espacio; //Bitmap de espacio utilizado, voy a tener una posicion por cada marco
+char *bitarray;
+
+
 t_list* espacioUtilizado;
 int espacioDisponible;
+
 
 
 int espacioLibre;
 int espacioOcupado;
 
-struct t_config* archSwap; //archivo de configuracion
 
 char* nomArchivo; //nombre del archivo vacio que creare mediante dd
 char* ddComand; // comando a mandar a consola para crear archivo mediante dd
@@ -70,12 +77,27 @@ char* cantPag;
 char* tamPag;
 
 
-// FUNCIONES UTILES
+// *******************************************************FUNCIONES UTILES**********************************************************
+
+/*****PROTOTIPOS******/
+void asignarEspacioANuevoProceso(int, int);
+void agregarProceso(int, int);
+void leerPagina(int, int );
+void escribirPagina(int, int , int );
+void finalizarProceso(int);
+
+
+
+
+
 void procesarHeader(int cliente, char* header)
 {
 	char* payload;
 	int payload_size;
 	log_debug(bgLogger, "Llego un mensaje con header %d", charToInt(header));
+	char* pedido = malloc(sizeof(t_datosPedido));
+    t_datosPedido datosPedido;
+
 
     	switch(charToInt(header))
     	{
@@ -95,7 +117,7 @@ void procesarHeader(int cliente, char* header)
     		if (charToInt(payload) == SOYUMC) {
     			log_debug(bgLogger,
     					"Es un cliente apropiado! Respondiendo handshake");
-    			send(cliente, intToChar(SOYSWAP), 1, 0);
+    			send_w(cliente, intToChar(SOYSWAP), 1);
     		} else {
     			log_error(activeLogger,
     					"No es un cliente apropiado! rechazada la conexion");
@@ -107,39 +129,32 @@ void procesarHeader(int cliente, char* header)
 
     	case HeaderOperacionIniciarProceso:
     	    log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
-    		t_datosPedido pedido;
-    		pedido.pid = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-    		pedido.pagina = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-    		pedido.tamanio = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-    		asignarEspacioANuevoProceso(pedido.pid, pedido.pagina);
+    	    deserializar_int(&(datosPedido.pid), pedido);
+    	    deserializar_int(&(datosPedido.pagina), pedido);
+    		asignarEspacioANuevoProceso(datosPedido.pid, datosPedido.pagina);
     		break;
 
 
     	case HeaderOperacionLectura:
     		log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
-    		t_datosPedido pedido;
-    		pedido.pid = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-    		pedido.pagina = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-    		pedido.tamanio = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-    		leerPagina(pedido.pid, pedido.pagina);
+    		deserializar_int(&(datosPedido.pid), pedido);
+    		deserializar_int(&(datosPedido.pagina), pedido);
+    		leerPagina(datosPedido.pid, datosPedido.pagina);
     		break;
 
     	case HeaderOperacionEscritura:
 		    log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
-		    t_datosPedido pedido;
-		    pedido.pid = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-		    pedido.pagina = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-		    pedido.tamanio = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-		    escribirPagina(pedido.pid, pedido.pagina, pedido.tamanio);
+		    deserializar_int(&(datosPedido.pid), pedido);
+		    deserializar_int(&(datosPedido.pagina), pedido);
+		    deserializar_int(&(datosPedido.tamanio), pedido);
+		    escribirPagina(datosPedido.pid, datosPedido.pagina, datosPedido.tamanio);
+
 		    break;
 
     	case HeaderOperacionFinalizarProceso:
     		log_info(activeLogger,"Se recibio pedido de pagina, por CPU");
-    	    t_datosPedido pedido;
-    	    pedido.pid = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-    		pedido.pagina = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-    		pedido.tamanio = deserializar_int(recv_waitall_ws(cliente, sizeof(int)));
-    		finalizarProceso(pedido.pid);
+    		deserializar_int(&(datosPedido.pid), pedido);
+    		finalizarProceso(datosPedido.pid);
     		break;
 
 
@@ -174,8 +189,17 @@ int espaciosUtilizados (t_bitarray* unEspacio)
   return espacioUtilizado;
 }
 
+void limpiarPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioProceso)
+{
+	int i=0;
+	for(i=posicionInicial; i < tamanioProceso; i++) bitarray_clean_bit(unEspacio, i);
+}
 
-
+void setearPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioProceso)
+{
+	int i=0;
+	for(i=posicionInicial; i < tamanioProceso; i++) bitarray_set_bit(unEspacio, i);
+}
 
 
 //Comprueba si hay fragmentacion externa
@@ -194,10 +218,7 @@ int hayFragmentacionExterna(int paginasAIniciar) {
 	return flag;
 }
 
-int buscarMarcoInicial(int pid) {
-	t_infoProceso* datoProceso = buscarProceso(pid);
-	return datoProceso->posPagina;
-}
+
 
 t_infoProceso* buscarProceso(int pid) {
 	int coincideElPID(t_infoProceso* datoProceso) {
@@ -206,6 +227,11 @@ t_infoProceso* buscarProceso(int pid) {
 	t_infoProceso* datoProceso = (t_infoProceso*) list_find(
 			espacioUtilizado, (void*) coincideElPID);
 	return datoProceso;
+}
+
+int buscarMarcoInicial(int pid) {
+	t_infoProceso* datoProceso = buscarProceso(pid);
+	return datoProceso->posPagina;
 }
 
 void sacarElemento(int pid) {
@@ -217,8 +243,7 @@ void sacarElemento(int pid) {
 }
 
 
-//Funcion que busca en la lista de utilizados el proceso con el marco igual o mas proximo (mayor)
-//al numero que se le pasa
+//Funcion que busca en la lista de utilizados el proceso con el marco igual o mas proximo (mayor) al numero que se le pasa
 t_infoProceso* elemMIMenor (marcoAComparar) {
 	int cantElementos = list_size(espacioUtilizado);
 	t_infoProceso* elem1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
@@ -241,26 +266,79 @@ t_infoProceso* elemMIMenor (marcoAComparar) {
 }
 
 
+//void compactar() {
+//	log_info(activeLogger, "Compactación iniciada por fragmentación externa.");
+//	t_infoProceso* primerElemento = elemMIMenor(0);
+//	if (primerElemento->posPagina != 0)
+//	{
+//		modificarArchivo(primerElemento->posPagina,
+//				primerElemento->cantidadDePaginas, 0);
+//		sacarElemento(primerElemento->pid);
+//		primerElemento->posPagina = 0;
+//		list_add(espacioUtilizado, primerElemento);
+//	}
+//	int cantElementos = list_size(espacioUtilizado);
+//	int i = 0;
+//	while (i < cantElementos - 1)
+//	{
+//		i++;
+//		int marcoInicialSig = primerElemento->posPagina + primerElemento->cantidadDePaginas;
+//		t_infoProceso* sigElemento = elemMIMenor(marcoInicialSig);
+//		if (marcoInicialSig != sigElemento->posPagina) {
+//			modificarArchivo(sigElemento->posPagina,
+//					sigElemento->cantidadDePaginas, marcoInicialSig);
+//			sacarElemento(sigElemento->pid);
+//			sigElemento->posPagina = marcoInicialSig;
+//			list_add(espacioUtilizado, sigElemento);
+//			primerElemento = sigElemento;
+//		} else {
+//			primerElemento = sigElemento;
+//		}
+//	}
+//
+//    int marcoInicialHueco = primerElemento->posPagina + primerElemento->cantidadDePaginas;
+//
+//
+//
+//
+//
+//
+//
+//	list_clean(espacioDisponibleParaProcesos);
+//	t_datoHueco* hueco = (t_datoHueco*) malloc(sizeof(t_datoHueco));
+//	hueco->marcoInicial = marcoInicialHueco;
+//	hueco->marcosTotales = cantidadPaginas - marcoInicialHueco;
+//	list_add(espacioDisponibleParaProcesos, hueco);
+//	sleep(retardoCompactacion);
+//	log_info(logSwap, "Compactación iniciada por fragmentación externa.");
+//}
+//
+
+void archivoDeConfiguracion()
+{
+
+	archSwap = config_create("archivoConfigSwap");
+
+	puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
+	nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");
+	cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
+	tamanioPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
+	retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
+	retAcceso = config_get_int_value(archSwap, "RETARDO_ACCESO");
+
+	// lo voy a usar para comando dd que requiere strings para mandar por comando a consola
+	cantPag = config_get_string_value(archSwap, "CANTIDAD_PAGINAS");
+	tamPag = config_get_string_value(archSwap, "TAMANIO_PAGINA");
+}
 
 
 
-/********************************************************************************************************************/
+/************************************FUNCIONAMIENTO DE SWAP********************************************************************/
 void funcionamientoSwap()
 {
 
-	/*asignemos el archivo de configuracion "vamo' a asignarlo"*/
-		archSwap = config_create("archivoConfigSwap");
+        archivoDeConfiguracion();
 
-		puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
-		nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");
-		cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
-		tamanioPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
-		retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
-		retAcceso = config_get_int_value(archSwap, "RETARDO_ACCESO");
-
-		// lo voy a usar para comando dd que requiere strings para mandar por comando a consola
-		char* cantPag = config_get_string_value(archSwap, "CANTIDAD_PAGINAS");
-		char* tamPag = config_get_string_value(archSwap, "TAMANIO_PAGINA");
 
 		/*logs*/
 		crearLogs("Swap","Swap");
@@ -284,7 +362,7 @@ void funcionamientoSwap()
 
 
 		/* bitarray manejo de paginas */
-		bitarray_create(espacio,cantPaginasSwap);
+		espacio = bitarray_create(bitarray,cantPaginasSwap);
 		espacioUtilizado = list_create();
 
 
@@ -313,7 +391,13 @@ void funcionamientoSwap()
 
 
 }
-		 //FUNCIONES PRINCIPALES DE SWAP
+
+
+
+
+
+
+//************************************FUNCIONES PRINCIPALES DE SWAP*********************************************************
 
 
 void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
@@ -321,7 +405,7 @@ void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
 	if (paginasAIniciar <= espacioDisponible) {
 	//Me fijo si hay fragmentacion para asi ver si necesito compactar
 	if (hayFragmentacionExterna(paginasAIniciar)) {
-	 compactar();
+	 //compactar();
 	}
 	//Agrego el proceso a la lista de espacio utilizado y actualizo la de espacio disponible. Ademas informa
 	//de que la operacion fue exitosa
@@ -340,8 +424,8 @@ void agregarProceso(int pid, int paginasAIniciar) {
 	int cantidadHuecos = bitarray_get_max_bit(espacio);
 	int i;
 	int j;
-	int totalMarcos;
-	int marcoInicial;
+	int totalMarcos=0;
+	int marcoInicial=0;
 	//Recorro el bitarray hasta que encuentro un hueco ocupado
 	for (i = 0; i < cantidadHuecos; i++)
 	{
@@ -496,7 +580,7 @@ void finalizarProceso(int pid) {
 
 
 
-
+//**************************************************MAIN SWAP*****************************************************************
 
 int main(int argc, char** argv)
 {

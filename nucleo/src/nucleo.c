@@ -263,12 +263,12 @@ int main(void) {
 	int i;
 	struct timeval espera = newEspera(); // Periodo maximo de espera del select
 	char header[1];
-
+	crearLogs("Nucleo", "Nucleo");
 	inicializar();
 	testear(test_serializacion);
 	testear(test_nucleo);
 	//system("clear");
-	crearLogs("Nucleo", "Nucleo");
+
 
 	configurarServidorExtendido(&socketConsola, &direccionConsola,
 			config.puertoConsola, &tamanioDireccionConsola, &activadoConsola);

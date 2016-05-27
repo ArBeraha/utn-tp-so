@@ -7,13 +7,12 @@
 #include "nucleo.h"
 
 static bool matrizEstados[5][5] = {
-		//		     NEW    READY  EXEC   BLOCK  EXIT
-		/* NEW 	 */{ false, true,  false, false, true },
-		/* READY */{ false, false, true,  false, true },
-		/* EXEC  */{ false, true,  false, true,  true },
-		/* BLOCK */{ false, true,  false, false, true },
-		/* EXIT  */{ false, false, false, false, false}
-};
+//		     NEW    READY  EXEC   BLOCK  EXIT
+		/* NEW 	 */{ false, true, false, false, true },
+		/* READY */{ false, false, true, false, true },
+		/* EXEC  */{ false, true, false, true, true },
+		/* BLOCK */{ false, true, false, false, true },
+		/* EXIT  */{ false, false, false, false, false } };
 
 /*  ----------INICIO PLANIFICACION ---------- */
 int cantidadProcesos() {
@@ -57,7 +56,7 @@ void planificarProcesos() {
 	dictionary_iterator(tablaIO, (void*) planificarIO);
 }
 void planificarIO(char* io_id, t_IO* io) {
-	if (io->estado == INACTIVE) {
+	if (io->estado == INACTIVE && (!queue_is_empty(io->cola))) {
 		io->estado = ACTIVE;
 		t_bloqueo* info = malloc(sizeof(t_bloqueo));
 		info->IO = io;
@@ -68,28 +67,33 @@ void planificarIO(char* io_id, t_IO* io) {
 bool terminoQuantum(t_proceso* proceso) {
 	return (!(proceso->PCB->PC % config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
 }
-void asignarCPU(t_proceso* proceso, int cpu){
+void asignarCPU(t_proceso* proceso, int cpu) {
+	log_debug(bgLogger, "asignando cpu:%d a pid:%d", cpu, proceso->PCB->PID);
 	proceso->cpu = cpu;
 	clientes[cpu].pid = proceso->PCB->PID;
+
 }
-void desasignarCPU(t_proceso* proceso){
+void desasignarCPU(t_proceso* proceso) {
+	log_debug(bgLogger, "desasignando cpu:%d a pid:%d", proceso->cpu,
+			proceso->PCB->PID);
 	proceso->cpu = SIN_ASIGNAR;
-	clientes[proceso->cpu].pid = (int)NULL;
+	clientes[proceso->cpu].pid = (int) NULL;
 }
 void bloqueo(t_bloqueo* info) {
+	log_debug(bgLogger, "Ejecutando IO pid:%d por:%dseg", info->PID,
+			info->IO->retardo);
 	sleep(info->IO->retardo);
 	desbloquearProceso(info->PID);
 	info->IO->estado = INACTIVE;
 	free(info);
 }
-void cambiarEstado(t_proceso* proceso, int estado){
-	if (matrizEstados[proceso->estado][estado])
+void cambiarEstado(t_proceso* proceso, int estado) {
+	if (matrizEstados[proceso->estado][estado]) {
+		log_debug(bgLogger, "Cambio de estado pid:%d de:%d a:%d",
+				proceso->PCB->PID, proceso->estado, estado);
 		proceso->estado = estado;
-	else
-		log_error(activeLogger, "Cambio de estado ILEGAL de:%d a:%d",
-				proceso->estado, estado);
+	} else
+		log_error(activeLogger, "Cambio de estado ILEGAL pid:%d de:%d a:%d",
+				proceso->PCB->PID, proceso->estado, estado);
 }
-
-
-
 

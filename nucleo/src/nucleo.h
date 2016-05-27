@@ -143,6 +143,7 @@ bool terminoQuantum(t_proceso* proceso);
 void asignarCPU(t_proceso* proceso, int cpu);
 void desasignarCPU(t_proceso* proceso);
 void bloqueo(t_bloqueo* info);
+void cambiarEstado(t_proceso* proceso, int estado);
 //Primitivas
 void signalSemaforo(int cliente);
 void waitSemaforo(int cliente);

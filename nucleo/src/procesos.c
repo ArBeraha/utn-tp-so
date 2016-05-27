@@ -73,6 +73,7 @@ void ejecutarProceso(int PID, int cpu) {
 void finalizarProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;
 	queue_push(colaCPU, (int*) proceso->cpu); // Disponemos de nuevo de la CPU
+	if (proceso->estado==EXEC)
 	desasignarCPU(proceso);
 	cambiarEstado(proceso,EXIT);
 	queue_push(colaSalida, (void*) PID);
@@ -81,11 +82,12 @@ void finalizarProceso(int PID) {
 	pthread_mutex_unlock(&lockProccessList);
 }
 void destruirProceso(int PID) {
+	log_debug(bgLogger,	"Destruyendo proceso:%d",PID);
 	t_proceso* proceso = (t_proceso*) PID;
 	if (proceso->estado != EXIT)
 		log_warning(activeLogger,
-				"Se esta destruyendo el proceso %d que no libero sus recursos!",
-				PID);
+				"Se esta destruyendo el proceso %d que no libero sus recursos! y esta en estado:%d",
+				PID, proceso->estado);
 	char* serialHeader = intToChar(HeaderConsolaFinalizarNormalmente);
 	send(clientes[proceso->consola].socket, serialHeader, 1, 0); // Le decimos adios a la consola
 	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...

@@ -203,7 +203,7 @@ void setearPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioPr
 
 
 //Comprueba si hay fragmentacion externa
-int hayFragmentacionExterna(int paginasAIniciar) {
+int hayQueCompactar(int paginasAIniciar) {
 	int cantidadDePaginas = bitarray_get_max_bit(espacio);
 	int i=0;
 	int flag = 1;
@@ -403,7 +403,7 @@ void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
 
 	if (paginasAIniciar <= espacioDisponible) {
 	//Me fijo si hay fragmentacion para asi ver si necesito compactar
-	if (hayFragmentacionExterna(paginasAIniciar)) {
+	if (hayQueCompactar(paginasAIniciar)) {
 	 //compactar();
 	}
 	//Agrego el proceso a la lista de espacio utilizado y actualizo la de espacio disponible. Ademas informa

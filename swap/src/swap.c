@@ -85,7 +85,25 @@ void agregarProceso(int, int);
 void leerPagina(int, int );
 void escribirPagina(int, int , int );
 void finalizarProceso(int);
-void procesarHeader(int, char* header);
+void procesarHeader(int, char*);
+int espaciosDisponibles (t_bitarray*);
+int espaciosUtilizados (t_bitarray*);
+void limpiarPosiciones (t_bitarray* , int, int );
+void setearPosiciones (t_bitarray*, int, int );
+int hayQueCompactar(int);
+t_infoProceso* buscarProceso(int);
+int buscarMarcoInicial(int);
+void sacarElemento(int);
+//void compactar();
+void archivoDeConfiguracion();
+void funcionamientoSwap();
+void asignarEspacioANuevoProceso(int, int);
+void agregarProceso(int, int);
+void leerPagina(int, int);
+void escribirPagina(int, int , int );
+void finalizarProceso(int);
+//void test();
+
 
 
 
@@ -337,32 +355,34 @@ void archivoDeConfiguracion()
 void funcionamientoSwap()
 {
 
-//        archivoDeConfiguracion();
-//
-//
-//
-//
-//
-//
-//
-//		// dd if=/dev/zero of=archivoConfigSwap bs=tamPag count=cantPag
-//		espacioDisponible = cantPaginasSwap; //Para manejar la asignacion de paginas a procesos
-//		ddComand = string_new(); //comando va a contener a dd que voy a mandar a consola para que cree el archivo
-//		nomArchivo = config_get_string_value(archSwap, "NOMBRE_SWAP");
-//		string_append(&ddComand, "dd if=/dev/zero of="); //crea archivo input vacio
-//		string_append(&ddComand, nomArchivo); //con el nombre de la swap
-//		string_append(&ddComand, " bs="); //defino tamaño del archivo (de la memoria swap)
-//		string_append(&ddComand, tamPag); //Lo siguiente no va ya que ahora mi memoria se divide en paginas, no bytes
-//		//string_append(&ddComand, " count=");
-//		//string_append(&ddComand, cantPag); //cuyo tamaño va a ser igual al tamaño de las paginas*cantidad de paginas
-//		printf("%s\n", ddComand);
-//		system(ddComand); //ejecuto comando
-//
-//
-//
-//		/* bitarray manejo de paginas */
-//		espacio = bitarray_create(bitarray,cantPaginasSwap);
-//		espacioUtilizado = list_create();
+        archivoDeConfiguracion();
+
+
+
+
+
+
+
+		// dd if=/dev/zero of=archivoConfigSwap bs=tamPag count=cantPag
+		espacioDisponible = cantPaginasSwap; //Para manejar la asignacion de paginas a procesos
+		ddComand = string_new(); //comando va a contener a dd que voy a mandar a consola para que cree el archivo
+		nomArchivo = config_get_string_value(archSwap, "NOMBRE_SWAP");
+		string_append(&ddComand, "dd if=/dev/zero of="); //crea archivo input vacio
+		string_append(&ddComand, nomArchivo); //con el nombre de la swap
+		string_append(&ddComand, " bs="); //defino tamaño del archivo (de la memoria swap)
+		string_append(&ddComand, tamPag); //Lo siguiente no va ya que ahora mi memoria se divide en paginas, no bytes
+		//string_append(&ddComand, " count=");
+		//string_append(&ddComand, cantPag); //cuyo tamaño va a ser igual al tamaño de las paginas*cantidad de paginas
+		printf("%s\n", ddComand);
+		system(ddComand); //ejecuto comando
+
+
+
+		/* bitarray manejo de paginas */
+		espacio = bitarray_create(bitarray,cantPaginasSwap);
+		espacioUtilizado = list_create();
+		//marco libres todos las posiciones del array
+        limpiarPosiciones (espacio,0,cantPaginasSwap);
 
 
 
@@ -386,7 +406,7 @@ void funcionamientoSwap()
 			procesarHeader(cliente,header); //Incluye deserializacion
         }
 
-
+        //testSwap();
 
 
 }
@@ -587,3 +607,68 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/****************************************TEST***************************************************************/
+
+void testSwapDeBitArray1()
+{
+ bitarray_clean_bit(espacio, 0);
+ bitarray_set_bit(espacio, 1);
+ bitarray_set_bit(espacio, 2);
+ bitarray_clean_bit(espacio, 3);
+ bitarray_clean_bit(espacio, 4);
+ bitarray_set_bit(espacio, 5);
+ bitarray_clean_bit(espacio, 6);
+ bitarray_clean_bit(espacio, 7);
+ bitarray_set_bit(espacio, 8);
+ setearPosiciones (espacio,9,cantPaginasSwap);
+
+ if(hayQueCompactar(3)) printf("Test de posibilidad de compactacion superado\n");
+ else printf("Test de posibilidad de compactacion no fue superado\n");
+}
+
+void testSwapDeBitArray2()
+{
+bitarray_clean_bit(espacio, 0);
+bitarray_set_bit(espacio, 1);
+bitarray_clean_bit(espacio, 2);
+bitarray_clean_bit(espacio, 3);
+bitarray_clean_bit(espacio, 4);
+bitarray_set_bit(espacio, 5);
+bitarray_clean_bit(espacio, 6);
+bitarray_clean_bit(espacio, 7);
+bitarray_set_bit(espacio, 8);
+ setearPosiciones (espacio,9,cantPaginasSwap);
+
+ if(hayQueCompactar(3)) printf("Test de posibilidad de compactacion no fue superado\n");
+ else printf("Test de posibilidad de compactacion fue superado\n");
+}
+
+//void testFinalizarProceso();
+//{
+//	t_infoProceso* unProceso;
+//	unProceso.pid;
+//}

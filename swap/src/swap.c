@@ -85,7 +85,7 @@ void agregarProceso(int, int);
 void leerPagina(int, int );
 void escribirPagina(int, int , int );
 void finalizarProceso(int);
-
+void procesarHeader(int, char* header);
 
 
 
@@ -337,33 +337,32 @@ void archivoDeConfiguracion()
 void funcionamientoSwap()
 {
 
-        archivoDeConfiguracion();
-
-
-		/*logs*/
-		crearLogs("Swap","Swap");
-
-
-
-
-		// dd if=/dev/zero of=archivoConfigSwap bs=tamPag count=cantPag
-		espacioDisponible = cantPaginasSwap; //Para manejar la asignacion de paginas a procesos
-		ddComand = string_new(); //comando va a contener a dd que voy a mandar a consola para que cree el archivo
-		nomArchivo = config_get_string_value(archSwap, "NOMBRE_SWAP");
-		string_append(&ddComand, "dd if=/dev/zero of="); //crea archivo input vacio
-		string_append(&ddComand, nomArchivo); //con el nombre de la swap
-		string_append(&ddComand, " bs="); //defino tamaño del archivo (de la memoria swap)
-		string_append(&ddComand, tamPag); //Lo siguiente no va ya que ahora mi memoria se divide en paginas, no bytes
-		//string_append(&ddComand, " count=");
-		//string_append(&ddComand, cantPag); //cuyo tamaño va a ser igual al tamaño de las paginas*cantidad de paginas
-		printf("%s\n", ddComand);
-		system(ddComand); //ejecuto comando
-
-
-
-		/* bitarray manejo de paginas */
-		espacio = bitarray_create(bitarray,cantPaginasSwap);
-		espacioUtilizado = list_create();
+//        archivoDeConfiguracion();
+//
+//
+//
+//
+//
+//
+//
+//		// dd if=/dev/zero of=archivoConfigSwap bs=tamPag count=cantPag
+//		espacioDisponible = cantPaginasSwap; //Para manejar la asignacion de paginas a procesos
+//		ddComand = string_new(); //comando va a contener a dd que voy a mandar a consola para que cree el archivo
+//		nomArchivo = config_get_string_value(archSwap, "NOMBRE_SWAP");
+//		string_append(&ddComand, "dd if=/dev/zero of="); //crea archivo input vacio
+//		string_append(&ddComand, nomArchivo); //con el nombre de la swap
+//		string_append(&ddComand, " bs="); //defino tamaño del archivo (de la memoria swap)
+//		string_append(&ddComand, tamPag); //Lo siguiente no va ya que ahora mi memoria se divide en paginas, no bytes
+//		//string_append(&ddComand, " count=");
+//		//string_append(&ddComand, cantPag); //cuyo tamaño va a ser igual al tamaño de las paginas*cantidad de paginas
+//		printf("%s\n", ddComand);
+//		system(ddComand); //ejecuto comando
+//
+//
+//
+//		/* bitarray manejo de paginas */
+//		espacio = bitarray_create(bitarray,cantPaginasSwap);
+//		espacioUtilizado = list_create();
 
 
 
@@ -373,14 +372,14 @@ void funcionamientoSwap()
 	    char *header;
 	    crearLogs("Swap","Swap");
 
-	    //printf("1");
+	    printf("1");
 		configurarServidor(PUERTO_SWAP);
-		//printf("2");
+		printf("2");
 		log_info(activeLogger,"Esperando conexiones");
-		//printf("3");
+		printf("3");
 		procesarNuevasConexiones();
 		cliente=clientes[0].socket;
-		//printf("4");
+		printf("4");
 
 		while (1){
 			header=recv_waitall_ws(cliente,1);

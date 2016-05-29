@@ -59,15 +59,17 @@ void ejecutarProceso(int PID, int cpu) {
 	t_proceso* proceso = (t_proceso*) PID;
 	cambiarEstado(proceso,EXEC);
 	asignarCPU(proceso,cpu);
-	int bytes = bytes_PCB(proceso->PCB);
-	char* serialPCB = malloc(bytes);
-	char* serialBytes = intToChar4(bytes);
-	serializar_PCB(serialPCB, proceso->PCB);
-	send_w(clientes[cpu].socket, "HEADER MANDAR A EJECUTAR", 1); //TODO header
-	send_w(clientes[cpu].socket, serialBytes, sizeof(int));
-	send_w(clientes[cpu].socket, serialPCB, bytes);
-	free(serialPCB);
-	free(serialBytes);
+	if (!CU_is_test_running()) {
+		int bytes = bytes_PCB(proceso->PCB);
+		char* serialPCB = malloc(bytes);
+		char* serialBytes = intToChar4(bytes);
+		serializar_PCB(serialPCB, proceso->PCB);
+		send_w(clientes[cpu].socket, "HEADER MANDAR A EJECUTAR", 1); //TODO header
+		send_w(clientes[cpu].socket, serialBytes, sizeof(int));
+		send_w(clientes[cpu].socket, serialPCB, bytes);
+		free(serialPCB);
+		free(serialBytes);
+	}
 }
 void finalizarProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;
@@ -86,8 +88,11 @@ void destruirProceso(int PID) {
 		log_warning(activeLogger,
 				"Se esta destruyendo el proceso %d que no libero sus recursos! y esta en estado:%d",
 				PID, proceso->estado);
-	enviarHeader(clientes[proceso->consola].socket, HeaderConsolaFinalizarNormalmente);
-	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
+	if (!CU_is_test_running()) {
+		enviarHeader(clientes[proceso->consola].socket,
+				HeaderConsolaFinalizarNormalmente);
+		quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
+	}
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
 	pcb_destroy(proceso->PCB);
 	free(proceso); // Destruir Proceso y PCB

@@ -64,9 +64,33 @@ void test_cicloDeVidaProcesos() {
 	free(io);
 	log_debug(bgLogger, "FIN test_cicloDeVidaProcesos");
 }
+void test_obtenerMetadata() {
+	log_debug(bgLogger, "INICIO test_obtenerMetadata()");
+	t_proceso* proceso = malloc(sizeof(t_proceso));
+	t_sentencia* sentencia;
+	proceso->PCB = pcb_create();
+	asignarMetadataProceso(proceso,
+			"begin\nvariables a, b\na = 3\n:salto1\nb = 5\n:salto2\na = b + 12\nend\n");
+	sentencia = (t_sentencia*) list_get(proceso->PCB->indice_codigo, 0);
+	CU_ASSERT_EQUAL(sentencia->offset_inicio, 6);
+	CU_ASSERT_EQUAL(sentencia->offset_fin, 6 + 15);
+	sentencia = (t_sentencia*) list_get(proceso->PCB->indice_codigo, 1);
+	CU_ASSERT_EQUAL(sentencia->offset_inicio, 21);
+	CU_ASSERT_EQUAL(sentencia->offset_fin, 21 + 6);
+	CU_ASSERT_EQUAL(
+			(*(int* )dictionary_get(proceso->PCB->indice_etiquetas, "salto1")),
+			2);
+	CU_ASSERT_EQUAL(
+			(*(int* )dictionary_get(proceso->PCB->indice_etiquetas, "salto2")),
+			3);
+	free(sentencia);
+	pcb_destroy(proceso->PCB);
+	free(proceso);
+	log_debug(bgLogger, "FIN test_obtenerMetadata()");
+}
 void test_bloqueosIO() {
 	log_debug(bgLogger, "INICIO test_bloqueosIO()");
-	int consola = 1, cpu = 2;
+	int consola = 11, cpu = 22;
 	queue_push(colaCPU, (void*) cpu);
 
 	t_IO* io = malloc(sizeof(t_IO));
@@ -95,30 +119,6 @@ void test_bloqueosIO() {
 	queue_clean(colaCPU);
 	list_clean(listaProcesos);
 	log_debug(bgLogger, "FIN test_bloqueosIO()");
-}
-void test_obtenerMetadata() {
-	log_debug(bgLogger, "INICIO test_obtenerMetadata()");
-	t_proceso* proceso = malloc(sizeof(t_proceso));
-	t_sentencia* sentencia;
-	proceso->PCB = pcb_create();
-	asignarMetadataProceso(proceso,
-			"begin\nvariables a, b\na = 3\n:salto1\nb = 5\n:salto2\na = b + 12\nend\n");
-	sentencia = (t_sentencia*) list_get(proceso->PCB->indice_codigo, 0);
-	CU_ASSERT_EQUAL(sentencia->offset_inicio, 6);
-	CU_ASSERT_EQUAL(sentencia->offset_fin, 6 + 15);
-	sentencia = (t_sentencia*) list_get(proceso->PCB->indice_codigo, 1);
-	CU_ASSERT_EQUAL(sentencia->offset_inicio, 21);
-	CU_ASSERT_EQUAL(sentencia->offset_fin, 21 + 6);
-	CU_ASSERT_EQUAL(
-			(*(int* )dictionary_get(proceso->PCB->indice_etiquetas, "salto1")),
-			2);
-	CU_ASSERT_EQUAL(
-			(*(int* )dictionary_get(proceso->PCB->indice_etiquetas, "salto2")),
-			3);
-	free(sentencia);
-	pcb_destroy(proceso->PCB);
-	free(proceso);
-	log_debug(bgLogger, "FIN test_obtenerMetadata()");
 }
 int test_nucleo() {
 	log_info(activeLogger, "INICIANDO TESTS DE NUCLEO");

@@ -254,16 +254,17 @@ int main(void) {
 	char header[1];
 	crearLogs("Nucleo", "Nucleo");
 	inicializar();
-	//testear(test_serializacion);
-	//testear(test_nucleo);
+	testear(test_serializacion);
+	testear(test_nucleo);
 	//system("clear");
-
+	inicializar();
 	configurarServidorExtendido(&socketConsola, &direccionConsola,
 			config.puertoConsola, &tamanioDireccionConsola, &activadoConsola);
 	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puertoCPU,
 			&tamanioDireccionCPU, &activadoCPU);
 
 	inicializarClientes();
+
 	log_info(activeLogger, "Esperando conexiones ...");
 	conectarAUMC();
 

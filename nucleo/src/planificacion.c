@@ -7,7 +7,7 @@
 #include "nucleo.h"
 
 static bool matrizEstados[5][5] = {
-//		     NEW    READY  EXEC   BLOCK  EXIT
+		//		     NEW    READY  EXEC   BLOCK  EXIT
 		/* NEW 	 */{ false, true, false, false, true },
 		/* READY */{ false, false, true, false, true },
 		/* EXEC  */{ false, true, false, true, true },

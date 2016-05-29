@@ -10,7 +10,6 @@
 bool pedirPaginas(int PID, char* codigo) {
 	t_proceso* proceso = (t_proceso*) PID;
 	char* serialPaginas = intToChar4(proceso->PCB->cantidad_paginas);
-	char* serialTamanio = intToChar4(strlen(codigo));
 	char* serialPid = intToChar4(PID);
 	bool hayMemDisponible = false;
 	char respuesta;
@@ -24,8 +23,7 @@ bool pedirPaginas(int PID, char* codigo) {
 		send_w(umc, headerToMSG(HeaderScript), 1);
 		send_w(umc, serialPid, sizeof(int));
 		send_w(umc, serialPaginas, sizeof(int));
-		send_w(umc, serialTamanio, sizeof(int));
-		send_w(umc, codigo, strlen(codigo));
+		enviarLargoYMensaje(umc, codigo);
 		read(umc, &respuesta, 1);
 		pthread_mutex_unlock(&lock_UMC_conection);
 		hayMemDisponible = (bool) ((int) respuesta);
@@ -40,7 +38,6 @@ bool pedirPaginas(int PID, char* codigo) {
 					hayMemDisponible);
 	}
 	free(serialPid);
-	free(serialTamanio);
 	free(serialPaginas);
 	return hayMemDisponible;
 }

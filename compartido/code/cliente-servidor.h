@@ -21,6 +21,7 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <commons/string.h>
+#include <string.h>
 
 #define MAXCLIENTS 30
 
@@ -78,6 +79,7 @@ void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned
 char* intToChar4(int num); // RECORDAR: liberar el puntero con free()
 int char4ToInt(char* chars);
 char* leerLargoYMensaje(int cliente);
+void enviarLargoYMensaje(int cliente, char* mensaje);
 
 #endif /* CLIENTE_SERVIDOR_H_ */
 

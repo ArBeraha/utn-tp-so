@@ -58,17 +58,11 @@ void imprimirVariable(int cliente) {
 }
 void imprimirTexto(int cliente) {
 	int consola = ((t_proceso*) clientes[cliente].pid)->consola;
-	char* serialSize = malloc(sizeof(int));
-	read(cliente, serialSize, sizeof(int));
-	int size = char4ToInt(serialSize);
-	char* texto = malloc(size);
-	read(cliente, texto, size);
+	char* texto = leerLargoYMensaje(cliente);
 	char* serialHeader = headerToMSG(HeaderImprimirTextoConsola);
 	send_w(consola, serialHeader, 1);
-	send_w(consola, serialSize, sizeof(int));
-	send_w(consola, texto, size);
+	enviarLargoYMensaje(cliente, texto);
 	free(serialHeader);
-	free(serialSize);
 	free(texto);
 }
 void entradaSalida(int cliente) {

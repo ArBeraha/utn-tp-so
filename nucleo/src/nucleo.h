@@ -81,6 +81,12 @@ typedef struct {
 	t_queue* cola;
 } t_IO;
 t_dictionary* tablaSEM;
+typedef struct {
+	int valor;
+	t_queue* cola;
+
+} t_semaforo;
+
 t_dictionary* tablaGlobales;
 typedef struct {
 	t_IO* IO;

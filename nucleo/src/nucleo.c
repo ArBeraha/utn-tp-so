@@ -131,9 +131,10 @@ void cargarCFG() {
 	// Cargamos los SEM
 	i = 0;
 	while (config.sem_ids[i] != '\0') {
-		int* init = malloc(sizeof(int));
-		*init = atoi(config.semInit[i]);
-		dictionary_put(tablaSEM, config.sem_ids[i], init);
+		t_semaforo* sem = malloc(sizeof(t_semaforo));
+		sem->valor = atoi(config.semInit[i]);
+		sem->cola = queue_create();
+		dictionary_put(tablaSEM, config.sem_ids[i], sem);
 		//printf("SEM:%s INIT:%d\n",config.sem_ids[i],*init);
 		i++;
 	}

@@ -217,3 +217,13 @@ int char4ToInt(char* chars){
 	}
 	return num;
 }
+
+char* leerLargoYMensaje(int cliente){
+	char* serialLargo = malloc(sizeof(int));
+	read(clientes[cliente].socket, serialLargo, sizeof(int));
+	int largo = char4ToInt(serialLargo);
+	char* mensaje = malloc(largo);
+	read(clientes[cliente].socket, mensaje, largo);
+	free(serialLargo);
+	return mensaje;
+}

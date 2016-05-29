@@ -85,16 +85,7 @@ void conectarAUMC() {
 /*  ----------INICIO CONSOLA ---------- */
 char* getScript(int consola) {
 	log_debug(bgLogger, "Recibiendo archivo de consola %d...", consola);
-	char scriptSize;
-	char* script;
-	int size;
-	read(clientes[consola].socket, &scriptSize, sizeof(int));
-	size = char4ToInt(&scriptSize);
-	printf("%d", size);
-	log_debug(bgLogger, "Consola envió un archivo de tamaño: %d", size);
-	printf("Size:%d\n", size);
-	script = malloc(sizeof(char) * size);
-	read(clientes[consola].socket, script, size);
+	char* script = leerLargoYMensaje(consola);
 	log_info(activeLogger, "Script de consola %d recibido:\n%s", consola,
 			script);
 	clientes[consola].atentido = false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
@@ -266,10 +257,9 @@ int main(void) {
 	char header[1];
 	crearLogs("Nucleo", "Nucleo");
 	inicializar();
-	testear(test_serializacion);
-	testear(test_nucleo);
+	//testear(test_serializacion);
+	//testear(test_nucleo);
 	//system("clear");
-
 
 	configurarServidorExtendido(&socketConsola, &direccionConsola,
 			config.puertoConsola, &tamanioDireccionConsola, &activadoConsola);

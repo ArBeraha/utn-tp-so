@@ -8,57 +8,37 @@
 
 void waitSemaforo(int cliente) {
 	// TODO BLOQUEAR CPU SI <=0
-	char* serialLargo = malloc(sizeof(int));
-	read(clientes[cliente].socket, serialLargo, sizeof(int));
-	int largo = char4ToInt(serialLargo);
-	char* semid = malloc(largo);
-	read(clientes[cliente].socket, semid, largo);
+	char* semid = leerLargoYMensaje(cliente);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
 	if (sem->valor > 0)
 		sem->valor--;
 	else
 		bloquearProcesoSem(clientes[cliente].pid, semid);
 	free(semid);
-	free(serialLargo);
 }
 void signalSemaforo(int cliente) {
 	// TODO DESBLOQUEAR CPU SI >0
-	char* serialLargo = malloc(sizeof(int));
-	read(clientes[cliente].socket, serialLargo, sizeof(int));
-	int largo = char4ToInt(serialLargo);
-	char* semid = malloc(largo);
-	read(clientes[cliente].socket, semid, largo);
+	char* semid = leerLargoYMensaje(cliente);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
 	if (!queue_is_empty(sem->cola))
 		desbloquearProceso((int)queue_pop(sem->cola));
 	else
 	sem->valor++;
 	free(semid);
-	free(serialLargo);
 }
 void asignarCompartida(int cliente) {
-	char* varLen = malloc(sizeof(int));
-	int largo = char4ToInt(varLen);
-	read(clientes[cliente].socket, varLen, sizeof(int));
-	char* compartida = malloc(largo);
-	read(clientes[cliente].socket, compartida, largo);
+	char* compartida = leerLargoYMensaje(cliente);
 	char* valor = malloc(sizeof(int));
 	read(clientes[cliente].socket, valor, sizeof(int));
 	*(int*) dictionary_get(tablaGlobales, compartida) = char4ToInt(valor);
-	free(varLen);
 	free(compartida);
 	free(valor);
 }
 void devolverCompartida(int cliente) {
-	char* varLen = malloc(sizeof(int));
-	int largo = char4ToInt(varLen);
-	read(clientes[cliente].socket, varLen, sizeof(int));
-	char* compartida = malloc(largo);
-	read(clientes[cliente].socket, compartida, largo);
+	char* compartida = leerLargoYMensaje(cliente);
 	//send_w(clientes[cliente].socket, intToChar(HeaderDevolverCompartida),1); TODO crear el header
 	char* valor = intToChar4(*(int*) dictionary_get(tablaGlobales, compartida));
 	send_w(clientes[cliente].socket, valor, sizeof(int));
-	free(varLen);
 	free(compartida);
 	free(valor);
 }
@@ -92,12 +72,7 @@ void imprimirTexto(int cliente) {
 	free(texto);
 }
 void entradaSalida(int cliente) {
-	char* serialSize = malloc(sizeof(int));
-	read(clientes[cliente].socket, serialSize, sizeof(int));
-	int size = char4ToInt(serialSize);
-	char* serialIO = malloc(size);
-	read(clientes[cliente].socket, serialIO, size);
+	char* serialIO = leerLargoYMensaje(cliente);
 	bloquearProcesoIO(clientes[cliente].pid,serialIO);
-	free(serialSize);
 	free(serialIO);
 }

@@ -77,6 +77,7 @@ void procesarNuevasConexionesExtendido(int* socket);
 void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned short PORT, unsigned int* tamanio, int* activado);
 char* intToChar4(int num); // RECORDAR: liberar el puntero con free()
 int char4ToInt(char* chars);
+char* leerLargoYMensaje(int cliente);
 
 #endif /* CLIENTE_SERVIDOR_H_ */
 

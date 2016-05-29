@@ -166,4 +166,6 @@ int test_nucleo();
 void test_cicloDeVidaProcesos();
 void test_obtenerMetadata();
 
+char* leerLargoYMensaje(int cliente);
+
 #endif /* NUCLEO_H_ */

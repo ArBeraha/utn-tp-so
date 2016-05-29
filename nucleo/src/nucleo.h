@@ -89,14 +89,17 @@ t_dictionary* tablaIO;
 customConfig_t config;
 t_config* configNucleo;
 t_planificacion algoritmo;
+struct timeval espera;
 // Nucleo
 void cargarCFG();
 void configHilos();
 void procesarHeader(int cliente, char *header);
-struct timeval newEspera();
 void finalizar();
 int getHandshake();
 void warnDebug();
+void crearSemaforos();
+void crearIOs();
+void crearCompartidas();
 void destruirSemaforo(t_semaforo* sem);
 void destruirSemaforos();
 void destruirIO(t_IO* io);

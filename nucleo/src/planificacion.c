@@ -68,13 +68,13 @@ bool terminoQuantum(t_proceso* proceso) {
 	return (!(proceso->PCB->PC % config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
 }
 void asignarCPU(t_proceso* proceso, int cpu) {
-	log_debug(bgLogger, "asignando cpu:%d a pid:%d", cpu, proceso->PCB->PID);
+	log_debug(bgLogger, "Asignando cpu:%d a pid:%d", cpu, proceso->PCB->PID);
 	proceso->cpu = cpu;
 	clientes[cpu].pid = proceso->PCB->PID;
 
 }
 void desasignarCPU(t_proceso* proceso) {
-	log_debug(bgLogger, "desasignando cpu:%d a pid:%d", proceso->cpu,
+	log_debug(bgLogger, "Desasignando cpu:%d a pid:%d", proceso->cpu,
 			proceso->PCB->PID);
 	queue_push(colaCPU, (void*) proceso->cpu);
 	proceso->cpu = SIN_ASIGNAR;

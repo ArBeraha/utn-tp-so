@@ -90,10 +90,13 @@ char* getScript(int consola) {
 }
 /*  ----------INICIO NUCLEO ---------- */
 void cargarCFG() {
+	log_debug(bgLogger,"Cargando archivo de configuracion");
 	t_config* configNucleo;
 	configNucleo = config_create("nucleo.cfg");
 	config.puertoConsola = config_get_int_value(configNucleo, "PUERTO_PROG");
 	config.puertoCPU = config_get_int_value(configNucleo, "PUERTO_CPU");
+	config.puertoUMC = config_get_int_value(configNucleo, "PUERTO_UMC");
+	config.ipUMC = string_duplicate(config_get_string_value(configNucleo, "IP_UMC"));
 	config.quantum = config_get_int_value(configNucleo, "QUANTUM");
 	config.queantum_sleep = config_get_int_value(configNucleo, "QUANTUM_SLEEP");
 	config.sem_ids = config_get_array_value(configNucleo, "SEM_ID");
@@ -101,39 +104,6 @@ void cargarCFG() {
 	config.io_ids = config_get_array_value(configNucleo, "IO_ID");
 	config.ioSleep = config_get_array_value(configNucleo, "IO_SLEEP");
 	config.sharedVars = config_get_array_value(configNucleo, "SHARED_VARS");
-	config.ipUMC = string_duplicate(config_get_string_value(configNucleo, "IP_UMC"));
-	config.puertoUMC = config_get_int_value(configNucleo, "PUERTO_UMC");
-
-	// Cargamos los IO
-	int i = 0;
-	while (config.io_ids[i] != '\0') {
-		t_IO* io = malloc(sizeof(t_IO));
-		io->retardo = atoi(config.ioSleep[i]);
-		io->cola = queue_create();
-		io->estado = INACTIVE;
-		dictionary_put(tablaIO, config.io_ids[i], io);
-		//printf("ID:%s SLEEP:%d\n",config.io_ids[i],io->retardo);
-		i++;
-	}
-	// Cargamos los SEM
-	i = 0;
-	while (config.sem_ids[i] != '\0') {
-		t_semaforo* sem = malloc(sizeof(t_semaforo));
-		sem->valor = atoi(config.semInit[i]);
-		sem->cola = queue_create();
-		dictionary_put(tablaSEM, config.sem_ids[i], sem);
-		//printf("SEM:%s INIT:%d\n",config.sem_ids[i],*init);
-		i++;
-	}
-	// Cargamos las variables compartidas
-	i = 0;
-	while (config.sharedVars[i] != '\0') {
-		int* init = malloc(sizeof(int));
-		*init = 0;
-		dictionary_put(tablaSEM, config.sharedVars[i], init);
-		//printf("SHARED:%s VALUE:%d\n",config.sharedVars[i],*init);
-		i++;
-	}
 	config_destroy(configNucleo);
 }
 void configHilos() {
@@ -142,13 +112,11 @@ void configHilos() {
 	pthread_mutex_init(&mutexProcesos, NULL);
 	pthread_mutex_init(&mutexUMC, NULL);
 }
-struct timeval newEspera() {
-	struct timeval espera;
-	espera.tv_sec = 2; 				//Segundos
-	espera.tv_usec = 500000; 		//Microsegundos
-	return espera;
-}
 void inicializar(){
+	crearLogs("Nucleo", "Nucleo");
+	log_info(activeLogger,"INICIALIZANDO");
+	espera.tv_sec = 2;
+	espera.tv_usec = 500000;
 	listaProcesos = list_create();
 	colaCPU = queue_create();
 	colaListos = queue_create();
@@ -158,9 +126,13 @@ void inicializar(){
 	tablaGlobales = dictionary_create();
 	cargarCFG();
 	configHilos();
+	crearSemaforos();
+	crearIOs();
+	crearCompartidas();
 	algoritmo = FIFO;
 }
 void finalizar() {
+	log_info(activeLogger,"FINALIZANDO");
 	destruirLogs();
 	list_destroy(listaProcesos);
 	queue_destroy(colaCPU);
@@ -172,6 +144,39 @@ void finalizar() {
 	destruirSemaforos();
 	destruirIOs();
 	destruirCompartidas();
+}
+void crearIOs(){
+	int i = 0;
+	while (config.io_ids[i] != '\0') {
+		t_IO* io = malloc(sizeof(t_IO));
+		io->retardo = atoi(config.ioSleep[i]);
+		io->cola = queue_create();
+		io->estado = INACTIVE;
+		dictionary_put(tablaIO, config.io_ids[i], io);
+		log_debug(bgLogger,"Creando IO id:%s sleep:%d",config.io_ids[i],io->retardo);
+		i++;
+	}
+}
+void crearSemaforos(){
+	int i = 0;
+	while (config.sem_ids[i] != '\0') {
+		t_semaforo* sem = malloc(sizeof(t_semaforo));
+		sem->valor = atoi(config.semInit[i]);
+		sem->cola = queue_create();
+		dictionary_put(tablaSEM, config.sem_ids[i], sem);
+		log_debug(bgLogger,"Creando Semaforo:%s valor:%d",config.sem_ids[i],sem->valor);
+		i++;
+	}
+}
+void crearCompartidas(){
+	int i = 0;
+	while (config.sharedVars[i] != '\0') {
+		int* init = malloc(sizeof(int));
+		*init = 0;
+		dictionary_put(tablaSEM, config.sharedVars[i], init);
+		log_debug(bgLogger,"Creando Compartida:%s valor:%d",config.sharedVars[i],*init);
+		i++;
+	}
 }
 void destruirSemaforo(t_semaforo* sem){
 	queue_destroy(sem->cola);
@@ -271,14 +276,11 @@ void procesarHeader(int cliente, char *header) {
 int main(void) {
 	system("clear");
 	int i;
-	struct timeval espera = newEspera(); // Periodo maximo de espera del select
 	char header[1];
-	crearLogs("Nucleo", "Nucleo");
 	inicializar();
 	testear(test_serializacion);
 	testear(test_nucleo);
-	//system("clear");
-	inicializar();
+
 	configurarServidorExtendido(&socketConsola, &direccionConsola,
 			config.puertoConsola, &tamanioDireccionConsola, &activadoConsola);
 	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puertoCPU,

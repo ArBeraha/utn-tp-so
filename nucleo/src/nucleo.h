@@ -34,7 +34,7 @@
 
 /* ---------- INICIO DEBUG ---------- */
 // Es util para debugear sin tener una consola extra con UMC abierto.
-#define DEBUG_IGNORE_UMC true
+#define DEBUG_IGNORE_UMC false
 #define DEBUG_IGNORE_UMC_PAGES true
 /* ---------- INICIO DEBUG ---------- */
 // Para que rompan las listas y vectores

@@ -15,8 +15,7 @@ void rechazarProceso(int PID) {
 	if (proceso->estado != NEW)
 		log_warning(activeLogger,
 				"Se esta rechazando el proceso %d ya aceptado!", PID);
-	send(clientes[proceso->consola].socket,
-			intToChar(HeaderConsolaFinalizarRechazado), 1, 0); // Le decimos adios a la consola
+	enviarHeader(clientes[proceso->consola].socket, HeaderConsolaFinalizarRechazado);
 	log_info(bgLogger,
 			"Consola avisada sobre la finalización del proceso ansisop.");
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
@@ -87,13 +86,12 @@ void destruirProceso(int PID) {
 		log_warning(activeLogger,
 				"Se esta destruyendo el proceso %d que no libero sus recursos! y esta en estado:%d",
 				PID, proceso->estado);
-	char* serialHeader = intToChar(HeaderConsolaFinalizarNormalmente);
-	send(clientes[proceso->consola].socket, serialHeader, 1, 0); // Le decimos adios a la consola
+	enviarHeader(clientes[proceso->consola].socket, HeaderConsolaFinalizarNormalmente);
 	quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
 	pcb_destroy(proceso->PCB);
 	free(proceso); // Destruir Proceso y PCB
-	free(serialHeader);
+
 }
 void actualizarPCB(t_PCB PCB) { //
 	// Cuando CPU me actualice la PCB del proceso me manda una PCB (no un puntero)

@@ -235,3 +235,9 @@ void enviarLargoYMensaje(int cliente, char* mensaje){
 	send_w(clientes[cliente].socket, mensaje, largo);
 	free(serialLargo);
 }
+
+void enviarHeader(int cliente, int header){
+	char* serialHeader = intToChar(header);
+	send_w(cliente,serialHeader,1);
+	free(serialHeader);
+}

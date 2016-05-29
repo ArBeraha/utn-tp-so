@@ -20,7 +20,7 @@ bool pedirPaginas(int PID, char* codigo) {
 	 Estos mutex garantizan que por ejemplo no haga cada hilo un send (esto podria solucionarse tambien juntando los send, pero es innecesario porque si o si hay que sincronizar)
 	 y que no se van a correr los sends de un hilo 1, los del hilo 2, umc responde por hilo 1 (lo primero que le llego) y como corre hilo 2, esa respuesta llega al hilo 2 en vez de al 1. */
 		pthread_mutex_lock(&lock_UMC_conection);
-		send_w(umc, headerToMSG(HeaderScript), 1);
+		enviarHeader(umc,HeaderScript);
 		send_w(umc, serialPid, sizeof(int));
 		send_w(umc, serialPaginas, sizeof(int));
 		enviarLargoYMensaje(umc, codigo);
@@ -198,7 +198,7 @@ void procesarHeader(int cliente, char *header) {
 			log_debug(bgLogger,
 					"Es un cliente apropiado! Respondiendo handshake");
 			clientes[cliente].identidad = charToInt(payload);
-			send(clientes[cliente].socket, intToChar(SOYNUCLEO), 1, 0);
+			enviarHeader(clientes[cliente].socket, SOYNUCLEO);
 		} else {
 			log_error(activeLogger,
 					"No es un cliente apropiado! rechazada la conexion");

@@ -7,8 +7,7 @@
 #include "nucleo.h"
 
 void waitSemaforo(int cliente) {
-	// TODO BLOQUEAR CPU SI <=0
-	char* semid = leerLargoYMensaje(cliente);
+	char* semid = leerLargoYMensaje(clientes[cliente].socket);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
 	if (sem->valor > 0)
 		sem->valor--;
@@ -17,8 +16,7 @@ void waitSemaforo(int cliente) {
 	free(semid);
 }
 void signalSemaforo(int cliente) {
-	// TODO DESBLOQUEAR CPU SI >0
-	char* semid = leerLargoYMensaje(cliente);
+	char* semid = leerLargoYMensaje(clientes[cliente].socket);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
 	if (!queue_is_empty(sem->cola))
 		desbloquearProceso((int)queue_pop(sem->cola));
@@ -27,7 +25,7 @@ void signalSemaforo(int cliente) {
 	free(semid);
 }
 void asignarCompartida(int cliente) {
-	char* compartida = leerLargoYMensaje(cliente);
+	char* compartida = leerLargoYMensaje(clientes[cliente].socket);
 	char* valor = malloc(sizeof(int));
 	read(clientes[cliente].socket, valor, sizeof(int));
 	*(int*) dictionary_get(tablaGlobales, compartida) = char4ToInt(valor);
@@ -35,7 +33,7 @@ void asignarCompartida(int cliente) {
 	free(valor);
 }
 void devolverCompartida(int cliente) {
-	char* compartida = leerLargoYMensaje(cliente);
+	char* compartida = leerLargoYMensaje(clientes[cliente].socket);
 	//send_w(clientes[cliente].socket, intToChar(HeaderDevolverCompartida),1); TODO crear el header
 	char* valor = intToChar4(*(int*) dictionary_get(tablaGlobales, compartida));
 	send_w(clientes[cliente].socket, valor, sizeof(int));
@@ -43,30 +41,26 @@ void devolverCompartida(int cliente) {
 	free(valor);
 }
 void imprimirVariable(int cliente) {
-	int consola = ((t_proceso*) clientes[cliente].pid)->consola;
+	int consola = clientes[((t_proceso*) clientes[cliente].pid)->consola].socket;
 	char* serialValor = malloc( sizeof(ansisop_var_t));
 	read(cliente, serialValor, sizeof(ansisop_var_t));
 	char* name = malloc(sizeof(char));
 	read(cliente, name, sizeof(char));
-	char* serialHeader = headerToMSG(HeaderImprimirVariableConsola);
-	send_w(consola, serialHeader, 1);
+	enviarHeader(consola, HeaderImprimirVariableConsola);
 	send_w(consola, serialValor, sizeof(ansisop_var_t));
 	send_w(consola, name, sizeof(char));
-	free(serialHeader);
 	free(serialValor);
 	free(name);
 }
 void imprimirTexto(int cliente) {
-	int consola = ((t_proceso*) clientes[cliente].pid)->consola;
-	char* texto = leerLargoYMensaje(cliente);
-	char* serialHeader = headerToMSG(HeaderImprimirTextoConsola);
-	send_w(consola, serialHeader, 1);
-	enviarLargoYMensaje(cliente, texto);
-	free(serialHeader);
+	int consola = clientes[((t_proceso*) clientes[cliente].pid)->consola].socket;
+	char* texto = leerLargoYMensaje(clientes[cliente].socket);
+	enviarHeader(consola, HeaderImprimirTextoConsola);
+	enviarLargoYMensaje(consola, texto);
 	free(texto);
 }
 void entradaSalida(int cliente) {
-	char* serialIO = leerLargoYMensaje(cliente);
+	char* serialIO = leerLargoYMensaje(clientes[cliente].socket);
 	bloquearProcesoIO(clientes[cliente].pid,serialIO);
 	free(serialIO);
 }

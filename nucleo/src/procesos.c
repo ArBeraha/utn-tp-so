@@ -19,9 +19,9 @@ void rechazarProceso(int PID) {
 	log_info(bgLogger,
 			"Consola avisada sobre la finalización del proceso ansisop.");
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
-	pthread_mutex_lock(&lockProccessList);
+	pthread_mutex_lock(&mutexProcesos);
 	list_remove_by_value(listaProcesos, (void*) PID);
-	pthread_mutex_unlock(&lockProccessList);
+	pthread_mutex_unlock(&mutexProcesos);
 	pcb_destroy(proceso->PCB);
 	free(proceso);
 }
@@ -33,9 +33,9 @@ int crearProceso(int consola) {
 	proceso->consola = consola;
 	clientes[consola].pid = proceso->PCB->PID;
 	proceso->cpu = SIN_ASIGNAR;
-	pthread_mutex_lock(&lockProccessList);
+	pthread_mutex_lock(&mutexProcesos);
 	list_add(listaProcesos, proceso);
-	pthread_mutex_unlock(&lockProccessList);
+	pthread_mutex_unlock(&mutexProcesos);
 	if (!CU_is_test_running()) {
 		char* codigo = getScript(consola);
 		asignarMetadataProceso(proceso, codigo);
@@ -52,7 +52,7 @@ int crearProceso(int consola) {
 void cargarProceso(int consola) {
 	// Crea un hilo que crea el proceso y se banca esperar a que umc le de paginas.
 	// Mientras tanto, el planificador sigue andando.
-	pthread_create(&crearProcesos, &detachedAttr, (void*) crearProceso,
+	pthread_create(&hiloCrearProcesos, &detachedAttr, (void*) crearProceso,
 			(void*) consola);
 }
 void ejecutarProceso(int PID, int cpu) {
@@ -77,9 +77,9 @@ void finalizarProceso(int PID) {
 	desasignarCPU(proceso);
 	cambiarEstado(proceso,EXIT);
 	queue_push(colaSalida, (void*) PID);
-	pthread_mutex_lock(&lockProccessList);
+	pthread_mutex_lock(&mutexProcesos);
 	list_remove_by_value(listaProcesos, (void*) PID);
-	pthread_mutex_unlock(&lockProccessList);
+	pthread_mutex_unlock(&mutexProcesos);
 }
 void destruirProceso(int PID) {
 	log_debug(bgLogger,	"Destruyendo proceso:%d",PID);
@@ -100,9 +100,9 @@ void destruirProceso(int PID) {
 }
 void actualizarPCB(t_PCB PCB) { //
 	// Cuando CPU me actualice la PCB del proceso me manda una PCB (no un puntero)
-	pthread_mutex_lock(&lockProccessList);
+	pthread_mutex_lock(&mutexProcesos);
 	//t_proceso* proceso = list_get(listaProcesos, PCB->PID);
-	pthread_mutex_unlock(&lockProccessList);
+	pthread_mutex_unlock(&mutexProcesos);
 	//proceso->PCB=PCB;
 }
 void expulsarProceso(t_proceso* proceso) {

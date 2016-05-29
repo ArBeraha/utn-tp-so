@@ -7,7 +7,7 @@
 #include "nucleo.h"
 
 static bool matrizEstados[5][5] = {
-		//		     NEW    READY  EXEC   BLOCK  EXIT
+//		     		NEW    READY  EXEC   BLOCK  EXIT
 		/* NEW 	 */{ false, true, false, false, true },
 		/* READY */{ false, false, true, false, true },
 		/* EXEC  */{ false, true, false, true, true },
@@ -17,7 +17,7 @@ static bool matrizEstados[5][5] = {
 /*  ----------INICIO PLANIFICACION ---------- */
 int cantidadProcesos() {
 	int cantidad;
-	pthread_mutex_lock(&lockProccessList);
+	pthread_mutex_lock(&mutexProcesos);
 	cantidad = list_size(listaProcesos);
 	// El unlock se hace dos o tres lineas despues de llamar a esta funcion
 	return cantidad;
@@ -33,7 +33,7 @@ void planificacionRR() {
 	int i;
 	for (i = 0; i < cantidadProcesos(); i++) { // Con cantidadProcesos() se evitan condiciones de carrera.
 		t_proceso* proceso = list_get(listaProcesos, i);
-		pthread_mutex_unlock(&lockProccessList); // El lock se hace en cantidadProcesos()
+		pthread_mutex_unlock(&mutexProcesos); // El lock se hace en cantidadProcesos()
 		if (proceso->estado == EXEC) {
 			if (terminoQuantum(proceso))
 				expulsarProceso(proceso);

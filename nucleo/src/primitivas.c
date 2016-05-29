@@ -41,22 +41,22 @@ void devolverCompartida(int cliente) {
 	free(valor);
 }
 void imprimirVariable(int cliente) {
-	int consola = clientes[((t_proceso*) clientes[cliente].pid)->consola].socket;
+	int socketConsola = clientes[((t_proceso*) clientes[cliente].pid)->consola].socket;
 	char* serialValor = malloc( sizeof(ansisop_var_t));
 	read(cliente, serialValor, sizeof(ansisop_var_t));
 	char* name = malloc(sizeof(char));
 	read(cliente, name, sizeof(char));
-	enviarHeader(consola, HeaderImprimirVariableConsola);
-	send_w(consola, serialValor, sizeof(ansisop_var_t));
-	send_w(consola, name, sizeof(char));
+	enviarHeader(socketConsola, HeaderImprimirVariableConsola);
+	send_w(socketConsola, serialValor, sizeof(ansisop_var_t));
+	send_w(socketConsola, name, sizeof(char));
 	free(serialValor);
 	free(name);
 }
 void imprimirTexto(int cliente) {
-	int consola = clientes[((t_proceso*) clientes[cliente].pid)->consola].socket;
+	int socketConsola = clientes[((t_proceso*) clientes[cliente].pid)->consola].socket;
 	char* texto = leerLargoYMensaje(clientes[cliente].socket);
-	enviarHeader(consola, HeaderImprimirTextoConsola);
-	enviarLargoYMensaje(consola, texto);
+	enviarHeader(socketConsola, HeaderImprimirTextoConsola);
+	enviarLargoYMensaje(socketConsola, texto);
 	free(texto);
 }
 void entradaSalida(int cliente) {

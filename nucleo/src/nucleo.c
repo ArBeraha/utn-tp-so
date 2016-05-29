@@ -19,13 +19,13 @@ bool pedirPaginas(int PID, char* codigo) {
 	} else { /* Para curso normal del programa
 	 Estos mutex garantizan que por ejemplo no haga cada hilo un send (esto podria solucionarse tambien juntando los send, pero es innecesario porque si o si hay que sincronizar)
 	 y que no se van a correr los sends de un hilo 1, los del hilo 2, umc responde por hilo 1 (lo primero que le llego) y como corre hilo 2, esa respuesta llega al hilo 2 en vez de al 1. */
-		pthread_mutex_lock(&lock_UMC_conection);
+		pthread_mutex_lock(&mutexUMC);
 		enviarHeader(umc,HeaderScript);
 		send_w(umc, serialPid, sizeof(int));
 		send_w(umc, serialPaginas, sizeof(int));
 		enviarLargoYMensaje(umc, codigo);
 		read(umc, &respuesta, 1);
-		pthread_mutex_unlock(&lock_UMC_conection);
+		pthread_mutex_unlock(&mutexUMC);
 		hayMemDisponible = (bool) ((int) respuesta);
 		if (hayMemDisponible == true)
 			log_debug(bgLogger, "Hay memoria disponible para el proceso %d.",
@@ -56,10 +56,10 @@ void handshakearUMC() {
 		log_debug(bgLogger, "Núcleo recibió handshake de UMC.");
 }
 void establecerConexionConUMC() {
-	direccionParaUMC = crearDireccionParaCliente(config.puertoUMC,
+	direccionUMC = crearDireccionParaCliente(config.puertoUMC,
 			config.ipUMC);
 	umc = socket_w();
-	connect_w(umc, &direccionParaUMC);
+	connect_w(umc, &direccionUMC);
 }
 void warnDebug() {
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
@@ -139,8 +139,8 @@ void cargarCFG() {
 void configHilos() {
 	pthread_attr_init(&detachedAttr);
 	pthread_attr_setdetachstate(&detachedAttr, PTHREAD_CREATE_DETACHED);
-	pthread_mutex_init(&lockProccessList, NULL);
-	pthread_mutex_init(&lock_UMC_conection, NULL);
+	pthread_mutex_init(&mutexProcesos, NULL);
+	pthread_mutex_init(&mutexUMC, NULL);
 }
 struct timeval newEspera() {
 	struct timeval espera;
@@ -156,7 +156,6 @@ void inicializar(){
 	tablaIO = dictionary_create();
 	tablaSEM = dictionary_create();
 	tablaGlobales = dictionary_create();
-	pthread_mutex_init(&lockProccessList, NULL);
 	cargarCFG();
 	configHilos();
 	algoritmo = FIFO;
@@ -167,8 +166,8 @@ void finalizar() {
 	queue_destroy(colaCPU);
 	queue_destroy(colaListos);
 	queue_destroy(colaSalida);
-	pthread_mutex_destroy(&lockProccessList);
-	pthread_mutex_destroy(&lock_UMC_conection);
+	pthread_mutex_destroy(&mutexProcesos);
+	pthread_mutex_destroy(&mutexUMC);
 	pthread_attr_destroy(&detachedAttr);
 	destruirSemaforos();
 	destruirIOs();

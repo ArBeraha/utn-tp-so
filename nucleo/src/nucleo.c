@@ -171,6 +171,29 @@ void finalizar() {
 	pthread_mutex_destroy(&lockProccessList);
 	pthread_mutex_destroy(&lock_UMC_conection);
 	pthread_attr_destroy(&detachedAttr);
+	destruirSemaforos();
+	destruirIOs();
+	destruirCompartidas();
+}
+void destruirSemaforo(t_semaforo* sem){
+	queue_destroy(sem->cola);
+	free(sem);
+}
+void destruirSemaforos(){
+	dictionary_destroy_and_destroy_elements(tablaSEM, (void*)destruirSemaforo);
+}
+void destruirIO(t_IO* io){
+	queue_destroy(io->cola);
+	free(io);
+}
+void destruirIOs(){
+	dictionary_destroy_and_destroy_elements(tablaIO, (void*)destruirIO);
+}
+void destruirCompartida(int* compartida){
+	free(compartida);
+}
+void destruirCompartidas(){
+	dictionary_destroy_and_destroy_elements(tablaGlobales, (void*)destruirSemaforo);
 }
 void procesarHeader(int cliente, char *header) {
 	// Segun el protocolo procesamos el header del mensaje recibido

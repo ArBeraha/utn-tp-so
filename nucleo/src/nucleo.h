@@ -118,6 +118,12 @@ struct timeval newEspera();
 void finalizar();
 int getHandshake();
 void warnDebug();
+void destruirSemaforo(t_semaforo* sem);
+void destruirSemaforos();
+void destruirIO(t_IO* io);
+void destruirIOs();
+void destruirCompartida(int* compartida);
+void destruirCompartidas();
 //UMC
 bool pedirPaginas(int PID, char* codigo);
 void enviarCodigo(int PID, char* codigo);

@@ -8,37 +8,33 @@
 
 void waitSemaforo(int cliente) {
 	// TODO BLOQUEAR CPU SI <=0
-	char* semLen = malloc(sizeof(int));
-	read(clientes[cliente].socket, semLen, sizeof(int));
-	int largo = char4ToInt(semLen);
+	char* serialLargo = malloc(sizeof(int));
+	read(clientes[cliente].socket, serialLargo, sizeof(int));
+	int largo = char4ToInt(serialLargo);
 	char* semid = malloc(largo);
 	read(clientes[cliente].socket, semid, largo);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
 	if (sem->valor > 0)
 		sem->valor--;
-	else {
-		queue_push(sem->cola,(void*)cliente);
-		// Designar espera
-	}
+	else
+		bloquearProcesoSem(clientes[cliente].pid, semid);
 	free(semid);
-	free(semLen);
+	free(serialLargo);
 }
 void signalSemaforo(int cliente) {
 	// TODO DESBLOQUEAR CPU SI >0
-	char* semLen = malloc(sizeof(int));
-	read(clientes[cliente].socket, semLen, sizeof(int));
-	int largo = char4ToInt(semLen);
+	char* serialLargo = malloc(sizeof(int));
+	read(clientes[cliente].socket, serialLargo, sizeof(int));
+	int largo = char4ToInt(serialLargo);
 	char* semid = malloc(largo);
 	read(clientes[cliente].socket, semid, largo);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
-	if (!queue_is_empty(sem->cola)){
-	int bloqueado = (int)queue_pop(sem->cola);
-		// Desasignar espera
-	}
+	if (!queue_is_empty(sem->cola))
+		desbloquearProceso((int)queue_pop(sem->cola));
 	else
 	sem->valor++;
 	free(semid);
-	free(semLen);
+	free(serialLargo);
 }
 void asignarCompartida(int cliente) {
 	char* varLen = malloc(sizeof(int));
@@ -101,7 +97,7 @@ void entradaSalida(int cliente) {
 	int size = char4ToInt(serialSize);
 	char* serialIO = malloc(size);
 	read(clientes[cliente].socket, serialIO, size);
-	bloquearProceso(clientes[cliente].pid,serialIO);
+	bloquearProcesoIO(clientes[cliente].pid,serialIO);
 	free(serialSize);
 	free(serialIO);
 }

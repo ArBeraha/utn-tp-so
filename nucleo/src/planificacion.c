@@ -76,6 +76,7 @@ void asignarCPU(t_proceso* proceso, int cpu) {
 void desasignarCPU(t_proceso* proceso) {
 	log_debug(bgLogger, "desasignando cpu:%d a pid:%d", proceso->cpu,
 			proceso->PCB->PID);
+	queue_push(colaCPU, (void*) proceso->cpu);
 	proceso->cpu = SIN_ASIGNAR;
 	clientes[proceso->cpu].pid = (int) NULL;
 }

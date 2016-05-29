@@ -72,7 +72,6 @@ void ejecutarProceso(int PID, int cpu) {
 }
 void finalizarProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;
-	queue_push(colaCPU, (int*) proceso->cpu); // Disponemos de nuevo de la CPU
 	if (proceso->estado==EXEC)
 	desasignarCPU(proceso);
 	cambiarEstado(proceso,EXIT);
@@ -106,17 +105,24 @@ void actualizarPCB(t_PCB PCB) { //
 void expulsarProceso(t_proceso* proceso) {
 	cambiarEstado(proceso,READY);
 	queue_push(colaListos, (void*) proceso->PCB->PID);
-	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
 	desasignarCPU(proceso);
 }
-void bloquearProceso(int PID, char* IO) {
-	t_proceso* proceso = (t_proceso*) PID;
-	cambiarEstado(proceso,BLOCK);
-	queue_push(colaCPU, (void*) proceso->cpu); // Disponemos de la CPU
-	desasignarCPU(proceso);
+void bloquearProcesoIO(int PID, char* IO) {
+	bloquearProceso(PID);
 	if (dictionary_has_key(tablaIO, IO))
 		queue_push(((t_IO*) dictionary_get(tablaIO, IO))->cola,
 				(t_proceso*) PID);
+}
+void bloquearProcesoSem(int PID, char* semid) {
+	bloquearProceso(PID);
+	if (dictionary_has_key(tablaSEM, semid))
+		queue_push(((t_semaforo*) dictionary_get(tablaSEM, semid))->cola,
+				(t_proceso*) PID);
+}
+void bloquearProceso(int PID) {
+	t_proceso* proceso = (t_proceso*) PID;
+	cambiarEstado(proceso,BLOCK);
+	desasignarCPU(proceso);
 }
 void desbloquearProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;

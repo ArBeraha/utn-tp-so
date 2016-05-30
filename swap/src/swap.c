@@ -128,7 +128,6 @@ void procesarHeader(int cliente, char* header)
     		log_debug(bgLogger, "Llego un handshake");
     		payload_size = 1;;
     		payload = malloc(payload_size);
-    		read(cliente, payload, payload_size);
     		payload= recv_waitall_ws(cliente,payload_size);
     		log_debug(bgLogger, "Llego un mensaje con payload %d",
     				charToInt(payload));
@@ -389,7 +388,7 @@ void funcionamientoSwap()
 
 	//SOCKETS
 
-	    char *header;
+	   char *header;
 	    crearLogs("Swap","Swap");
 
 	    //printf("1");

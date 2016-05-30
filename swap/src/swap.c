@@ -392,14 +392,18 @@ void funcionamientoSwap()
 	    char *header;
 	    crearLogs("Swap","Swap");
 
-	    printf("1");
+	    //printf("1");
 		configurarServidor(PUERTO_SWAP);
-		printf("2");
+		//printf("2");
 		log_info(activeLogger,"Esperando conexiones");
-		printf("3");
-		procesarNuevasConexiones();
-		cliente=clientes[0].socket;
-		printf("4");
+		//printf("3");
+		t_cliente clienteData;
+		clienteData.addrlen=sizeof(clienteData.addr);
+		clienteData.socket=accept(socketNuevasConexiones,(struct sockaddr*)&clienteData.addr,(socklen_t*)&clienteData.addrlen);
+		printf("Nueva conexion , socket %d, ip is: %s, puerto: %d \n", clienteData.socket, inet_ntoa(clienteData.addr.sin_addr),
+				ntohs(clienteData.addr.sin_port));
+		cliente=clienteData.socket;
+		//printf("4");
 
 		while (1){
 			header=recv_waitall_ws(cliente,1);

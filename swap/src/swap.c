@@ -371,8 +371,8 @@ void funcionamientoSwap()
 		string_append(&ddComand, nomArchivo); //con el nombre de la swap
 		string_append(&ddComand, " bs="); //defino tamaño del archivo (de la memoria swap)
 		string_append(&ddComand, tamPag); //Lo siguiente no va ya que ahora mi memoria se divide en paginas, no bytes
-		//string_append(&ddComand, " count=");
-		//string_append(&ddComand, cantPag); //cuyo tamaño va a ser igual al tamaño de las paginas*cantidad de paginas
+		string_append(&ddComand, " count=");
+		string_append(&ddComand, cantPag); //cuyo tamaño va a ser igual al tamaño de las paginas*cantidad de paginas
 		printf("%s\n", ddComand);
 		system(ddComand); //ejecuto comando
 

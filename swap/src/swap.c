@@ -335,7 +335,7 @@ t_infoProceso* elemMIMenor (marcoAComparar) {
 void archivoDeConfiguracion()
 {
 
-	archSwap = config_create("archivoConfigSwap");
+	archSwap = config_create("swap.cfg");
 
 	puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
 	nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");

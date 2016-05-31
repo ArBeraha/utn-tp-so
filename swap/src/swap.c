@@ -5,66 +5,9 @@
  *      Author: utnso
  */
 
-
-
-#include <commons/log.h>
-#include <commons/string.h>
-#include <commons/config.h>
-#include <commons/temporal.h>
-#include <commons/process.h>
-#include <commons/txt.h>
-#include <commons/collections/list.h>
-#include <commons/bitarray.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/time.h>
-#include "handshake.h"
-#include "header.h"
-#include "cliente-servidor.h"
-#include "log.h"
-#include "commonTypes.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include "serializacion.h"
-
+#include "swap.h"
 
 #define PUERTO_SWAP 8082
-int cliente;
-
-typedef struct infoProceso{
-	int pid;
-	int numPagina;
-	int posPagina;
-	int cantidadDePaginas;
-} t_infoProceso;
-
-typedef struct datoPedido{
-int pid;
-int pagina;
-int tamanio;
-}t_datosPedido;
-
-t_config* archSwap;
-
-t_bitarray* espacio; //Bitmap de espacio utilizado, voy a tener una posicion por cada marco
-char *bitarray;
-
-
-t_list* espacioUtilizado;
-int espacioDisponible;
-
-
-
-int espacioLibre;
-int espacioOcupado;
-
-
-char* nomArchivo; //nombre del archivo vacio que creare mediante dd
-char* ddComand; // comando a mandar a consola para crear archivo mediante dd
 
 char* nombreArchivo;
 char* puertoEscucha;
@@ -106,8 +49,62 @@ void funcionamientoSwap();
 void testSwapDeBitArray1();
 void testSwapDeBitArray2();
 
+/*---------------INICIALIZACION SWAP----------------*/
+void cargarCFG() {
+	t_config* configSwap;
+	configSwap = config_create("swap.cfg");
+	config.puerto_umc = config_get_int_value(configSwap, "PUERTO_ESCUCHA");
+	config.nombre_swap = config_get_string_value(configSwap, "NOMBRE_SWAP");
+	config.cantidad_paginas =  config_get_int_value(configSwap, "CANTIDAD_PAGINAS");
+	config.tamanio_pagina =  config_get_int_value(configSwap, "TAMANIO_PAGINA");
+	config.retardo_compactacion = config_get_int_value(configSwap, "RETARDO_COMPACTACION");
+	config.retardo_acceso =  config_get_int_value(configSwap, "RETARDO_ACCESO");
 
+	log_info(activeLogger, "Archivo de configuracion cargado.\n");
+}
 
+void crear_archivo() {
+
+	char* ddComand; // comando a mandar a consola para crear archivo mediante dd
+	ddComand = string_new(); //comando va a contener a dd que voy a mandar a consola para que cree el archivo
+
+	string_append(&ddComand, "dd if=/dev/zero of="); //crea archivo input vacio
+	string_append(&ddComand, config.nombre_swap); //con el nombre de la swap
+	string_append(&ddComand, " bs="); //defino tamaño del archivo (de la memoria swap)
+	string_append(&ddComand, string_itoa(config.tamanio_pagina)); //Lo siguiente no va ya que ahora mi memoria se divide en paginas, no bytes
+	string_append(&ddComand, " count=");
+	string_append(&ddComand, string_itoa(config.cantidad_paginas)); //cuyo tamaño va a ser igual al tamaño de las paginas*cantidad de paginas
+	printf("%s\n", ddComand);
+	system(ddComand); //ejecuto comando
+
+	free(ddComand);
+	log_info(activeLogger, "Archivo %s creado\n", config.nombre_swap);
+}
+
+void conectar_umc(){
+
+	configurarServidor(config.puerto_umc);
+	log_info(activeLogger,"Esperando conexion de umc ...\n");
+
+	t_cliente clienteData;
+	clienteData.addrlen=sizeof(clienteData.addr);
+	clienteData.socket=accept(socketNuevasConexiones,(struct sockaddr*)&clienteData.addr,(socklen_t*)&clienteData.addrlen);
+	printf("Nueva conexion , socket %d, ip is: %s, puerto: %d \n", clienteData.socket, inet_ntoa(clienteData.addr.sin_addr),
+			ntohs(clienteData.addr.sin_port));
+	cliente=clienteData.socket;
+
+	log_info(activeLogger, "Conexion a UMC correcta :)\n.");
+}
+
+void inicializar(){
+	crearLogs("SWAP", "SWAP");
+	crearLogs(string_from_format("swap_%d", getpid()), "SWAP");
+	log_info(activeLogger, "Soy SWAP de process ID %d.\n", getpid());
+
+	cargarCFG();
+	crear_archivo();
+}
+/*------------------------------------------------*/
 
 void procesarHeader(int cliente, char* header)
 {
@@ -399,30 +396,6 @@ void archivoDeConfiguracion()
 /************************************FUNCIONAMIENTO DE SWAP********************************************************************/
 void funcionamientoSwap()
 {
-
-        archivoDeConfiguracion();
-
-
-
-
-
-
-
-		// dd if=/dev/zero of=archivoConfigSwap bs=tamPag count=cantPag
-		espacioDisponible = cantPaginasSwap; //Para manejar la asignacion de paginas a procesos
-		ddComand = string_new(); //comando va a contener a dd que voy a mandar a consola para que cree el archivo
-		nomArchivo = config_get_string_value(archSwap, "NOMBRE_SWAP");
-		string_append(&ddComand, "dd if=/dev/zero of="); //crea archivo input vacio
-		string_append(&ddComand, nomArchivo); //con el nombre de la swap
-		string_append(&ddComand, " bs="); //defino tamaño del archivo (de la memoria swap)
-		string_append(&ddComand, tamPag); //Lo siguiente no va ya que ahora mi memoria se divide en paginas, no bytes
-		string_append(&ddComand, " count=");
-		string_append(&ddComand, cantPag); //cuyo tamaño va a ser igual al tamaño de las paginas*cantidad de paginas
-		printf("%s\n", ddComand);
-		system(ddComand); //ejecuto comando
-
-
-
 		/* bitarray manejo de paginas */
 		int tamanio = cantPaginasSwap;
 		char* data = malloc(tamanio+1);
@@ -649,34 +622,39 @@ void funcionamientoSwap()
 //
 
 
-
-
 //**************************************************MAIN SWAP*****************************************************************
 
-int main(int argc, char** argv)
+int main()
 {
-    funcionamientoSwap();
+	char* header;
+	inicializar();
+
+	espacioDisponible = config.cantidad_paginas; //Para manejar la asignacion de paginas a procesos
+
+	/* bitarray manejo de paginas */
+	int tamanio = config.tamanio_pagina;
+	char* data = malloc(tamanio+1);
+	strcpy(data, "\0");
+	espacio = bitarray_create(data,tamanio);
+	espacioUtilizado = list_create();
+	//marco libres todos las posiciones del array
+    limpiarPosiciones (espacio,0,cantPaginasSwap);
+
+    testSwapDeBitArray1();
+    testSwapDeBitArray2();
+
+	//SOCKETS
+	conectar_umc();
+
+
+	while (1){
+		header=recv_waitall_ws(cliente,1);
+		procesarHeader(cliente,header); //Incluye deserializacion
+    }
+
 
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

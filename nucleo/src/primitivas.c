@@ -56,7 +56,7 @@ void imprimirTexto(int cliente) {
 	int socketConsola = clientes[((t_proceso*) clientes[cliente].pid)->consola].socket;
 	char* texto = leerLargoYMensaje(clientes[cliente].socket);
 	enviarHeader(socketConsola, HeaderImprimirTextoConsola);
-	enviarLargoYMensaje(socketConsola, texto);
+	enviarLargoYString(socketConsola, texto);
 	free(texto);
 }
 void entradaSalida(int cliente) {

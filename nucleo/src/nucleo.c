@@ -23,7 +23,7 @@ bool pedirPaginas(int PID, char* codigo) {
 		enviarHeader(umc, HeaderScript);
 		send_w(umc, serialPid, sizeof(int));
 		send_w(umc, serialPaginas, sizeof(int));
-		enviarLargoYMensaje(umc, codigo);
+		enviarLargoYString(umc, codigo);
 		read(umc, &respuesta, 1);
 		pthread_mutex_unlock(&mutexUMC);
 		hayMemDisponible = (bool) ((int) respuesta);

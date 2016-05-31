@@ -4,13 +4,25 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/nucleo.c 
+../src/nucleo.c \
+../src/planificacion.c \
+../src/primitivas.c \
+../src/procesos.c \
+../src/test.c 
 
 OBJS += \
-./src/nucleo.o 
+./src/nucleo.o \
+./src/planificacion.o \
+./src/primitivas.o \
+./src/procesos.o \
+./src/test.o 
 
 C_DEPS += \
-./src/nucleo.d 
+./src/nucleo.d \
+./src/planificacion.d \
+./src/primitivas.d \
+./src/procesos.d \
+./src/test.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

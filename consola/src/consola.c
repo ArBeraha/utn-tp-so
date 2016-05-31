@@ -14,7 +14,7 @@ void cargarConfig(){
 	config.ipNucleo = config_get_string_value(configConsola, "IP_NUCLEO");
 	config.DEBUG = config_get_int_value(configConsola, "DEBUG");
 	config.DEBUG_LOG_OLD_REMOVE = config_get_int_value(configConsola, "DEBUG_LOG_OLD_REMOVE");
-	config.logLevel = config_get_int_value(configConsola, "DEBUG_LOG_LEVEL");
+	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configConsola, "DEBUG_RAISE_LOG_LEVEL");
 }
 
 void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el navegador xD
@@ -194,7 +194,7 @@ int main(int argc, char* argv[]) {
 		log_debug(activeLogger, "Borrando logs antiguos...");
 		system("rm -rfv *.log");
 	}
-	crearLogs(string_from_format("consola_%d", getpid()), "Consola", LOG_PRINT_DEFAULT);
+	crearLogs(string_from_format("consola_%d", getpid()), "Consola", config.DEBUG_RAISE_LOG_LEVEL);
 	log_info(activeLogger, "Soy consola de process ID %d.", getpid());
 
 	if (config.DEBUG) {

@@ -28,7 +28,7 @@
 typedef struct customConfig {
 	int puertoNucleo;
 	char* ipNucleo;
-	int logLevel;
+	int DEBUG_RAISE_LOG_LEVEL;
 	int DEBUG;
 	int DEBUG_LOG_OLD_REMOVE;
 } customConfig_t;

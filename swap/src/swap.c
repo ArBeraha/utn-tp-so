@@ -5,52 +5,7 @@
  *      Author: utnso
  */
 
-#include "swap.h"
-
-char* nombreArchivo;
-char* puertoEscucha;
-char* nomSwap;
-int cantPaginasSwap;
-int tamanioPag;
-int retCompactacion;
-int retAcceso;
-char* cantPag;
-char* tamPag;
-
-
 // *******************************************************FUNCIONES UTILES**********************************************************
-
-/*****PROTOTIPOS******/
-//void asignarEspacioANuevoProceso(int, int);
-//void agregarProceso(int, int);
-//void leerPagina(int, int );
-//void escribirPagina(int, int , int );
-//void finalizarProceso(int);
-void procesarHeader(int, char*);
-int espaciosDisponibles (t_bitarray*);
-int espaciosUtilizados (t_bitarray*);
-void limpiarPosiciones (t_bitarray* , int, int );
-void setearPosiciones (t_bitarray*, int, int );
-int hayQueCompactar(int);
-int estaElProceso(int);
-t_infoProceso* buscarProceso(int);
-//int buscarMarcoInicial(int);
-void sacarElemento(int);
-//void compactar();
-void archivoDeConfiguracion();
-void funcionamientoSwap();
-//void asignarEspacioANuevoProceso(int, int);
-//void agregarProceso(int, int);
-//void leerPagina(int, int);
-//void escribirPagina(int, int , int );
-void finalizarProceso(int);
-//void modificarArchivo (int, int, int );
-void testSwapDeBitArray1();
-void testSwapDeBitArray2();
-//void testSwapDeCompactacion3();
-void testFinalizarProceso1();
-//void testFinalizarProceso2();
-
 /*---------------INICIALIZACION SWAP----------------*/
 void cargarCFG() {
 	t_config* configSwap;
@@ -188,7 +143,7 @@ int espaciosDisponibles (t_bitarray* unEspacio)
 {
   int i;
   int espacioSinUtilizar=0;
-  for(i=0; i<cantPaginasSwap; i++)
+  for(i=0; i<config.cantidad_paginas; i++)
   {
 	  if (bitarray_test_bit(unEspacio, i)==0) espacioSinUtilizar++ ;
   }
@@ -199,7 +154,7 @@ int espaciosUtilizados (t_bitarray* unEspacio)
 {
   int i;
   int espacioUtilizado=0;
-  for(i=0; i<cantPaginasSwap; i++)
+  for(i=0; i<config.cantidad_paginas; i++)
   {
 	  if (bitarray_test_bit(unEspacio, i)==0) espacioUtilizado++ ;
   }
@@ -223,7 +178,7 @@ void setearPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioPr
 
 //Comprueba si hay fragmentacion externa
 int hayQueCompactar(int paginasAIniciar) {
-	int cantidadDePaginas = cantPaginasSwap;
+	int cantidadDePaginas = config.cantidad_paginas;
 	int i=0;
 	int flag = 1;
 	int marcos;
@@ -386,20 +341,20 @@ void sacarElemento(int unPid)
 //		printf("Error al abrir el archivo para escribir\n");
 //	}
 //	//Leo en el archivo los marcos que le correspondian al proceso que estamos modificando
-//	char* buffer = malloc(tamanioPag*cantMarcos);
+//	char* buffer = malloc(config.tamanio_pagina*cantMarcos);
 //	fseek(archivoSwap, marcoInicial, SEEK_SET);
-//	fread(buffer, tamanioPag, cantMarcos, archivoSwap);
+//	fread(buffer, config.tamanio_pagina, cantMarcos, archivoSwap);
 //	//Lleno de ceros el archivo en la parte que acabo de leer
-//	char* texto = malloc(tamanioPag*cantMarcos);
+//	char* texto = malloc(config.tamanio_pagina*cantMarcos);
 //	int i;
-//	for (i = 0; i < tamanioPag*cantMarcos; i++) {
+//	for (i = 0; i < config.tamanio_pagina*cantMarcos; i++) {
 //		texto[i] = '\0';
 //	}
 //	fseek(archivoSwap, marcoInicial, SEEK_SET);
 //	fwrite(texto, sizeof(texto), 1, archivoSwap);
 //	//Escribo lo que lei del proceso en los nuevos marcos que le asignamos
 //	fseek(archivoSwap, nuevoMarcoInicial, SEEK_SET);
-//	fwrite(buffer, tamanioPag, cantMarcos, archivoSwap);
+//	fwrite(buffer, config.tamanio_pagina, cantMarcos, archivoSwap);
 //	fclose(archivoSwap);
 //}
 
@@ -461,7 +416,7 @@ void sacarElemento(int unPid)
 //				log_info(activeLogger,
 //						"El programa %d cuyo Marco Inicial es:%d y su Tamanio es:%d fue Iniciado correctamente.",
 //						pid, proceso->posPagina,
-//						proceso->cantidadDePaginas * tamanioPag);
+//						proceso->cantidadDePaginas * config.tamanio_pagina);
 //				send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
 //				return;
 //
@@ -484,7 +439,7 @@ void sacarElemento(int unPid)
 //void leerPagina(int pid, int paginaALeer) {
 //
 //
-//char* buffer = malloc(tamanioPag + 1);
+//char* buffer = malloc(config.tamanio_pagina + 1);
 //
 ////Abro el archivo de Swap
 //	FILE *archivoSwap;
@@ -497,9 +452,9 @@ void sacarElemento(int unPid)
 //	int marcoInicial = buscarMarcoInicial(pid); //TODO
 //	int marcoALeer = (marcoInicial + paginaALeer);
 //	int exitoAlLeer = fseek(archivoSwap, marcoALeer, SEEK_SET);
-//	fread(buffer, tamanioPag, 1, archivoSwap);
+//	fread(buffer, config.tamanio_pagina, 1, archivoSwap);
 //	fclose(archivoSwap);
-//	usleep(retAcceso);
+//	usleep(config.retardo_acceso);
 //	//mirar si no se puede leer
 //	log_info(activeLogger, "El programa %d cuyo Marco Inicial es:%d de Tamanio:%d .Contenido:%s. Lectura realizada correctamente.",
 //			pid, marcoInicial , string_length(buffer), buffer);
@@ -508,8 +463,8 @@ void sacarElemento(int unPid)
 //		send_w(cliente, headerToMSG(HeaderLecturaCorrecta), 1); //TODO
 //
 //		//Envio lo leído a memoria
-//		send_w(cliente, (void*) buffer, tamanioPag);
-//		buffer[tamanioPag] = '\0';
+//		send_w(cliente, (void*) buffer, config.tamanio_pagina);
+//		buffer[config.tamanio_pagina] = '\0';
 //		printf("Lectura exitosa : %s\n", buffer);
 //
 //	} else {
@@ -530,11 +485,11 @@ void sacarElemento(int unPid)
 //	if (archivoSwap == NULL) {
 //		printf("Error al abrir el archivo para escribir\n");
 //	}
-//	char* texto = malloc(tamanioPag);
+//	char* texto = malloc(config.tamanio_pagina);
 //	recv(cliente, (void*) texto, tamanio, MSG_WAITALL);
 //	//Al buffer que me envian para escribir lo lleno de ceros hasta completar el tamaño de página
 //	int i;
-//	for (i = tamanio; i < tamanioPag; i++) {
+//	for (i = tamanio; i < config.tamanio_pagina; i++) {
 //		texto[i] = '\0';
 //	}
 //	//Me posiciono en la página que quiero escribir y escribo
@@ -542,10 +497,10 @@ void sacarElemento(int unPid)
 //	int marcoAEscribir = (marcoInicial + paginaAEscribir); //TODO: marcoAEscribir señala el final del marco
 //	fseek(archivoSwap, marcoAEscribir, SEEK_SET);
 //	printf("texto:%s\n", texto);
-//	int exitoAlEscribir = fwrite(texto, tamanioPag, 1, archivoSwap);
+//	int exitoAlEscribir = fwrite(texto, config.tamanio_pagina, 1, archivoSwap);
 //
 //	fclose(archivoSwap);
-//	usleep(retAcceso);
+//	usleep(config.retardo_acceso);
 //
 //    //Chequeo si escribió
 //	if (exitoAlEscribir == 1) {
@@ -572,7 +527,7 @@ void finalizarProceso(int pid) {
 	 espacioDisponible += proceso->cantidadDePaginas;
 	 limpiarPosiciones (espacio, proceso->posPagina, proceso->cantidadDePaginas);
 	 sacarElemento(pid);
-     usleep(retAcceso);
+     usleep(config.retardo_acceso);
 	 printf("Proceso eliminado exitosamente\n");
 	 log_info(activeLogger, "El programa %d - Pagina Inicial:%d Tamanio:%d Eliminado correctamente.",
 	 pid, proceso->posPagina, proceso->cantidadDePaginas);
@@ -607,7 +562,7 @@ int main()
 	espacio = bitarray_create(data,tamanio);
 	espacioUtilizado = list_create();
 	//marco libres todos las posiciones del array
-    limpiarPosiciones (espacio,0,cantPaginasSwap);
+    limpiarPosiciones (espacio,0,config.cantidad_paginas);
 
     testSwapDeBitArray1();
     testSwapDeBitArray2();
@@ -644,7 +599,7 @@ void testSwapDeBitArray1()
  bitarray_clean_bit(espacio, 6);
  bitarray_clean_bit(espacio, 7);
  bitarray_set_bit(espacio, 8);
- setearPosiciones (espacio,9,cantPaginasSwap);
+ setearPosiciones (espacio,9,config.cantidad_paginas);
 
  if(hayQueCompactar(3)) printf("Test de posibilidad de compactacion superado\n");
  else printf("Test de posibilidad de compactacion no fue superado\n");
@@ -661,7 +616,7 @@ bitarray_set_bit(espacio, 5);
 bitarray_clean_bit(espacio, 6);
 bitarray_clean_bit(espacio, 7);
 bitarray_set_bit(espacio, 8);
- setearPosiciones (espacio,9,cantPaginasSwap);
+ setearPosiciones (espacio,9,config.cantidad_paginas);
 
  if(hayQueCompactar(3)) printf("Test de posibilidad de compactacion no fue superado\n");
  else printf("Test de posibilidad de compactacion fue superado\n");
@@ -678,7 +633,7 @@ bitarray_set_bit(espacio, 8);
 //	bitarray_clean_bit(espacio, 6);
 //	bitarray_clean_bit(espacio, 7);
 //	bitarray_set_bit(espacio, 8);
-//	setearPosiciones (espacio,9,cantPaginasSwap);
+//	setearPosiciones (espacio,9,config.cantidad_paginas);
 //	compactar();
 //	if(hayQueCompactar(3)) printf("Test de posibilidad de compactacion no fue superado\n");
 //	else printf("Test de posibilidad de compactacion fue superado\n");
@@ -710,7 +665,7 @@ void testFinalizarProceso1()
 	bitarray_clean_bit(espacio, 6);
 	bitarray_clean_bit(espacio, 7);
 	bitarray_set_bit(espacio, 8);
-	setearPosiciones (espacio,9,cantPaginasSwap);
+	setearPosiciones (espacio,9,config.cantidad_paginas);
 
 	//finalizarProceso(5); UTILIZO UNA VERSION SIN SOCKETS NI LOGS
 
@@ -756,7 +711,7 @@ void testFinalizarProceso1()
 //	bitarray_clean_bit(espacio, 6);
 //	bitarray_clean_bit(espacio, 7);
 //	bitarray_set_bit(espacio, 8);
-//	setearPosiciones (espacio,9,cantPaginasSwap);
+//	setearPosiciones (espacio,9,config.cantidad_paginas);
 //
 //	finalizarProceso(5);
 //

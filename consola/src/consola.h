@@ -25,14 +25,12 @@
 
 #define PATHSIZE 2048
 
-// ********* INICIO DEBUG ******** //
-#define DEBUG false
-#define DEBUG_LOG_OLD_REMOVE false
-// ********* FIN DEBUG ******** //
-
 typedef struct customConfig {
 	int puertoNucleo;
 	char* ipNucleo;
+	int logLevel;
+	int DEBUG;
+	int DEBUG_LOG_OLD_REMOVE;
 } customConfig_t;
 
 char* path;

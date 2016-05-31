@@ -12,6 +12,9 @@ void cargarConfig(){
 	configConsola = config_create("consola.cfg");
 	config.puertoNucleo = config_get_int_value(configConsola, "PUERTO_NUCLEO");
 	config.ipNucleo = config_get_string_value(configConsola, "IP_NUCLEO");
+	config.DEBUG = config_get_int_value(configConsola, "DEBUG");
+	config.DEBUG_LOG_OLD_REMOVE = config_get_int_value(configConsola, "DEBUG_LOG_OLD_REMOVE");
+	config.logLevel = config_get_int_value(configConsola, "DEBUG_LOG_LEVEL");
 }
 
 void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el navegador xD
@@ -186,15 +189,15 @@ void cargarYEnviarArchivo() {
 int main(int argc, char* argv[]) {
 	system("clear");
 	cargarConfig();
-	if (DEBUG_LOG_OLD_REMOVE) {
+	if (config.DEBUG_LOG_OLD_REMOVE) {
 		log_warning(activeLogger, "DEBUG_LOG_OLD_REMOVE esta en true!");
 		log_debug(activeLogger, "Borrando logs antiguos...");
 		system("rm -rfv *.log");
 	}
-	crearLogs(string_from_format("consola_%d", getpid()), "Consola");
+	crearLogs(string_from_format("consola_%d", getpid()), "Consola", LOG_PRINT_DEFAULT);
 	log_info(activeLogger, "Soy consola de process ID %d.", getpid());
 
-	if (DEBUG) {
+	if (config.DEBUG) {
 		warnDebug();
 	} else {
 		if (argc == 1) {
@@ -211,7 +214,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	if (DEBUG) {
+	if (config.DEBUG) {
 		log_debug(activeLogger, "Se va a abrir:%s", "facil.ansisop");
 		programa = fopen("facil.ansisop", "r");
 	} else {
@@ -226,7 +229,7 @@ int main(int argc, char* argv[]) {
 	realizarConexion();
 
 	// Paso el archivo a nucleo.
-	if(!DEBUG){
+	if(!config.DEBUG){
 		cargarYEnviarArchivo();
 	}
 

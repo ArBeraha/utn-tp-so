@@ -5,6 +5,8 @@
  *      Author: utnso
  */
 
+#include "swap.h"
+
 // *******************************************************FUNCIONES UTILES**********************************************************
 /*---------------INICIALIZACION SWAP----------------*/
 void cargarCFG() {
@@ -362,80 +364,89 @@ void sacarElemento(int unPid)
 //************************************FUNCIONES PRINCIPALES DE SWAP*********************************************************
 
 
-//void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
-//
-//	if (paginasAIniciar <= espacioDisponible) {
-//	//Me fijo si hay fragmentacion para asi ver si necesito compactar
-//	if (hayQueCompactar(paginasAIniciar)) {
-//	 //compactar();
-//	}
-//	//Agrego el proceso a la lista de espacio utilizado y actualizo la de espacio disponible. Ademas informa
-//	//de que la operacion fue exitosa
-//	agregarProceso(pid, paginasAIniciar);
-//
-//	} else {
-//		send_w(cliente, headerToMSG(HeaderNoHayEspacio), 1);
-//		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
-//		log_error(activeLogger, "Fallo la iniciacion del programa %d ", pid);
-//
-//				}
-//			}
-//void agregarProceso(int pid, int paginasAIniciar) {
-//
-//	//Recorro  espacio disponible hasta que encuentro un elemento que tenga la cantidad de marcas necesarios //REFACTOR
-//	int cantidadHuecos = bitarray_get_max_bit(espacio);
-//	int i;
-//	int j;
-//	int totalMarcos=0;
-//	int marcoInicial=0;
-//	//Recorro el bitarray hasta que encuentro un hueco ocupado
-//	for (i = 0; i < cantidadHuecos; i++)
-//	{
-//		//Recorro el bitarray hasta que encuentro un hueco ocupado
-//		if(bitarray_test_bit(espacio,i)==0) totalMarcos++;
-//        //Si ese hueco me permite alojar las paginas
-//		if (totalMarcos>= paginasAIniciar)
-//		{
-//			//alojo el proceso (marco como ocupado)
-//			for(j=0; j < totalMarcos; j++)
-//            bitarray_set_bit(espacio, j); //Creo que los pone en 1, porque el clean los debe poner en 0
-//			//Definimos la estructura del nuevo proceso con los datos correspondientes y lo agregamos al espacio utilizado
-//			t_infoProceso* proceso = (t_infoProceso*) malloc(sizeof(t_infoProceso));
-//			proceso->pid = pid;
-//			proceso->posPagina = marcoInicial;
-//			proceso->cantidadDePaginas = paginasAIniciar;
-//			int fueAgregado = list_add(espacioUtilizado,(void*) proceso);
-//			if (fueAgregado == -1) {
-//				printf("Hubo un error al iniciar el proceso\n");
-//				send_w(cliente, headerToMSG(HeaderErrorParaIniciar), 1);
-//				return;
-//			} else {
-//				printf("Proceso agregado exitosamente\n");
-//				//Actualizo el espacio disponible
-//				espacioDisponible -= paginasAIniciar;
-//				log_info(activeLogger,
-//						"El programa %d cuyo Marco Inicial es:%d y su Tamanio es:%d fue Iniciado correctamente.",
-//						pid, proceso->posPagina,
-//						proceso->cantidadDePaginas * config.tamanio_pagina);
-//				send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
-//				return;
-//
-//		     }
-//
-//		}
-//		marcoInicial++;
-//
-//
-//	printf("Hay que compactar\n");
-//
-//	send_w(cliente, headerToMSG(HeaderHayQueCompactar), 1);
-//
-//	return;
-//  }
-//}
-//
-//
-//
+void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
+
+	if (paginasAIniciar <= espacioDisponible)
+	{
+	   //Me fijo si hay fragmentacion para asi ver si necesito compactar
+	   if (hayQueCompactar(paginasAIniciar)) {
+	   //compactar();
+	   }
+	   //Agrego el proceso a la lista de espacio utilizado y actualizo la de espacio disponible. Ademas informa
+	   //de que la operacion fue exitosa
+	   agregarProceso(pid, paginasAIniciar);
+
+	} else {
+		send_w(cliente, headerToMSG(HeaderNoHayEspacio), 1);
+		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
+		log_error(activeLogger, "Fallo la iniciacion del programa %d ", pid);
+
+			}
+}
+
+void agregarProceso(int pid, int paginasAIniciar) {
+
+	//Recorro  espacio disponible hasta que encuentro un elemento que tenga la cantidad de marcas necesarios //REFACTOR
+	int cantidadHuecos = espaciosDisponibles (espacio);
+	int i;
+	int j;
+	int totalMarcos=0;
+	int marcoInicial=0;
+	int aux=0;
+	//Recorro el bitarray hasta que encuentro un hueco ocupado
+	for (i = 0; i < cantidadHuecos; i++)
+	{
+		//Recorro el bitarray hasta que encuentro un hueco
+		//BUSCO MIENTRAS ESTE VACIO, CUANDO ENCUENTRO OCUPADO PONGO EN 0 LOS MARCOS ENCONTRADOS, PERO MIENTRAS ME FIJO QUE EL SIGUIENTE
+		//PODRIA SER MI MARCO INICIAL
+		if(bitarray_test_bit(espacio,i)==0) totalMarcos++;
+		else {
+			aux=i;
+			marcoInicial = (++aux);
+			totalMarcos=0;
+		}
+        //Si ese hueco me permite alojar las paginas
+		if (totalMarcos>= paginasAIniciar)
+		{
+			//alojo el proceso (marco como ocupado)
+			for(j=marcoInicial; j < paginasAIniciar; j++) bitarray_set_bit(espacio, j);
+			//Definimos la estructura del nuevo proceso con los datos correspondientes y lo agregamos al espacio utilizado
+			t_infoProceso* proceso = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+			proceso->pid = pid;
+			proceso->posPagina = marcoInicial;
+			proceso->cantidadDePaginas = paginasAIniciar;
+			int fueAgregado = list_add(espacioUtilizado,(void*) proceso);
+			if (fueAgregado == -1) {
+				printf("Hubo un error al iniciar el proceso\n");
+				send_w(cliente, headerToMSG(HeaderErrorParaIniciar), 1);
+				return;
+			} else {
+				printf("Proceso agregado exitosamente\n");
+				//Actualizo el espacio disponible
+				espacioDisponible -= paginasAIniciar;
+				log_info(activeLogger,
+						"El programa %d cuyo Marco Inicial es:%d y su Tamanio es:%d paginas fue Iniciado correctamente.",
+						pid, proceso->posPagina,
+						proceso->cantidadDePaginas );
+				send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
+				return;
+
+		     }
+
+		}
+	}
+
+
+	printf("Hay que compactar\n");
+
+	send_w(cliente, headerToMSG(HeaderHayQueCompactar), 1);
+
+	return;
+  }
+
+
+
+
 //void leerPagina(int pid, int paginaALeer) {
 //
 //
@@ -569,6 +580,12 @@ int main()
     //testSwapDeCompactacion3();
     testFinalizarProceso1();
     //testFinalizarProceso2();
+    testAgregarProceso1();
+    //testAgregarProceso2();
+
+    espacioDisponible = config.cantidad_paginas;
+    limpiarPosiciones (espacio,0,config.cantidad_paginas);
+    list_clean(espacioUtilizado);
 
 	//SOCKETS
 	conectar_umc();
@@ -603,6 +620,9 @@ void testSwapDeBitArray1()
 
  if(hayQueCompactar(3)) printf("Test de posibilidad de compactacion superado\n");
  else printf("Test de posibilidad de compactacion no fue superado\n");
+ espacioDisponible = config.cantidad_paginas;
+ limpiarPosiciones (espacio,0,config.cantidad_paginas);
+ list_clean(espacioUtilizado);
 }
 
 void testSwapDeBitArray2()
@@ -620,6 +640,10 @@ bitarray_set_bit(espacio, 8);
 
  if(hayQueCompactar(3)) printf("Test de posibilidad de compactacion no fue superado\n");
  else printf("Test de posibilidad de compactacion fue superado\n");
+
+ espacioDisponible = config.cantidad_paginas;
+ limpiarPosiciones (espacio,0,config.cantidad_paginas);
+ list_clean(espacioUtilizado);
 }
 
 //void testSwapDeCompactacion3() //TODO Y TAMBIEN TEST DE AGREGAR PROCESO E INICIAR PROCESO
@@ -637,6 +661,10 @@ bitarray_set_bit(espacio, 8);
 //	compactar();
 //	if(hayQueCompactar(3)) printf("Test de posibilidad de compactacion no fue superado\n");
 //	else printf("Test de posibilidad de compactacion fue superado\n");
+
+// espacioDisponible = config.cantidad_paginas;
+// limpiarPosiciones (espacio,0,config.cantidad_paginas);
+//list_clean(espacioUtilizado);
 //
 //}
 
@@ -686,6 +714,10 @@ void testFinalizarProceso1()
 
 	if (estaElProceso(5)&&estaEnArray(proceso1)) printf("Test de eliminacion no fue superado\n");
 	else printf("Test de eliminacion fue superado\n");
+
+	espacioDisponible = config.cantidad_paginas;
+    limpiarPosiciones (espacio,0,config.cantidad_paginas);
+    list_clean(espacioUtilizado);
 }
 
 //void testFinalizarProceso2() //TIRA SEGMENT FAULT DESPUES DE INFORMAR QUE SE BORRO EL PROCESO, PROBLEMA EN LOGS O SOCKETS??
@@ -717,4 +749,76 @@ void testFinalizarProceso1()
 //
 //	if (estaElProceso(5)&&estaEnArray(proceso1)) printf("Test de eliminacion no fue superado\n");
 //	else printf("Test de eliminacion fue superado\n");
+//}
+
+void testAgregarProceso1()
+{
+	t_infoProceso* proceso1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+	proceso1->pid = 5;
+	proceso1->posPagina = 0;
+	proceso1->cantidadDePaginas = 3;
+	list_add(espacioUtilizado,(void*) proceso1);
+
+	t_infoProceso* proceso2 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+	proceso2->pid = 8;
+	proceso2->posPagina = 8;
+	proceso2->cantidadDePaginas = 6;
+	list_add(espacioUtilizado,(void*) proceso2);
+
+	bitarray_clean_bit(espacio, 0);
+	bitarray_set_bit(espacio, 1);
+	bitarray_clean_bit(espacio, 2);
+	bitarray_clean_bit(espacio, 3);
+	bitarray_clean_bit(espacio, 4);
+	bitarray_set_bit(espacio, 5);
+	bitarray_clean_bit(espacio, 6);
+	bitarray_clean_bit(espacio, 7);
+	bitarray_set_bit(espacio, 8);
+	setearPosiciones (espacio,9,config.cantidad_paginas);
+
+	espacioDisponible = espaciosDisponibles(espacio);
+	asignarEspacioANuevoProceso(7,3);
+
+	if (estaElProceso(7)) printf("Test agregar fue superado\n");
+	else printf("Test agregar no fue superado\n");
+
+	espacioDisponible = config.cantidad_paginas;
+	limpiarPosiciones (espacio,0,config.cantidad_paginas);
+	list_clean(espacioUtilizado);
+}
+
+//void testAgregarProceso2() //TODO FALTA PROBAR COMPACTACION
+//{
+//	t_infoProceso* proceso1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+//	proceso1->pid = 5;
+//	proceso1->posPagina = 0;
+//	proceso1->cantidadDePaginas = 3;
+//	list_add(espacioUtilizado,(void*) proceso1);
+//
+//	t_infoProceso* proceso2 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+//	proceso2->pid = 8;
+//	proceso2->posPagina = 8;
+//	proceso2->cantidadDePaginas = 6;
+//	list_add(espacioUtilizado,(void*) proceso2);
+//
+//	bitarray_clean_bit(espacio, 0);
+//	bitarray_set_bit(espacio, 1);
+//	bitarray_set_bit(espacio, 2);
+//	bitarray_clean_bit(espacio, 3);
+//	bitarray_clean_bit(espacio, 4);
+//	bitarray_set_bit(espacio, 5);
+//	bitarray_clean_bit(espacio, 6);
+//	bitarray_clean_bit(espacio, 7);
+//	bitarray_set_bit(espacio, 8);
+//	setearPosiciones (espacio,9,config.cantidad_paginas);
+//
+//	espacioDisponible = espaciosDisponibles(espacio);
+//	asignarEspacioANuevoProceso(7,3);
+//
+//	if (estaElProceso(7)) printf("Test agregar fue superado\n");
+//	else printf("Test agregar no fue superado\n");
+//
+//	espacioDisponible = config.cantidad_paginas;
+//	limpiarPosiciones (espacio,0,config.cantidad_paginas);
+//	list_clean(espacioUtilizado);
 //}

@@ -23,14 +23,14 @@
 #define SIN_ASIGNAR -1
 /* ---------- INICIO DEBUG ---------- */
 // Es util para debugear sin tener una consola extra con UMC abierto.
-#define DEBUG_IGNORE_UMC false
+#define DEBUG_IGNORE_UMC true
 #define DEBUG_IGNORE_UMC_PAGES true
 /* ---------- INICIO DEBUG ---------- */
 int socketConsola, socketCPU, activadoCPU, activadoConsola, umc;
 struct sockaddr_in direccionConsola, direccionCPU, direccionUMC;
 unsigned int tamanioDireccionConsola, tamanioDireccionCPU;
 // Hilos
-pthread_t hiloCrearProcesos, hiloBloqueos;
+pthread_t hiloCrearProcesos, hiloBloqueos, hiloPlanificacion;
 pthread_attr_t detachedAttr; // Config para todos los hilos!
 pthread_mutex_t mutexProcesos, mutexUMC;
 // Tipos
@@ -115,7 +115,6 @@ void handshakearUMC();
 char* getScript(int consola);
 // Procesos
 int crearProceso(int consola);
-void cargarProceso(int consola);
 void ejecutarProceso(int PID, int cpu);
 void rechazarProceso(int PID);
 void bloquearProceso(int PID);
@@ -125,12 +124,12 @@ void desbloquearProceso(int PID);
 void finalizarProceso(int PID);
 void destruirProceso(int PID);
 void actualizarPCB(t_PCB PCB);
-void expulsarProceso(t_proceso* proceso);
 void asignarMetadataProceso(t_proceso* p, char* codigo);
 // Planificacion
-int cantidadProcesos();
+void planificar();
 void planificacionFIFO();
 void planificacionRR();
+void planificarProcesoRR();
 void planificarProcesos();
 void planificarIO(char* io_id, t_IO* io);
 bool terminoQuantum(t_proceso* proceso);
@@ -138,6 +137,8 @@ void asignarCPU(t_proceso* proceso, int cpu);
 void desasignarCPU(t_proceso* proceso);
 void bloqueo(t_bloqueo* info);
 void cambiarEstado(t_proceso* proceso, int estado);
+void continuarProceso(t_proceso* proceso);
+void expulsarProceso(t_proceso* proceso);
 // Primitivas
 void signalSemaforo(int cliente);
 void waitSemaforo(int cliente);

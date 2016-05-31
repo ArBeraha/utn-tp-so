@@ -114,6 +114,9 @@ void test_bloqueosIO() {
 	queue_clean(colaCPU);
 	list_clean(listaProcesos);
 	log_debug(bgLogger, "FIN test_bloqueosIO()");
+//	t_proceso* proceso2 = (t_proceso*) crearProceso(0);
+//	cambiarEstado(proceso2,READY);
+//	finalizarProceso(proceso2->PCB->PID);
 }
 int test_nucleo() {
 	log_info(activeLogger, "INICIANDO TESTS DE NUCLEO");

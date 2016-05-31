@@ -15,35 +15,38 @@ static bool matrizEstados[5][5] = {
 		/* EXIT  */{ false, false, false, false, false } };
 
 /*  ----------INICIO PLANIFICACION ---------- */
-int cantidadProcesos() {
-	int cantidad;
-	pthread_mutex_lock(&mutexProcesos);
-	cantidad = list_size(listaProcesos);
-	// El unlock se hace dos o tres lineas despues de llamar a esta funcion
-	return cantidad;
-}
 void planificacionFIFO() {
-	if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
+	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
 		ejecutarProceso((int) queue_pop(colaListos), (int) queue_pop(colaCPU));
 
-	if (!queue_is_empty(colaSalida))
+	while (!queue_is_empty(colaSalida))
 		destruirProceso((int) queue_pop(colaSalida));
 }
 void planificacionRR() {
-	int i;
-	for (i = 0; i < cantidadProcesos(); i++) { // Con cantidadProcesos() se evitan condiciones de carrera.
-		t_proceso* proceso = list_get(listaProcesos, i);
-		pthread_mutex_unlock(&mutexProcesos); // El lock se hace en cantidadProcesos()
-		if (proceso->estado == EXEC) {
-			if (terminoQuantum(proceso))
-				expulsarProceso(proceso);
-		}
-	}
+	pthread_mutex_lock(&mutexProcesos);
+	list_iterate(listaProcesos, (void*) planificarProcesoRR);
+	pthread_mutex_unlock(&mutexProcesos);
 	planificacionFIFO();
+}
+void planificarProcesoRR(t_proceso* proceso) {
+	if (proceso->estado == EXEC) {
+		if (terminoQuantum(proceso))
+			expulsarProceso(proceso);
+		else
+			continuarProceso(proceso);
+	}
+}
+void planificar() {
+	while (1) {
+		//Procesos
+		planificarProcesos();
+		//IO
+		dictionary_iterator(tablaIO, (void*) planificarIO);
+	}
 }
 void planificarProcesos() {
 	switch (algoritmo) {
-	// Procesos especificos
+
 	case RR:
 		planificacionRR();
 		break;
@@ -51,9 +54,6 @@ void planificarProcesos() {
 		planificacionFIFO();
 		break;
 	}
-
-	//Planificar IO
-	dictionary_iterator(tablaIO, (void*) planificarIO);
 }
 void planificarIO(char* io_id, t_IO* io) {
 	if (io->estado == INACTIVE && (!queue_is_empty(io->cola))) {
@@ -79,6 +79,15 @@ void desasignarCPU(t_proceso* proceso) {
 	queue_push(colaCPU, (void*) proceso->cpu);
 	proceso->cpu = SIN_ASIGNAR;
 	clientes[proceso->cpu].pid = (int) NULL;
+}
+void expulsarProceso(t_proceso* proceso) {
+	cambiarEstado(proceso, READY);
+	queue_push(colaListos, (void*) proceso->PCB->PID);
+	desasignarCPU(proceso);
+	enviarHeader(proceso->cpu, HeaderDesalojarProceso);
+}
+void continuarProceso(t_proceso* proceso) {
+	enviarHeader(proceso->cpu, HeaderContinuarProceso);
 }
 void bloqueo(t_bloqueo* info) {
 	log_debug(bgLogger, "Ejecutando IO pid:%d por:%dseg", info->PID,

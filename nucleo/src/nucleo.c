@@ -20,7 +20,7 @@ bool pedirPaginas(int PID, char* codigo) {
 	 Estos mutex garantizan que por ejemplo no haga cada hilo un send (esto podria solucionarse tambien juntando los send, pero es innecesario porque si o si hay que sincronizar)
 	 y que no se van a correr los sends de un hilo 1, los del hilo 2, umc responde por hilo 1 (lo primero que le llego) y como corre hilo 2, esa respuesta llega al hilo 2 en vez de al 1. */
 		pthread_mutex_lock(&mutexUMC);
-		enviarHeader(umc,HeaderScript);
+		enviarHeader(umc, HeaderScript);
 		send_w(umc, serialPid, sizeof(int));
 		send_w(umc, serialPaginas, sizeof(int));
 		enviarLargoYMensaje(umc, codigo);
@@ -56,8 +56,7 @@ void handshakearUMC() {
 		log_debug(bgLogger, "Núcleo recibió handshake de UMC.");
 }
 void establecerConexionConUMC() {
-	direccionUMC = crearDireccionParaCliente(config.puertoUMC,
-			config.ipUMC);
+	direccionUMC = crearDireccionParaCliente(config.puertoUMC, config.ipUMC);
 	umc = socket_w();
 	connect_w(umc, &direccionUMC);
 }
@@ -89,14 +88,15 @@ char* getScript(int consola) {
 	return script;
 }
 /*  ----------INICIO NUCLEO ---------- */
-void cargarCFG() {
-	log_debug(bgLogger,"Cargando archivo de configuracion");
+void cargarConfiguracion() {
+	log_debug(bgLogger, "Cargando archivo de configuracion");
 	t_config* configNucleo;
 	configNucleo = config_create("nucleo.cfg");
 	config.puertoConsola = config_get_int_value(configNucleo, "PUERTO_PROG");
 	config.puertoCPU = config_get_int_value(configNucleo, "PUERTO_CPU");
 	config.puertoUMC = config_get_int_value(configNucleo, "PUERTO_UMC");
-	config.ipUMC = string_duplicate(config_get_string_value(configNucleo, "IP_UMC"));
+	config.ipUMC = string_duplicate(
+			config_get_string_value(configNucleo, "IP_UMC"));
 	config.quantum = config_get_int_value(configNucleo, "QUANTUM");
 	config.queantum_sleep = config_get_int_value(configNucleo, "QUANTUM_SLEEP");
 	config.sem_ids = config_get_array_value(configNucleo, "SEM_ID");
@@ -112,9 +112,9 @@ void configHilos() {
 	pthread_mutex_init(&mutexProcesos, NULL);
 	pthread_mutex_init(&mutexUMC, NULL);
 }
-void inicializar(){
+void inicializar() {
 	crearLogs("Nucleo", "Nucleo");
-	log_info(activeLogger,"INICIALIZANDO");
+	log_info(activeLogger, "INICIALIZANDO");
 	espera.tv_sec = 2;
 	espera.tv_usec = 500000;
 	listaProcesos = list_create();
@@ -124,7 +124,7 @@ void inicializar(){
 	tablaIO = dictionary_create();
 	tablaSEM = dictionary_create();
 	tablaGlobales = dictionary_create();
-	cargarCFG();
+	cargarConfiguracion();
 	configHilos();
 	crearSemaforos();
 	crearIOs();
@@ -132,7 +132,7 @@ void inicializar(){
 	algoritmo = FIFO;
 }
 void finalizar() {
-	log_info(activeLogger,"FINALIZANDO");
+	log_info(activeLogger, "FINALIZANDO");
 	destruirLogs();
 	list_destroy(listaProcesos);
 	queue_destroy(colaCPU);
@@ -145,7 +145,7 @@ void finalizar() {
 	destruirIOs();
 	destruirCompartidas();
 }
-void crearIOs(){
+void crearIOs() {
 	int i = 0;
 	while (config.io_ids[i] != '\0') {
 		t_IO* io = malloc(sizeof(t_IO));
@@ -153,50 +153,54 @@ void crearIOs(){
 		io->cola = queue_create();
 		io->estado = INACTIVE;
 		dictionary_put(tablaIO, config.io_ids[i], io);
-		log_debug(bgLogger,"Creando IO id:%s sleep:%d",config.io_ids[i],io->retardo);
+		log_debug(bgLogger, "Creando IO id:%s sleep:%d", config.io_ids[i],
+				io->retardo);
 		i++;
 	}
 }
-void crearSemaforos(){
+void crearSemaforos() {
 	int i = 0;
 	while (config.sem_ids[i] != '\0') {
 		t_semaforo* sem = malloc(sizeof(t_semaforo));
 		sem->valor = atoi(config.semInit[i]);
 		sem->cola = queue_create();
 		dictionary_put(tablaSEM, config.sem_ids[i], sem);
-		log_debug(bgLogger,"Creando Semaforo:%s valor:%d",config.sem_ids[i],sem->valor);
+		log_debug(bgLogger, "Creando Semaforo:%s valor:%d", config.sem_ids[i],
+				sem->valor);
 		i++;
 	}
 }
-void crearCompartidas(){
+void crearCompartidas() {
 	int i = 0;
 	while (config.sharedVars[i] != '\0') {
 		int* init = malloc(sizeof(int));
 		*init = 0;
 		dictionary_put(tablaSEM, config.sharedVars[i], init);
-		log_debug(bgLogger,"Creando Compartida:%s valor:%d",config.sharedVars[i],*init);
+		log_debug(bgLogger, "Creando Compartida:%s valor:%d",
+				config.sharedVars[i], *init);
 		i++;
 	}
 }
-void destruirSemaforo(t_semaforo* sem){
+void destruirSemaforo(t_semaforo* sem) {
 	queue_destroy(sem->cola);
 	free(sem);
 }
-void destruirSemaforos(){
-	dictionary_destroy_and_destroy_elements(tablaSEM, (void*)destruirSemaforo);
+void destruirSemaforos() {
+	dictionary_destroy_and_destroy_elements(tablaSEM, (void*) destruirSemaforo);
 }
-void destruirIO(t_IO* io){
+void destruirIO(t_IO* io) {
 	queue_destroy(io->cola);
 	free(io);
 }
-void destruirIOs(){
-	dictionary_destroy_and_destroy_elements(tablaIO, (void*)destruirIO);
+void destruirIOs() {
+	dictionary_destroy_and_destroy_elements(tablaIO, (void*) destruirIO);
 }
-void destruirCompartida(int* compartida){
+void destruirCompartida(int* compartida) {
 	free(compartida);
 }
-void destruirCompartidas(){
-	dictionary_destroy_and_destroy_elements(tablaGlobales, (void*)destruirSemaforo);
+void destruirCompartidas() {
+	dictionary_destroy_and_destroy_elements(tablaGlobales,
+			(void*) destruirSemaforo);
 }
 void procesarHeader(int cliente, char *header) {
 	// Segun el protocolo procesamos el header del mensaje recibido
@@ -244,7 +248,8 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderScript:
-		cargarProceso(cliente);
+		pthread_create(&hiloCrearProcesos, &detachedAttr, (void*) crearProceso,
+				(void*) cliente);
 		break;
 
 	case HeaderPedirValorVariableCompartida:
@@ -264,11 +269,9 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	default:
-		log_error(activeLogger, "Llego cualquier cosa.");
 		log_error(activeLogger,
-				"Llego el header numero %d y no hay una acción definida para él.",
-				charToInt(header));
-		log_warning(activeLogger, "Se quitará al cliente %d.", cliente);
+				"Llego el header numero %d y no hay una acción definida para él.\nSe quitará al cliente %d.",
+				charToInt(header), cliente);
 		quitarCliente(cliente);
 		break;
 	}
@@ -290,6 +293,8 @@ int main(void) {
 
 	log_info(activeLogger, "Esperando conexiones ...");
 	conectarAUMC();
+
+	pthread_create(&hiloPlanificacion, &detachedAttr, (void*) planificar, NULL);
 
 	while (1) {
 		FD_ZERO(&socketsParaLectura);
@@ -317,7 +322,6 @@ int main(void) {
 					procesarHeader(i, header);
 			}
 		}
-		planificarProcesos();
 	}
 	finalizar();
 	return EXIT_SUCCESS;

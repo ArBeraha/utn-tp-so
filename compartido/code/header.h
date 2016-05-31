@@ -43,6 +43,7 @@ typedef enum {
 	HeaderWait,
 	headerTermineInstruccion,
 	HeaderDesalojarProceso,
+	HeaderContinuarProceso,
 	HeaderConsultaEspacioSwap,
 	//Para Swap
 	HeaderOperacionIniciarProceso,

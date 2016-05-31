@@ -52,8 +52,7 @@ int crearProceso(int consola) {
 void cargarProceso(int consola) {
 	// Crea un hilo que crea el proceso y se banca esperar a que umc le de paginas.
 	// Mientras tanto, el planificador sigue andando.
-	pthread_create(&hiloCrearProcesos, &detachedAttr, (void*) crearProceso,
-			(void*) consola);
+
 }
 void ejecutarProceso(int PID, int cpu) {
 	t_proceso* proceso = (t_proceso*) PID;
@@ -104,11 +103,6 @@ void actualizarPCB(t_PCB PCB) { //
 	//t_proceso* proceso = list_get(listaProcesos, PCB->PID);
 	pthread_mutex_unlock(&mutexProcesos);
 	//proceso->PCB=PCB;
-}
-void expulsarProceso(t_proceso* proceso) {
-	cambiarEstado(proceso,READY);
-	queue_push(colaListos, (void*) proceso->PCB->PID);
-	desasignarCPU(proceso);
 }
 void bloquearProcesoIO(int PID, char* IO) {
 	bloquearProceso(PID);

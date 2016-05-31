@@ -319,12 +319,13 @@ void cargarConfig() {
 	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
 	config.DEBUG_IGNORE_UMC = config_get_int_value(configCPU, "DEBUG_IGNORE_UMC");
 	config.DEBUG_NO_PROGRAMS = config_get_int_value(configCPU, "DEBUG_NO_PROGRAMS");
+	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configCPU, "DEBUG_RAISE_LOG_LEVEL");
 }
 void inicializar() {
 	hay_programas = 0;
 	cargarConfig();
 	pcbActual = malloc(sizeof(t_PCB));
-	crearLogs(string_from_format("cpu_%d", getpid()), "CPU");
+	crearLogs(string_from_format("cpu_%d", getpid()), "CPU", config.DEBUG_RAISE_LOG_LEVEL);
 	log_info(activeLogger, "Soy CPU de process ID %d.", getpid());
 	inicializar_primitivas();
 }

@@ -40,6 +40,7 @@ typedef struct customConfig {
 	char* ipUMC;
 	int DEBUG_IGNORE_UMC;
 	int DEBUG_NO_PROGRAMS;
+	int DEBUG_RAISE_LOG_LEVEL;
 } customConfig_t;
 
 typedef enum {

@@ -7,8 +7,6 @@
 
 #include "swap.h"
 
-#define PUERTO_SWAP 8082
-
 char* nombreArchivo;
 char* puertoEscucha;
 char* nomSwap;
@@ -38,8 +36,7 @@ void setearPosiciones (t_bitarray*, int, int );
 //int buscarMarcoInicial(int);
 //void sacarElemento(int);
 //void compactar();
-void archivoDeConfiguracion();
-void funcionamientoSwap();
+
 //void asignarEspacioANuevoProceso(int, int);
 //void agregarProceso(int, int);
 //void leerPagina(int, int);
@@ -53,7 +50,7 @@ void testSwapDeBitArray2();
 void cargarCFG() {
 	t_config* configSwap;
 	configSwap = config_create("swap.cfg");
-	config.puerto_umc = config_get_int_value(configSwap, "PUERTO_ESCUCHA");
+	config.puerto_escucha = config_get_int_value(configSwap, "PUERTO_ESCUCHA");
 	config.nombre_swap = config_get_string_value(configSwap, "NOMBRE_SWAP");
 	config.cantidad_paginas =  config_get_int_value(configSwap, "CANTIDAD_PAGINAS");
 	config.tamanio_pagina =  config_get_int_value(configSwap, "TAMANIO_PAGINA");
@@ -83,7 +80,7 @@ void crear_archivo() {
 
 void conectar_umc(){
 
-	configurarServidor(config.puerto_umc);
+	configurarServidor(config.puerto_escucha);
 	log_info(activeLogger,"Esperando conexion de umc ...\n");
 
 	t_cliente clienteData;
@@ -371,76 +368,6 @@ int hayQueCompactar(int paginasAIniciar) {
 //}
 
 
-
-
-
-void archivoDeConfiguracion()
-{
-
-	archSwap = config_create("swap.cfg");
-
-	puertoEscucha = config_get_string_value(archSwap, "PUERTO_ESCUCHA");
-	nomSwap = config_get_string_value(archSwap, "NOMBRE_SWAP");
-	cantPaginasSwap = config_get_int_value(archSwap, "CANTIDAD_PAGINAS");
-	tamanioPag = config_get_int_value(archSwap, "TAMANIO_PAGINA");
-	retCompactacion = config_get_int_value(archSwap,"RETARDO_COMPACTACION");
-	retAcceso = config_get_int_value(archSwap, "RETARDO_ACCESO");
-
-	// lo voy a usar para comando dd que requiere strings para mandar por comando a consola
-	cantPag = config_get_string_value(archSwap, "CANTIDAD_PAGINAS");
-	tamPag = config_get_string_value(archSwap, "TAMANIO_PAGINA");
-}
-
-
-
-/************************************FUNCIONAMIENTO DE SWAP********************************************************************/
-void funcionamientoSwap()
-{
-		/* bitarray manejo de paginas */
-		int tamanio = cantPaginasSwap;
-		char* data = malloc(tamanio+1);
-		strcpy(data, "\0");
-		espacio = bitarray_create(data,tamanio);
-		espacioUtilizado = list_create();
-		//marco libres todos las posiciones del array
-        limpiarPosiciones (espacio,0,cantPaginasSwap);
-
-        testSwapDeBitArray1();
-        testSwapDeBitArray2();
-
-	//SOCKETS
-
-	    char *header;
-	    crearLogs("Swap","Swap");
-
-	    //printf("1");
-		configurarServidor(PUERTO_SWAP);
-		//printf("2");
-		log_info(activeLogger,"Esperando conexiones");
-		//printf("3");
-		t_cliente clienteData;
-		clienteData.addrlen=sizeof(clienteData.addr);
-		clienteData.socket=accept(socketNuevasConexiones,(struct sockaddr*)&clienteData.addr,(socklen_t*)&clienteData.addrlen);
-		printf("Nueva conexion , socket %d, ip is: %s, puerto: %d \n", clienteData.socket, inet_ntoa(clienteData.addr.sin_addr),
-				ntohs(clienteData.addr.sin_port));
-		cliente=clienteData.socket;
-		//printf("4");
-
-		while (1){
-			header=recv_waitall_ws(cliente,1);
-			procesarHeader(cliente,header); //Incluye deserializacion
-        }
-
-
-
-
-}
-
-
-
-
-
-
 //************************************FUNCIONES PRINCIPALES DE SWAP*********************************************************
 
 
@@ -655,8 +582,6 @@ int main()
 
 	return 0;
 }
-
-
 
 
 

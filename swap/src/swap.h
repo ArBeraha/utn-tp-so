@@ -50,7 +50,7 @@ typedef struct datoPedido{
 }t_datosPedido;
 
 typedef struct customConfig {
-	int puerto_umc;
+	int puerto_escucha;
 	char* nombre_swap;
 	int cantidad_paginas;
 	int tamanio_pagina;

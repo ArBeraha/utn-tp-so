@@ -20,7 +20,7 @@ void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el 
 	texto[strcspn(texto, "\n")] = '\0';
 }
 
-void imprimirVariable() {
+void imprimirVariable() { //TODO REVISAR XQ NO COINCIDE EL ENUNCIADO CON EL PARSER!
 	char* msgValue = recv_waitall_ws(cliente, sizeof(ansisop_var_t));
 	int value = char4ToInt(msgValue);
 	char* name = recv_waitall_ws(cliente, sizeof(char));
@@ -34,15 +34,12 @@ void imprimirVariable() {
 }
 
 void imprimirTexto() {
-	char* msgSize = recv_waitall_ws(cliente, sizeof(int));
-	int size = char4ToInt(msgSize);
-	char* texto = recv_waitall_ws(cliente, size);
+	char* texto = leerLargoYMensaje(cliente);
 	sacarSaltoDeLinea(texto);
 	printf("Consola> %s\n", texto);
 	// uso printf y logger de background solo porque es un mensaje impreso normalmente
 	// y no algo del log.
 	log_debug(bgLogger, "Mensaje impreso: Consola> %s", texto);
-	free(msgSize);
 	free(texto);
 }
 

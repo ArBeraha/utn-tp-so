@@ -114,6 +114,7 @@ void configHilos() {
 }
 void inicializar() {
 	crearLogs("Nucleo", "Nucleo");
+	testear(test_serializacion);
 	log_info(activeLogger, "INICIALIZANDO");
 	espera.tv_sec = 2;
 	espera.tv_usec = 500000;
@@ -130,6 +131,14 @@ void inicializar() {
 	crearIOs();
 	crearCompartidas();
 	algoritmo = FIFO;
+	configurarServidorExtendido(&socketConsola, &direccionConsola,
+			config.puertoConsola, &tamanioDireccionConsola, &activadoConsola);
+	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puertoCPU,
+			&tamanioDireccionCPU, &activadoCPU);
+	inicializarClientes();
+	conectarAUMC();
+	pthread_create(&hiloPlanificacion, &detachedAttr, (void*) planificar, NULL);
+	testear(test_nucleo);
 }
 void finalizar() {
 	log_info(activeLogger, "FINALIZANDO");
@@ -281,21 +290,8 @@ int main(void) {
 	int i;
 	char header[1];
 	inicializar();
-	testear(test_serializacion);
-	testear(test_nucleo);
-
-	configurarServidorExtendido(&socketConsola, &direccionConsola,
-			config.puertoConsola, &tamanioDireccionConsola, &activadoConsola);
-	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puertoCPU,
-			&tamanioDireccionCPU, &activadoCPU);
-
-	inicializarClientes();
 
 	log_info(activeLogger, "Esperando conexiones ...");
-	conectarAUMC();
-
-	pthread_create(&hiloPlanificacion, &detachedAttr, (void*) planificar, NULL);
-
 	while (1) {
 		FD_ZERO(&socketsParaLectura);
 		FD_SET(socketConsola, &socketsParaLectura);

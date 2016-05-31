@@ -15,27 +15,6 @@ static bool matrizEstados[5][5] = {
 		/* EXIT  */{ false, false, false, false, false } };
 
 /*  ----------INICIO PLANIFICACION ---------- */
-void planificacionFIFO() {
-	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
-		ejecutarProceso((int) queue_pop(colaListos), (int) queue_pop(colaCPU));
-
-	while (!queue_is_empty(colaSalida))
-		destruirProceso((int) queue_pop(colaSalida));
-}
-void planificacionRR() {
-	pthread_mutex_lock(&mutexProcesos);
-	list_iterate(listaProcesos, (void*) planificarProcesoRR);
-	pthread_mutex_unlock(&mutexProcesos);
-	planificacionFIFO();
-}
-void planificarProcesoRR(t_proceso* proceso) {
-	if (proceso->estado == EXEC) {
-		if (terminoQuantum(proceso))
-			expulsarProceso(proceso);
-		else
-			continuarProceso(proceso);
-	}
-}
 void planificar() {
 	while (1) {
 		//Procesos
@@ -54,6 +33,27 @@ void planificarProcesos() {
 		planificacionFIFO();
 		break;
 	}
+}
+void planificacionRR() {
+	pthread_mutex_lock(&mutexProcesos);
+	list_iterate(listaProcesos, (void*) planificarProcesoRR);
+	pthread_mutex_unlock(&mutexProcesos);
+	planificacionFIFO();
+}
+void planificarProcesoRR(t_proceso* proceso) {
+	if (proceso->estado == EXEC) {
+		if (terminoQuantum(proceso))
+			expulsarProceso(proceso);
+		else
+			continuarProceso(proceso);
+	}
+}
+void planificacionFIFO() {
+	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
+		ejecutarProceso((int) queue_pop(colaListos), (int) queue_pop(colaCPU));
+
+	while (!queue_is_empty(colaSalida))
+		destruirProceso((int) queue_pop(colaSalida));
 }
 void planificarIO(char* io_id, t_IO* io) {
 	if (io->estado == INACTIVE && (!queue_is_empty(io->cola))) {

@@ -99,10 +99,9 @@ void test_bloqueosIO() {
 
 	ejecutarProceso(proceso->PCB->PID, (int) queue_pop(colaCPU));
 	bloquearProcesoIO(proceso->PCB->PID, "ScannerTest2");
-	dictionary_iterator(tablaIO, (void*) planificarIO);
-	CU_ASSERT_EQUAL(io->estado, ACTIVE);
-	sleep(io->retardo * 2);
-	CU_ASSERT_EQUAL(proceso->estado, READY);
+	CU_ASSERT_EQUAL(proceso->estado, BLOCK);
+	sleep(io->retardo*2);
+	CU_ASSERT_EQUAL(proceso->estado, EXEC);
 	CU_ASSERT_EQUAL(io->estado, INACTIVE);
 	dictionary_remove(tablaIO, "ScannerTest2");
 	queue_destroy(io->cola);
@@ -114,9 +113,6 @@ void test_bloqueosIO() {
 	queue_clean(colaCPU);
 	list_clean(listaProcesos);
 	log_debug(bgLogger, "FIN test_bloqueosIO()");
-//	t_proceso* proceso2 = (t_proceso*) crearProceso(0);
-//	cambiarEstado(proceso2,READY);
-//	finalizarProceso(proceso2->PCB->PID);
 }
 int test_nucleo() {
 	log_info(activeLogger, "INICIANDO TESTS DE NUCLEO");

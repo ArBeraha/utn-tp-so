@@ -79,7 +79,8 @@ void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned
 char* intToChar4(int num); // RECORDAR: liberar el puntero con free()
 int char4ToInt(char* chars);
 char* leerLargoYMensaje(int cliente);
-void enviarLargoYMensaje(int cliente, char* mensaje);
+void enviarLargoYString(int cliente, char* mensaje);
+void enviarLargoYSerial(int cliente, int largo, char* mensaje);
 void enviarHeader(int cliente, int header);
 
 #endif /* CLIENTE_SERVIDOR_H_ */

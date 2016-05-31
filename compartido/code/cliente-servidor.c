@@ -228,8 +228,10 @@ char* leerLargoYMensaje(int cliente){
 	return mensaje;
 }
 
-void enviarLargoYMensaje(int cliente, char* mensaje){
-	int largo = strlen(mensaje);
+void enviarLargoYString(int cliente, char* mensaje){
+	enviarLargoYSerial(cliente, strlen(mensaje)+1, mensaje);
+}
+void enviarLargoYSerial(int cliente, int largo, char* mensaje){
 	char* serialLargo = intToChar4(largo);
 	send_w(clientes[cliente].socket,serialLargo, sizeof(int));
 	send_w(clientes[cliente].socket, mensaje, largo);

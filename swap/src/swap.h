@@ -74,11 +74,11 @@ int espacioOcupado;
 
 
 /*****PROTOTIPOS******/
-//void asignarEspacioANuevoProceso(int, int);
-//void agregarProceso(int, int);
-//void leerPagina(int, int );
-//void escribirPagina(int, int , int );
-//void finalizarProceso(int);
+void asignarEspacioANuevoProceso(int, int);
+void agregarProceso(int, int);
+void leerPagina(int, int );
+void escribirPagina(int, int , int );
+void finalizarProceso(int);
 void procesarHeader(int, char*);
 int espaciosDisponibles (t_bitarray*);
 int espaciosUtilizados (t_bitarray*);
@@ -88,22 +88,16 @@ int hayQueCompactar(int);
 int estaElProceso(int);
 t_infoProceso* buscarProceso(int);
 int estaEnArray(t_infoProceso*);
-//int buscarMarcoInicial(int);
+int buscarMarcoInicial(int);
 void sacarElemento(int);
-//void compactar();
-//void modificarArchivo (int, int, int );
+void compactar();
+void modificarArchivo (int, int, int );
 
 void cargarCFG();
 void crear_archivo();
 void conectar_umc();
 void inicializar();
 
-
-void asignarEspacioANuevoProceso(int, int);
-void agregarProceso(int, int);
-//void leerPagina(int, int);
-//void escribirPagina(int, int , int );
-void finalizarProceso(int);
 
 
 
@@ -114,9 +108,10 @@ void testSwapDeBitArray1();
 void testSwapDeBitArray2();
 //void testSwapDeCompactacion3();
 void testFinalizarProceso1();
-//void testFinalizarProceso2();
+void testFinalizarProceso2();
+void testFinalizarProceso3();
 void testAgregarProceso1();
-void testAgregarProceso2();
+//void testAgregarProceso2();
 
 
 #endif /* SWAP_H_ */

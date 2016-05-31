@@ -87,24 +87,36 @@ void setearPosiciones (t_bitarray*, int, int );
 int hayQueCompactar(int);
 int estaElProceso(int);
 t_infoProceso* buscarProceso(int);
+int estaEnArray(t_infoProceso*);
 //int buscarMarcoInicial(int);
 void sacarElemento(int);
 //void compactar();
+//void modificarArchivo (int, int, int );
+
 void cargarCFG();
 void crear_archivo();
 void conectar_umc();
 void inicializar();
-//void asignarEspacioANuevoProceso(int, int);
-//void agregarProceso(int, int);
+
+
+void asignarEspacioANuevoProceso(int, int);
+void agregarProceso(int, int);
 //void leerPagina(int, int);
 //void escribirPagina(int, int , int );
 void finalizarProceso(int);
-//void modificarArchivo (int, int, int );
+
+
+
+
+
+
 void testSwapDeBitArray1();
 void testSwapDeBitArray2();
 //void testSwapDeCompactacion3();
 void testFinalizarProceso1();
 //void testFinalizarProceso2();
+void testAgregarProceso1();
+void testAgregarProceso2();
 
 
 #endif /* SWAP_H_ */

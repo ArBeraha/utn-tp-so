@@ -107,7 +107,7 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 				"Se encontro la variable |%c| en la posicion |%d|.", variable,
 				pointer);
 	} else {
-		log_info(activeLogger, "No se encontro la variable |%c|., variable");
+		log_info(activeLogger, "No se encontro la variable |%c|.", variable);
 	}
 
 	incrementarPC(pcbActual);
@@ -413,7 +413,7 @@ void parsear(char* const sentencia) {
 /*--------Funciones----------*/
 
 void pedir_tamanio_paginas() {
-	if (!DEBUG_IGNORE_UMC) {
+	if (!config.DEBUG_IGNORE_UMC) {
 
 		enviarHeader(cliente_umc,HeaderTamanioPagina); //le pido a umc el tamanio de las paginas
 		char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
@@ -431,11 +431,11 @@ void pedir_tamanio_paginas() {
 void esperar_programas() {
 	log_debug(bgLogger, "Esperando programas de nucleo.");
 	char* header;
-	if (DEBUG_NO_PROGRAMS) {
+	if (config.DEBUG_NO_PROGRAMS) {
 		log_debug(activeLogger,
 				"DEBUG NO PROGRAMS activado! Ignorando programas...");
 	}
-	while (!DEBUG_NO_PROGRAMS) {
+	while (!config.DEBUG_NO_PROGRAMS) {
 		header = recv_waitall_ws(cliente_nucleo, 1);
 		procesarHeader(header);
 		free(header);
@@ -654,7 +654,7 @@ void hacer_handshake_umc() {
 }
 
 void establecerConexionConUMC() {
-	if (!DEBUG_IGNORE_UMC) {
+	if (!config.DEBUG_IGNORE_UMC) {
 		conectar_umc();
 		hacer_handshake_umc();
 	} else {
@@ -674,6 +674,8 @@ void cargarConfig() {
 	config.ipNucleo = config_get_string_value(configCPU, "IP_NUCLEO");
 	config.puertoUMC = config_get_int_value(configCPU, "PUERTO_UMC");
 	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
+	config.DEBUG_IGNORE_UMC = config_get_int_value(configCPU, "DEBUG_IGNORE_UMC");
+	config.DEBUG_NO_PROGRAMS = config_get_int_value(configCPU, "DEBUG_NO_PROGRAMS");
 }
 void inicializar() {
 	hay_programas = 0;
@@ -684,7 +686,7 @@ void inicializar() {
 	inicializar_primitivas();
 }
 void finalizar() {
-	if (!DEBUG_NO_PROGRAMS) {
+	if (!config.DEBUG_NO_PROGRAMS) {
 		log_debug(activeLogger, "Destruyendo pcb...");
 		pcb_destroy(pcbActual);
 		log_debug(activeLogger, "PCB Destruido...");

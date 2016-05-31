@@ -37,15 +37,13 @@ typedef struct customConfig {
 	char* ipNucleo;
 	int puertoUMC;
 	char* ipUMC;
+	int DEBUG_IGNORE_UMC;
+	int DEBUG_NO_PROGRAMS;
 } customConfig_t;
 
 typedef enum {
 	DECLARADA, PARAMETRO, NOEXISTE
 } t_localidad_variable;
-
-/*------------Macros--------------*/
-#define DEBUG_IGNORE_UMC false
-#define DEBUG_NO_PROGRAMS false
 
 /*------------Variables Globales--------------*/
 int cliente_nucleo; //cpu es cliente del nucleo

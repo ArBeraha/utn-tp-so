@@ -10,9 +10,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define LOG_PRINT_NOTHING 0
-#define LOG_PRINT_DEFAULT 1
-#define LOG_PRINT_ALL 2
+#define LOG_PRINT_NOTHING -1
+#define LOG_PRINT_DEFAULT 0
+#define LOG_PRINT_ALL 1
 
 
 t_log *activeLogger, *bgLogger;

@@ -18,21 +18,21 @@ void iniciarLog()
 
 /**
  * logLevel:
- * LOG_PRINT_NOTHING
- * LOG_PRINT_DEFAULT
- * LOG_PRINT_ALL
+ * LOG_PRINT_NOTHING (-1)
+ * LOG_PRINT_DEFAULT (0)
+ * LOG_PRINT_ALL (1)
  */
 void crearLogs(char* logname, char* procName, int logLevel)
 {
 	bool activeLoggerIsActive = true;
 	bool bgLoggerIsActive = false;
-	if(logLevel>=3 || logLevel <0){
-		perror("LogLevel >=3 || logLevel <0.");
+	if(logLevel>=2 || logLevel <-1){
+		perror("LogLevel >=2 || logLevel <-1.");
 	}else{
 		switch(logLevel){
-		case 0: activeLoggerIsActive=false;break;
-		case 1: break; // default.
-		case 2: bgLoggerIsActive=true; break;
+		case -1: activeLoggerIsActive=false;break;
+		case 0: break; // default.
+		case 1: bgLoggerIsActive=true; break;
 		}
 	}
 	activeLogger = log_create(string_from_format("%s.log",logname),procName,activeLoggerIsActive,LOG_LEVEL_INFO);

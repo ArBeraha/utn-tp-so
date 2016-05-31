@@ -56,6 +56,7 @@ typedef enum {
 	HeaderLecturaCorrecta,
 	HeaderLecturaErronea,
 	HeaderProcesoEliminado,
+	HeaderProcesoNOEliminado,
 	HeaderEscrituraCorrecta,
 	HeaderEscrituraErronea
 } header_t;

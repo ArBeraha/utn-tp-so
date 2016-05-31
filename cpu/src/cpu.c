@@ -18,7 +18,7 @@ void obtener_y_parsear();
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
 void informarInstruccionTerminada() {
 	// Le aviso a nucleo que termino una instruccion, para que calcule cuanto quantum le queda al proceso ansisop.
-	send_w(cliente_nucleo, headerToMSG(headerTermineInstruccion), 1);
+	enviarHeader(cliente_nucleo,headerTermineInstruccion);
 	// Acá nucleo tiene que mandarme el header que corresponda, segun si tengo que seguir ejecutando instrucciones o tengo que desalojar.
 }
 void setearPC(t_PCB* pcb, int pc) {
@@ -88,14 +88,12 @@ int tipoVaraible(t_nombre_variable variable, t_stack_item* head) {
 	return NOEXISTE;
 }
 
-t_puntero obtener_posicion_de(t_nombre_variable variable) {	//dejo comentada la otra solucion por si las dudas
+t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	log_info(activeLogger, "Obtener posicion de |%c|.", variable);
 	t_puntero pointer;
 	t_stack_item* head = stack_head(stack);
 	switch (tipoVaraible(variable, head)) {
 	case DECLARADA:
-		pointer = head->posicion;
-		break;
 	case PARAMETRO:
 		pointer = head->posicion;
 		break;
@@ -119,6 +117,7 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {	//dejo comentada la 
 }
 
 void enviar_direccion_umc(t_puntero direccion) {
+
 	t_stack_item* stackItem = stack_get(pcbActual->SP, direccion);
 	t_pedido pedido = stackItem->valorRetorno;
 
@@ -135,8 +134,9 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 	t_valor_variable valor;
 	log_info(activeLogger, "Dereferenciar |%d|.", direccion);
 
-	send_w(cliente_umc, headerToMSG(HeaderPedirValorVariable), 1);
+	enviarHeader(cliente_umc,HeaderPedirValorVariable);
 	enviar_direccion_umc(direccion);
+
 	char* res = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
 	valor = charToInt(res);
 	log_info(activeLogger, "|%d| dereferenciada! Su valor es |%d|.", direccion,
@@ -154,7 +154,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	log_info(activeLogger, "Asignando en |%d| el valor |%d|",
 			direccion_variable, valor);
 
-	send_w(cliente_umc, headerToMSG(HeaderAsignarValor), 1);
+	enviarHeader(cliente_umc,HeaderAsignarValor);
 	enviar_direccion_umc(direccion_variable);
 	send_w(cliente_umc, intToChar4(valor), sizeof(t_valor_variable)); //envio el valor de la variable
 
@@ -171,7 +171,8 @@ t_valor_variable obtener_valor_compartida(
 	t_valor_variable valor;
 	int nameSize = strlen(nombreVarCompartida) + 1;
 
-	send_w(cliente_nucleo, headerToMSG(HeaderPedirValorVariableCompartida), 1);
+	enviarHeader(cliente_umc,HeaderPedirValorVariableCompartida);
+
 	send_w(cliente_nucleo, intToChar4(nameSize), sizeof(int));
 	send_w(cliente_nucleo, nombreVarCompartida, nameSize);
 
@@ -198,8 +199,7 @@ t_valor_variable asignar_valor_compartida(
 	int nameSize = strlen(nombreVarCompartida) + 1;
 
 	//envio el header, el tamaño del nombre y el nombre
-	send_w(cliente_nucleo, headerToMSG(HeaderAsignarValorVariableCompartida),
-			1);
+	enviarHeader(cliente_umc, HeaderAsignarValorVariableCompartida);
 	send_w(cliente_nucleo, intToChar4(nameSize), sizeof(int));
 	send_w(cliente_nucleo, nombreVarCompartida, nameSize);
 
@@ -300,7 +300,8 @@ int digitosDe(t_valor_variable valor) {
 // fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
 void imprimir(t_valor_variable valor) { //fixme, no era distinto esto?
 	log_info(activeLogger, "Imprimir |%d|", valor);
-	send_w(cliente_nucleo, headerToMSG(HeaderImprimirVariableNucleo), 1);
+
+	enviarHeader(cliente_nucleo,HeaderImprimirVariableNucleo);
 	send_w(cliente_nucleo, intToChar4(valor), sizeof(t_valor_variable));
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
@@ -313,7 +314,8 @@ void imprimir(t_valor_variable valor) { //fixme, no era distinto esto?
 void imprimir_texto(char* texto) {
 	int size = strlen(texto) + 1; // El strlen no cuenta el \0. strlen("hola\0") = 4.
 	log_debug(activeLogger, "Enviando a nucleo la cadena: |%s|...", texto);
-	send_w(cliente_nucleo, headerToMSG(HeaderImprimirTextoNucleo), 1);
+
+	enviarHeader(cliente_nucleo, HeaderImprimirTextoNucleo);
 	char* msgSize = NULL;
 	serializar_int(msgSize, &size);
 	send_w(cliente_nucleo, msgSize, sizeof(int)); //intToChar4 produce un memory leak si no se usa free
@@ -342,7 +344,8 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo) {
 void wait(t_nombre_semaforo identificador_semaforo) {
 	log_info(activeLogger, "Comunicar nucleo de hacer wait con semaforo: |%s|",
 			identificador_semaforo);
-	send_w(cliente_nucleo, headerToMSG(HeaderWait), 1);
+
+	enviarHeader(cliente_nucleo,HeaderWait);
 	send_w(cliente_nucleo, identificador_semaforo,
 			sizeof(identificador_semaforo));
 	incrementarPC(pcbActual);
@@ -355,7 +358,8 @@ void signal_con_semaforo(t_nombre_semaforo identificador_semaforo) {
 	log_info(activeLogger,
 			"Comunicar nucleo de hacer signal con semaforo: |%s|",
 			identificador_semaforo);
-	send_w(cliente_nucleo, headerToMSG(HeaderSignal), 1);
+
+	enviarHeader(cliente_nucleo,HeaderSignal);
 	send_w(cliente_nucleo, identificador_semaforo,
 			sizeof(identificador_semaforo));
 	incrementarPC(pcbActual);
@@ -410,7 +414,8 @@ void parsear(char* const sentencia) {
 
 void pedir_tamanio_paginas() {
 	if (!DEBUG_IGNORE_UMC) {
-		send_w(cliente_umc, headerToMSG(HeaderTamanioPagina), 1); //le pido a umc el tamanio de las paginas
+
+		enviarHeader(cliente_umc,HeaderTamanioPagina); //le pido a umc el tamanio de las paginas
 		char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
 		tamanioPaginas = char4ToInt(tamanio);
 		log_debug(activeLogger, "El tamaño de paginas es: |%d|",
@@ -526,7 +531,7 @@ void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 
 	int pagina = obtener_offset_relativo(sentenciaActual, sentenciaAux);//obtengo el offset relativo
 
-	send_w(cliente_umc, headerToMSG(HeaderSolicitudSentencia), 1); //envio el header
+	enviarHeader(cliente_umc,HeaderSolicitudSentencia); //envio el header
 
 	int i = 0;
 	int longitud_restante = longitud_sentencia(sentenciaAux); //longitud total de la sentencia
@@ -671,6 +676,7 @@ void cargarConfig() {
 	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
 }
 void inicializar() {
+	hay_programas = 0;
 	cargarConfig();
 	pcbActual = malloc(sizeof(t_PCB));
 	crearLogs(string_from_format("cpu_%d", getpid()), "CPU");
@@ -696,14 +702,16 @@ void handler(int sign) {
 	if (sign == SIGUSR1) {
 		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
 		finalizar();
-		//desconectar de UMC y Nucleo, pero primero deberia terminar de ejecutar el proceso actual
+
 	} else {
 		log_info(activeLogger,
-				"Recibi la señal numero |%d|, que no es SIGUSER1.", sign);
+				"Recibi la señal numero |%d|, que no es SIGUSR1, asi que me quedo :)", sign);
 	}
 }
 
 int main() {
+
+	signal(SIGUSR1,handler);
 	inicializar();
 
 	//conectarse a umc

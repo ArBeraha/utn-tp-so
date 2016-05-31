@@ -311,10 +311,10 @@ void compactar() {
 	{
 		modificarArchivo(primerElemento->posPagina, primerElemento->cantidadDePaginas, 0);
 		sacarElemento(primerElemento->pid);
-        limpiarPosiciones(espacio,primerElemento->posPagina,--(primerElemento->cantidadDePaginas));
+        //limpiarPosiciones(espacio,primerElemento->posPagina,--(primerElemento->cantidadDePaginas));
 		primerElemento->posPagina = 0;
 		list_add(espacioUtilizado, primerElemento);
-        setearPosiciones (espacio, primerElemento->posPagina, --(primerElemento->cantidadDePaginas));
+       // setearPosiciones (espacio, primerElemento->posPagina, --(primerElemento->cantidadDePaginas));
 	}
 	int cantElementos = list_size(espacioUtilizado);
 	int i = 0;
@@ -326,11 +326,11 @@ void compactar() {
 		if (marcoInicialSig != sigElemento->posPagina) {
 			modificarArchivo(sigElemento->posPagina,sigElemento->cantidadDePaginas, marcoInicialSig);
 			sacarElemento(sigElemento->pid);
-            limpiarPosiciones(espacio,sigElemento->posPagina,--(sigElemento->cantidadDePaginas));
+            //limpiarPosiciones(espacio,sigElemento->posPagina,--(sigElemento->cantidadDePaginas));
 		    primerElemento->posPagina = 0;
 			sigElemento->posPagina = marcoInicialSig;
 			list_add(espacioUtilizado, sigElemento);
-            setearPosiciones(espacio, sigElemento->posPagina,--(sigElemento->cantidadDePaginas));
+            //setearPosiciones(espacio, sigElemento->posPagina,--(sigElemento->cantidadDePaginas));
 			primerElemento = sigElemento;
 		} else {
 			primerElemento = sigElemento;
@@ -658,19 +658,32 @@ bitarray_set_bit(espacio, 8);
  list_clean(espacioUtilizado);
 }
 
-//void testSwapDeCompactacion3() //TODO Y TAMBIEN TEST DE AGREGAR PROCESO E INICIAR PROCESO
+//void testSwapDeCompactacion3() //TODO Y TAMBIEN TEST DE AGREGAR PROCESO E INICIAR PROCESO PROBAAAAAAAR
 //{
 //  printf("******************testSwapDeCompactacion3 ha comenzado***********************\n");
 //  bitarray_clean_bit(espacio, 0);
-//  bitarray_set_bit(espacio, 1);
+//  bitarray_clean_bit(espacio, 1);
 //  bitarray_set_bit(espacio, 2);
 //  bitarray_clean_bit(espacio, 3);
 //  bitarray_clean_bit(espacio, 4);
-//  bitarray_set_bit(espacio, 5);
-//  bitarray_clean_bit(espacio, 6);
+//  bitarray_clean_bit(espacio, 5);
+//  bitarray_set_bit(espacio, 6);
 //  bitarray_clean_bit(espacio, 7);
-//  bitarray_set_bit(espacio, 8);
+//  bitarray_clean_bit(espacio, 8);
 //  setearPosiciones (espacio,9,config.cantidad_paginas);
+//
+//  t_infoProceso* proceso1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+//  	proceso1->pid = 5;
+//  	proceso1->posPagina = 3;
+//  	proceso1->cantidadDePaginas = 2;
+//  	list_add_in_index(espacioUtilizado,0,(void*) proceso1);
+//
+//  t_infoProceso* proceso2 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+//  	proceso2->pid = 8;
+//  	proceso2->posPagina = 6;
+//  	proceso2->cantidadDePaginas = 2;
+//  	list_add_in_index(espacioUtilizado,2,(void*) proceso2);
+//
 //  compactar();
 //  if(hayQueCompactar(3)) printf("Test de posibilidad de compactacion no fue superado\n");
 //  else printf("Test de posibilidad de compactacion fue superado\n");
@@ -881,4 +894,3 @@ void testAgregarProceso1()
 //	limpiarPosiciones (espacio,0,config.cantidad_paginas);
 //	list_clean(espacioUtilizado);
 //}
-

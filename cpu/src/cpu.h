@@ -31,6 +31,7 @@
 #include "log.h"
 #include "commonTypes.h"
 #include "serializacion.h"
+#include "primitivas.h"
 
 typedef struct customConfig {
 	int puertoNucleo;
@@ -62,5 +63,49 @@ t_stack* stack;
 
 t_config* configCPU;
 customConfig_t config;
+
+
+/*----- Operaciones sobre el PC y avisos por quantum -----*/
+void informarInstruccionTerminada();
+void setearPC(t_PCB* pcb, int pc);
+void incrementarPC(t_PCB* pcb) ;
+void instruccionTerminada(char* instr);
+void desalojarProceso();
+t_pedido maximo(t_pedido pedido1, t_pedido pedido2);
+/*--------FUNCIONES----------*/
+void parsear(char* const sentencia);
+
+/*--------Funciones----------*/
+void esperar_programas();
+void procesarHeader(char *header);
+void pedir_tamanio_paginas();
+int longitud_sentencia(t_sentencia* sentencia);
+int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino);
+int cantidad_paginas_ocupa(t_sentencia* sentencia);
+int queda_espacio_en_pagina(t_sentencia* sentencia);
+void enviar_solicitud(int pagina, int offset, int size);
+void pedir_sentencia();
+void esperar_sentencia();
+void obtenerPCB();
+void enviarPCB();
+void obtener_y_parsear();
+// ***** Funciones de conexiones ***** //
+int getHandshake(int cli);
+void warnDebug();
+void conectar_nucleo();
+void hacer_handshake_nucleo();
+void conectar_umc();
+void hacer_handshake_umc();
+void establecerConexionConUMC();
+void establecerConexionConNucleo();
+// ***** Funciones de inicializacion y finalizacion ***** //
+void cargarConfig();
+void inicializar();
+void finalizar();
+void handler(int sign);
+
+
+
+
 
 #endif /* CPU_H_ */

@@ -270,15 +270,16 @@ void sacarElemento(int unPid)
 	t_infoProceso* datoProceso;
 		int i=0;
 		int cantidadProcesos = list_size(espacioUtilizado);
-		int estado = 0;
-		while (i < cantidadProcesos && estado==0)
+		for(i=0; i<cantidadProcesos; i++)
 		{
 			datoProceso= (t_infoProceso*)list_get(espacioUtilizado,i);
-		    if(coincideElPID(datoProceso,unPid)) estado = 1;
-		    i++;
+		    if(coincideElPID(datoProceso,unPid))
+		    {
+		    	list_remove(espacioUtilizado,i);
+		    	break;
+		    }
 		}
 
-	   list_remove(espacioUtilizado,(i--));
 }
 
 //Funcion que busca en la lista de utilizados el proceso con el marco igual o mas proximo (mayor) al numero que se le pasa
@@ -360,7 +361,7 @@ void modificarArchivo (int marcoInicial, int cantMarcos, int nuevoMarcoInicial)
 		texto[i] = '\0';
 	}
 	fseek(archivoSwap, marcoInicial, SEEK_SET);
-	fwrite(texto, sizeof(texto), 1, archivoSwap);
+	fwrite(texto, config.tamanio_pagina*cantMarcos, 1, archivoSwap);
 	//Escribo lo que lei del proceso en los nuevos marcos que le asignamos
 	fseek(archivoSwap, nuevoMarcoInicial, SEEK_SET);
 	fwrite(buffer, config.tamanio_pagina, cantMarcos, archivoSwap);

@@ -1171,9 +1171,6 @@ void test2(){
 		pedido1.offset=0;
 		pedido1.cantBytes=5;
 
-
-	mostrarTlb();
-
 	devolverPedidoPagina(pedido1);
 
 	pedidoLectura_t pedido2;
@@ -1185,6 +1182,8 @@ void test2(){
 	devolverPedidoPagina(pedido2);
 
 	mostrarTlb();
+
+	almacenarBytesEnUnaPagina(pedido2,2,"XX");
 
 	recibirComandos();
 }

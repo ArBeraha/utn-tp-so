@@ -49,6 +49,7 @@ typedef struct customConfig {
 	int retardo;
 	char* ip_swap;
 	char* algoritmo_paginas;
+	int marcos_x_proceso;
 } customConfig_t;
 
 customConfig_t config;
@@ -179,6 +180,8 @@ void conexionASwap();
 void procesarHeader(int cliente, char *header);
 
 void crearMemoriaYTlbYTablaPaginas();
+
+void test();
 
 //Fin prototipos
 

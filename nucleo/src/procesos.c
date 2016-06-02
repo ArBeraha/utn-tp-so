@@ -49,14 +49,9 @@ int crearProceso(int consola) {
 	}
 	return proceso->PCB->PID;
 }
-void cargarProceso(int consola) {
-	// Crea un hilo que crea el proceso y se banca esperar a que umc le de paginas.
-	// Mientras tanto, el planificador sigue andando.
 
-}
 void ejecutarProceso(int PID, int cpu) {
 	t_proceso* proceso = (t_proceso*) PID;
-	cambiarEstado(proceso,EXEC);
 	asignarCPU(proceso,cpu);
 	if (!CU_is_test_running()) {
 		int bytes = bytes_PCB(proceso->PCB);
@@ -72,8 +67,6 @@ void ejecutarProceso(int PID, int cpu) {
 }
 void finalizarProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;
-	if (proceso->estado==EXEC)
-	desasignarCPU(proceso);
 	cambiarEstado(proceso,EXIT);
 	pthread_mutex_lock(&mutexProcesos);
 	list_remove_by_value(listaProcesos, (void*) PID);
@@ -118,7 +111,6 @@ void bloquearProcesoSem(int PID, char* semid) {
 void bloquearProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;
 	cambiarEstado(proceso,BLOCK);
-	desasignarCPU(proceso);
 }
 void desbloquearProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;

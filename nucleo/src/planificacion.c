@@ -69,6 +69,7 @@ bool terminoQuantum(t_proceso* proceso) {
 }
 void asignarCPU(t_proceso* proceso, int cpu) {
 	log_debug(bgLogger, "Asignando cpu:%d a pid:%d", cpu, proceso->PCB->PID);
+	cambiarEstado(proceso,EXEC);
 	proceso->cpu = cpu;
 	clientes[cpu].pid = proceso->PCB->PID;
 
@@ -82,7 +83,6 @@ void desasignarCPU(t_proceso* proceso) {
 }
 void expulsarProceso(t_proceso* proceso) {
 	cambiarEstado(proceso, READY);
-	desasignarCPU(proceso);
 	enviarHeader(proceso->cpu, HeaderDesalojarProceso);
 }
 void continuarProceso(t_proceso* proceso) {
@@ -100,12 +100,16 @@ void cambiarEstado(t_proceso* proceso, int estado) {
 	if (matrizEstados[proceso->estado][estado]) {
 		log_debug(bgLogger, "Cambio de estado pid:%d de:%d a:%d",
 				proceso->PCB->PID, proceso->estado, estado);
-		proceso->estado = estado;
-		if (estado==READY)
+		if (estado == READY)
 			queue_push(colaListos, proceso);
-		else
-		if (estado==EXIT)
+		else if (estado == EXIT)
 			queue_push(colaSalida, proceso);
+
+		if (proceso->estado == EXEC)
+			desasignarCPU(proceso);
+
+		proceso->estado = estado;
+
 	} else
 		log_error(activeLogger, "Cambio de estado ILEGAL pid:%d de:%d a:%d",
 				proceso->PCB->PID, proceso->estado, estado);

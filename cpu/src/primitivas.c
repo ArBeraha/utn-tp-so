@@ -56,7 +56,7 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 		break;
 	}
 
-	if (pointer < 0) {
+	if (pointer >= 0) {
 		log_info(activeLogger,
 				"Se encontro la variable |%c| en la posicion |%d|.", variable,
 				pointer);
@@ -92,14 +92,24 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 	enviar_direccion_umc(direccion);
 
 	char* res = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
-	valor = charToInt(res);
-	log_info(activeLogger, "|%d| dereferenciada! Su valor es |%d|.", direccion,
-			valor);
 
-	free(res);
-	incrementarPC(pcbActual);
-	informarInstruccionTerminada();
-	instruccionTerminada("Dereferenciar");
+	if(esExcepcion(res)){	//TODO como se efectivamente si es una excepcion? por ahi no lo es y la decodifica como tal
+
+		free(res);
+		lanzar_excepcion();
+
+		}else{
+
+			valor = charToInt(res);
+			log_info(activeLogger, "|%d| dereferenciada! Su valor es |%d|.", direccion,
+					valor);
+
+			free(res);
+			incrementarPC(pcbActual);
+			informarInstruccionTerminada();
+			instruccionTerminada("Dereferenciar");
+
+	}
 	return valor;
 }
 
@@ -110,6 +120,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 
 	enviarHeader(cliente_umc,HeaderAsignarValor);
 	enviar_direccion_umc(direccion_variable);
+
 	send_w(cliente_umc, intToChar4(valor), sizeof(t_valor_variable)); //envio el valor de la variable
 
 	incrementarPC(pcbActual);
@@ -319,11 +330,6 @@ void signal_con_semaforo(t_nombre_semaforo identificador_semaforo) {
 	incrementarPC(pcbActual);
 	instruccionTerminada("Signal");
 }
-
-
-
-
-
 
 /* ------ Funciones para usar con el parser ----- */
 void inicializar_primitivas() {

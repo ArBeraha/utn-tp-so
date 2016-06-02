@@ -58,12 +58,14 @@ AnSISOP_funciones funciones;		//funciones de AnSISOP
 AnSISOP_kernel funcionesKernel;		// funciones kernel de AnSISOP
 
 int tamanioPaginas;					//Tamaño de las paginas
-int hay_programas;
+
 t_PCB* pcbActual;
 t_stack* stack;
 
 t_config* configCPU;
 customConfig_t config;
+
+int terminar;						//flag para que el proceso sepa cuando terminar
 
 
 /*----- Operaciones sobre el PC y avisos por quantum -----*/

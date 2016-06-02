@@ -28,6 +28,7 @@ void desalojarProceso() {
 	int size = serializar_PCB(pcb, pcbActual);
 	send_w(cliente_nucleo, pcb, size); //Envio a nucleo el PCB con el PC actualizado.
 	// Nucleo no puede hacer pbc->pc+=quantum porque el quantum puede variar en tiempo de ejecución.
+
 	free(pcb);
 }
 
@@ -43,15 +44,10 @@ t_pedido maximo(t_pedido pedido1, t_pedido pedido2) { //Determina que pedido est
 
 /*--------FUNCIONES----------*/
 
-
-
-
 void parsear(char* const sentencia) {
-	log_info(activeLogger, "Ejecutando la setencia |%s|...", sentencia);
+	log_info(activeLogger, "Ejecutando la sentencia |%s|...", sentencia);
 	analizadorLinea(sentencia, &funciones, &funcionesKernel);
 }
-
-
 
 /*--------Funciones----------*/
 
@@ -63,15 +59,23 @@ void esperar_programas() {
 				"DEBUG NO PROGRAMS activado! Ignorando programas...");
 	}
 	while (!config.DEBUG_NO_PROGRAMS) {
-		header = recv_waitall_ws(cliente_nucleo, 1);
-		procesarHeader(header);
-		free(header);
+
+		while(!terminar){ 				//mientras no tenga que terminar
+			header = recv_waitall_ws(cliente_nucleo, 1);
+			procesarHeader(header);
+			free(header);
+		}
 	}
 	log_debug(bgLogger, "Ya no se esperan programas de nucleo.");
 }
 
+bool esExcepcion(char* cad){
+	return charToInt(cad) == HeaderExcepcion;
+}
+
+
 void procesarHeader(char *header) {
-	// Segun el protocolo procesamos el header del mensaje recibido
+
 	log_debug(bgLogger, "Llego un mensaje con header %d.", charToInt(header));
 
 	switch (charToInt(header)) {
@@ -87,7 +91,7 @@ void procesarHeader(char *header) {
 		break;
 
 	case HeaderPCB:
-		obtenerPCB(); //inicio el proceso de aumentar el PC, pedir UMC sentencia...
+		obtenerPCB(); //inicio el proceso de aumentar el PC, pedir a UMC sentencia...
 		break;
 
 	case HeaderSentencia:
@@ -113,10 +117,11 @@ void pedir_tamanio_paginas() {
 
 		enviarHeader(cliente_umc,HeaderTamanioPagina); //le pido a umc el tamanio de las paginas
 		char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
+
 		tamanioPaginas = char4ToInt(tamanio);
-		log_debug(activeLogger, "El tamaño de paginas es: |%d|",
-				tamanioPaginas);
+		log_debug(activeLogger, "El tamaño de paginas es: |%d|",tamanioPaginas);
 		free(tamanio);
+
 	} else {
 		tamanioPaginas = -1;
 		log_debug(activeLogger,
@@ -213,8 +218,11 @@ void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 void esperar_sentencia() {
 	log_info(activeLogger, "Esperando sentencia de UMC...");
 	char* header = recv_waitall_ws(cliente_umc, sizeof(char));
-	log_info(activeLogger, "Sentencia de UMC recibida...");
-	procesarHeader(header);
+
+		log_info(activeLogger, "Sentencia de UMC recibida...");
+		procesarHeader(header);
+
+
 	free(header);
 }
 
@@ -242,7 +250,25 @@ void obtener_y_parsear() {
 	int tamanio = char4ToInt(tamanioSentencia);
 	char* sentencia = recv_waitall_ws(cliente_umc, tamanio);
 	parsear(sentencia);
+	free(tamanioSentencia);
 	free(sentencia);
+}
+
+
+void finalizar_proceso(){ //voy a esta funcion cuando ejecuto la ultima instruccion o hay una excepcion
+
+	enviarHeader(cliente_nucleo, HeaderTerminoProceso);
+	enviarPCB();		//nucleo deberia recibir el PCB para elminar las estructuras
+}
+
+void lanzar_excepcion(){
+	log_info(activeLogger,"Recibi un mensaje de excepcion :( ");
+	log_info(activeLogger,"Terminando la ejecucion del programa actual...");
+
+	finalizar_proceso();
+
+	log_info(activeLogger,"Proceso terminado");
+	esperar_programas();
 }
 
 // ***** Funciones de conexiones ***** //
@@ -264,7 +290,7 @@ void conectar_nucleo() {
 			config.ipNucleo);
 	cliente_nucleo = socket_w();
 	connect_w(cliente_nucleo, &direccionNucleo); //conecto cpu a la direccion 'direccionNucleo'
-	log_info(activeLogger, "Conectado a nucleo!");
+	log_info(activeLogger, "Conectado a Nucleo!");
 }
 
 void hacer_handshake_nucleo() {
@@ -272,9 +298,9 @@ void hacer_handshake_nucleo() {
 	send_w(cliente_nucleo, hand, 2);
 
 	if (getHandshake(cliente_nucleo) != SOYNUCLEO) {
-		perror("Se esperaba que CPU se conecte con el nucleo.");
+		perror("Se esperaba que CPU se conecte con Nucleo.");
 	} else {
-		log_info(bgLogger, "Exito al hacer handshake con nucleo.");
+		log_info(bgLogger, "Exito al hacer handshake con Nucleo.");
 	}
 }
 
@@ -322,7 +348,6 @@ void cargarConfig() {
 	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configCPU, "DEBUG_RAISE_LOG_LEVEL");
 }
 void inicializar() {
-	hay_programas = 0;
 	cargarConfig();
 	pcbActual = malloc(sizeof(t_PCB));
 	crearLogs(string_from_format("cpu_%d", getpid()), "CPU", config.DEBUG_RAISE_LOG_LEVEL);
@@ -341,12 +366,16 @@ void finalizar() {
 	close(cliente_nucleo);
 	close(cliente_umc);
 	exit(EXIT_SUCCESS);
+
+	log_info(activeLogger,"Proceso cpu finalizado");
 }
 
 /*------------otras------------*/
 void handler(int sign) {
 	if (sign == SIGUSR1) {
 		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
+		terminar = 1;
+		log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");
 		finalizar();
 
 	} else {

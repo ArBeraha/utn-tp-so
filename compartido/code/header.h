@@ -41,8 +41,10 @@ typedef enum {
 	HeaderNoExisteTablaDePag,
 	HeaderSignal,
 	HeaderWait,
+	HeaderExcepcion,
 	headerTermineInstruccion,
 	HeaderDesalojarProceso,
+	HeaderTerminoProceso,
 	HeaderContinuarProceso,
 	HeaderConsultaEspacioSwap,
 	//Para Swap

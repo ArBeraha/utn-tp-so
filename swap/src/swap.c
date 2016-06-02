@@ -39,7 +39,7 @@ void crear_archivo() {
 	free(ddComand);
 	log_info(activeLogger, "Archivo %s creado\n", config.nombre_swap);
 
-	archivo_swap = fopen(config.nombre_swap,"r+");
+
 }
 
 void conectar_umc(){
@@ -246,6 +246,11 @@ int coincideElPID(t_infoProceso* unDatoProceso, int unPID)
 	return (unDatoProceso->pid == unPID);
 }
 
+int coincideElMarco(t_infoProceso* unDatoProceso, int unMarco)
+{
+	return (unDatoProceso->posPagina == unMarco);
+}
+
 int estaElProceso(int unPid)
 {
 	t_infoProceso* datoProceso;
@@ -279,6 +284,21 @@ t_infoProceso* buscarProceso(int unPid)
 int buscarMarcoInicial(int unPid) {
 	t_infoProceso* datoProceso = buscarProceso(unPid);
 	return datoProceso->posPagina;
+}
+
+t_infoProceso* buscarProcesoAPartirDeMarcoInicial(int marcoInicial)
+{
+	int i=0;
+	int cantidadProcesos=list_size(espacioUtilizado);
+	int estado=0;
+	t_infoProceso* datoProceso;
+	while (i< cantidadProcesos && estado==0)
+	{
+		datoProceso= (t_infoProceso*)list_get(espacioUtilizado,i);
+		if(coincideElMarco(datoProceso,marcoInicial)) estado=1;
+		i++;
+	}
+	return datoProceso;
 }
 
 void sacarElemento(int unPid)
@@ -322,43 +342,79 @@ t_infoProceso* elemMIMenor (marcoAComparar) {
 }
 
 
-void compactar() {
-	log_info(activeLogger, "Compactación iniciada por fragmentación externa");
-	t_infoProceso* primerElemento = elemMIMenor(0);
-	if (primerElemento->posPagina != 0)
-	{
-		modificarArchivo(primerElemento->posPagina, primerElemento->cantidadDePaginas, 0);
-		sacarElemento(primerElemento->pid);
-        limpiarPosiciones(espacio,primerElemento->posPagina,--(primerElemento->cantidadDePaginas));
-		primerElemento->posPagina = 0;
-		list_add(espacioUtilizado, primerElemento);
-        setearPosiciones (espacio, primerElemento->posPagina, --(primerElemento->cantidadDePaginas));
-	}
-	int cantElementos = list_size(espacioUtilizado);
-	int i = 0;
+//void compactar() {
+//	log_info(activeLogger, "Compactación iniciada por fragmentación externa");
+//	t_infoProceso* primerElemento = elemMIMenor(0);
+//	int aux=0;
+//	if (primerElemento->posPagina != 0)
+//	{
+//		modificarArchivo(primerElemento->posPagina, primerElemento->cantidadDePaginas, 0);
+//		sacarElemento(primerElemento->pid);
+//		aux = primerElemento->cantidadDePaginas;
+//		aux--;
+//        limpiarPosiciones(espacio,primerElemento->posPagina,aux);
+//		primerElemento->posPagina = 0;
+//		list_add(espacioUtilizado, primerElemento);
+//		aux = primerElemento->cantidadDePaginas;
+//		aux--;
+//        setearPosiciones (espacio, primerElemento->posPagina, aux);
+//	}
+//	int cantElementos = list_size(espacioUtilizado);
+//	int i = 0;
+//
+//	while (i < cantElementos)
+//	{
+//		i++;
+//		int marcoInicialSig = primerElemento->posPagina + primerElemento->cantidadDePaginas;
+//		t_infoProceso* sigElemento = elemMIMenor(marcoInicialSig);
+//		if (marcoInicialSig != sigElemento->posPagina) {
+//			modificarArchivo(sigElemento->posPagina,sigElemento->cantidadDePaginas, marcoInicialSig);
+//			sacarElemento(sigElemento->pid);
+//			aux = primerElemento->cantidadDePaginas;
+//			aux--;
+//            limpiarPosiciones(espacio,sigElemento->posPagina,aux);
+//		    primerElemento->posPagina = 0;
+//			sigElemento->posPagina = marcoInicialSig;
+//			list_add(espacioUtilizado, sigElemento);
+//			aux = primerElemento->cantidadDePaginas;
+//			aux--;
+//            setearPosiciones(espacio, sigElemento->posPagina,aux);
+//			primerElemento = sigElemento;
+//		} else {
+//			primerElemento = sigElemento;
+//		}
+//
+//	}
+//
+//    //sleep(config.retardo_compactacion); //TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
+//    log_info(activeLogger, "Compactación finalizada.");
+//}
 
-	while (i < cantElementos)
+void compactar() //TODO CREO QUE EL ERROR ESTA EN BUSCARPROCESOAPARTIRDEMARCOINICIAL, MIRAR RESULTADO EN TESTCOMPACTACIONSWAP3()
+{
+	int i=0;
+	int espaciosLibres=0;
+	int posActual=0;
+	int nuevaPosicion;
+	t_infoProceso* procesoActual;
+	for(i=0;i<config.cantidad_paginas;i++)
 	{
-		i++;
-		int marcoInicialSig = primerElemento->posPagina + primerElemento->cantidadDePaginas;
-		t_infoProceso* sigElemento = elemMIMenor(marcoInicialSig);
-		if (marcoInicialSig != sigElemento->posPagina) {
-			modificarArchivo(sigElemento->posPagina,sigElemento->cantidadDePaginas, marcoInicialSig);
-			sacarElemento(sigElemento->pid);
-            limpiarPosiciones(espacio,sigElemento->posPagina,--(sigElemento->cantidadDePaginas));
-		    primerElemento->posPagina = 0;
-			sigElemento->posPagina = marcoInicialSig;
-			list_add(espacioUtilizado, sigElemento);
-            setearPosiciones(espacio, sigElemento->posPagina,--(sigElemento->cantidadDePaginas));
-			primerElemento = sigElemento;
-		} else {
-			primerElemento = sigElemento;
+		if (bitarray_test_bit(espacio, i)==0) espaciosLibres++ ;
+		if (espaciosLibres!=0 && bitarray_test_bit(espacio,i)==1)
+		{
+			posActual=i;
+			nuevaPosicion= posActual-espaciosLibres;
+			procesoActual=buscarProcesoAPartirDeMarcoInicial(posActual);
+			procesoActual->posPagina = nuevaPosicion;
+			modificarArchivo(posActual,procesoActual->cantidadDePaginas,nuevaPosicion);
+			limpiarPosiciones(espacio,posActual,procesoActual->cantidadDePaginas);
+			setearPosiciones(espacio,nuevaPosicion,procesoActual->cantidadDePaginas);
+			espaciosLibres=0;
+			i=posActual+procesoActual->cantidadDePaginas-1;
+
+
 		}
-
 	}
-
-    //sleep(config.retardo_compactacion); //TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
-    log_info(activeLogger, "Compactación finalizada.");
 }
 
 void modificarArchivo (int marcoInicial, int cantMarcos, int nuevoMarcoInicial)
@@ -496,7 +552,7 @@ char* buffer = malloc(config.tamanio_pagina + 1);
 			pid, marcoInicial , string_length(buffer), buffer);
 	if (exitoAlLeer == 0) // si se leyo bien la pagina
 			{
-		send_w(cliente, headerToMSG(HeaderLecturaCorrecta), 1); //TODO
+		send_w(cliente, headerToMSG(HeaderLecturaCorrecta), 1);
 
 		//Envio lo leído a memoria
 		send_w(cliente, (void*) buffer, config.tamanio_pagina);
@@ -504,7 +560,7 @@ char* buffer = malloc(config.tamanio_pagina + 1);
 		printf("Lectura exitosa : %s\n", buffer);
 
 	} else {
-		send_w(cliente,headerToMSG(HeaderLecturaErronea), 1);  //TODO
+		send_w(cliente,headerToMSG(HeaderLecturaErronea), 1);
 		printf("Error al intentar leer\n");
 
 	}
@@ -557,7 +613,7 @@ void finalizarProceso(int pid) {
 	t_infoProceso* proceso;
 	if (estaElProceso(pid))
 	{
-	 proceso = buscarProceso(pid); //TODO QUE PASA SI NO LO ENCUENTRA??
+	 proceso = buscarProceso(pid);
      //Actualizo la variable espacioDisponible
 	 espacioDisponible += proceso->cantidadDePaginas;
 	 limpiarPosiciones (espacio, proceso->posPagina, proceso->cantidadDePaginas);
@@ -613,13 +669,13 @@ int main()
 
     testSwapDeBitArray1();
     testSwapDeBitArray2();
-    //testSwapDeCompactacion3(); //TODO ME EXPLOTA
+    testSwapDeCompactacion3(); //TODO ME EXPLOTA
     testFinalizarProceso1();
     testFinalizarProceso2();
     testFinalizarProceso3();
     testAgregarProceso1();
     //testAgregarProceso2(); //TODO FALTA COMPACTACION FUNCIONANDO
-    //testLectura2();
+    testLectura2();
 
 
     espacioDisponible = config.cantidad_paginas;
@@ -685,46 +741,60 @@ bitarray_set_bit(espacio, 8);
  list_clean(espacioUtilizado);
 }
 
-//void testSwapDeCompactacion3() //TODO Y TAMBIEN TEST DE AGREGAR PROCESO E INICIAR PROCESO PROBAAAAAAAR
-//{
-//	int algo=0;
-//  printf("******************testSwapDeCompactacion3 ha comenzado***********************\n");
-//  bitarray_set_bit(espacio, 0);
-//  bitarray_set_bit(espacio, 1);
-//  bitarray_set_bit(espacio, 2);
-//  bitarray_clean_bit(espacio, 3);
-//  bitarray_clean_bit(espacio, 4);
-//  bitarray_set_bit(espacio, 5);
-//  bitarray_set_bit(espacio, 6);
-//  bitarray_set_bit(espacio, 7);
-//  bitarray_clean_bit(espacio, 8);
-//  setearPosiciones (espacio,9,config.cantidad_paginas);
-//
-//  t_infoProceso* proceso1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
-//  	proceso1->pid = 5;
-//  	proceso1->posPagina = 0;
-//  	proceso1->cantidadDePaginas = 3;
-//  	list_add_in_index(espacioUtilizado,0,(void*) proceso1);
-//
-//  t_infoProceso* proceso2 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
-//  	proceso2->pid = 8;
-//  	proceso2->posPagina = 5;
-//  	proceso2->cantidadDePaginas = 3;
-//  	list_add_in_index(espacioUtilizado,2,(void*) proceso2);
-//
-//  compactar();
-//
+void testSwapDeCompactacion3() //TODO Y TAMBIEN TEST DE AGREGAR PROCESO E INICIAR PROCESO PROBAAAAAAAR
+{
+	int algo=0;
+	int i=0;
+  printf("******************testSwapDeCompactacion3 ha comenzado***********************\n");
+  bitarray_set_bit(espacio, 0);
+  bitarray_set_bit(espacio, 1);
+  bitarray_set_bit(espacio, 2);
+  bitarray_clean_bit(espacio, 3);
+  bitarray_clean_bit(espacio, 4);
+  bitarray_set_bit(espacio, 5);
+  bitarray_set_bit(espacio, 6);
+  bitarray_set_bit(espacio, 7);
+  bitarray_clean_bit(espacio, 8);
+  setearPosiciones (espacio,9,config.cantidad_paginas);
+
+  t_infoProceso* proceso1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+  	proceso1->pid = 5;
+  	proceso1->posPagina = 0;
+  	proceso1->cantidadDePaginas = 3;
+  	list_add_in_index(espacioUtilizado,0,(void*) proceso1);
+
+  t_infoProceso* proceso2 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+  	proceso2->pid = 8;
+  	proceso2->posPagina = 5;
+  	proceso2->cantidadDePaginas = 3;
+  	list_add_in_index(espacioUtilizado,2,(void*) proceso2);
+
+  	t_infoProceso* procesoAImprimir=buscarProcesoAPartirDeMarcoInicial(0);
+  	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
+  			procesoAImprimir->posPagina,procesoAImprimir->pid,procesoAImprimir->cantidadDePaginas);
+
+
+  	t_infoProceso*  procesoAImprimir2=buscarProcesoAPartirDeMarcoInicial(5);
+  	  	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
+  	  		 procesoAImprimir2->posPagina, procesoAImprimir2->pid, procesoAImprimir2->cantidadDePaginas);
+
+  compactar();
+
 //  if(hayQueCompactar(3)) printf("Test de posibilidad de compactacion no fue superado\n");
 //  else printf("Test de posibilidad de compactacion fue superado\n");
-//  algo= primerEspacioLibre(espacio);
-//  printf("La primera pagina libre es %d \n", algo);
-//
-//
-//  espacioDisponible = config.cantidad_paginas;
-//  limpiarPosiciones (espacio,0,config.cantidad_paginas);
-//  list_clean(espacioUtilizado);
-//
-//}
+  algo= primerEspacioLibre(espacio);
+  printf("La primera pagina libre es %d \n", algo);
+  for(i=0;i<config.cantidad_paginas;i++)
+  {
+	  printf("En la posicion %d tengo el bit %d \n", i, bitarray_test_bit(espacio, i) );
+  }
+
+
+  espacioDisponible = config.cantidad_paginas;
+  limpiarPosiciones (espacio,0,config.cantidad_paginas);
+  list_clean(espacioUtilizado);
+
+}
 
 
 
@@ -962,7 +1032,7 @@ void testAgregarProceso1()
 //	}
 //	//Me posiciono en la página que quiero escribir y escribo
 //	int marcoInicial = buscarMarcoInicial(pid);
-//	int marcoAEscribir = (marcoInicial + paginaAEscribir); //TODO: marcoAEscribir señala el final del marco
+//	int marcoAEscribir = (marcoInicial + paginaAEscribir); //
 //	fseek(archivoSwap, marcoAEscribir, SEEK_SET);
 //	printf("texto:%s\n", texto);
 //	int exitoAlEscribir = fwrite(texto, config.tamanio_pagina, 1, archivoSwap);
@@ -998,40 +1068,41 @@ void testAgregarProceso1()
 
 
 
-//void testLectura2() //TODO HACER
-//{
-//	t_infoProceso* proceso1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
-//	proceso1->pid = 5;
-//	proceso1->posPagina = 0;
-//	proceso1->cantidadDePaginas = 1;
-//	list_add(espacioUtilizado,(void*) proceso1);
-//
-//
-//	char* texto = malloc(config.tamanio_pagina);
-//	texto="hola";
-//	int i;
-//
-////	for (i = 5; i < config.tamanio_pagina; i++) { //TIRA SEGMENT FAULT
-////		texto[i] = '\0';
-////	}
-//
-//
-//	FILE *archivoSwap;
-//	archivoSwap = fopen(config.nombre_swap, "r+");
-//	if (archivoSwap == NULL) {
-//		printf("Error al abrir el archivo para escribir\n");
+void testLectura2() //TODO MEJORAR
+{
+	printf("******************testLectura2 ha comenzado***********************\n");
+	t_infoProceso* proceso1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+	proceso1->pid = 5;
+	proceso1->posPagina = 0;
+	proceso1->cantidadDePaginas = 1;
+	list_add(espacioUtilizado,(void*) proceso1);
+
+
+	char* texto = malloc(config.tamanio_pagina);
+	texto="hola";
+	//int i;
+
+//	for (i = 5; i < config.tamanio_pagina; i++) { //TIRA SEGMENT FAULT
+//		texto[i] = '\0';
 //	}
-//
-//	fseek(archivoSwap, 0, SEEK_SET);
-//	int exitoAlEscribir = fwrite(texto, config.tamanio_pagina, 1, archivoSwap);
-//	printf("texto%s\n", texto);
-//
-//	if (exitoAlEscribir) printf("Se pudo escribir\n");
-//
-//	leerPagina(5,0);
-//
-//	espacioDisponible = config.cantidad_paginas;
-//	limpiarPosiciones (espacio,0,config.cantidad_paginas);
-//	list_clean(espacioUtilizado);
-//
-//}
+
+
+	FILE *archivoSwap;
+	archivoSwap = fopen(config.nombre_swap, "r+");
+	if (archivoSwap == NULL) {
+		printf("Error al abrir el archivo para escribir\n");
+	}
+
+	fseek(archivoSwap, 0, SEEK_SET);
+	int exitoAlEscribir = fwrite(texto, config.tamanio_pagina, 1, archivoSwap);
+	printf("El texto dice:  %s\n", texto);
+
+	if (exitoAlEscribir) printf("Se pudo escribir\n");
+    fclose(archivoSwap);
+	leerPagina(5,0);
+
+	espacioDisponible = config.cantidad_paginas;
+	limpiarPosiciones (espacio,0,config.cantidad_paginas);
+	list_clean(espacioUtilizado);
+
+}

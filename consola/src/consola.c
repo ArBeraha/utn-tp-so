@@ -20,20 +20,17 @@ void cargarConfig(){
 void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el navegador xD
 {
 	//Lee y termina por \n y \0, entonces si hay un \n lo piso con \0, y si hay un \0 lo piso con \0 (lease, no hago nada xD)
-	texto[strcspn(texto, "\n")] = '\0';
+	texto[strcspn(texto, "\r\n")] = '\0'; //Anda para cualquier tipo de salto de linea, aunque no sea un \n.
 }
 
-void imprimirVariable() { //TODO REVISAR XQ NO COINCIDE EL ENUNCIADO CON EL PARSER!
+void imprimirVariable() {
 	char* msgValue = recv_waitall_ws(cliente, sizeof(ansisop_var_t));
 	int value = char4ToInt(msgValue);
-	char* name = recv_waitall_ws(cliente, sizeof(char));
-	sacarSaltoDeLinea(name);
 	// uso printf y logger de background solo porque es un mensaje impreso normalmente
 	// y no algo del log.
-	printf("Consola> Variable %s: %d.", name, value);
-	log_debug(bgLogger, "Consola> Mensaje impreso: Variable %s: %d.", name, value);
+	printf("Consola> %d\n", value);
+	log_debug(bgLogger, "Mensaje impreso: Consola> %d", value);
 	free(msgValue);
-	free(name);
 }
 
 void imprimirTexto() {

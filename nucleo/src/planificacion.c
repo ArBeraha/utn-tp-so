@@ -93,10 +93,9 @@ void ejecutarProceso(int PID, int cpu) {
 		free(serialPCB);
 	}
 }
-
 void expulsarProceso(t_proceso* proceso) {
-	cambiarEstado(proceso, READY);
 	enviarHeader(proceso->cpu, HeaderDesalojarProceso);
+	cambiarEstado(proceso, READY);
 }
 void continuarProceso(t_proceso* proceso) {
 	enviarHeader(proceso->cpu, HeaderContinuarProceso);

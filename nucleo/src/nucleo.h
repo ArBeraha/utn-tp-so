@@ -115,7 +115,6 @@ void handshakearUMC();
 char* getScript(int consola);
 // Procesos
 int crearProceso(int consola);
-void ejecutarProceso(int PID, int cpu);
 void rechazarProceso(int PID);
 void bloquearProceso(int PID);
 void bloquearProcesoIO(int PID, char* IO);
@@ -139,6 +138,7 @@ void bloqueo(t_bloqueo* info);
 void cambiarEstado(t_proceso* proceso, int estado);
 void continuarProceso(t_proceso* proceso);
 void expulsarProceso(t_proceso* proceso);
+void ejecutarProceso(int PID, int cpu);
 // Primitivas
 void signalSemaforo(int cliente);
 void waitSemaforo(int cliente);

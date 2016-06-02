@@ -50,21 +50,7 @@ int crearProceso(int consola) {
 	return proceso->PCB->PID;
 }
 
-void ejecutarProceso(int PID, int cpu) {
-	t_proceso* proceso = (t_proceso*) PID;
-	asignarCPU(proceso,cpu);
-	if (!CU_is_test_running()) {
-		int bytes = bytes_PCB(proceso->PCB);
-		char* serialPCB = malloc(bytes);
-		char* serialBytes = intToChar4(bytes);
-		serializar_PCB(serialPCB, proceso->PCB);
-		send_w(clientes[cpu].socket, "HEADER MANDAR A EJECUTAR", 1); //TODO header
-		send_w(clientes[cpu].socket, serialBytes, sizeof(int));
-		send_w(clientes[cpu].socket, serialPCB, bytes);
-		free(serialPCB);
-		free(serialBytes);
-	}
-}
+
 void finalizarProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;
 	cambiarEstado(proceso,EXIT);

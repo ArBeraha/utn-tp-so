@@ -81,6 +81,19 @@ void desasignarCPU(t_proceso* proceso) {
 	proceso->cpu = SIN_ASIGNAR;
 	clientes[proceso->cpu].pid = (int) NULL;
 }
+void ejecutarProceso(int PID, int cpu) {
+	t_proceso* proceso = (t_proceso*) PID;
+	asignarCPU(proceso,cpu);
+	if (!CU_is_test_running()) {
+		int bytes = bytes_PCB(proceso->PCB);
+		char* serialPCB = malloc(bytes);
+		serializar_PCB(serialPCB, proceso->PCB);
+		enviarHeader(clientes[cpu].socket,HeaderPCB);
+		enviarLargoYSerial(clientes[cpu].socket, bytes, serialPCB);
+		free(serialPCB);
+	}
+}
+
 void expulsarProceso(t_proceso* proceso) {
 	cambiarEstado(proceso, READY);
 	enviarHeader(proceso->cpu, HeaderDesalojarProceso);
@@ -100,16 +113,13 @@ void cambiarEstado(t_proceso* proceso, int estado) {
 	if (matrizEstados[proceso->estado][estado]) {
 		log_debug(bgLogger, "Cambio de estado pid:%d de:%d a:%d",
 				proceso->PCB->PID, proceso->estado, estado);
+		if (proceso->estado == EXEC)
+			desasignarCPU(proceso);
 		if (estado == READY)
 			queue_push(colaListos, proceso);
 		else if (estado == EXIT)
 			queue_push(colaSalida, proceso);
-
-		if (proceso->estado == EXEC)
-			desasignarCPU(proceso);
-
 		proceso->estado = estado;
-
 	} else
 		log_error(activeLogger, "Cambio de estado ILEGAL pid:%d de:%d a:%d",
 				proceso->PCB->PID, proceso->estado, estado);

@@ -170,7 +170,7 @@ void limpiarPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioP
 }
 
 void setearPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioProceso){
-	int i;
+	int i=0;
 	for(i=posicionInicial; i < posicionInicial+tamanioProceso; i++) bitarray_set_bit(unEspacio, i);
 }
 
@@ -268,7 +268,7 @@ int estaElProceso(int unPid)
 
 t_infoProceso* buscarProceso(int unPid)
 {
-	t_infoProceso* datoProceso;
+	t_infoProceso* datoProceso=malloc(sizeof(t_infoProceso));
 	int i=0;
 	int cantidadProcesos = list_size(espacioUtilizado);
 	int estado = 0;
@@ -291,7 +291,7 @@ t_infoProceso* buscarProcesoAPartirDeMarcoInicial(int marcoInicial)
 	int i=0;
 	int cantidadProcesos=list_size(espacioUtilizado);
 	int estado=0;
-	t_infoProceso* datoProceso;
+	t_infoProceso* datoProceso=malloc(sizeof(t_infoProceso));
 	while (i< cantidadProcesos && estado==0)
 	{
 		datoProceso= (t_infoProceso*)list_get(espacioUtilizado,i);
@@ -390,7 +390,7 @@ t_infoProceso* elemMIMenor (marcoAComparar) {
 //    log_info(activeLogger, "Compactación finalizada.");
 //}
 
-void compactar() //TODO CREO QUE EL ERROR ESTA EN BUSCARPROCESOAPARTIRDEMARCOINICIAL, MIRAR RESULTADO EN TESTCOMPACTACIONSWAP3()
+void compactar() //TODO MIRAR RESULTADO EN TESTCOMPACTACIONSWAP3()
 {
 	int i=0;
 	int espaciosLibres=0;
@@ -403,18 +403,18 @@ void compactar() //TODO CREO QUE EL ERROR ESTA EN BUSCARPROCESOAPARTIRDEMARCOINI
 		if (espaciosLibres!=0 && bitarray_test_bit(espacio,i)==1)
 		{
 			posActual=i;
-			nuevaPosicion= posActual-espaciosLibres;
 			procesoActual=buscarProcesoAPartirDeMarcoInicial(posActual);
-			procesoActual->posPagina = nuevaPosicion;
-			modificarArchivo(posActual,procesoActual->cantidadDePaginas,nuevaPosicion);
-			limpiarPosiciones(espacio,posActual,procesoActual->cantidadDePaginas);
-			setearPosiciones(espacio,nuevaPosicion,procesoActual->cantidadDePaginas);
-			espaciosLibres=0;
-			i=posActual+procesoActual->cantidadDePaginas-1;
+			nuevaPosicion= (posActual- espaciosLibres);
+			procesoActual->posPagina = nuevaPosicion; //Para la lista
+			modificarArchivo(posActual,procesoActual->cantidadDePaginas,nuevaPosicion); //Para el archivo
+			limpiarPosiciones(espacio,posActual,procesoActual->cantidadDePaginas); //Para el array
+			setearPosiciones(espacio,nuevaPosicion,procesoActual->cantidadDePaginas); //Para el array
+			i=posActual+(procesoActual->cantidadDePaginas)-1;
 
 
 		}
 	}
+
 }
 
 void modificarArchivo (int marcoInicial, int cantMarcos, int nuevoMarcoInicial)
@@ -761,22 +761,36 @@ void testSwapDeCompactacion3() //TODO Y TAMBIEN TEST DE AGREGAR PROCESO E INICIA
   	proceso1->pid = 5;
   	proceso1->posPagina = 0;
   	proceso1->cantidadDePaginas = 3;
-  	list_add_in_index(espacioUtilizado,0,(void*) proceso1);
+  	list_add(espacioUtilizado,(void*) proceso1);
 
   t_infoProceso* proceso2 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
   	proceso2->pid = 8;
   	proceso2->posPagina = 5;
   	proceso2->cantidadDePaginas = 3;
-  	list_add_in_index(espacioUtilizado,2,(void*) proceso2);
+  	list_add(espacioUtilizado,(void*) proceso2);
 
-  	t_infoProceso* procesoAImprimir=buscarProcesoAPartirDeMarcoInicial(0);
+  	t_infoProceso* proceso3 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+  	  	proceso3->pid = 9;
+  	  	proceso3->posPagina = 9;
+  	  	proceso3->cantidadDePaginas = 11;
+  	  	list_add(espacioUtilizado,(void*) proceso3);
+
+
+  	t_infoProceso* procesoAImprimir=malloc(sizeof(t_infoProceso));
+  	procesoAImprimir=buscarProcesoAPartirDeMarcoInicial(0);
   	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
   			procesoAImprimir->posPagina,procesoAImprimir->pid,procesoAImprimir->cantidadDePaginas);
 
 
-  	t_infoProceso*  procesoAImprimir2=buscarProcesoAPartirDeMarcoInicial(5);
+  	t_infoProceso*  procesoAImprimir2=malloc(sizeof(t_infoProceso));
+  	procesoAImprimir2=buscarProcesoAPartirDeMarcoInicial(5);
   	  	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
   	  		 procesoAImprimir2->posPagina, procesoAImprimir2->pid, procesoAImprimir2->cantidadDePaginas);
+
+  	t_infoProceso*  procesoAImprimir3=malloc(sizeof(t_infoProceso));
+  	  	procesoAImprimir3=buscarProcesoAPartirDeMarcoInicial(12);
+  	  	  	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
+  	  	  		 procesoAImprimir3->posPagina, procesoAImprimir3->pid, procesoAImprimir3->cantidadDePaginas);
 
   compactar();
 
@@ -788,6 +802,22 @@ void testSwapDeCompactacion3() //TODO Y TAMBIEN TEST DE AGREGAR PROCESO E INICIA
   {
 	  printf("En la posicion %d tengo el bit %d \n", i, bitarray_test_bit(espacio, i) );
   }
+
+
+    	procesoAImprimir=buscarProceso(5);
+    	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
+    			procesoAImprimir->posPagina,procesoAImprimir->pid,procesoAImprimir->cantidadDePaginas);
+
+
+
+    	procesoAImprimir2=buscarProceso(8);
+    	  	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
+    	  		 procesoAImprimir2->posPagina, procesoAImprimir2->pid, procesoAImprimir2->cantidadDePaginas);
+
+    	procesoAImprimir3=buscarProceso(12);
+    	    	  	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
+    	    	  		 procesoAImprimir3->posPagina, procesoAImprimir3->pid, procesoAImprimir3->cantidadDePaginas);
+
 
 
   espacioDisponible = config.cantidad_paginas;

@@ -75,7 +75,6 @@ void finalizarProceso(int PID) {
 	if (proceso->estado==EXEC)
 	desasignarCPU(proceso);
 	cambiarEstado(proceso,EXIT);
-	queue_push(colaSalida, (void*) PID);
 	pthread_mutex_lock(&mutexProcesos);
 	list_remove_by_value(listaProcesos, (void*) PID);
 	pthread_mutex_unlock(&mutexProcesos);
@@ -124,7 +123,6 @@ void bloquearProceso(int PID) {
 void desbloquearProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;
 	cambiarEstado(proceso,READY);
-	queue_push(colaListos, (t_proceso*) PID);
 }
 void asignarMetadataProceso(t_proceso* p, char* codigo) {
 	int i;

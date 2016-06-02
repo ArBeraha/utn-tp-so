@@ -82,7 +82,6 @@ void desasignarCPU(t_proceso* proceso) {
 }
 void expulsarProceso(t_proceso* proceso) {
 	cambiarEstado(proceso, READY);
-	queue_push(colaListos, (void*) proceso->PCB->PID);
 	desasignarCPU(proceso);
 	enviarHeader(proceso->cpu, HeaderDesalojarProceso);
 }
@@ -102,6 +101,11 @@ void cambiarEstado(t_proceso* proceso, int estado) {
 		log_debug(bgLogger, "Cambio de estado pid:%d de:%d a:%d",
 				proceso->PCB->PID, proceso->estado, estado);
 		proceso->estado = estado;
+		if (estado==READY)
+			queue_push(colaListos, proceso);
+		else
+		if (estado==EXIT)
+			queue_push(colaSalida, proceso);
 	} else
 		log_error(activeLogger, "Cambio de estado ILEGAL pid:%d de:%d a:%d",
 				proceso->PCB->PID, proceso->estado, estado);

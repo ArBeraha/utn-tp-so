@@ -113,7 +113,7 @@ void configHilos() {
 	pthread_mutex_init(&mutexUMC, NULL);
 }
 void inicializar() {
-	crearLogs("Nucleo", "Nucleo");
+	crearLogs("Nucleo", "Nucleo",0);
 	testear(test_serializacion);
 	log_info(activeLogger, "INICIALIZANDO");
 	espera.tv_sec = 2;
@@ -137,8 +137,9 @@ void inicializar() {
 			&tamanioDireccionCPU, &activadoCPU);
 	inicializarClientes();
 	conectarAUMC();
-	pthread_create(&hiloPlanificacion, &detachedAttr, (void*) planificar, NULL);
 	testear(test_nucleo);
+	pthread_create(&hiloPlanificacion, &detachedAttr, (void*) planificar, NULL);
+
 }
 void finalizar() {
 	log_info(activeLogger, "FINALIZANDO");

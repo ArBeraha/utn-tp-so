@@ -94,20 +94,22 @@ void test_bloqueosIO() {
 	io->estado = INACTIVE;
 	dictionary_put(tablaIO, "ScannerTest2", io);
 
-	t_proceso* proceso = (t_proceso*) crearProceso(consola);
+	t_proceso* proceso = (t_proceso*)crearProceso(consola);
 	proceso->estado = READY;
 
-	ejecutarProceso(proceso->PCB->PID, (int) queue_pop(colaCPU));
-	bloquearProcesoIO(proceso->PCB->PID, "ScannerTest2");
-	CU_ASSERT_EQUAL(proceso->estado, BLOCK);
+	ejecutarProceso(proceso->PCB->PID,(int)queue_pop(colaCPU));
+	bloquearProcesoIO(proceso->PCB->PID,"ScannerTest2");
+	dictionary_iterator(tablaIO,(void*)planificarIO);
+	CU_ASSERT_EQUAL(io->estado,ACTIVE);
 	sleep(io->retardo*2);
-	CU_ASSERT_EQUAL(proceso->estado, EXEC);
-	CU_ASSERT_EQUAL(io->estado, INACTIVE);
-	dictionary_remove(tablaIO, "ScannerTest2");
+	CU_ASSERT_EQUAL(proceso->estado,READY);
+	CU_ASSERT_EQUAL(io->estado,INACTIVE);
+	dictionary_remove(tablaIO,"ScannerTest2");
 	queue_destroy(io->cola);
 	free(io);
 	finalizarProceso(proceso->PCB->PID);
 	destruirProceso(proceso->PCB->PID);
+
 	queue_clean(colaSalida);
 	queue_clean(colaListos);
 	queue_clean(colaCPU);

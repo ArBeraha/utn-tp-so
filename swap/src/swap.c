@@ -38,6 +38,8 @@ void crear_archivo() {
 
 	free(ddComand);
 	log_info(activeLogger, "Archivo %s creado\n", config.nombre_swap);
+
+	archivo_swap = fopen(config.nombre_swap,"r+");
 }
 
 void conectar_umc(){
@@ -56,8 +58,8 @@ void conectar_umc(){
 }
 
 void inicializar(){
-	crearLogs("SWAP", "SWAP");
-	crearLogs(string_from_format("swap_%d", getpid()), "SWAP");
+	crearLogs("SWAP", "SWAP",0);
+	crearLogs(string_from_format("swap_%d", getpid()), "SWAP",0);
 	log_info(activeLogger, "Soy SWAP de process ID %d.\n", getpid());
 
 	cargarCFG();
@@ -141,8 +143,7 @@ void procesarHeader(int cliente, char* header)
     	}
     }
 
-int espaciosDisponibles (t_bitarray* unEspacio)
-{
+int espaciosDisponibles (t_bitarray* unEspacio){
   int i;
   int espacioSinUtilizar=0;
   for(i=0; i<config.cantidad_paginas; i++)
@@ -152,8 +153,7 @@ int espaciosDisponibles (t_bitarray* unEspacio)
   return espacioSinUtilizar;
 }
 
-int espaciosUtilizados (t_bitarray* unEspacio)
-{
+int espaciosUtilizados (t_bitarray* unEspacio){
   int i;
   int espacioUtilizado=0;
   for(i=0; i<config.cantidad_paginas; i++)
@@ -164,18 +164,15 @@ int espaciosUtilizados (t_bitarray* unEspacio)
 }
 
 
-void limpiarPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioProceso)
-{
+void limpiarPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioProceso){
 	int i=0;
 	for(i=posicionInicial; i < posicionInicial+tamanioProceso; i++) bitarray_clean_bit(unEspacio, i);
 }
 
-void setearPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioProceso)
-{
-	int i=0;
+void setearPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioProceso){
+	int i;
 	for(i=posicionInicial; i < posicionInicial+tamanioProceso; i++) bitarray_set_bit(unEspacio, i);
 }
-
 
 
 //Comprueba si hay fragmentacion externa
@@ -482,7 +479,6 @@ void leerPagina(int pid, int paginaALeer) {
 char* buffer = malloc(config.tamanio_pagina + 1);
 
 //Abro el archivo de Swap
-	FILE *archivoSwap;
 	archivoSwap = fopen(config.nombre_swap, "r");
 	if (archivoSwap == NULL) {
 		printf("Error al abrir el archivo para leer\n");
@@ -520,7 +516,6 @@ char* buffer = malloc(config.tamanio_pagina + 1);
 
 void escribirPagina(int pid, int paginaAEscribir, int tamanio) {
 	//Abro el archivo de Swap
-	FILE *archivoSwap;
 	archivoSwap = fopen(config.nombre_swap, "r+");
 	if (archivoSwap == NULL) {
 		printf("Error al abrir el archivo para escribir\n");
@@ -584,13 +579,25 @@ void finalizarProceso(int pid) {
 
 }
 
+void esperar_peticiones(){
+
+	char* header;
+	while (1){
+		header=recv_waitall_ws(cliente,1);
+		procesarHeader(cliente,header); //Incluye deserializacion
+    }
+}
+
+void finalizar(){ //TODO irian mas cosas, tipo free de mallocs y esas cosas
+
+	log_info(activeLogger,"Proceso Swap terminado");
+}
 
 
 //**************************************************MAIN SWAP*****************************************************************
 
 int main()
 {
-	char* header;
 	inicializar();
 
 	espacioDisponible = config.cantidad_paginas; //Para manejar la asignacion de paginas a procesos
@@ -622,12 +629,9 @@ int main()
 	//SOCKETS
 	conectar_umc();
 
+	esperar_peticiones();
 
-	while (1){
-		header=recv_waitall_ws(cliente,1);
-		procesarHeader(cliente,header); //Incluye deserializacion
-    }
-
+	finalizar();
 
 	return 0;
 }

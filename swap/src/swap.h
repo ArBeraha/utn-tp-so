@@ -72,6 +72,8 @@ int espacioDisponible;
 int espacioLibre;
 int espacioOcupado;
 
+FILE* archivoSwap;
+
 
 /*****PROTOTIPOS******/
 void asignarEspacioANuevoProceso(int, int);
@@ -97,7 +99,8 @@ void cargarCFG();
 void crear_archivo();
 void conectar_umc();
 void inicializar();
-
+void finalizar();
+void eesperar_peticiones();
 
 
 

@@ -88,6 +88,9 @@ void limpiarPosiciones (t_bitarray* , int, int );
 void setearPosiciones (t_bitarray*, int, int );
 int hayQueCompactar(int);
 int estaElProceso(int);
+int coincideElMarco(t_infoProceso*, int );
+int coincideElPID(t_infoProceso*, int);
+t_infoProceso* buscarProcesoAPartirDeMarcoInicial(int);
 t_infoProceso* buscarProceso(int);
 int estaEnArray(t_infoProceso*);
 int buscarMarcoInicial(int);
@@ -100,21 +103,25 @@ void crear_archivo();
 void conectar_umc();
 void inicializar();
 void finalizar();
-void eesperar_peticiones();
+void esperar_peticiones();
 
 
 
+int primerEspacioLibre(t_bitarray*);
 
 
-
+void escribirPaginaParaTests(int, int, int);
 void testSwapDeBitArray1();
 void testSwapDeBitArray2();
-//void testSwapDeCompactacion3();
+void testSwapDeCompactacion3();
 void testFinalizarProceso1();
 void testFinalizarProceso2();
 void testFinalizarProceso3();
 void testAgregarProceso1();
 //void testAgregarProceso2();
+void testLectura2();
+
+
 
 
 #endif /* SWAP_H_ */

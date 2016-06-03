@@ -88,28 +88,27 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 	t_valor_variable valor;
 	log_info(activeLogger, "Dereferenciar |%d|.", direccion);
 
-	enviarHeader(cliente_umc,HeaderPedirValorVariable);
+	enviarHeader(cliente_umc, HeaderPedirValorVariable);
 	enviar_direccion_umc(direccion);
 
-	char* res = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
+	char* stackOverflowFlag = recv_waitall_ws(cliente_umc, sizeof(int));
+	int overflow = char4ToInt(stackOverflowFlag);
 
-	if(esExcepcion(res)){	//TODO como se efectivamente si es una excepcion? por ahi no lo es y la decodifica como tal
-
-		free(res);
+	if (overflow) {
 		lanzar_excepcion();
+	} else {
+		char* resultado = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
+		valor = charToInt(resultado);
+		log_info(activeLogger, "La variable de la dirección fue |%d| dereferenciada! Su valor es |%d|.",
+				direccion, valor);
 
-		}else{
-
-			valor = charToInt(res);
-			log_info(activeLogger, "|%d| dereferenciada! Su valor es |%d|.", direccion,
-					valor);
-
-			free(res);
-			incrementarPC(pcbActual);
-			informarInstruccionTerminada();
-			instruccionTerminada("Dereferenciar");
-
+		free(resultado);
+		incrementarPC(pcbActual);
+		informarInstruccionTerminada();
+		instruccionTerminada("Dereferenciar");
 	}
+	free(stackOverflowFlag);
+	instruccionTerminada("Dereferenciar");
 	return valor;
 }
 
@@ -338,7 +337,7 @@ void inicializar_primitivas() {
 	funciones.AnSISOP_asignar = &asignar;
 	funciones.AnSISOP_obtenerValorCompartida = &obtener_valor_compartida;
 	funciones.AnSISOP_asignarValorCompartida = &asignar_valor_compartida;
-	funciones.AnSISOP_irAlLabel = &irAlLaber;
+	funciones.AnSISOP_irAlLabel = &irAlLabel;
 	funciones.AnSISOP_imprimir = &imprimir;
 	funciones.AnSISOP_imprimirTexto = &imprimir_texto;
 	funciones.AnSISOP_llamarConRetorno = &llamar_con_retorno;

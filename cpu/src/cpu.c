@@ -66,10 +66,6 @@ void esperar_programas() {
 	log_debug(bgLogger, "Ya no se esperan programas de nucleo.");
 }
 
-bool esExcepcion(char* cad){
-	return charToInt(cad) == HeaderExcepcion;
-}
-
 void procesarHeader(char *header) {
 
 	log_debug(bgLogger, "Llego un mensaje con header %d.", charToInt(header));
@@ -267,13 +263,12 @@ void finalizar_proceso(){ //voy a esta funcion cuando ejecuto la ultima instrucc
 }
 
 void lanzar_excepcion(){
-	log_info(activeLogger,"Recibi un mensaje de excepcion :( ");
-	log_info(activeLogger,"Terminando la ejecucion del programa actual...");
+	log_info(activeLogger,"Stack overflow! se intentó leer una dirección inválida.");
+	log_info(activeLogger,"Terminando la ejecución del programa actual...");
 
 	finalizar_proceso();
 
-	log_info(activeLogger,"Proceso terminado");
-	esperar_programas();
+	log_info(activeLogger,"Proceso terminado!");
 }
 
 // ***** Funciones de conexiones ***** //

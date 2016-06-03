@@ -18,8 +18,8 @@ t_puntero definir_variable(t_nombre_variable variable) {
 	dictionary_put(head->identificadores, &variable, (void*) direccion);
 	stack_push(stack, head);
 
-	informarInstruccionTerminada();
 	instruccionTerminada("Definir_variable");
+	informarInstruccionTerminada();
 	return head->posicion;
 }
 
@@ -65,8 +65,8 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	}
 
 	incrementarPC(pcbActual);
-	informarInstruccionTerminada();
 	instruccionTerminada("obtener_posicion_de");
+	informarInstruccionTerminada();
 	return pointer;
 }
 
@@ -124,8 +124,8 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	send_w(cliente_umc, intToChar4(valor), sizeof(t_valor_variable)); //envio el valor de la variable
 
 	incrementarPC(pcbActual);
-	informarInstruccionTerminada();
 	instruccionTerminada("Asignar.");
+	informarInstruccionTerminada();
 }
 
 // Directiva 5
@@ -145,8 +145,8 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 	log_info(activeLogger, "Valor obtenido: |%s| vale |%d|.",nombreVarCompartida, valor);
 	free(value);
 	incrementarPC(pcbActual);
-	informarInstruccionTerminada();
 	instruccionTerminada("Obtener_valor_compartida");
+	informarInstruccionTerminada();
 	return valor;
 }
 
@@ -178,8 +178,8 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 	}
 
 	incrementarPC(pcbActual);
-	informarInstruccionTerminada();
 	instruccionTerminada("asignar_valor_compartida");
+	informarInstruccionTerminada();
 	return valorVarCompartida;
 }
 
@@ -189,7 +189,7 @@ bool existeLabel(t_nombre_etiqueta etiqueta) {
 
 //Directiva 7
 // fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
-void irAlLaber(t_nombre_etiqueta etiqueta) {
+void irAlLabel(t_nombre_etiqueta etiqueta) {
 	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
 	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
 	if (existeLabel(etiqueta)) {
@@ -204,8 +204,8 @@ void irAlLaber(t_nombre_etiqueta etiqueta) {
 				etiqueta);
 	}
 	setearPC(pcbActual, posicionPrimeraInstrUtil);
+	instruccionTerminada("ir_al_label");
 	informarInstruccionTerminada();
-	instruccionTerminada("ir_al_laber");
 	//return posicionPrimeraInstrUtil;
 }
 
@@ -226,8 +226,8 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar)
 	stack_push(stack, newHead);
 
 	setearPC(pcbActual, posicionFuncion);
-	informarInstruccionTerminada();
 	instruccionTerminada("llamar_con_retorno");
+	informarInstruccionTerminada();
 }
 
 //Directiva 9
@@ -241,8 +241,8 @@ t_puntero_instruccion retornar(t_valor_variable variable) {
 	// Libero ese nivel del stack, porque termino de ejecutarse la funcion que lo creo y ya no es necesario
 	stack_item_destroy(head);
 	setearPC(pcbActual, retorno);
-	informarInstruccionTerminada();
 	instruccionTerminada("Retornar");
+	informarInstruccionTerminada();
 	return retorno;
 }
 
@@ -258,8 +258,8 @@ void imprimir(t_valor_variable valor) { //fixme, no era distinto esto?
 	enviarHeader(cliente_nucleo,HeaderImprimirVariableNucleo);
 	send_w(cliente_nucleo, intToChar4(valor), sizeof(t_valor_variable));
 	incrementarPC(pcbActual);
-	informarInstruccionTerminada();
 	instruccionTerminada("Imprimir");
+	informarInstruccionTerminada();
 	//return digitosDe(valor);
 }
 
@@ -276,8 +276,8 @@ void imprimir_texto(char* texto) {
 	log_debug(activeLogger, "Se envio a nucleo la cadena: |%s|.", texto);
 
 	incrementarPC(pcbActual);
-	informarInstruccionTerminada();
 	instruccionTerminada("Imprimir texto");
+	informarInstruccionTerminada();
 	//return strlen(texto); //Size tiene el \0, que no se imprime.
 }
 
@@ -296,8 +296,8 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo) {
 	free(time);
 
 	incrementarPC(pcbActual);
-	informarInstruccionTerminada();
 	instruccionTerminada("Entrada-Salida");
+	informarInstruccionTerminada();
 }
 
 
@@ -312,8 +312,8 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 
 
 	incrementarPC(pcbActual);
-	informarInstruccionTerminada();
 	instruccionTerminada("wait");
+	informarInstruccionTerminada();
 }
 
 // Directiva 14
@@ -325,8 +325,8 @@ void signal_con_semaforo(t_nombre_semaforo identificador_semaforo) {
 	enviarLargoYString(cliente_nucleo,identificador_semaforo);
 
 	incrementarPC(pcbActual);
-	informarInstruccionTerminada();
 	instruccionTerminada("Signal");
+	informarInstruccionTerminada();
 }
 
 /* ------ Funciones para usar con el parser ----- */

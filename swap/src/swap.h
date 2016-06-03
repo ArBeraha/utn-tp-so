@@ -118,9 +118,10 @@ void testFinalizarProceso1();
 void testFinalizarProceso2();
 void testFinalizarProceso3();
 void testAgregarProceso1();
-//void testAgregarProceso2();
+void testAgregarProceso2();
 void testLectura2();
-
+void testLectura3();
+void testLectura4();
 
 
 

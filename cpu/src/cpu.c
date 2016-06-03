@@ -129,18 +129,6 @@ void pedir_tamanio_paginas() {
 	}
 }
 
-void enviar_cadena(int cliente, char* cadena){
-
-	int size = strlen(cadena)+1;
-
-	char* tamanio = intToChar(size);
-	send_w(cliente,tamanio,sizeof(int)); //envio el tamanio
-
-	free(tamanio);
-	send_w(cliente,cadena,size);		//envio la cadena
-
-}
-
 
 int longitud_sentencia(t_sentencia* sentencia) {
 	return sentencia->offset_fin - sentencia->offset_inicio;
@@ -394,7 +382,7 @@ void finalizar() {
 void handler(int sign) {
 	if (sign == SIGUSR1) {
 		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
-		terminar = true;
+		terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccio
 		log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");
 	} else {
 		log_info(activeLogger,

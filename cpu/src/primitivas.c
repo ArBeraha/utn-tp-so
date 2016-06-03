@@ -158,7 +158,7 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 
 	//envio el header, el tamaño del nombre y el nombre
 	enviarHeader(cliente_umc, HeaderAsignarValorVariableCompartida);
-	enviar_cadena(cliente_nucleo,nombreVarCompartida);
+	enviarLargoYString(cliente_nucleo,nombreVarCompartida);
 
 	//envio el valor
 	char* valor = intToChar4(valorVarCompartida);
@@ -273,7 +273,7 @@ void imprimir_texto(char* texto) {
 
 	enviarHeader(cliente_nucleo, HeaderImprimirTextoNucleo);
 
-	enviar_cadena(cliente_nucleo, texto);
+	enviarLargoYString(cliente_nucleo, texto);
 
 	log_debug(activeLogger, "Se envio a nucleo la cadena: |%s|.", texto);
 
@@ -291,7 +291,7 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo) {
 
 	enviarHeader(cliente_nucleo,HeaderEntradaSalida);
 
-	enviar_cadena(cliente_nucleo,dispositivo);				//envio la cadena
+	enviarLargoYString(cliente_nucleo,dispositivo);				//envio la cadena
 
 	char* time = intToChar(tiempo);							//envio el tiempo
 	send_w(cliente_nucleo,time,strlen(time));
@@ -310,7 +310,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 
 	enviarHeader(cliente_nucleo,HeaderWait);
 
-	enviar_cadena(cliente_nucleo,identificador_semaforo);
+	enviarLargoYString(cliente_nucleo,identificador_semaforo);
 
 
 	incrementarPC(pcbActual);
@@ -324,7 +324,7 @@ void signal_con_semaforo(t_nombre_semaforo identificador_semaforo) {
 
 	enviarHeader(cliente_nucleo,HeaderSignal);
 
-	enviar_cadena(cliente_nucleo,identificador_semaforo);
+	enviarLargoYString(cliente_nucleo,identificador_semaforo);
 
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();

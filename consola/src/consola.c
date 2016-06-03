@@ -29,7 +29,7 @@ void imprimirVariable() {
 	// uso printf y logger de background solo porque es un mensaje impreso normalmente
 	// y no algo del log.
 	printf("Consola> %d\n", value);
-	log_debug(bgLogger, "Mensaje impreso: Consola> %d", value);
+	log_debug(bgLogger, "Mensaje impreso: |Consola> %d|", value);
 	free(msgValue);
 }
 
@@ -39,7 +39,7 @@ void imprimirTexto() {
 	printf("Consola> %s\n", texto);
 	// uso printf y logger de background solo porque es un mensaje impreso normalmente
 	// y no algo del log.
-	log_debug(bgLogger, "Mensaje impreso: Consola> %s", texto);
+	log_debug(bgLogger, "Mensaje impreso: |Consola> %s|", texto);
 	free(texto);
 }
 
@@ -137,7 +137,7 @@ void realizarConexion() {
 void warnDebug() {
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 	log_info(activeLogger,
-			"Para ingresar manualmente un archivo: Cambiar true por false en consola.c -> #define DEBUG, y despues recompilar.");
+			"Para ingresar manualmente un archivo: Cambiar la configuracion de consola.");
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 }
 
@@ -151,7 +151,7 @@ void cargarYEnviarArchivo() {
 
 	//Descarto la primera linea si es el hashbang!
 	if (line[0] == '#' && line[1] == '!') {
-		log_info(bgLogger, "Se leyó:%s", line);
+		log_info(bgLogger, "Se leyó: |%s|", line);
 		log_info(bgLogger,
 				"No se pasa la linea anterior al nucleo por ser un hashbang.");
 		length = 0;
@@ -160,7 +160,7 @@ void cargarYEnviarArchivo() {
 	}
 
 	while (read != -1) {
-		log_info(bgLogger, "Se leyó:%s", line);
+		log_info(bgLogger, "Se leyó: |%s|", line);
 		string_append(&contenido, line);
 		size += strcspn(line, "\n") + 1;
 		free(line);
@@ -171,7 +171,7 @@ void cargarYEnviarArchivo() {
 	string_append(&contenido, "\0");
 	size += 1;
 	log_info(bgLogger, contenido);
-	log_debug(bgLogger, "Fin de archivo alcanzado. Tamaño almacenado: %d",
+	log_debug(bgLogger, "Fin de archivo alcanzado. Tamaño almacenado: |%d|",
 			size);
 
 	send_w(cliente, headerToMSG(HeaderScript), 1);
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
 		system("rm -rfv *.log");
 	}
 	crearLogs(string_from_format("consola_%d", getpid()), "Consola", config.DEBUG_RAISE_LOG_LEVEL);
-	log_info(activeLogger, "Soy consola de process ID %d.", getpid());
+	log_info(activeLogger, "Soy consola de process ID |%d|.", getpid());
 
 	if (config.DEBUG) {
 		warnDebug();
@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (config.DEBUG) {
-		log_debug(activeLogger, "Se va a abrir:%s", "facil.ansisop");
+		log_debug(activeLogger, "Se va a abrir: %s", "facil.ansisop");
 		programa = fopen("facil.ansisop", "r");
 	} else {
 		programa = fopen(path, "r");

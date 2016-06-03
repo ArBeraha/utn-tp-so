@@ -58,9 +58,9 @@ void esperar_programas() {
 		log_debug(activeLogger,
 				"DEBUG NO PROGRAMS activado! Ignorando programas...");
 	}
-	while (!config.DEBUG_NO_PROGRAMS) {
+	while (!terminar) {	//mientras no tenga que terminar
 
-		while(!terminar){ 				//mientras no tenga que terminar
+		if(!config.DEBUG_NO_PROGRAMS){
 			header = recv_waitall_ws(cliente_nucleo, 1);
 			procesarHeader(header);
 			free(header);
@@ -72,7 +72,6 @@ void esperar_programas() {
 bool esExcepcion(char* cad){
 	return charToInt(cad) == HeaderExcepcion;
 }
-
 
 void procesarHeader(char *header) {
 
@@ -102,6 +101,10 @@ void procesarHeader(char *header) {
 		desalojarProceso();
 		break;
 
+	case HeaderExcepcion:
+		lanzar_excepcion();
+		break;
+
 	default:
 		log_error(activeLogger, "Llego cualquier cosa.");
 		log_error(activeLogger,
@@ -128,6 +131,19 @@ void pedir_tamanio_paginas() {
 				"UMC DEBUG ACTIVADO! tamanioPaginas va a valer -1.");
 	}
 }
+
+void enviar_cadena(int cliente, char* cadena){
+
+	int size = strlen(cadena)+1;
+
+	char* tamanio = intToChar(size);
+	send_w(cliente,tamanio,sizeof(int)); //envio el tamanio
+
+	free(tamanio);
+	send_w(cliente,cadena,size);		//envio la cadena
+
+}
+
 
 int longitud_sentencia(t_sentencia* sentencia) {
 	return sentencia->offset_fin - sentencia->offset_inicio;
@@ -164,11 +180,10 @@ void enviar_solicitud(int pagina, int offset, int size) {
 	pedido.size = size;
 
 	char* solicitud = string_new();
-	serializar_pedido(solicitud, &pedido);
+	int tamanio = serializar_pedido(solicitud, &pedido);
 
-	send_w(cliente_umc, solicitud, sizeof(t_pedido));
+	send_w(cliente_umc, solicitud, tamanio);
 	free(solicitud);
-
 }
 
 void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
@@ -186,6 +201,10 @@ void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 	int cantidad_pags = cantidad_paginas_ocupa(sentenciaAux);
 
 	log_debug(bgLogger, "La instruccion ocupa |%d| paginas", cantidad_pags);
+
+	char* cantRecvs = intToChar(cantidad_pags);
+	send_w(cliente_umc,cantRecvs, strlen(cantRecvs));		//envio a umc cuantos recvs tiene que hacer
+	free(cantRecvs);
 
 	while (i < cantidad_pags) {				//me fijo si ocupa mas de una pagina
 											//notar que cuando paso de una pagina a otra, pierdo una unidad del size total
@@ -219,8 +238,8 @@ void esperar_sentencia() {
 	log_info(activeLogger, "Esperando sentencia de UMC...");
 	char* header = recv_waitall_ws(cliente_umc, sizeof(char));
 
-		log_info(activeLogger, "Sentencia de UMC recibida...");
-		procesarHeader(header);
+	log_info(activeLogger, "Sentencia de UMC recibida...");
+	procesarHeader(header);
 
 
 	free(header);
@@ -248,9 +267,10 @@ void enviarPCB() {
 void obtener_y_parsear() {
 	char* tamanioSentencia = recv_waitall_ws(cliente_umc, sizeof(int));
 	int tamanio = char4ToInt(tamanioSentencia);
+	free(tamanioSentencia);
+
 	char* sentencia = recv_waitall_ws(cliente_umc, tamanio);
 	parsear(sentencia);
-	free(tamanioSentencia);
 	free(sentencia);
 }
 
@@ -355,6 +375,9 @@ void inicializar() {
 	inicializar_primitivas();
 }
 void finalizar() {
+
+	log_info(activeLogger,"Finalizando proceso cpu");
+
 	if (!config.DEBUG_NO_PROGRAMS) {
 		log_debug(activeLogger, "Destruyendo pcb...");
 		pcb_destroy(pcbActual);

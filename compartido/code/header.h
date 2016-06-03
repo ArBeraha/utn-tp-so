@@ -39,6 +39,7 @@ typedef enum {
 	HeaderTeReservePagina,
 	HeaderNoExistePagina,
 	HeaderNoExisteTablaDePag,
+	HeaderEntradaSalida,
 	HeaderSignal,
 	HeaderWait,
 	HeaderExcepcion,

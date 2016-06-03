@@ -129,10 +129,8 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 }
 
 // Directiva 5
-t_valor_variable obtener_valor_compartida(
-		t_nombre_compartida nombreVarCompartida) { // Pido a Nucleo el valor de la variable
-	log_info(activeLogger, "Obtener valor de variable compartida |%s|.",
-			nombreVarCompartida);
+t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartida) { // Pido a Nucleo el valor de la variable
+	log_info(activeLogger, "Obtener valor de variable compartida |%s|.",nombreVarCompartida);
 	t_valor_variable valor;
 	int nameSize = strlen(nombreVarCompartida) + 1;
 
@@ -144,8 +142,7 @@ t_valor_variable obtener_valor_compartida(
 	char* value = recv_waitall_ws(cliente_nucleo, sizeof(int));
 	valor = char4ToInt(value);
 
-	log_info(activeLogger, "Valor obtenido: |%s| vale |%d|.",
-			nombreVarCompartida, valor);
+	log_info(activeLogger, "Valor obtenido: |%s| vale |%d|.",nombreVarCompartida, valor);
 	free(value);
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
@@ -154,19 +151,14 @@ t_valor_variable obtener_valor_compartida(
 }
 
 //Directiva 6
-t_valor_variable asignar_valor_compartida(
-		t_nombre_compartida nombreVarCompartida,
-		t_valor_variable valorVarCompartida) {
-	log_info(
-			activeLogger, //envio el nombre de la variable
+t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartida, t_valor_variable valorVarCompartida) {
+	log_info(activeLogger, //envio el nombre de la variable
 			"Asignar el valor |%d| a la variable compartida |%s|.",
 			valorVarCompartida, nombreVarCompartida);
-	int nameSize = strlen(nombreVarCompartida) + 1;
 
 	//envio el header, el tamaño del nombre y el nombre
 	enviarHeader(cliente_umc, HeaderAsignarValorVariableCompartida);
-	send_w(cliente_nucleo, intToChar4(nameSize), sizeof(int));
-	send_w(cliente_nucleo, nombreVarCompartida, nameSize);
+	enviar_cadena(cliente_nucleo,nombreVarCompartida);
 
 	//envio el valor
 	char* valor = intToChar4(valorVarCompartida);
@@ -219,8 +211,7 @@ void irAlLaber(t_nombre_etiqueta etiqueta) {
 
 //Directiva 8
 //Cambio respecto de la version inicial del enunciado! esta version es acorde a la nueva.
-void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,
-		t_puntero dondeRetornar) {
+void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar) {
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
 	int posicionFuncion = 0; // TODO acá va la de la funcion
 
@@ -277,17 +268,15 @@ void imprimir(t_valor_variable valor) { //fixme, no era distinto esto?
 //Directiva 11
 // fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
 void imprimir_texto(char* texto) {
-	int size = strlen(texto) + 1; // El strlen no cuenta el \0. strlen("hola\0") = 4.
+
 	log_debug(activeLogger, "Enviando a nucleo la cadena: |%s|...", texto);
 
 	enviarHeader(cliente_nucleo, HeaderImprimirTextoNucleo);
-	char* msgSize = NULL;
-	serializar_int(msgSize, &size);
-	send_w(cliente_nucleo, msgSize, sizeof(int)); //intToChar4 produce un memory leak si no se usa free
-	send_w(cliente_nucleo, texto, size); //envio a nucleo la cadena a imprimir
+
+	enviar_cadena(cliente_nucleo, texto);
+
 	log_debug(activeLogger, "Se envio a nucleo la cadena: |%s|.", texto);
-	// TODO ??? free(texto); //como no se que onda lo que hace la blbioteca, no se si tire segment fault al hacer free. Una vez q este todoo andando probar hacer free aca
-	free(msgSize);
+
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Imprimir texto");
@@ -297,13 +286,22 @@ void imprimir_texto(char* texto) {
 // Directiva 12
 //cambiar valor de retorno a int
 void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo) {
-	log_info(activeLogger,
-			"Informar a nucleo que el programa quiere usar |%s| durante |%d| unidades de tiempo",
+	log_info(activeLogger,"Informar a nucleo que el programa quiere usar |%s| durante |%d| unidades de tiempo",
 			dispositivo, tiempo);
+
+	enviarHeader(cliente_nucleo,HeaderEntradaSalida);
+
+	enviar_cadena(cliente_nucleo,dispositivo);				//envio la cadena
+
+	char* time = intToChar(tiempo);							//envio el tiempo
+	send_w(cliente_nucleo,time,strlen(time));
+	free(time);
+
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("Entrada-Salida");
 }
+
 
 // Directiva 13
 void wait(t_nombre_semaforo identificador_semaforo) {
@@ -311,8 +309,10 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 			identificador_semaforo);
 
 	enviarHeader(cliente_nucleo,HeaderWait);
-	send_w(cliente_nucleo, identificador_semaforo,
-			sizeof(identificador_semaforo));
+
+	enviar_cadena(cliente_nucleo,identificador_semaforo);
+
+
 	incrementarPC(pcbActual);
 	informarInstruccionTerminada();
 	instruccionTerminada("wait");
@@ -320,14 +320,14 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 
 // Directiva 14
 void signal_con_semaforo(t_nombre_semaforo identificador_semaforo) {
-	log_info(activeLogger,
-			"Comunicar nucleo de hacer signal con semaforo: |%s|",
-			identificador_semaforo);
+	log_info(activeLogger,"Comunicar nucleo de hacer signal con semaforo: |%s|",identificador_semaforo);
 
 	enviarHeader(cliente_nucleo,HeaderSignal);
-	send_w(cliente_nucleo, identificador_semaforo,
-			sizeof(identificador_semaforo));
+
+	enviar_cadena(cliente_nucleo,identificador_semaforo);
+
 	incrementarPC(pcbActual);
+	informarInstruccionTerminada();
 	instruccionTerminada("Signal");
 }
 

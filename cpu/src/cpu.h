@@ -75,6 +75,7 @@ void incrementarPC(t_PCB* pcb) ;
 void instruccionTerminada(char* instr);
 void desalojarProceso();
 t_pedido maximo(t_pedido pedido1, t_pedido pedido2);
+
 /*--------FUNCIONES----------*/
 void parsear(char* const sentencia);
 
@@ -92,6 +93,9 @@ void esperar_sentencia();
 void obtenerPCB();
 void enviarPCB();
 void obtener_y_parsear();
+void lanzar_excepcion();
+bool esExcepcion(char* cad);
+
 // ***** Funciones de conexiones ***** //
 int getHandshake(int cli);
 void warnDebug();
@@ -101,6 +105,7 @@ void conectar_umc();
 void hacer_handshake_umc();
 void establecerConexionConUMC();
 void establecerConexionConNucleo();
+
 // ***** Funciones de inicializacion y finalizacion ***** //
 void cargarConfig();
 void inicializar();

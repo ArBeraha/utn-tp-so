@@ -58,13 +58,10 @@ void esperar_programas() {
 		log_debug(activeLogger,
 				"DEBUG NO PROGRAMS activado! Ignorando programas...");
 	}
-	while (!terminar) {	//mientras no tenga que terminar
-
-		if(!config.DEBUG_NO_PROGRAMS){
-			header = recv_waitall_ws(cliente_nucleo, 1);
-			procesarHeader(header);
-			free(header);
-		}
+	while (!terminar && !config.DEBUG_NO_PROGRAMS) {	//mientras no tenga que terminar
+		header = recv_waitall_ws(cliente_nucleo, 1);
+		procesarHeader(header);
+		free(header);
 	}
 	log_debug(bgLogger, "Ya no se esperan programas de nucleo.");
 }
@@ -397,10 +394,8 @@ void finalizar() {
 void handler(int sign) {
 	if (sign == SIGUSR1) {
 		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
-		terminar = 1;
+		terminar = true;
 		log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");
-		finalizar();
-
 	} else {
 		log_info(activeLogger,
 				"Recibi la señal numero |%d|, que no es SIGUSR1, asi que me quedo :)", sign);

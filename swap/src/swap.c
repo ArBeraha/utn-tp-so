@@ -659,7 +659,7 @@ int main()
 	espacioDisponible = config.cantidad_paginas; //Para manejar la asignacion de paginas a procesos
 
 	/* bitarray manejo de paginas */
-	int tamanio = config.cantidad_paginas;
+	int tamanio = (config.cantidad_paginas/8);
 	char* data = malloc(tamanio+1);
 	strcpy(data, "\0");
 	espacio = bitarray_create(data,tamanio);
@@ -669,12 +669,13 @@ int main()
 
     testSwapDeBitArray1();
     testSwapDeBitArray2();
-    testSwapDeCompactacion3(); //TODO ME EXPLOTA
+    testSwapDeCompactacion3();
+    testSwapDeCompactacion4();
     testFinalizarProceso1();
     testFinalizarProceso2();
     testFinalizarProceso3();
     testAgregarProceso1();
-    testAgregarProceso2(); //TODO FALTA COMPACTACION FUNCIONANDO
+    testAgregarProceso2(); //TODO FALTA agregar FUNCIONANDO
     testLectura2();
     testLectura3();
     testLectura4();
@@ -773,7 +774,7 @@ void testSwapDeCompactacion3() //TODO Y TAMBIEN TEST DE AGREGAR PROCESO E INICIA
   	t_infoProceso* proceso3 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
   	  	proceso3->pid = 9;
   	  	proceso3->posPagina = 9;
-  	  	proceso3->cantidadDePaginas = 11;
+  	    proceso3->cantidadDePaginas = config.cantidad_paginas-proceso3->posPagina;
   	  	list_add(espacioUtilizado,(void*) proceso3);
 
 
@@ -827,7 +828,46 @@ void testSwapDeCompactacion3() //TODO Y TAMBIEN TEST DE AGREGAR PROCESO E INICIA
 
 }
 
+void testSwapDeCompactacion4()
+{
 
+	int i=0;
+    printf("******************testSwapDeCompactacion3 ha comenzado***********************\n");
+    limpiarPosiciones (espacio,0,config.cantidad_paginas-1);
+    bitarray_set_bit(espacio, config.cantidad_paginas-1);
+
+    for(i=0;i<config.cantidad_paginas;i++)
+      	  {
+      		  printf("En la posicion %d tengo el bit %d \n", i, bitarray_test_bit(espacio, i) );
+      	  }
+
+  t_infoProceso* proceso1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+  	proceso1->pid = 5;
+  	proceso1->posPagina = config.cantidad_paginas-1;
+  	proceso1->cantidadDePaginas = 1;
+  	list_add(espacioUtilizado,(void*) proceso1);
+
+  	t_infoProceso* procesoAImprimir=malloc(sizeof(t_infoProceso));
+  	  	procesoAImprimir=buscarProcesoAPartirDeMarcoInicial(config.cantidad_paginas-1);
+  	  	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
+  	  			procesoAImprimir->posPagina,procesoAImprimir->pid,procesoAImprimir->cantidadDePaginas);
+
+  	  compactar();
+
+  	for(i=0;i<config.cantidad_paginas;i++)
+  	  {
+  		  printf("En la posicion %d tengo el bit %d \n", i, bitarray_test_bit(espacio, i) );
+  	  }
+
+
+  	    	procesoAImprimir=buscarProceso(5);
+  	    	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
+  	    			procesoAImprimir->posPagina,procesoAImprimir->pid,procesoAImprimir->cantidadDePaginas);
+
+  	    	espacioDisponible = config.cantidad_paginas;
+  	    	  limpiarPosiciones (espacio,0,config.cantidad_paginas);
+  	    	  list_clean(espacioUtilizado);
+}
 
 void testFinalizarProceso1() //esta el proceso, se elimina. No se usa puramente finalizarProceso
 {
@@ -1033,7 +1073,7 @@ void testAgregarProceso2() //TODO PROBLEMAS CON AGREGAR PAGINA YA QUE NO PASA EL
     	t_infoProceso* proceso3 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
     	  	proceso3->pid = 9;
     	  	proceso3->posPagina = 9;
-    	  	proceso3->cantidadDePaginas = 11;
+    	  	proceso3->cantidadDePaginas = config.cantidad_paginas-proceso3->posPagina;
     	  	list_add(espacioUtilizado,(void*) proceso3);
 
 
@@ -1229,7 +1269,7 @@ void testLectura3()
 
 		if (exitoAlEscribir) printf("Se pudo escribir\n");
 	    fclose(archivoSwap);
-		leerPagina(8,0);
+		leerPagina(8,5);
 
 		espacioDisponible = config.cantidad_paginas;
 		limpiarPosiciones (espacio,0,config.cantidad_paginas);
@@ -1268,7 +1308,7 @@ void testLectura4()
 	  	t_infoProceso* proceso3 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
 	  	  	proceso3->pid = 9;
 	  	  	proceso3->posPagina = 9;
-	  	  	proceso3->cantidadDePaginas = 11;
+	  	  	proceso3->cantidadDePaginas = config.cantidad_paginas-proceso3->posPagina;
 	  	  	list_add(espacioUtilizado,(void*) proceso3);
 
 
@@ -1340,7 +1380,7 @@ void testLectura4()
 
 
 
-	    	 leerPagina(8,3);
+	    	 leerPagina(8,0);
 
 
 	  espacioDisponible = config.cantidad_paginas;

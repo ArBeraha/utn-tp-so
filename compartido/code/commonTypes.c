@@ -58,14 +58,11 @@ t_pedido* stack_next_pedido(t_stack* fuente, int pagsize) {
 
 t_pedido* stack_max_pedido(t_stack* stack, int pagsize){ //Retorna el ultimo pedido hecho
 	t_pedido* pedido = malloc(sizeof(t_pedido));
-	int posicionUltimo;
-	t_stack_item* head = stack_head(stack);
-
 	t_pedido* nextPedido = stack_next_pedido(stack, pagsize);
-	if(pedido->offset>=sizeof(int)){ // "Vuelvo <<un lugar>> para atras respecto del pedido que seguiria"
-		pedido->offset -= sizeof(int);
+	if(nextPedido->offset>=sizeof(int)){ // "Vuelvo <<un lugar>> para atras respecto del pedido que seguiria"
+		pedido->offset = nextPedido->offset - sizeof(int);
 	}else{ //fixme: rompe si las pags no son multiplos de 4. Lo agrego al final de la ultima pagina, porque el proximo pedido va al inicio de la primera.
-		pedido->pagina -= 1;
+		pedido->pagina = nextPedido->pagina - 1;
 		pedido->offset = pagsize - sizeof(int);
 	}
 	return pedido;

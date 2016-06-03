@@ -114,6 +114,7 @@ void escribirPaginaParaTests(int, int, int);
 void testSwapDeBitArray1();
 void testSwapDeBitArray2();
 void testSwapDeCompactacion3();
+void testSwapDeCompactacion4();
 void testFinalizarProceso1();
 void testFinalizarProceso2();
 void testFinalizarProceso3();

@@ -190,7 +190,7 @@ int hayQueCompactar(int paginasAIniciar) {
 	}
 	return flag;
 }
-/*************************Solo test***********************************************/
+/*************************Solo para test***********************************************/
 
 int testArrayOcupado(t_bitarray* unEspacio, int posicionInicial, int tamanioProceso )
 {
@@ -318,77 +318,32 @@ void sacarElemento(int unPid)
 
 }
 
+//NO SE USA MAAAAAAAAAAAAAAAAAAAS CREOOOOO (SINDROME DE DIOGENES)
 
-//Funcion que busca en la lista de utilizados el proceso con el marco igual o mas proximo (mayor) al numero que se le pasa
-t_infoProceso* elemMIMenor (marcoAComparar) {
-	int cantElementos = list_size(espacioUtilizado);
-	t_infoProceso* elem1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
-	int i;
-	for (i = 0; i < cantElementos; i++) {
-		elem1 = list_get(espacioUtilizado, i);
-		if (elem1->posPagina >= marcoAComparar) {
-			break;
-		}
-	}
-	int j;
-	for (j = 0; j < cantElementos; j++) {
-		t_infoProceso* elem2 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
-		elem2 = list_get(espacioUtilizado, j);
-		if (elem2->posPagina >= marcoAComparar && elem1->posPagina > elem2->posPagina) {
-			elem1 = elem2;
-		}
-	}
-	return elem1;
-}
-
-
-//void compactar() {
-//	log_info(activeLogger, "Compactación iniciada por fragmentación externa");
-//	t_infoProceso* primerElemento = elemMIMenor(0);
-//	int aux=0;
-//	if (primerElemento->posPagina != 0)
-//	{
-//		modificarArchivo(primerElemento->posPagina, primerElemento->cantidadDePaginas, 0);
-//		sacarElemento(primerElemento->pid);
-//		aux = primerElemento->cantidadDePaginas;
-//		aux--;
-//        limpiarPosiciones(espacio,primerElemento->posPagina,aux);
-//		primerElemento->posPagina = 0;
-//		list_add(espacioUtilizado, primerElemento);
-//		aux = primerElemento->cantidadDePaginas;
-//		aux--;
-//        setearPosiciones (espacio, primerElemento->posPagina, aux);
-//	}
+////Funcion que busca en la lista de utilizados el proceso con el marco igual o mas proximo (mayor) al numero que se le pasa
+//t_infoProceso* elemMIMenor (marcoAComparar) {
 //	int cantElementos = list_size(espacioUtilizado);
-//	int i = 0;
-//
-//	while (i < cantElementos)
-//	{
-//		i++;
-//		int marcoInicialSig = primerElemento->posPagina + primerElemento->cantidadDePaginas;
-//		t_infoProceso* sigElemento = elemMIMenor(marcoInicialSig);
-//		if (marcoInicialSig != sigElemento->posPagina) {
-//			modificarArchivo(sigElemento->posPagina,sigElemento->cantidadDePaginas, marcoInicialSig);
-//			sacarElemento(sigElemento->pid);
-//			aux = primerElemento->cantidadDePaginas;
-//			aux--;
-//            limpiarPosiciones(espacio,sigElemento->posPagina,aux);
-//		    primerElemento->posPagina = 0;
-//			sigElemento->posPagina = marcoInicialSig;
-//			list_add(espacioUtilizado, sigElemento);
-//			aux = primerElemento->cantidadDePaginas;
-//			aux--;
-//            setearPosiciones(espacio, sigElemento->posPagina,aux);
-//			primerElemento = sigElemento;
-//		} else {
-//			primerElemento = sigElemento;
+//	t_infoProceso* elem1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+//	int i;
+//	for (i = 0; i < cantElementos; i++) {
+//		elem1 = list_get(espacioUtilizado, i);
+//		if (elem1->posPagina >= marcoAComparar) {
+//			break;
 //		}
-//
 //	}
-//
-//    //sleep(config.retardo_compactacion); //TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
-//    log_info(activeLogger, "Compactación finalizada.");
+//	int j;
+//	for (j = 0; j < cantElementos; j++) {
+//		t_infoProceso* elem2 = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+//		elem2 = list_get(espacioUtilizado, j);
+//		if (elem2->posPagina >= marcoAComparar && elem1->posPagina > elem2->posPagina) {
+//			elem1 = elem2;
+//		}
+//	}
+//	return elem1;
 //}
+
+
+
 
 void compactar() //TODO MIRAR RESULTADO EN TESTCOMPACTACIONSWAP3()
 {
@@ -414,6 +369,8 @@ void compactar() //TODO MIRAR RESULTADO EN TESTCOMPACTACIONSWAP3()
 
 		}
 	}
+	//sleep(config.retardo_compactacion); //TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
+	   log_info(activeLogger, "Compactación finalizada.");
 
 }
 
@@ -541,7 +498,7 @@ char* buffer = malloc(config.tamanio_pagina + 1);
 	}
 
 //Me posiciono en la página que quiero leer y guardo lo que leo en el buffer
-	int marcoInicial = buscarMarcoInicial(pid); //TODO
+	int marcoInicial = buscarMarcoInicial(pid);
 	int marcoALeer = (marcoInicial + paginaALeer);
 	int exitoAlLeer = fseek(archivoSwap, marcoALeer, SEEK_SET);
 	fread(buffer, config.tamanio_pagina, 1, archivoSwap);
@@ -677,8 +634,8 @@ int main()
     testAgregarProceso1();
     testAgregarProceso2(); //TODO FALTA agregar FUNCIONANDO
     testLectura2();
-    testLectura3();
-    testLectura4();
+    testLectura3();  //TODO PROBLEMAS CON LEER ARCHIVO, NO SE LEE LO QUE QUIERO
+    testLectura4(); //TODO PROBLEMAS CON AGREGAR PROCESO
 
     espacioDisponible = config.cantidad_paginas;
     limpiarPosiciones (espacio,0,config.cantidad_paginas);
@@ -1197,7 +1154,7 @@ void testAgregarProceso2() //TODO PROBLEMAS CON AGREGAR PAGINA YA QUE NO PASA EL
 
 
 
-void testLectura2() //TODO MEJORAR Y VER QUE SE ESCRIBE EN EL ARCHIVO
+void testLectura2()
 {
 	printf("******************testLectura2 ha comenzado***********************\n");
 	t_infoProceso* proceso1 = (t_infoProceso*) malloc(sizeof(t_infoProceso));

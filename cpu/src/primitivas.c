@@ -247,9 +247,7 @@ t_puntero_instruccion retornar(t_valor_variable variable) {
 }
 
 int digitosDe(t_valor_variable valor) {
-	bool esPositivo = valor > 0;
-	int digitos = snprintf(0, 0, "%d", valor);
-	return esPositivo ? digitos : digitos + 1;
+	return snprintf(0, 0, "%d", valor);
 }
 
 // Directiva 10

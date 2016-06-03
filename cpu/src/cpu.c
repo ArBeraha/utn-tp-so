@@ -391,8 +391,6 @@ void handler(int sign) {
 }
 
 int main() {
-
-	signal(SIGUSR1,handler);
 	inicializar();
 
 	//conectarse a umc

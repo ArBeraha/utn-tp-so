@@ -7,6 +7,7 @@
 #include "swap.h"
 
 /****************************************TEST***************************************************************/
+
 void testSwapDeBitArray1() //No hay espacio para el proceso, hay que compactar
 {
 
@@ -306,6 +307,7 @@ void testFinalizarProceso3() //No esta el proceso
 			list_clean(espacioUtilizado);
 }
 
+
 void testAgregarProceso1()
 {
 	printf("******************testAgregarProceso1 ha comenzado***********************\n");
@@ -346,6 +348,7 @@ void testAgregarProceso1()
 	limpiarPosiciones (espacio,0,config.cantidad_paginas);
 	list_clean(espacioUtilizado);
 }
+
 
 void testAgregarProceso2() //TODO PROBLEMAS CON AGREGAR PAGINA YA QUE NO PASA EL IF
 {
@@ -413,6 +416,7 @@ void testAgregarProceso2() //TODO PROBLEMAS CON AGREGAR PAGINA YA QUE NO PASA EL
 
 
 
+
 	algo= primerEspacioLibre(espacio);
 	  printf("La primera pagina libre es %d \n", algo);
 	  for(i=0;i<config.cantidad_paginas;i++)
@@ -431,9 +435,14 @@ void testAgregarProceso2() //TODO PROBLEMAS CON AGREGAR PAGINA YA QUE NO PASA EL
 	    	  	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
 	    	  		 procesoAImprimir2->posPagina, procesoAImprimir2->pid, procesoAImprimir2->cantidadDePaginas);
 
-	    	procesoAImprimir3=buscarProceso(12);
+	    	procesoAImprimir3=buscarProceso(9);
 	    	    	  	printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
 	    	    	  		 procesoAImprimir3->posPagina, procesoAImprimir3->pid, procesoAImprimir3->cantidadDePaginas);
+
+	    t_infoProceso* procesoAImprimir4=malloc(sizeof(t_infoProceso));
+	    procesoAImprimir4=buscarProceso(7);
+	    printf("el proceso en el marco %d es el %d que ocupa %d paginas\n",
+	    	    	    	  		 procesoAImprimir4->posPagina, procesoAImprimir4->pid, procesoAImprimir4->cantidadDePaginas);
 
 
 
@@ -441,6 +450,13 @@ void testAgregarProceso2() //TODO PROBLEMAS CON AGREGAR PAGINA YA QUE NO PASA EL
 	  limpiarPosiciones (espacio,0,config.cantidad_paginas);
 	  list_clean(espacioUtilizado);
 }
+
+
+
+
+
+
+
 
 //************TESTS BETA MALISIMOS************* //TODO HAY QUE MEJORARLOS
 
@@ -490,6 +506,11 @@ void testAgregarProceso2() //TODO PROBLEMAS CON AGREGAR PAGINA YA QUE NO PASA EL
 //
 //	escribirPaginaParaTests(5,0,5);
 //}
+
+
+
+
+
 
 void testLectura2()
 {
@@ -575,7 +596,7 @@ void testLectura4()
 	crear_archivo();
 	int algo=0;
 		int i=0;
-	  printf("******************testSwapDeCompactacion4 ha comenzado***********************\n");
+	  printf("******************testLectura4 ha comenzado***********************\n");
 	  bitarray_set_bit(espacio, 0);
 	  bitarray_set_bit(espacio, 1);
 	  bitarray_set_bit(espacio, 2);

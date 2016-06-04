@@ -57,11 +57,12 @@ void esperar_programas() {
 	if (config.DEBUG_NO_PROGRAMS) {
 		log_debug(activeLogger,
 				"DEBUG NO PROGRAMS activado! Ignorando programas...");
-	}
-	while (!terminar && !config.DEBUG_NO_PROGRAMS) {	//mientras no tenga que terminar
-		header = recv_waitall_ws(cliente_nucleo, 1);
-		procesarHeader(header);
-		free(header);
+	}else{
+		while (!terminar) {	//mientras no tenga que terminar
+			header = recv_waitall_ws(cliente_nucleo, 1);
+			procesarHeader(header);
+			free(header);
+		}
 	}
 	log_debug(bgLogger, "Ya no se esperan programas de nucleo.");
 }
@@ -215,17 +216,6 @@ void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 	free(sentenciaAux);
 }
 
-void esperar_sentencia() {
-	log_info(activeLogger, "Esperando sentencia de UMC...");
-	char* header = recv_waitall_ws(cliente_umc, sizeof(char));
-
-	log_info(activeLogger, "Sentencia de UMC recibida...");
-	procesarHeader(header);
-
-
-	free(header);
-}
-
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	char* pcb = recv_waitall_ws(cliente_nucleo, sizeof(t_PCB));
 	deserializar_PCB(pcbActual, pcb);//reemplazo en el pcb actual de cpu que tiene como variable global
@@ -233,8 +223,6 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	stack = pcbActual->SP;
 
 	free(pcb);
-	pedir_sentencia();
-	esperar_sentencia();
 }
 
 void enviarPCB() {
@@ -246,6 +234,7 @@ void enviarPCB() {
 }
 
 void obtener_y_parsear() {
+	pedir_sentencia();
 	char* tamanioSentencia = recv_waitall_ws(cliente_umc, sizeof(int));
 	int tamanio = char4ToInt(tamanioSentencia);
 	free(tamanioSentencia);

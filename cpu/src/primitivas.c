@@ -308,7 +308,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 	enviarHeader(cliente_nucleo,HeaderWait);
 
 	enviarLargoYString(cliente_nucleo,identificador_semaforo);
-
+	//Si el proceso no pudiese seguir, nucleo al bloquearlo lo para con un header enviado a procesarHeader.
 
 	incrementarPC(pcbActual);
 	instruccionTerminada("wait");

@@ -7,22 +7,26 @@
 #include "cpu.h"
 
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
+void setearPC(t_PCB* pcb, int pc) {
+	log_info(activeLogger, "Actualizando PC de |%d| a |%d|.", pcb->PC, pc);
+	pcb->PC = pc;
+}
+
+void incrementarPC(t_PCB* pcb) {
+	setearPC(pcb, (pcb->PC) + 1);
+}
+
 void informarInstruccionTerminada() {
 	// Le aviso a nucleo que termino una instruccion, para que calcule cuanto quantum le queda al proceso ansisop.
 	enviarHeader(cliente_nucleo,headerTermineInstruccion);
 	// Acá nucleo tiene que mandarme el header que corresponda, segun si tengo que seguir ejecutando instrucciones o tengo que desalojar.
 }
-void setearPC(t_PCB* pcb, int pc) {
-	log_info(activeLogger, "Actualizando PC de |%d| a |%d|.", pcb->PC, pc);
-	pcb->PC = pc;
-}
-void incrementarPC(t_PCB* pcb) {
-	setearPC(pcb, (pcb->PC) + 1);
-}
 
 void instruccionTerminada(char* instr) {
 	log_debug(activeLogger, "La instruccion |%s| finalizó OK.", instr);
+	informarInstruccionTerminada();
 }
+
 void desalojarProceso() {
 	char* pcb = NULL;
 	int size = serializar_PCB(pcb, pcbActual);

@@ -19,7 +19,6 @@ t_puntero definir_variable(t_nombre_variable variable) {
 	stack_push(stack, head);
 
 	instruccionTerminada("Definir_variable");
-	informarInstruccionTerminada();
 	return head->posicion;
 }
 
@@ -66,7 +65,6 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 
 	incrementarPC(pcbActual);
 	instruccionTerminada("obtener_posicion_de");
-	informarInstruccionTerminada();
 	return pointer;
 }
 
@@ -104,7 +102,7 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 
 		free(resultado);
 		incrementarPC(pcbActual);
-		informarInstruccionTerminada();
+
 		instruccionTerminada("Dereferenciar");
 	}
 	free(stackOverflowFlag);
@@ -124,7 +122,6 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 
 	incrementarPC(pcbActual);
 	instruccionTerminada("Asignar.");
-	informarInstruccionTerminada();
 }
 
 // Directiva 5
@@ -145,7 +142,6 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 	free(value);
 	incrementarPC(pcbActual);
 	instruccionTerminada("Obtener_valor_compartida");
-	informarInstruccionTerminada();
 	return valor;
 }
 
@@ -178,7 +174,6 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 
 	incrementarPC(pcbActual);
 	instruccionTerminada("asignar_valor_compartida");
-	informarInstruccionTerminada();
 	return valorVarCompartida;
 }
 
@@ -204,7 +199,6 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	}
 	setearPC(pcbActual, posicionPrimeraInstrUtil);
 	instruccionTerminada("ir_al_label");
-	informarInstruccionTerminada();
 	//return posicionPrimeraInstrUtil;
 }
 
@@ -226,7 +220,6 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar)
 
 	setearPC(pcbActual, posicionFuncion);
 	instruccionTerminada("llamar_con_retorno");
-	informarInstruccionTerminada();
 }
 
 //Directiva 9
@@ -241,7 +234,6 @@ t_puntero_instruccion retornar(t_valor_variable variable) {
 	stack_item_destroy(head);
 	setearPC(pcbActual, retorno);
 	instruccionTerminada("Retornar");
-	informarInstruccionTerminada();
 	return retorno;
 }
 
@@ -258,7 +250,6 @@ void imprimir(t_valor_variable valor) { //fixme, no era distinto esto?
 	send_w(cliente_nucleo, intToChar4(valor), sizeof(t_valor_variable));
 	incrementarPC(pcbActual);
 	instruccionTerminada("Imprimir");
-	informarInstruccionTerminada();
 	//return digitosDe(valor);
 }
 
@@ -276,7 +267,6 @@ void imprimir_texto(char* texto) {
 
 	incrementarPC(pcbActual);
 	instruccionTerminada("Imprimir texto");
-	informarInstruccionTerminada();
 	//return strlen(texto); //Size tiene el \0, que no se imprime.
 }
 
@@ -296,7 +286,6 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo) {
 
 	incrementarPC(pcbActual);
 	instruccionTerminada("Entrada-Salida");
-	informarInstruccionTerminada();
 }
 
 
@@ -312,7 +301,6 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 
 	incrementarPC(pcbActual);
 	instruccionTerminada("wait");
-	informarInstruccionTerminada();
 }
 
 // Directiva 14
@@ -325,7 +313,6 @@ void signal_con_semaforo(t_nombre_semaforo identificador_semaforo) {
 
 	incrementarPC(pcbActual);
 	instruccionTerminada("Signal");
-	informarInstruccionTerminada();
 }
 
 /* ------ Funciones para usar con el parser ----- */

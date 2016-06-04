@@ -28,7 +28,7 @@
 /* ---------- INICIO DEBUG ---------- */
 int socketConsola, socketCPU, activadoCPU, activadoConsola, umc;
 struct sockaddr_in direccionConsola, direccionCPU, direccionUMC;
-unsigned int tamanioDireccionConsola, tamanioDireccionCPU;
+unsigned int tamanioDireccionConsola, tamanioDireccionCPU, tamanio_pagina;
 // Hilos
 pthread_t hiloCrearProcesos, hiloBloqueos, hiloPlanificacion;
 pthread_attr_t detachedAttr; // Config para todos los hilos!
@@ -106,11 +106,13 @@ void destruirIO(t_IO* io);
 void destruirIOs();
 void destruirCompartida(int* compartida);
 void destruirCompartidas();
+void atenderHandshake(int cliente);
 // UMC
 bool pedirPaginas(int PID, char* codigo);
 void establecerConexionConUMC();
 void conectarAUMC();
 void handshakearUMC();
+void recibirTamanioPagina();
 // Consola
 char* getScript(int consola);
 // Procesos

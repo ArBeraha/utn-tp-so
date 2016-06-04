@@ -74,9 +74,17 @@ void conectarAUMC() {
 		log_info(activeLogger, "Conexion a la UMC correcta :).");
 		handshakearUMC();
 		log_info(activeLogger, "Handshake con UMC finalizado exitosamente.");
+		recibirTamanioPagina();
+		log_info(activeLogger, "Recibido el tamaño de pagina:%d",tamanio_pagina);
 	} else {
 		warnDebug();
 	}
+}
+void recibirTamanioPagina(){
+	char* serialTamanio = malloc(sizeof(int));
+	serialTamanio = recv_waitall_ws(umc,sizeof(int));
+	tamanio_pagina = char4ToInt(serialTamanio);
+	free(serialTamanio);
 }
 /*  ----------INICIO CONSOLA ---------- */
 char* getScript(int consola) {
@@ -118,6 +126,7 @@ void inicializar() {
 	log_info(activeLogger, "INICIALIZANDO");
 	espera.tv_sec = 2;
 	espera.tv_usec = 500000;
+	tamanio_pagina=100;
 	listaProcesos = list_create();
 	colaCPU = queue_create();
 	colaListos = queue_create();
@@ -212,10 +221,25 @@ void destruirCompartidas() {
 	dictionary_destroy_and_destroy_elements(tablaGlobales,
 			(void*) destruirSemaforo);
 }
+void atenderHandshake(int cliente){
+	log_debug(bgLogger, "Llego un handshake");
+	char* header = malloc(sizeof(char));
+	read(clientes[cliente].socket, header, sizeof(char));
+	if ((charToInt(header) == SOYCONSOLA) || (charToInt(header) == SOYCPU)) {
+		log_debug(bgLogger, "Es un cliente apropiado! Respondiendo handshake");
+		clientes[cliente].identidad = charToInt(header);
+		enviarHeader(clientes[cliente].socket, SOYNUCLEO);
+	} else {
+		log_error(activeLogger,
+				"No es un cliente apropiado! rechazada la conexion");
+		log_warning(activeLogger, "Se quitará al cliente %d.", cliente);
+		quitarCliente(cliente);
+	}
+	free(header);
+	clientes[cliente].atentido = false;
+}
 void procesarHeader(int cliente, char *header) {
 	// Segun el protocolo procesamos el header del mensaje recibido
-	char* payload;
-	int payload_size;
 	log_debug(bgLogger, "Llego un mensaje con header %d", charToInt(header));
 	clientes[cliente].atentido = true;
 
@@ -227,26 +251,7 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderHandshake:
-		log_debug(bgLogger, "Llego un handshake");
-		payload_size = 1;
-		payload = malloc(payload_size);
-		read(clientes[cliente].socket, payload, payload_size);
-		log_debug(bgLogger, "Llego un mensaje con payload %d",
-				charToInt(payload));
-		if ((charToInt(payload) == SOYCONSOLA)
-				|| (charToInt(payload) == SOYCPU)) {
-			log_debug(bgLogger,
-					"Es un cliente apropiado! Respondiendo handshake");
-			clientes[cliente].identidad = charToInt(payload);
-			enviarHeader(clientes[cliente].socket, SOYNUCLEO);
-		} else {
-			log_error(activeLogger,
-					"No es un cliente apropiado! rechazada la conexion");
-			log_warning(activeLogger, "Se quitará al cliente %d.", cliente);
-			quitarCliente(cliente);
-		}
-		free(payload);
-		clientes[cliente].atentido = false;
+		atenderHandshake(cliente);
 		break;
 
 	case HeaderImprimirVariableNucleo:

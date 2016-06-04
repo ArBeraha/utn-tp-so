@@ -7,7 +7,6 @@
 #include <parser/metadata_program.h>
 #include <math.h>
 #include "nucleo.h"
-int tamanio_pagina = 20; // TODO obtenerlo despues del handshake
 
 /*  ----------INICIO PROCESOS---------- */
 void rechazarProceso(int PID) {

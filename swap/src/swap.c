@@ -427,13 +427,12 @@ void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
 void agregarProceso(int pid, int paginasAIniciar) {
 
 	//Recorro  espacio disponible hasta que encuentro un elemento que tenga la cantidad de marcas necesarios //REFACTOR
-	int cantidadHuecos = espaciosDisponibles (espacio);
 	int i;
 	int totalMarcos=0;
 	int marcoInicial=0;
 	int aux=0;
 	//Recorro el bitarray hasta que encuentro un hueco ocupado
-	for (i = 0; i < cantidadHuecos; i++)
+	for (i = 0; i < config.cantidad_paginas; i++)
 	{
 		//Recorro el bitarray hasta que encuentro un hueco
 		//BUSCO MIENTRAS ESTE VACIO, CUANDO ENCUENTRO OCUPADO PONGO EN 0 LOS MARCOS ENCONTRADOS, PERO MIENTRAS ME FIJO QUE EL SIGUIENTE
@@ -444,6 +443,7 @@ void agregarProceso(int pid, int paginasAIniciar) {
 			marcoInicial = (++aux);
 			totalMarcos=0;
 		}
+		printf("Cantidad de marcos %d\n", totalMarcos);
         //Si ese hueco me permite alojar las paginas
 		if (totalMarcos>= paginasAIniciar)
 		{
@@ -650,3 +650,5 @@ int main()
 
 	return 0;
 }
+
+

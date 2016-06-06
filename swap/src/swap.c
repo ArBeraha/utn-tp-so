@@ -439,62 +439,6 @@ void agregarProceso(int pid, int paginasAIniciar) {
 		printf("Error Nunca debio llegar acá al agregar Proceso\n");
 }
 
-void agregarProcesoViejo(int pid, int paginasAIniciar) {
-	//Recorro  espacio disponible hasta que encuentro un elemento que tenga la cantidad de marcas necesarios //REFACTOR
-	int i;
-	int totalMarcos=0;
-	int marcoInicial=0;
-	int aux=0;
-	//Recorro el bitarray hasta que encuentro un hueco ocupado
-	for (i = 0; i < config.cantidad_paginas; i++)
-	{
-		//Recorro el bitarray hasta que encuentro un hueco
-		//BUSCO MIENTRAS ESTE VACIO, CUANDO ENCUENTRO OCUPADO PONGO EN 0 LOS MARCOS ENCONTRADOS, PERO MIENTRAS ME FIJO QUE EL SIGUIENTE
-		//PODRIA SER MI MARCO INICIAL
-		if(bitarray_test_bit(espacio,i)==0) totalMarcos++;
-		if(bitarray_test_bit(espacio,i)) {
-			aux=i;
-			marcoInicial = (++aux);
-			totalMarcos=0;
-		}
-		printf("Cantidad de marcos %d\n", totalMarcos);
-        //Si ese hueco me permite alojar las paginas
-		if (totalMarcos>= paginasAIniciar)
-		{
-			//alojo el proceso (marco como ocupado)
-			setearPosiciones(espacio,marcoInicial,paginasAIniciar);
-			//Definimos la estructura del nuevo proceso con los datos correspondientes y lo agregamos al espacio utilizado
-			t_infoProceso* proceso = (t_infoProceso*) malloc(sizeof(t_infoProceso));
-			proceso->pid = pid;
-			proceso->posPagina = marcoInicial;
-			proceso->cantidadDePaginas = paginasAIniciar;
-			int fueAgregado = list_add(espacioUtilizado,(void*) proceso);
-			if (fueAgregado == -1) {
-				printf("Hubo un error al iniciar el proceso\n");
-				send_w(cliente, headerToMSG(HeaderErrorParaIniciar), 1);
-				return;
-			} else {
-				printf("Proceso agregado exitosamente\n");
-				//Actualizo el espacio disponible
-				espacioDisponible -= paginasAIniciar;
-				log_info(activeLogger,
-						"El programa %d cuyo Marco Inicial es:%d y su Tamanio es:%d paginas fue Iniciado correctamente.",
-						pid, proceso->posPagina,
-						proceso->cantidadDePaginas );
-				send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
-				return;
-
-		     }
-		}
-	}
-	printf("Hay que compactar\n");
-	send_w(cliente, headerToMSG(HeaderHayQueCompactar), 1);
-	return;
-  }
-
-
-
-
 void leerPagina(int pid, int paginaALeer) {
 
 	char* buffer = malloc(config.tamanio_pagina + 1);

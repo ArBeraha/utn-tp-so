@@ -158,7 +158,7 @@ int espaciosUtilizados (t_bitarray* unEspacio){
   int espacioUtilizado=0;
   for(i=0; i<config.cantidad_paginas; i++)
   {
-	  if (bitarray_test_bit(unEspacio, i)==0) espacioUtilizado++ ;
+	  if (bitarray_test_bit(unEspacio, i)==1) espacioUtilizado++ ;
   }
   return espacioUtilizado;
 }
@@ -167,28 +167,18 @@ int espaciosUtilizados (t_bitarray* unEspacio){
 void limpiarPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioProceso){
 	int i=0;
 	for(i=posicionInicial; i < posicionInicial+tamanioProceso; i++) bitarray_clean_bit(unEspacio, i);
+	espacioDisponible += tamanioProceso;
 }
 
 void setearPosiciones (t_bitarray* unEspacio, int posicionInicial, int tamanioProceso){
 	int i=0;
 	for(i=posicionInicial; i < posicionInicial+tamanioProceso; i++) bitarray_set_bit(unEspacio, i);
+	espacioDisponible -= tamanioProceso;
 }
-
 
 //Comprueba si hay fragmentacion externa
 int hayQueCompactar(int paginasAIniciar) {
-	int cantidadDePaginas = config.cantidad_paginas;
-	int i=0;
-	int flag = 1;
-	int marcos;
-	for (i = 0; i < cantidadDePaginas; i++) {
-		if(bitarray_test_bit(espacio,i)==0) marcos++;
-		else marcos=0;
-		if (marcos>= paginasAIniciar) {
-			flag = 0;
-		}
-	}
-	return flag;
+	return (buscarEspacio(paginasAIniciar)==-1);
 }
 /*************************Solo para test***********************************************/
 
@@ -224,19 +214,13 @@ int estaEnArray(t_infoProceso* unDatoProceso)
 
 int primerEspacioLibre(t_bitarray* unEspacio)
 {
-
-    int aux=0;
-    int i=0;
+    int i;
 	for(i=0; i<config.cantidad_paginas; i++)
 	  {
 		  if (bitarray_test_bit(unEspacio, i)==0)
-		  {
-			  aux=i;
-			  break;
-		  }
-
+			  return i;
 	  }
-	return aux;
+	return 0;
 }
 
 
@@ -424,8 +408,38 @@ void asignarEspacioANuevoProceso(int pid, int paginasAIniciar){
 			}
 }
 
-void agregarProceso(int pid, int paginasAIniciar) {
+int buscarEspacio(int paginasAIniciar) {
+	int i, espacioTotal = 0;
+	for (i = 0; i < config.cantidad_paginas; i++) {
+		if (bitarray_test_bit(espacio, i))
+			espacioTotal = 0;
+		else {
+			if (++espacioTotal > paginasAIniciar) {
+				return i - paginasAIniciar;
+			}
+		}
+	}
+	return -1;
+}
 
+void agregarProceso(int pid, int paginasAIniciar) {
+	//  en asignarEspacioANuevoProceso se chequeo que va a haber espacio si o si
+	int marcoInicial = buscarEspacio(paginasAIniciar);
+	if (marcoInicial > 0) {
+		setearPosiciones(espacio, marcoInicial, paginasAIniciar);
+		//Definimos la estructura del nuevo proceso con los datos correspondientes y lo agregamos al espacio utilizado
+		t_infoProceso* proceso = (t_infoProceso*) malloc(sizeof(t_infoProceso));
+		proceso->pid = pid;
+		proceso->posPagina = marcoInicial;
+		proceso->cantidadDePaginas = paginasAIniciar;
+		list_add(espacioUtilizado, (void*) proceso);
+		printf("Proceso agregado exitosamente\n");
+		send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
+	} else
+		printf("Error Nunca debio llegar acá al agregar Proceso\n");
+}
+
+void agregarProcesoViejo(int pid, int paginasAIniciar) {
 	//Recorro  espacio disponible hasta que encuentro un elemento que tenga la cantidad de marcas necesarios //REFACTOR
 	int i;
 	int totalMarcos=0;
@@ -471,15 +485,10 @@ void agregarProceso(int pid, int paginasAIniciar) {
 				return;
 
 		     }
-
 		}
 	}
-
-
 	printf("Hay que compactar\n");
-
 	send_w(cliente, headerToMSG(HeaderHayQueCompactar), 1);
-
 	return;
   }
 
@@ -488,8 +497,7 @@ void agregarProceso(int pid, int paginasAIniciar) {
 
 void leerPagina(int pid, int paginaALeer) {
 
-
-char* buffer = malloc(config.tamanio_pagina + 1);
+	char* buffer = malloc(config.tamanio_pagina + 1);
 
 //Abro el archivo de Swap
 	archivoSwap = fopen(config.nombre_swap, "r");
@@ -505,8 +513,9 @@ char* buffer = malloc(config.tamanio_pagina + 1);
 	fclose(archivoSwap);
 	usleep(config.retardo_acceso);
 	//mirar si no se puede leer
-	log_info(activeLogger, "El programa %d cuyo Marco Inicial es:%d de Tamanio:%d .Contenido:%s. Lectura realizada correctamente.",
-			pid, marcoInicial , string_length(buffer), buffer);
+	log_info(activeLogger,
+			"El programa %d cuyo Marco Inicial es:%d de Tamanio:%d .Contenido:%s. Lectura realizada correctamente.",
+			pid, marcoInicial, string_length(buffer), buffer);
 	if (exitoAlLeer == 0) // si se leyo bien la pagina
 			{
 		send_w(cliente, headerToMSG(HeaderLecturaCorrecta), 1);
@@ -517,7 +526,7 @@ char* buffer = malloc(config.tamanio_pagina + 1);
 		printf("Lectura exitosa : %s\n", buffer);
 
 	} else {
-		send_w(cliente,headerToMSG(HeaderLecturaErronea), 1);
+		send_w(cliente, headerToMSG(HeaderLecturaErronea), 1);
 		printf("Error al intentar leer\n");
 
 	}
@@ -540,6 +549,8 @@ void escribirPagina(int pid, int paginaAEscribir, int tamanio) {
 	for (i = tamanio; i < config.tamanio_pagina; i++) {
 		texto[i] = '\0';
 	}
+	//bzero(texto[tamanio],config.tamanio_pagina-tamanio);
+
 	//Me posiciono en la página que quiero escribir y escribo
 	int marcoInicial = buscarMarcoInicial(pid);
 	int marcoAEscribir = (marcoInicial + paginaAEscribir); //TODO: marcoAEscribir señala el final del marco
@@ -571,8 +582,6 @@ void finalizarProceso(int pid) {
 	if (estaElProceso(pid))
 	{
 	 proceso = buscarProceso(pid);
-     //Actualizo la variable espacioDisponible
-	 espacioDisponible += proceso->cantidadDePaginas;
 	 limpiarPosiciones (espacio, proceso->posPagina, proceso->cantidadDePaginas);
 	 sacarElemento(pid);
      usleep(config.retardo_acceso);
@@ -593,7 +602,6 @@ void finalizarProceso(int pid) {
 }
 
 void esperar_peticiones(){
-
 	char* header;
 	while (1){
 		header=recv_waitall_ws(cliente,1);

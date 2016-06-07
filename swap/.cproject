@@ -28,7 +28,7 @@
 								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.exe.debug.option.optimization.level.220416082" name="Optimization Level" superClass="gnu.c.compiler.exe.debug.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.exe.debug.option.debugging.level.822878130" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.342633376" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/compartido/code}&quot;"/>
+									<listOptionValue builtIn="false" value="../../compartido/code"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1093554241" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -38,7 +38,7 @@
 									<listOptionValue builtIn="false" value="cunit"/>
 								</option>
 								<option id="gnu.c.link.option.paths.2064271325" name="Library search path (-L)" superClass="gnu.c.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/compartido/code}&quot;"/>
+									<listOptionValue builtIn="false" value="../../compartido/code"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.96496407" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -48,7 +48,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.728790395" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug"/>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.640828324" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
 								<option id="gnu.both.asm.option.include.paths.1961937100" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/compartido/code}&quot;"/>
+									<listOptionValue builtIn="false" value="../../compartido/code"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1509347664" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>

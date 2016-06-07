@@ -41,6 +41,7 @@ typedef struct customConfig {
 	int DEBUG_IGNORE_UMC;
 	int DEBUG_NO_PROGRAMS;
 	int DEBUG_RAISE_LOG_LEVEL;
+	int DEBUG_RUN_TEST;
 } customConfig_t;
 
 typedef enum {
@@ -95,6 +96,7 @@ void enviarPCB();
 void obtener_y_parsear();
 void lanzar_excepcion();
 bool esExcepcion(char* cad);
+void handler(int sign);
 
 // ***** Funciones de conexiones ***** //
 int getHandshake(int cli);
@@ -110,9 +112,12 @@ void establecerConexionConNucleo();
 void cargarConfig();
 void inicializar();
 void finalizar();
-void handler(int sign);
 
 
+// Tests
+void correrTests();  //De cpu.c
+int testear(int (*suite)(void)); //De test.c
+int test_cpu(); //De test.c
 
 
 

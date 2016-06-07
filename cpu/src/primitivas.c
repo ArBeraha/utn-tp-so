@@ -8,8 +8,9 @@
 #include "primitivas.h"
 /*--------Primitivas----------*/
 
-// Directiva 1.
-//cambiar el valor de retorno a t_puntero.
+/**
+ * Directiva 1
+ */
 t_puntero definir_variable(t_nombre_variable variable) {
 	incrementarPC(pcbActual);
 
@@ -22,25 +23,10 @@ t_puntero definir_variable(t_nombre_variable variable) {
 	return head->posicion;
 }
 
-bool esVariableDeclarada(t_stack_item* item, t_nombre_variable* variable) {
-	return dictionary_has_key(item->identificadores, variable);
-}
 
-bool esParametro(t_nombre_variable variable) {
-	return (variable >= '0' && variable <= '9');
-}
-
-int tipoVaraible(t_nombre_variable variable, t_stack_item* head) {
-	if (esVariableDeclarada(head, &variable)) {
-		return DECLARADA;
-	} else {
-		if (esParametro(variable)) {
-			return PARAMETRO;
-		}
-	}
-	return NOEXISTE;
-}
-
+/**
+ * Directiva 2
+ */
 t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	log_info(activeLogger, "Obtener posicion de |%c|.", variable);
 	t_puntero pointer;
@@ -68,20 +54,10 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	return pointer;
 }
 
-void enviar_direccion_umc(t_puntero direccion) {
 
-	t_stack_item* stackItem = stack_get(pcbActual->SP, direccion);
-	t_pedido pedido = stackItem->valorRetorno;
-
-	char* mensaje = string_new();
-	serializar_pedido(mensaje, &pedido);
-
-	send_w(cliente_umc, mensaje, sizeof(t_pedido)); // envio el pedido [pag,offset,size]
-
-	free(mensaje);
-}
-
-// directiva 3
+/**
+ * Directiva 3
+ */
 t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de la variable de direccion
 	t_valor_variable valor;
 	log_info(activeLogger, "Dereferenciar |%d|.", direccion);
@@ -110,7 +86,10 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 	return valor;
 }
 
-// Directiva 4
+
+/**
+ * Directiva 4
+ */
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	log_info(activeLogger, "Asignando en |%d| el valor |%d|",
 			direccion_variable, valor);
@@ -124,7 +103,10 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	instruccionTerminada("Asignar.");
 }
 
-// Directiva 5
+
+/**
+ * Directiva 5
+ */
 t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartida) { // Pido a Nucleo el valor de la variable
 	log_info(activeLogger, "Obtener valor de variable compartida |%s|.",nombreVarCompartida);
 	t_valor_variable valor;
@@ -145,7 +127,10 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 	return valor;
 }
 
-//Directiva 6
+
+/**
+ * Directiva 6
+ */
 t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartida, t_valor_variable valorVarCompartida) {
 	log_info(activeLogger, //envio el nombre de la variable
 			"Asignar el valor |%d| a la variable compartida |%s|.",
@@ -177,11 +162,10 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 	return valorVarCompartida;
 }
 
-bool existeLabel(t_nombre_etiqueta etiqueta) {
-	return dictionary_has_key(pcbActual->indice_etiquetas, etiqueta);
-}
 
-//Directiva 7
+/**
+ * Directiva 7
+ */
 // fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
 void irAlLabel(t_nombre_etiqueta etiqueta) {
 	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
@@ -202,7 +186,9 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	//return posicionPrimeraInstrUtil;
 }
 
-//Directiva 8
+/**
+ * Directiva 8
+ */
 //Cambio respecto de la version inicial del enunciado! esta version es acorde a la nueva.
 void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar) {
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
@@ -222,7 +208,9 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar)
 	instruccionTerminada("llamar_con_retorno");
 }
 
-//Directiva 9
+/**
+ * Directiva 9
+ */
 t_puntero_instruccion retornar(t_valor_variable variable) {
 	t_stack_item* head = stack_pop(stack);
 	t_puntero_instruccion retorno = head->posicionRetorno;
@@ -237,11 +225,10 @@ t_puntero_instruccion retornar(t_valor_variable variable) {
 	return retorno;
 }
 
-int digitosDe(t_valor_variable valor) {
-	return snprintf(0, 0, "%d", valor);
-}
 
-// Directiva 10
+/**
+ * Directiva 10
+ */
 // fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
 void imprimir(t_valor_variable valor) { //fixme, no era distinto esto?
 	log_info(activeLogger, "Imprimir |%d|", valor);
@@ -253,7 +240,10 @@ void imprimir(t_valor_variable valor) { //fixme, no era distinto esto?
 	//return digitosDe(valor);
 }
 
-//Directiva 11
+
+/**
+ * Directiva 11
+ */
 // fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
 void imprimir_texto(char* texto) {
 
@@ -270,7 +260,10 @@ void imprimir_texto(char* texto) {
 	//return strlen(texto); //Size tiene el \0, que no se imprime.
 }
 
-// Directiva 12
+
+/**
+ * Directiva 12
+ */
 //cambiar valor de retorno a int
 void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo) {
 	log_info(activeLogger,"Informar a nucleo que el programa quiere usar |%s| durante |%d| unidades de tiempo",
@@ -289,7 +282,9 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo) {
 }
 
 
-// Directiva 13
+/**
+ * Directiva 13
+ */
 void wait(t_nombre_semaforo identificador_semaforo) {
 	log_info(activeLogger, "Comunicar nucleo de hacer wait con semaforo: |%s|",
 			identificador_semaforo);
@@ -303,7 +298,10 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 	instruccionTerminada("wait");
 }
 
-// Directiva 14
+
+/**
+ * Directiva 14
+ */
 void signal_con_semaforo(t_nombre_semaforo identificador_semaforo) {
 	log_info(activeLogger,"Comunicar nucleo de hacer signal con semaforo: |%s|",identificador_semaforo);
 

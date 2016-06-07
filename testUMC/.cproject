@@ -28,8 +28,8 @@
 								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.exe.debug.option.optimization.level.1175830192" name="Optimization Level" superClass="gnu.c.compiler.exe.debug.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.exe.debug.option.debugging.level.822076985" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1911983896" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/compartido/code}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/umc/src}&quot;"/>
+									<listOptionValue builtIn="false" value="../../compartido/code"/>
+									<listOptionValue builtIn="false" value="../../umc/src"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.469912446" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -40,7 +40,7 @@
 									<listOptionValue builtIn="false" value="cunit"/>
 								</option>
 								<option id="gnu.c.link.option.paths.1924102550" name="Library search path (-L)" superClass="gnu.c.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/compartido/code}&quot;"/>
+									<listOptionValue builtIn="false" value="../../compartido/code"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.339627578" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>

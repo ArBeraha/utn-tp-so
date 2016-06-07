@@ -32,9 +32,11 @@
 #include "commonTypes.h"
 #include "serializacion.h"
 #include "cpu.h"
+#include "auxiliaresDePrimitivas.h"
+
+
 
 /* ------ Primitivas ----- */
-
 t_puntero definir_variable(t_nombre_variable variable);
 t_puntero obtener_posicion_de(t_nombre_variable variable);
 t_valor_variable dereferenciar(t_puntero direccion);
@@ -49,14 +51,6 @@ void imprimir_texto(char* texto);
 void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo);
 void wait(t_nombre_semaforo identificador_semaforo);
 void signal_con_semaforo(t_nombre_semaforo identificador_semaforo);
-
-/* ------Auxiliares ----- */
-bool esVariableDeclarada(t_stack_item* item, t_nombre_variable* variable);
-bool esParametro(t_nombre_variable variable);
-int tipoVaraible(t_nombre_variable variable, t_stack_item* head);
-void enviar_direccion_umc(t_puntero direccion);
-bool existeLabel(t_nombre_etiqueta etiqueta);
-int digitosDe(t_valor_variable valor);
 
 
 /* ------ Funciones para usar con el parser ----- */

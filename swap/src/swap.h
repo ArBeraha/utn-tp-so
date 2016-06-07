@@ -50,6 +50,11 @@ int espacioDisponible, espacioOcupado, fd, archivoEnPaginas, cliente;
 FILE* archivoSwap;
 
 /*****PROTOTIPOS******/
+void operacionHandshake();
+void operacionIniciarProceso();
+void operacionEscritura();
+void operacionLectura();
+void operacionFinalizar();
 void asignarEspacioANuevoProceso(int, int);
 void agregarProceso(int, int);
 char* leerPagina(int);

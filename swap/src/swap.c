@@ -7,6 +7,7 @@
 
 #include "swap.h"
 
+//
 void inicializar() {
 	crearLogs("SWAP", "SWAP", 0);
 	crearLogs(string_from_format("swap_%d", getpid()), "SWAP", 0);
@@ -61,11 +62,7 @@ void conectar_umc() {
 	log_info(activeLogger, "Conexion a UMC correcta :)\n.");
 }
 void procesarHeader(int cliente, char* header) {
-	char* payload;
-	int payload_size;
 	log_debug(bgLogger, "Llego un mensaje con header %d", charToInt(header));
-	char* pedido = malloc(sizeof(t_datosPedido));
-	t_datosPedido datosPedido;
 
 	switch (charToInt(header)) {
 
@@ -74,57 +71,26 @@ void procesarHeader(int cliente, char* header) {
 		break;
 
 	case HeaderHandshake:
-		log_debug(bgLogger, "Llego un handshake");
-		payload_size = 1;
-		;
-		payload = malloc(payload_size);
-		payload = recv_waitall_ws(cliente, payload_size);
-		log_debug(bgLogger, "Llego un mensaje con payload %d",
-				charToInt(payload));
-		if (charToInt(payload) == SOYUMC) {
-			log_debug(bgLogger,
-					"Es un cliente apropiado! Respondiendo handshake");
-			send_w(cliente, intToChar(SOYSWAP), 1);
-		} else {
-			log_error(activeLogger,
-					"No es un cliente apropiado! rechazada la conexion");
-			log_warning(activeLogger, "Se quitará al cliente %d.", cliente);
-			quitarCliente(cliente);
-		}
-		free(payload);
+		operacionHandshake();
 		break;
 
 	case HeaderOperacionIniciarProceso:
-		log_info(activeLogger, "Se recibio pedido de pagina, por CPU");
-		deserializar_int(&(datosPedido.pid), pedido);
-		deserializar_int(&(datosPedido.pagina), pedido);
-		asignarEspacioANuevoProceso(datosPedido.pid, datosPedido.pagina);
+		operacionIniciarProceso();
 		break;
 
 	case HeaderOperacionLectura:
-		log_info(activeLogger, "Se recibio pedido de pagina, por CPU");
-		deserializar_int(&(datosPedido.pid), pedido);
-		deserializar_int(&(datosPedido.pagina), pedido);
-		//leerPagina(datosPedido.pid, datosPedido.pagina);
+		operacionLectura();
 		break;
 
 	case HeaderOperacionEscritura:
-		log_info(activeLogger, "Se recibio pedido de pagina, por CPU");
-		deserializar_int(&(datosPedido.pid), pedido);
-		deserializar_int(&(datosPedido.pagina), pedido);
-		deserializar_int(&(datosPedido.tamanio), pedido);
-		//escribirPagina(datosPedido.pid, datosPedido.pagina, datosPedido.tamanio);
-
+		operacionEscritura();
 		break;
 
 	case HeaderOperacionFinalizarProceso:
-		log_info(activeLogger, "Se recibio pedido de pagina, por CPU");
-		deserializar_int(&(datosPedido.pid), pedido);
-		finalizarProceso(datosPedido.pid);
+		operacionFinalizar();
 		break;
 
 	default:
-		log_error(activeLogger, "Llego cualquier cosa.");
 		log_error(activeLogger,
 				"Llego el header numero %d y no hay una acción definida para él.",
 				charToInt(header));
@@ -136,7 +102,7 @@ void esperar_peticiones() {
 	char* header;
 	while (1) {
 		header = recv_waitall_ws(cliente, 1);
-		procesarHeader(cliente, header); //Incluye deserializacion
+		procesarHeader(cliente, header);
 	}
 }
 void abrirArchivo() {
@@ -156,6 +122,73 @@ void cerrarArchivo() {
 void finalizar() { //TODO irian mas cosas, tipo free de mallocs y esas cosas
 	cerrarArchivo();
 	log_info(activeLogger, "Proceso Swap terminado");
+}
+// Funciones de comunicacion con umc
+void operacionHandshake(){
+	char* handshake = malloc(1);
+	handshake = recv_waitall_ws(cliente, 1);
+	if (charToInt(handshake) == SOYUMC) {
+		log_debug(bgLogger, "Es UMC! Respondiendo handshake");
+		send_w(cliente, intToChar(SOYSWAP), 1);
+	} else {
+		log_error(activeLogger, "No es UMC! rechazada la conexion");
+	}
+	free(handshake);
+}
+void operacionIniciarProceso(){
+	log_info(activeLogger, "Se recibio inicializacion");
+	char* serialPID = malloc(sizeof(int));
+	char* serialPagina = malloc(sizeof(int));
+	serialPID = recv_waitall_ws(cliente,sizeof(int));
+	serialPagina = recv_waitall_ws(cliente,sizeof(int));
+	int pid = char4ToInt(serialPID);
+	int pagina = char4ToInt(serialPagina);
+	asignarEspacioANuevoProceso(pid, pagina);
+	free(serialPID);
+	free(serialPagina);
+	imprimirBitarray();
+}
+void operacionEscritura(){
+	log_info(activeLogger, "Se recibio escritura");
+	char* serialPID = malloc(sizeof(int));
+	char* serialPagina = malloc(sizeof(int));
+	char* contenido= malloc(config.tamanio_pagina);
+	serialPID = recv_waitall_ws(cliente,sizeof(int));
+	serialPagina = recv_waitall_ws(cliente,sizeof(int));
+	int pid = char4ToInt(serialPID);
+	int pagina = char4ToInt(serialPagina);
+	contenido = recv_waitall_ws(cliente,config.tamanio_pagina);
+	escribirPagina(buscarProcesoSegunPID(pid)->posPagina+pagina,contenido);
+	free(serialPID);
+	free(serialPagina);
+	free(contenido);
+}
+void operacionLectura(){
+	t_datosPedido* datosPedido = malloc(sizeof(t_datosPedido));
+	log_info(activeLogger, "Se recibio lectura");
+	char* serialPID = malloc(sizeof(int));
+	char* serialPagina = malloc(sizeof(int));
+	serialPID = recv_waitall_ws(cliente,sizeof(int));
+	serialPagina = recv_waitall_ws(cliente,sizeof(int));
+	int pid = char4ToInt(serialPID);
+	int pagina = char4ToInt(serialPagina);
+	char* contenido = leerPagina(
+			buscarProcesoSegunPID(pid)->posPagina
+					+ pagina);
+	enviarHeader(cliente, HeaderOperacionLectura);
+	send_w(cliente, contenido, config.tamanio_pagina);
+	free(serialPID);
+	free(serialPagina);
+	free(contenido);
+	free(datosPedido);
+}
+void operacionFinalizar(){
+	log_info(activeLogger, "Se recibio finalizacion");
+	char* serialPID = malloc(sizeof(int));
+	serialPID = recv_waitall_ws(cliente,sizeof(int));
+	int pid = char4ToInt(serialPID);
+	finalizarProceso(pid);
+	free(serialPID);
 }
 // Funciones para el manejo del Espacio
 int espaciosDisponibles(t_bitarray* unEspacio) {
@@ -224,7 +257,7 @@ void asignarEspacioANuevoProceso(int pid, int paginasAIniciar) {
 		}
 		agregarProceso(pid, paginasAIniciar);
 	} else {
-		send_w(cliente, headerToMSG(HeaderNoHayEspacio), 1);
+		enviarHeader(cliente,HeaderNoHayEspacio);
 		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
 		log_error(activeLogger, "Fallo la iniciacion del programa %d ", pid);
 	}
@@ -286,9 +319,11 @@ void limpiarEstructuras() {
 }
 // Funciones para el manejo de Paginas
 void escribirPagina(int numeroPagina, char* contenidoPagina) {
-	memcpy(archivo, contenidoPagina, config.tamanio_pagina);
+	log_info(activeLogger, "Se escribio la pagina:%d el contenido:%s",numeroPagina,contenidoPagina);
+	memcpy(archivo + numeroPagina * config.tamanio_pagina, contenidoPagina, config.tamanio_pagina);
 }
 char* leerPagina(int numeroPagina) {
+	log_info(activeLogger, "Se leyo la pagina:%d",numeroPagina);
 	char* str = malloc(config.tamanio_pagina);
 	memcpy(str, archivo + numeroPagina * config.tamanio_pagina,
 			config.tamanio_pagina);
@@ -302,6 +337,7 @@ void imprimirPagina(int numeroPagina) {
 	printf("%s\n", str);
 }
 void moverPagina(int numeroPagina, int posicion) {
+	log_info(activeLogger, "Se movio la pagina:%d a la posicion:%d",numeroPagina,posicion);
 	memcpy(archivo + posicion * config.tamanio_pagina,
 			archivo + numeroPagina * config.tamanio_pagina,
 			config.tamanio_pagina);
@@ -320,8 +356,9 @@ void agregarProceso(int pid, int paginasAIniciar) {
 		proceso->posPagina = marcoInicial;
 		proceso->cantidadDePaginas = paginasAIniciar;
 		list_add(espacioUtilizado, (void*) proceso);
-		printf("Proceso agregado exitosamente\n");
-		send_w(cliente, headerToMSG(HeaderProcesoAgregado), 1);
+		log_info(activeLogger, "Se inicializo el proceso pid:%d",pid);
+		//printf("Proceso agregado exitosamente\n");
+		enviarHeader(cliente,HeaderProcesoAgregado);
 	} else
 		printf("Error Nunca debio llegar acá al agregar Proceso\n");
 }
@@ -395,8 +432,8 @@ t_infoProceso* buscarProcesoSegunInicio(int marcoInicial) {
 int main() {
 	inicializar();
 	testear(test_swap);
-//	conectar_umc();
-//	esperar_peticiones();
+	conectar_umc();
+	esperar_peticiones();
 	finalizar();
 	return 0;
 }

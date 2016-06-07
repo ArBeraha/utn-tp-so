@@ -1111,7 +1111,7 @@ int main(void) {
 
 	crearMemoriaYTlbYTablaPaginas();
 
-	test2();
+	//test2();
 
 //	test();
 
@@ -1119,7 +1119,9 @@ int main(void) {
 
 //	servidorCPUyNucleoExtendido();
 
-//	conexionASwap();
+	conexionASwap();
+
+
 
 //	finalizar();
 
@@ -1584,14 +1586,55 @@ void escucharPedidosDeSwap(){
 			}
 			else
 				procesarHeader(swapServer,header);
-
 			free(header);
 		}
 	}
 }
 
+void ejemploSWAP(){
+	// DATOS EL PROCESO
+		char* serialPID = intToChar4(1);
+		char* serialCantidadPaginas = intToChar4(5);
+		char* serialPagina = intToChar4(2);;
+		char* contenidoPagina = malloc(config.tamanio_marco);
+		contenidoPagina = "123456789";
+
+		// INICIAR PROCESO
+		enviarHeader(swapServer,HeaderOperacionIniciarProceso);
+		send_w(swapServer,serialPID,sizeof(int));
+		send_w(swapServer,serialCantidadPaginas,sizeof(int));
+		char* header = recv_waitall_ws(swapServer,1);
+		if (charToInt(header)==HeaderProcesoAgregado)
+			printf("Contesto el proceso Agregado\n");
+
+		// ESCRIBIR PAGINA
+		enviarHeader(swapServer,HeaderOperacionEscritura);
+		send_w(swapServer,serialPID,sizeof(int));
+		send_w(swapServer,serialPagina,sizeof(int));
+		send_w(swapServer,contenidoPagina,config.tamanio_marco);
+
+		// LEER PAGINA
+		enviarHeader(swapServer,HeaderOperacionLectura);
+		char* contenidoPagina2 = malloc(config.tamanio_marco+1);
+		send_w(swapServer,serialPID,sizeof(int));
+		send_w(swapServer,serialPagina,sizeof(int));
+		header = recv_waitall_ws(swapServer,1);
+		if (charToInt(header)==HeaderOperacionLectura)
+			printf("Contesto con la pagina\n");
+		contenidoPagina2[config.tamanio_marco]='\0';
+		printf("Llego el msg:%s",contenidoPagina2);
+		contenidoPagina2 = recv_waitall_ws(swapServer,config.tamanio_marco);
+		printf("Llego el contenido y es igual:%d\n",strcmp(contenidoPagina,contenidoPagina2)==0);
+
+		// FINALIZAR PROCESO
+		enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
+		send_w(swapServer,serialPID,sizeof(int));
+
+}
+
 void conexionASwap(){ //Creada para unir las dos funciones y crear un hilo
 	realizarConexionASwap();
+	ejemploSWAP();
 	escucharPedidosDeSwap();
 
 }

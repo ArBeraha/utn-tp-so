@@ -38,18 +38,10 @@ int testear(int(*suite)(void)){
 ///****************************************TESTS***************************************************************/
 
 void test_escrituraYLecturaEstatica(){
-	char* s2, *s1 = malloc(config.tamanio_pagina);
-	int i,a=48;
-	for (i=0;i<config.tamanio_pagina;i++){
-		s1[i]=a++;
-		if (a==58)
-			a=48;
-	}
-	escribirPagina(0,s1);
-    s2 = leerPagina(0);
-    CU_ASSERT_TRUE(strcmp(s1,s2)==0);
-    free(s1);
-    free(s2);
+	escribirPagina(0,"hola");
+	char* s = leerPagina(0);
+    CU_ASSERT_TRUE(strcmp("hola",s)==0);
+    free(s);
     limpiarEstructuras();
 }
 void test_asignacionProcesos(){
@@ -81,8 +73,8 @@ void test_escrituraYLecturaDinamica(){
 	compactar();
 	char* s1 = leerPagina(0); 	//La primer pagina del pid 2 pasa al marco 0
 	char* s2 = leerPagina(10); 	//La primer pagina del pid 4 pasa al marco 10
-	CU_ASSERT_TRUE(strcmp(s1,"Hola"));
-	CU_ASSERT_TRUE(strcmp(s2,"Chau"));
+	CU_ASSERT_TRUE(strcmp(s1,"Hola")==0);
+	CU_ASSERT_TRUE(strcmp(s2,"Chau")==0);
 	free(s1);
 	free(s2);
 	limpiarEstructuras();
@@ -109,4 +101,5 @@ void test_espacioDisponibleYFinalizarProceso(){
 	CU_ASSERT_FALSE(estaProceso(3));
 	CU_ASSERT_FALSE(estaProceso(4));
 	CU_ASSERT_EQUAL(espacioDisponible,espacioInicial);
+	limpiarEstructuras();
 }

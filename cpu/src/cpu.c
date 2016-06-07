@@ -172,16 +172,6 @@ void enviar_solicitud(int pagina, int offset, int size) {
 	free(solicitud);
 }
 
-/**
- * Le dice a UMC cuantos pedidos de paginas le voy a enviar para la misma sentencia.
- * Envia un int.
- */
-void enviar_cantidad_pedidos(int cantidad_pags){
-	char* cantRecvs = intToChar4(cantidad_pags);
-	send_w(cliente_umc, cantRecvs, sizeof(int));//envio a umc cuantos recvs tiene que hacer
-	free(cantRecvs);
-}
-
 t_sentencia* obtener_sentencia_relativa(int* paginaInicioSentencia){
 	t_sentencia* sentenciaAbsoluta = list_get(pcbActual->indice_codigo, pcbActual->PC);	//obtengo el offset de la sentencia
 	t_sentencia* sentenciaRelativa = malloc(sizeof(t_sentencia));
@@ -238,7 +228,6 @@ void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 	int longitud_restante = longitud_sentencia(sentenciaRelativa); //longitud de la sentencia que aun no pido
 	enviarHeader(cliente_umc, HeaderSolicitudSentencia); //envio el header
 	
-
 	// Pido la primera pagina, empezando donde corresponde y terminando donde corresponda.
 	pedirPrimeraSentencia(sentenciaRelativa, paginaAPedir, &longitud_restante);
 	paginaAPedir++;

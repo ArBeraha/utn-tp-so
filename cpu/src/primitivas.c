@@ -69,7 +69,7 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 	int overflow = char4ToInt(stackOverflowFlag);
 
 	if (overflow) {
-		lanzar_excepcion();
+		lanzar_excepcion_overflow();
 	} else {
 		char* resultado = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
 		valor = charToInt(resultado);

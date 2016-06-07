@@ -93,7 +93,7 @@ void esperar_sentencia();
 void obtenerPCB();
 void enviarPCB();
 void obtener_y_parsear();
-void lanzar_excepcion();
+void lanzar_excepcion_overflow();
 bool esExcepcion(char* cad);
 void handler(int sign);
 

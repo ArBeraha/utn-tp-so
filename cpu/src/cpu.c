@@ -95,7 +95,7 @@ void procesarHeader(char *header) {
 		break;
 
 	case HeaderExcepcion:
-		lanzar_excepcion();
+		lanzar_excepcion_overflow();
 		break;
 
 	default:
@@ -127,7 +127,7 @@ void pedir_tamanio_paginas() {
 
 
 int longitud_sentencia(t_sentencia* sentencia) {
-	return sentencia->offset_fin - sentencia->offset_inicio;
+	return sentencia->offset_fin - sentencia->offset_inicio; // para la otra interpretacion de esto, sumar 1 aca y listo!
 }
 
 /**
@@ -135,30 +135,24 @@ int longitud_sentencia(t_sentencia* sentencia) {
  * Ej: (21,40) -> (5,1,20)
  */
 int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
-	int offsetInicio = fuente->offset_inicio;
-	int numeroPagina = (int) (offsetInicio / tamanioPaginas); //obtengo el numero de pagina
-	int offsetRelativo = (int) offsetInicio % tamanioPaginas; //obtengo el offset relativo
-
-	int longitud = longitud_sentencia(fuente);
+	int offsetAbsoluto = fuente->offset_inicio;
+	int paginaInicio = (int) (offsetAbsoluto / tamanioPaginas); // Pagina donde inicia la sentencia
+	int offsetRelativo = offsetAbsoluto % tamanioPaginas; //obtengo el offset relativo
 
 	destino->offset_inicio = offsetRelativo;
-	destino->offset_fin = offsetRelativo + longitud;
+	destino->offset_fin = offsetRelativo + longitud_sentencia(fuente);
 
-	return numeroPagina;
+	return paginaInicio;
 }
 
 /**
  * precondicion: el offset debe ser el relativo
+ * Si tamPag=4 y quiero leer de la direccion 0 a la 4, me dice que ocupa una pagina.
  */
 int cantidad_paginas_ocupa(t_sentencia* sentencia) {
-	int cant = (int)(longitud_sentencia(sentencia)/tamanioPaginas);
-	if(cant < 1){
-		if(sentencia->offset_fin > tamanioPaginas &&
-				longitud_sentencia(sentencia) % tamanioPaginas > 5){
-		cant++;
-		}
-	}
-	return cant + 1;
+	int paginas = (int) (longitud_sentencia(sentencia) / tamanioPaginas);
+	bool ultimaPaginaIncompleta = (longitud_sentencia(sentencia) % tamanioPaginas) > 0; //Por las dudas no sacar los parentesis
+	return ultimaPaginaIncompleta ? paginas + 1 : paginas;
 }
 
 /**
@@ -174,60 +168,95 @@ void enviar_solicitud(int pagina, int offset, int size) {
 	int tamanio = serializar_pedido(solicitud, &pedido);
 
 	send_w(cliente_umc, solicitud, tamanio);
+	log_info(activeLogger,"Solicitud enviada: (nroPag,offsetInicio,tamaño) = (%d,%d,%d)", pagina, offset, size);
 	free(solicitud);
 }
 
 /**
+ * Le dice a UMC cuantos pedidos de paginas le voy a enviar para la misma sentencia.
+ * Envia un int.
+ */
+void enviar_cantidad_pedidos(int cantidad_pags){
+	char* cantRecvs = intToChar4(cantidad_pags);
+	send_w(cliente_umc, cantRecvs, sizeof(int));//envio a umc cuantos recvs tiene que hacer
+	free(cantRecvs);
+}
+
+t_sentencia* obtener_sentencia_relativa(int* paginaInicioSentencia){
+	t_sentencia* sentenciaAbsoluta = list_get(pcbActual->indice_codigo, pcbActual->PC);	//obtengo el offset de la sentencia
+	t_sentencia* sentenciaRelativa = malloc(sizeof(t_sentencia));
+	(*paginaInicioSentencia) = obtener_offset_relativo(sentenciaAbsoluta, sentenciaRelativa); //obtengo el offset relativo
+	free(sentenciaAbsoluta);
+	return sentenciaRelativa;
+}
+
+/**
+ * Si no le ponia el _ me daba error :(
+ */
+int maximo_(int a, int b){
+	return a>b?a:b;
+}
+
+/**
+ * Segun la longitud restante, determina si la proxima pagina a pedir corresponde
+ * completamente a la sentencia que estamos manejando. Si correspondiese solo una parte o fuese
+ * toda de otra sentencia, retorna false.
+ */
+bool paginaCompleta(t_sentencia* sentenciaRelativa, int longitud_restante){
+	return (sentenciaRelativa->offset_fin > tamanioPaginas
+					|| longitud_restante >= tamanioPaginas);
+}
+
+/**
+ * Pide una pagina entera a UMC
+ */
+void pedirPaginaCompleta(int pagina){
+	enviar_solicitud(pagina, 0, tamanioPaginas);
+}
+
+void pedirPrimeraSentencia(t_sentencia* sentenciaRelativa, int pagina, int* longitud_restante){
+	int tamanioPrimeraSentencia = maximo_(*longitud_restante,
+				tamanioPaginas - sentenciaRelativa->offset_inicio); //llega hasta su final o hasta que se termine la pagina, lo mas pequeño
+	enviar_solicitud(pagina, sentenciaRelativa->offset_inicio, tamanioPrimeraSentencia);
+	(*longitud_restante) -= tamanioPrimeraSentencia;
+}
+
+void pedirUltimaSentencia(t_sentencia* sentenciaRelativa, int pagina, int longitud_restante){
+	enviar_solicitud(pagina, 0, longitud_restante); //Desde el inicio, con tamaño identico a lo que me falta leer.
+}
+
+/**
  * Envia a UMC: cantidad de paginas (cantRecvs) que voy a pedir,
- * t_pedido_1, t_pedido_2, ...., t_pedido_n-1_
+ * t_pedido_1 <---- Setendo el offset de inicio correctamente, y el de fin tambien si terminase en esta pagina.
+ * t_pedido_2, ...., t_pedido_n-1 <---- paginas que se piden completas
  * t_pedido_n <---- Si no es la pagina completa, setea el offset fin correcto para no pedir de mas.
  */
 void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
-	int entrada = pcbActual->PC; //obtengo la entrada de la instruccion a ejecutar
+	log_info(activeLogger, "Iniciando pedido de sentencia...");
+	int paginaAPedir; // Lo inicializa obtener_sentencia_relativa
+	t_sentencia* sentenciaRelativa = obtener_sentencia_relativa(&paginaAPedir);
+	int longitud_restante = longitud_sentencia(sentenciaRelativa); //longitud de la sentencia que aun no pido
+	enviarHeader(cliente_umc, HeaderSolicitudSentencia); //envio el header
+	
 
-	t_sentencia* sentenciaActual = list_get(pcbActual->indice_codigo, entrada);	//obtengo el offset de la sentencia
-	t_sentencia* sentenciaAux = malloc(sizeof(t_sentencia));
-
-	int pagina = obtener_offset_relativo(sentenciaActual, sentenciaAux);//obtengo el offset relativo
-
-	enviarHeader(cliente_umc,HeaderSolicitudSentencia); //envio el header
-
-	int i = 0;
-	int longitud_restante = longitud_sentencia(sentenciaAux); //longitud total de la sentencia
-	int cantidad_pags = cantidad_paginas_ocupa(sentenciaAux);
-
-	log_debug(bgLogger, "La instruccion ocupa |%d| paginas", cantidad_pags);
-
-	char* cantRecvs = intToChar4(cantidad_pags);
-	send_w(cliente_umc,cantRecvs, sizeof(int));		//envio a umc cuantos recvs tiene que hacer
-	free(cantRecvs);
-
-	while (i < cantidad_pags) {				//me fijo si ocupa mas de una pagina
-											//notar que cuando paso de una pagina a otra, pierdo una unidad del size total
-		log_debug(bgLogger, "envie la pag: |%d|", pagina + i);
-
-		if (sentenciaAux->offset_fin > tamanioPaginas -1 || longitud_restante >= tamanioPaginas) {//si me paso de la pagina, acorto el offset fin
-
-			longitud_restante = abs(sentenciaAux->offset_fin - tamanioPaginas);//longitud_restante - tamanioPaginas;
-			sentenciaAux->offset_fin = abs(tamanioPaginas -1);
-
-			enviar_solicitud(pagina, sentenciaAux->offset_inicio,longitud_sentencia(sentenciaAux));
-
-			sentenciaAux->offset_fin =longitud_restante;
-
-			sentenciaAux->offset_inicio = 0;//como es contiguo, al pasar a la otra pagina, pongo en 0
-
-		} else {			//si no me paso, sigo igual y terminaria el while
-			sentenciaAux->offset_fin = sentenciaAux->offset_inicio + longitud_restante;
-
-			enviar_solicitud(pagina, sentenciaAux->offset_inicio,longitud_sentencia(sentenciaAux));
-		}
-
-		i++;
+	// Pido la primera pagina, empezando donde corresponde y terminando donde corresponda.
+	pedirPrimeraSentencia(sentenciaRelativa, paginaAPedir, &longitud_restante);
+	paginaAPedir++;
+	
+	//Si falta pedir paginas, pido todas las paginas que correspondan totalmente a la sentencia que quiero
+	while(paginaCompleta(sentenciaRelativa,longitud_restante)){
+		pedirPaginaCompleta(paginaAPedir);
+		longitud_restante -= tamanioPaginas; // Le resto el tamaño de la pagina que pedi, la cual esta completa.
+		paginaAPedir++;
 	}
+	
+	// Si quedase una pagina sin pedir, por no estar completa la ultima pagina, la pido.
+	pedirUltimaSentencia(sentenciaRelativa, paginaAPedir, longitud_restante);
+	paginaAPedir++;
 
-	free(sentenciaActual);
-	free(sentenciaAux);
+	log_info(activeLogger, "Pedido de sentencia finalizado.");
+	log_info(activeLogger, "Se pidieron %d paginas (estando la primera y la ultima no necesariamente completas)", paginaAPedir);
+	free(sentenciaRelativa);
 }
 
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
@@ -268,7 +297,7 @@ void finalizar_proceso(){ //voy a esta funcion cuando ejecuto la ultima instrucc
 /**
  * Lanza excepcion por stack overflow y termina el proceso.
  */
-void lanzar_excepcion(){
+void lanzar_excepcion_overflow(){
 	log_info(activeLogger,"Stack overflow! se intentó leer una dirección inválida.");
 	log_info(activeLogger,"Terminando la ejecución del programa actual...");
 
@@ -389,7 +418,7 @@ void finalizar() {
 void handler(int sign) {
 	if (sign == SIGUSR1) {
 		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
-		terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccio
+		terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccion
 		log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");
 	}
 }

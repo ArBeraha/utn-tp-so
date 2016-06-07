@@ -98,18 +98,13 @@ char* pedidoPaginaPid ;
 char* pedidoPaginaTamanioContenido;
 
 t_list* listaTablasPaginas;
-t_list* tabla5;
+//t_list* tabla5;
 
 tlb_t* tlb;
 
 unsigned int* vectorMarcosOcupados; //vectorMarcosOcupados[n]== 1 -> Esta ocupado
 
 int tamanioMemoria;
-
-pthread_t conexSwap;
-pthread_t conexNucleo;
-pthread_t conexCpu;
-pthread_t consolaUmc;
 
 t_log *dump;
 
@@ -126,9 +121,7 @@ pthread_t vectorHilosCpu[MAXCLIENTS];
 
 //pthread_t* vectorHilosCpu;
 
-pthread_t hiloRecibirComandos;
-
-t_stack* pilaAccesosTlb;
+//t_stack* pilaAccesosTlb;
 
 int tiempo;
 

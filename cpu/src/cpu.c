@@ -151,7 +151,7 @@ void enviar_solicitud(int pagina, int offset, int size) {
 	free(solicitud);
 }
 
-t_sentencia* obtener_sentencia_relativa(int* paginaInicioSentencia){
+t_sentencia* obtener_sentencia_relativa(int* paginaInicioSentencia) {
 	t_sentencia* sentenciaAbsoluta = list_get(pcbActual->indice_codigo, pcbActual->PC);	//obtengo el offset de la sentencia
 	t_sentencia* sentenciaRelativa = malloc(sizeof(t_sentencia));
 	(*paginaInicioSentencia) = obtener_offset_relativo(sentenciaAbsoluta, sentenciaRelativa); //obtengo el offset relativo
@@ -162,8 +162,8 @@ t_sentencia* obtener_sentencia_relativa(int* paginaInicioSentencia){
 /**
  * Si no le ponia el _ me daba error :(
  */
-int maximo_(int a, int b){
-	return a>b?a:b;
+int maximo_(int a, int b) {
+	return a > b ? a : b;
 }
 
 /**
@@ -171,19 +171,18 @@ int maximo_(int a, int b){
  * completamente a la sentencia que estamos manejando. Si correspondiese solo una parte o fuese
  * toda de otra sentencia, retorna false.
  */
-bool paginaCompleta(t_sentencia* sentenciaRelativa, int longitud_restante){
-	return (sentenciaRelativa->offset_fin > tamanioPaginas
-					|| longitud_restante >= tamanioPaginas);
+bool paginaCompleta(int longitud_restante) {
+	return longitud_restante >= tamanioPaginas;
 }
 
 /**
  * Pide una pagina entera a UMC
  */
-void pedirPaginaCompleta(int pagina){
+void pedirPaginaCompleta(int pagina) {
 	enviar_solicitud(pagina, 0, tamanioPaginas);
 }
 
-void pedirPrimeraSentencia(t_sentencia* sentenciaRelativa, int pagina, int* longitud_restante){
+void pedirPrimeraSentencia(t_sentencia* sentenciaRelativa, int pagina, int* longitud_restante) {
 	int tamanioPrimeraSentencia = maximo_(*longitud_restante,
 				tamanioPaginas - sentenciaRelativa->offset_inicio); //llega hasta su final o hasta que se termine la pagina, lo mas pequeño
 	enviar_solicitud(pagina, sentenciaRelativa->offset_inicio, tamanioPrimeraSentencia);
@@ -206,24 +205,26 @@ void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 	t_sentencia* sentenciaRelativa = obtener_sentencia_relativa(&paginaAPedir);
 	int longitud_restante = longitud_sentencia(sentenciaRelativa); //longitud de la sentencia que aun no pido
 	enviarHeader(cliente_umc, HeaderSolicitudSentencia); //envio el header
-	
+
 	// Pido la primera pagina, empezando donde corresponde y terminando donde corresponda.
 	pedirPrimeraSentencia(sentenciaRelativa, paginaAPedir, &longitud_restante);
 	paginaAPedir++;
-	
+
 	//Si falta pedir paginas, pido todas las paginas que correspondan totalmente a la sentencia que quiero
-	while(paginaCompleta(sentenciaRelativa,longitud_restante)){
+	while (paginaCompleta(longitud_restante)) {
 		pedirPaginaCompleta(paginaAPedir);
 		longitud_restante -= tamanioPaginas; // Le resto el tamaño de la pagina que pedi, la cual esta completa.
 		paginaAPedir++;
 	}
-	
+
 	// Si quedase una pagina sin pedir, por no estar completa la ultima pagina, la pido.
 	pedirUltimaSentencia(sentenciaRelativa, paginaAPedir, longitud_restante);
 	paginaAPedir++;
 
 	log_info(activeLogger, "Pedido de sentencia finalizado.");
-	log_info(activeLogger, "Se pidieron %d paginas (estando la primera y la ultima no necesariamente completas)", paginaAPedir);
+	log_info(activeLogger,
+			"Se pidieron %d paginas (estando la primera y la ultima no necesariamente completas)",
+			paginaAPedir);
 	free(sentenciaRelativa);
 }
 

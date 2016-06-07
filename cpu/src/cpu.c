@@ -180,6 +180,7 @@ bool paginaCompleta(int longitud_restante) {
  */
 void pedirPaginaCompleta(int pagina) {
 	enviar_solicitud(pagina, 0, tamanioPaginas);
+
 }
 
 void pedirPrimeraSentencia(t_sentencia* sentenciaRelativa, int pagina, int* longitud_restante) {
@@ -199,11 +200,13 @@ void pedirUltimaSentencia(t_sentencia* sentenciaRelativa, int pagina, int longit
  * t_pedido_2, ...., t_pedido_n-1 <---- paginas que se piden completas
  * t_pedido_n <---- Si no es la pagina completa, setea el offset fin correcto para no pedir de mas.
  */
-void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
+void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecutar
 	log_info(activeLogger, "Iniciando pedido de sentencia...");
 	int paginaAPedir; // Lo inicializa obtener_sentencia_relativa
 	t_sentencia* sentenciaRelativa = obtener_sentencia_relativa(&paginaAPedir);
 	int longitud_restante = longitud_sentencia(sentenciaRelativa); //longitud de la sentencia que aun no pido
+	(*tamanio) = longitud_restante;
+
 	enviarHeader(cliente_umc, HeaderSolicitudSentencia); //envio el header
 
 	// Pido la primera pagina, empezando donde corresponde y terminando donde corresponda.
@@ -226,6 +229,7 @@ void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 			"Se pidieron %d paginas (estando la primera y la ultima no necesariamente completas)",
 			paginaAPedir);
 	free(sentenciaRelativa);
+	//return tamanio;
 }
 
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
@@ -256,16 +260,14 @@ void parsear(char* const sentencia) {
 /**
  * Recibo la sentencia previamente pedida.
  */
-char* recibir_sentencia(){
-	char* tamanioSentencia = recv_waitall_ws(cliente_umc, sizeof(int));
-	int tamanio = char4ToInt(tamanioSentencia);
-	free(tamanioSentencia);
+char* recibir_sentencia(int tamanio){
 	return recv_waitall_ws(cliente_umc, tamanio);
 }
 
 void obtener_y_parsear() {
-	pedir_sentencia();
-	char* sentencia = recibir_sentencia();
+	int tamanio;
+	pedir_sentencia(&tamanio);
+	char* sentencia = recibir_sentencia(tamanio);
 	parsear(sentencia);
 	free(sentencia);
 }

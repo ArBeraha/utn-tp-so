@@ -39,17 +39,6 @@ void desalojarProceso() {
 }
 
 /*--------FUNCIONES----------*/
-
-/**
- * Llamo a la funcion analizadorLinea del parser y logeo
- */
-void parsear(char* const sentencia) {
-	log_info(activeLogger, "Ejecutando la sentencia |%s|...", sentencia);
-	analizadorLinea(sentencia, &funciones, &funcionesKernel);
-}
-
-/*--------Funciones----------*/
-
 void esperar_programas() {
 	log_debug(bgLogger, "Esperando programas de nucleo.");
 	char* header;
@@ -143,16 +132,6 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
 	destino->offset_fin = offsetRelativo + longitud_sentencia(fuente);
 
 	return paginaInicio;
-}
-
-/**
- * precondicion: el offset debe ser el relativo
- * Si tamPag=4 y quiero leer de la direccion 0 a la 4, me dice que ocupa una pagina.
- */
-int cantidad_paginas_ocupa(t_sentencia* sentencia) {
-	int paginas = (int) (longitud_sentencia(sentencia) / tamanioPaginas);
-	bool ultimaPaginaIncompleta = (longitud_sentencia(sentencia) % tamanioPaginas) > 0; //Por las dudas no sacar los parentesis
-	return ultimaPaginaIncompleta ? paginas + 1 : paginas;
 }
 
 /**
@@ -265,20 +244,33 @@ void enviarPCB() {
 	free(pcb);
 }
 
-void obtener_y_parsear() {
-	pedir_sentencia();
+/**
+ * Llamo a la funcion analizadorLinea del parser y logeo
+ */
+void parsear(char* const sentencia) {
+	log_info(activeLogger, "Ejecutando la sentencia |%s|...", sentencia);
+	analizadorLinea(sentencia, &funciones, &funcionesKernel);
+}
+
+/**
+ * Recibo la sentencia previamente pedida.
+ */
+char* recibir_sentencia(){
 	char* tamanioSentencia = recv_waitall_ws(cliente_umc, sizeof(int));
 	int tamanio = char4ToInt(tamanioSentencia);
 	free(tamanioSentencia);
+	return recv_waitall_ws(cliente_umc, tamanio);
+}
 
-	char* sentencia = recv_waitall_ws(cliente_umc, tamanio);
+void obtener_y_parsear() {
+	pedir_sentencia();
+	char* sentencia = recibir_sentencia();
 	parsear(sentencia);
 	free(sentencia);
 }
 
 
 void finalizar_proceso(){ //voy a esta funcion cuando ejecuto la ultima instruccion o hay una excepcion
-
 	enviarHeader(cliente_nucleo, HeaderTerminoProceso);
 	enviarPCB();		//nucleo deberia recibir el PCB para elminar las estructuras
 }
@@ -295,69 +287,7 @@ void lanzar_excepcion_overflow(){
 	log_info(activeLogger,"Proceso terminado!");
 }
 
-// ***** Funciones de conexiones ***** //
 
-int getHandshake(int cli) {
-	char* handshake = recv_nowait_ws(cli, 1);
-	return charToInt(handshake);
-}
-
-void warnDebug() {
-	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
-	log_info(activeLogger,
-			"Para ingresar manualmente un archivo: Cambiar true por false en cpu.c -> #define DEBUG_IGNORE_UMC, y despues recompilar.");
-	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
-}
-
-void conectar_nucleo() {
-	direccionNucleo = crearDireccionParaCliente(config.puertoNucleo,
-			config.ipNucleo);
-	cliente_nucleo = socket_w();
-	connect_w(cliente_nucleo, &direccionNucleo); //conecto cpu a la direccion 'direccionNucleo'
-	log_info(activeLogger, "Conectado a Nucleo!");
-}
-
-void hacer_handshake_nucleo() {
-	char* hand = string_from_format("%c%c", HeaderHandshake, SOYCPU);
-	send_w(cliente_nucleo, hand, 2);
-
-	if (getHandshake(cliente_nucleo) != SOYNUCLEO) {
-		perror("Se esperaba que CPU se conecte con Nucleo.");
-	} else {
-		log_info(bgLogger, "Exito al hacer handshake con Nucleo.");
-	}
-}
-
-void conectar_umc() {
-	direccionUmc = crearDireccionParaCliente(config.puertoUMC, config.ipUMC);
-	cliente_umc = socket_w();
-	connect_w(cliente_umc, &direccionUmc); //conecto umc a la direccion 'direccionUmc'
-	log_info(activeLogger, "Conectado a UMC!");
-}
-
-void hacer_handshake_umc() {
-	char *hand = string_from_format("%c%c", HeaderHandshake, SOYCPU);
-	send_w(cliente_umc, hand, 2);
-
-	if (getHandshake(cliente_umc) != SOYUMC) {
-		perror("Se esperaba que CPU se conecte con UMC.");
-	} else {
-		log_info(bgLogger, "Exito al hacer handshake con UMC.");
-	}
-}
-
-void establecerConexionConUMC() {
-	if (!config.DEBUG_IGNORE_UMC) {
-		conectar_umc();
-		hacer_handshake_umc();
-	} else {
-		warnDebug();
-	}
-}
-void establecerConexionConNucleo() {
-	conectar_nucleo();
-	hacer_handshake_nucleo();
-}
 
 // ***** Funciones de inicializacion y finalizacion ***** //
 void cargarConfig() {

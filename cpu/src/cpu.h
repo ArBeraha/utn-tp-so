@@ -33,6 +33,7 @@
 #include "commonTypes.h"
 #include "serializacion.h"
 #include "primitivas.h"
+#include "conexiones.h"
 
 typedef struct customConfig {
 	int puertoNucleo;
@@ -50,12 +51,6 @@ typedef enum {
 } t_localidad_variable;
 
 /*------------Variables Globales--------------*/
-int cliente_nucleo; //cpu es cliente del nucleo
-int cliente_umc; //cpu es cliente de umc
-
-struct sockaddr_in direccionNucleo;   //direccion del nucleo
-struct sockaddr_in direccionUmc;	  //direccion umc
-
 AnSISOP_funciones funciones;		//funciones de AnSISOP
 AnSISOP_kernel funcionesKernel;		// funciones kernel de AnSISOP
 

@@ -132,6 +132,8 @@ t_stack* pilaAccesosTlb;
 
 int tiempo;
 
+int vectorUltimaPosicionSacada[MAXCLIENTS];
+
 //Prototipos
 
 void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam); //TODO

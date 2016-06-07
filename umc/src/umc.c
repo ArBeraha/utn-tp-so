@@ -25,7 +25,7 @@ void cargarCFG() {
 	config.cantidad_marcos = config_get_int_value(configUmc, "CANTIDAD_MARCOS");
 	config.tamanio_marco = config_get_int_value(configUmc, "TAMANIO_MARCO");
 	config.entradas_tlb = config_get_int_value(configUmc, "ENTRADAS_TLB");
-	config.retardo = config_get_int_value(configUmc, "RETARDO");
+	config.retardo = config_get_int_value(configUmc, "RETARDO") * 1000;
 	config.ip_swap = config_get_string_value(configUmc, "IP_SWAP");
 	config.puerto_cpu = config_get_int_value(configUmc, "PUERTO_UMC_CPU");
 	config.algoritmo_paginas= config_get_string_value(configUmc, "ALGORITMO_REEMPLAZO");
@@ -178,19 +178,22 @@ int sacarConClock(int pid){
 	tablaPagina_t* puntero;
 
 	//Primera vuelta, doy segunda oportunidad
-	for(posAReemplazar=0;posAReemplazar<cantidadPaginas;posAReemplazar++){
-		puntero = list_get(tabla,posAReemplazar);
-		if(puntero->bitUso==0 && puntero->bitPresencia==1){
-			return posAReemplazar;
-		}else{
-			puntero->bitUso=0;
+
+	for(posAReemplazar=vectorUltimaPosicionSacada[pid]; posAReemplazar<cantidadPaginas; posAReemplazar++){
+			puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
+			if(puntero->bitUso==0 && puntero->bitPresencia==1){
+				vectorUltimaPosicionSacada[pid]=posAReemplazar;
+				return posAReemplazar;
+			}else{
+				puntero->bitUso=0;
+			}
 		}
-	}
 
 	//Segunda vuelta
-	for(posAReemplazar=0;posAReemplazar<cantidadPaginas;posAReemplazar++){
-		puntero = list_get(tabla,posAReemplazar);
+	for(posAReemplazar=vectorUltimaPosicionSacada[pid];posAReemplazar<cantidadPaginas;posAReemplazar++){
+		puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitPresencia==1){
+			vectorUltimaPosicionSacada[pid]=posAReemplazar;
 			return posAReemplazar;
 		}
 	}
@@ -206,17 +209,19 @@ int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO Q
 	tablaPagina_t* puntero;
 
 	//Primera vuelta, me fijo si hay alguno (0,0) sin modificar nada
-	for(posAReemplazar=0;posAReemplazar<cantidadPaginas;posAReemplazar++){
-		puntero = list_get(tabla,posAReemplazar);
+	for(posAReemplazar=vectorUltimaPosicionSacada[pid];posAReemplazar<cantidadPaginas;posAReemplazar++){
+		puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitModificacion==0 && puntero->bitPresencia==1){
+			vectorUltimaPosicionSacada[pid]=posAReemplazar;
 			return posAReemplazar;
 		}
 	}
 
 	//Segunda vuelta
-	for(posAReemplazar=0;posAReemplazar<cantidadPaginas;posAReemplazar++){
-		puntero = list_get(tabla,posAReemplazar);
+	for(posAReemplazar=vectorUltimaPosicionSacada[pid];posAReemplazar<cantidadPaginas;posAReemplazar++){
+		puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitModificacion==1 && puntero->bitPresencia==1){
+			vectorUltimaPosicionSacada[pid]=posAReemplazar;
 			return posAReemplazar;
 		}else{
 			puntero->bitUso=0;
@@ -224,9 +229,10 @@ int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO Q
 	}
 
 	//PrimerVuelta
-	for(posAReemplazar=0;posAReemplazar<cantidadPaginas;posAReemplazar++){
-		puntero = list_get(tabla,posAReemplazar);
+	for(posAReemplazar=vectorUltimaPosicionSacada[pid];posAReemplazar<cantidadPaginas;posAReemplazar++){
+		puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitPresencia==1){
+			vectorUltimaPosicionSacada[pid]=posAReemplazar;
 			return posAReemplazar;
 		}else{
 			puntero->bitUso=0;
@@ -234,9 +240,10 @@ int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO Q
 	}
 
 	//Segunda vuelta
-	for(posAReemplazar=0;posAReemplazar<cantidadPaginas;posAReemplazar++){
-		puntero = list_get(tabla,posAReemplazar);
+	for(posAReemplazar=vectorUltimaPosicionSacada[pid];posAReemplazar<cantidadPaginas;posAReemplazar++){
+		puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitModificacion==1 && puntero->bitPresencia==1){
+			vectorUltimaPosicionSacada[pid]=posAReemplazar;
 			return posAReemplazar;
 		}else{
 			puntero->bitUso=0;
@@ -265,7 +272,7 @@ int cantPaginasEnMemoriaDePid(int pid){
 	t_list* tablaPaginaAReemplazar = list_get(listaTablasPaginas, pid);
 	int cantidadPaginas = list_size(tablaPaginaAReemplazar);
 	int i;
-	int contador;
+	int contador=0;
 
 	for(i=0;i<cantidadPaginas;i++){
 		tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
@@ -365,6 +372,10 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 				tablaPagina_t* paginaBuscada = list_get(tablaPaginaBuscada, pedido.paginaRequerida);
 
 //SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
+
+				printf("Accediendo a memoria... \n"); //Accedo a memoria para leer la tabla
+				usleep(retardoMemoria);
+
 				if(paginaBuscada->bitPresencia){
 					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
@@ -460,6 +471,10 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 				tablaPagina_t* paginaBuscada = list_get(tablaPaginaBuscada, pedido.paginaRequerida);
 
 	//SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
+
+				printf("Accediendo a memoria... \n"); //Accedo a memoria para leer la tabla
+				usleep(retardoMemoria);
+
 				if(paginaBuscada->bitPresencia){
 
 					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Escribiendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
@@ -670,7 +685,7 @@ void fRetardo(){
 	size_t bufsize = 64;
 	printf("Ingrese el nuevo valor de Retardo en milisegundos: ");
 	getline(&nuevoRetardo,&bufsize,stdin);
-	int ret = atoi(nuevoRetardo);
+	int ret = atoi(nuevoRetardo)*1000;
 	retardoMemoria = ret;
 }
 
@@ -823,7 +838,12 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 //	vectorHilosCpu = malloc(sizeof(pthread_t) * MAXCLIENTS);
 
-	pilaAccesosTlb = stack_create();
+//	pilaAccesosTlb = stack_create();
+
+	int i;
+	for(i=0;i<MAXCLIENTS;i++){
+		vectorUltimaPosicionSacada[i]=0;
+	}
 
 }
 // FIN 3
@@ -995,26 +1015,6 @@ void procesarHeader(int cliente, char *header){
 		clientes[cliente].atentido=false;
 		break;
 
-//		case HeaderReservarEspacio:
-//
-//			pedidoPaginaPid = recv_waitall_ws(cliente, sizeof(int));
-//			pedidoPaginaTamanioContenido = recv_waitall_ws(cliente, sizeof(int));
-//			//ES NECESARIO TENER EL PID DEL PROCESO Q NUCLEO QUIERE GUARDAR EN MEMORIA? SI: RECIBIR INT  NO: RECIBIR NADA
-//			log_info(activeLogger,"Nucleo me pidio memoria");
-//
-//			int cantPaginasPedidas = ((float)charToInt(pedidoPaginaTamanioContenido) + config.tamanio_marco - 1) / config.tamanio_marco; //A+B-1 / B
-//			int pid = charToInt(pedidoPaginaPid);
-//
-//			//TODO Primero: if swap tiene espacio..
-//
-//			if(reservarPagina(cantPaginasPedidas,pid)){
-//				send_w(cliente, headerToMSG(HeaderTeReservePagina), 1);
-//			}
-//			else{
-//				send_w(cliente, headerToMSG(HeaderErrorNoHayPaginas), 1);
-//			};
-//			break;
-
 		case HeaderTamanioPagina:
 			printf("Pedido tamanio de paginas \n");
 			send_w(clientes[cliente].socket,intToChar4(config.tamanio_marco),sizeof(int));
@@ -1111,7 +1111,7 @@ int main(void) {
 
 	crearMemoriaYTlbYTablaPaginas();
 
-	//test2();
+	test2();
 
 //	test();
 
@@ -1119,7 +1119,7 @@ int main(void) {
 
 //	servidorCPUyNucleoExtendido();
 
-	conexionASwap();
+//	conexionASwap();
 
 
 
@@ -1127,6 +1127,28 @@ int main(void) {
 
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void mostrarTlb(){
 	int i;
@@ -1139,29 +1161,6 @@ void mostrarTlb(){
 
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 void test2(){
 
@@ -1187,277 +1186,11 @@ void test2(){
 
 	almacenarBytesEnUnaPagina(pedido2,2,"XX");
 
+	printf("CANT PAGS PID 5 EN MEM: %d \n", cantPaginasEnMemoriaDePid(5));
+
+
 	recibirComandos();
 }
-
-
-
-void test(){
-
-	vectorMarcosOcupados[0]=1;
-	vectorMarcosOcupados[1]=1;
-	vectorMarcosOcupados[2]=1;
-
-	int marcoNuevo = buscarPrimerMarcoLibre();
-	vectorMarcosOcupados[marcoNuevo]=1; //Lo marco como ocupado
-
-	printf("El primer marco libre deberia ser el 3 y es: %d \n", marcoNuevo);
-	printf("Y ahora su contenido deberia ser 1: %d \n\n", vectorMarcosOcupados[marcoNuevo]);
-
-	printf("Contenido vector en pos 0: %d \n", vectorMarcosOcupados[0]);
-	printf("Contenido vector en pos 1: %d \n", vectorMarcosOcupados[1]);
-	printf("Contenido vector en pos 2: %d \n", vectorMarcosOcupados[2]);
-	printf("Contenido vector en pos 3: %d \n", vectorMarcosOcupados[3]);
-	printf("Contenido vector en pos 4: %d \n", vectorMarcosOcupados[4]);
-	printf("Contenido vector en pos 5: %d \n", vectorMarcosOcupados[5]);
-	printf("Contenido vector en pos 6: %d \n", vectorMarcosOcupados[6]);
-	printf("Contenido vector en pos 7: %d \n", vectorMarcosOcupados[7]);
-	printf("Contenido vector en pos 8: %d \n", vectorMarcosOcupados[8]);
-	printf("Contenido vector en pos 9: %d \n", vectorMarcosOcupados[9]);
-
-	printf("Pasamos al test de memoria \n \n");
-
-	int test = reservarPagina(3,5);
-
-	if(test){
-
-		tabla5 = list_get(listaTablasPaginas, 5);
-
-		tablaPagina_t* pagina0Tabla5 = list_get(tabla5,0);
-		tablaPagina_t* pagina1Tabla5 = list_get(tabla5,1);
-		tablaPagina_t* pagina2Tabla5 = list_get(tabla5,2);
-
-		printf("Agarramos la tabla de paginas en las posicion 5. \n");
-		printf("Y deberia tener 3 paginas dentro, coincide con cant: %d \n", list_size(tabla5));
-		printf("En la posicion 0 estaria la pagina 0 con marco 4, coincide con: pagina:%d, marco: %d \n", pagina0Tabla5->nroPagina, pagina0Tabla5->marcoUtilizado);
-		printf("En la posicion 0 estaria la pagina 1 con marco 5, coincide con: pagina:%d, marco: %d \n", pagina1Tabla5->nroPagina, pagina1Tabla5->marcoUtilizado);
-		printf("En la posicion 0 estaria la pagina 2 con marco 6, coincide con: pagina:%d, marco: %d \n", pagina2Tabla5->nroPagina, pagina2Tabla5->marcoUtilizado);
-	}
-	else{
-		printf("No hay paginas disponibles");
-	}
-
-	memoria[5*config.tamanio_marco]='a';
-	memoria[5*config.tamanio_marco+1]='b';
-	memoria[5*config.tamanio_marco+2]='c';
-	memoria[5*config.tamanio_marco+3]='d';
-	memoria[5*config.tamanio_marco+11]='d';
-
-	memoria[6*config.tamanio_marco]='a';
-	memoria[6*config.tamanio_marco+1]='b';
-	memoria[6*config.tamanio_marco+2]='c';
-
-	devolverTodaLaMemoria();
-
-	printf("---- De solo pid 5 --- \n");
-	devolverMemoriaDePid(5);
-
-	printf(" -------------------------------------------  \n \n");
-	printf("Haciendo un pedido de pagina \n");
-
-	pedidoLectura_t pedido;
-	pedido.pid = 5;
-	pedido.paginaRequerida = 1;
-	pedido.offset = 2;
-	pedido.cantBytes = 2;
-
-	printf("Simulamos que esta en TLB \n");
-	tlb[3].pid=5;
-	tlb[3].pagina=1;
-	tlb[3].marcoUtilizado= 5;
-
-	char* respuesta = devolverPedidoPagina(pedido);
-	printf("Respuesta1 deberia ser 'cd' y es: %s  \n",respuesta); //Original: abcd Empieza de la posicion 2 y lee 2 bytes
-
-	printf("--***---\n");
-
-	printf("Reinicio la tlb y no deberia encontrar, paso a buscarla en lista tablas \n");
-
-	inicializarTlb();
-//	recibirComandos();
-
-	printf("**************** NO ANDA_****************\n");
-	char* respuesta2 = devolverPedidoPagina(pedido);
-	printf("****************_ANDUVOO __-****************\n");
-	printf("Respuesta2 deberia ser 'cd' y es: %s  \n",respuesta2);
-	printf("Y se deberia haber agregado a tlb.. \n");
-	printf("Tlb deberia ser (5,1,5) y es : Pid: %d, Pagina: %d, Marco: %d \n", tlb[0].pid, tlb[0].pagina, tlb[0].marcoUtilizado);
-	printf("--***---\n");
-
-	printf(" -------------------------------------------  \n \n");
-
-	printf("Pedido escritura \n");
-	pedidoLectura_t pedido2;
-	pedido2.pid=2;
-	pedido2.paginaRequerida=0;
-	pedido2.offset = 0;
-	pedido2.cantBytes = 4;
-
-	reservarPagina(3,2);
-	tlb[2].pagina=0;
-	tlb[2].pid = 2;
-	tlb[2].marcoUtilizado=7;
-
-	pedidoLectura_t pedido3;
-	pedido3.pid=2;
-	pedido3.paginaRequerida = 1;
-	pedido3.offset = 2;
-	pedido3.cantBytes = 4;
-
-	tlb[5].pagina=1;
-	tlb[5].pid = 2;
-	tlb[5].marcoUtilizado=7;
-
-
-	printf("\n \n \n \n");
-	printf("Primer pedido de escritura: \n");
-	printf("Devolucion1: %s \n", almacenarBytesEnUnaPagina(pedido2,4,"3"));
-
-	printf("\n \n \n \n");
-	printf("Segundo pedido de escritura: \n");
-	printf("Devolucion2: %s \n", almacenarBytesEnUnaPagina(pedido3,4,"311"));
-
-//	printf("Devolucion: %s \n", almacenarBytesEnUnaPagina(pedido2,4,'abc'));
-
-
-	printf("Ahora devuelvo toda la memoria para ver que no haya nada raro.. \n");
-
-	devolverTodaLaMemoria();
-
-	printf("Limpio la tlb y vuelvo a pedir, deberia encontrarla en tabla paginas.. \n");
-	inicializarTlb();
-	pedidoLectura_t pedido4;
-	pedido4.pid=2;
-	pedido4.paginaRequerida = 1;
-	pedido4.offset = 0;
-	pedido4.cantBytes = 4;
-	printf("----La tlb[0] estaba vacia: pid:%d, pag:%d, marco:%d \n", tlb[0].pid,tlb[0].pagina,tlb[0].marcoUtilizado);
-	printf("Devolucion3: %s \n", almacenarBytesEnUnaPagina(pedido4,4,"44"));
-	printf("----La tlb[0] ahora ocupada: pid:%d, pag:%d, marco:%d \n", tlb[0].pid,tlb[0].pagina,tlb[0].marcoUtilizado);
-
-
-	printf("Vuelvo a devolver la memoria entera \n");
-	devolverTodaLaMemoria();
-
-	printf(" -------------------------------------------  \n \n");
-
-	pedidoLectura_t pedido5;
-	pedido5.pid=7;
-	pedido5.paginaRequerida = 1;
-	pedido5.offset = 4;
-	pedido5.cantBytes = 4;
-
-	tlb[1].pid = 7;
-	tlb[1].pagina = 1;
-	tlb[1].marcoUtilizado = 11;
-
-	int pudo = reservarPagina(3,7);
-
-//	printf("Asignando memoria contigua \n \n");
-//
-//	printf("Devolucion 4: %s \n", almacenarBytesEnUnaPaginaContiguo(pedido5,4,"27"));
-
-	devolverTodaLaMemoria();
-
-	printf(" -------------------------------------------  \n \n");
-	printf(" -------------------------------------------  \n \n");
-
-
-	flushTlb();
-	tlb[0].pid=1;
-	tlb[0].pagina=4;
-	tlb[0].marcoUtilizado=3;
-	tlb[0].contadorTiempo=0;
-	tlb[1].pid=2;
-	tlb[1].pagina=3;
-	tlb[1].marcoUtilizado=5;
-	tlb[1].contadorTiempo=0;
-	tlb[2].pid=3;
-	tlb[2].pagina=2;
-	tlb[3].marcoUtilizado=8;
-	tlb[4].contadorTiempo=0;
-
-	pedidoLectura_t pedido7;
-	pedido7.pid=1;
-	pedido7.paginaRequerida = 4;
-	pedido7.offset = 4;
-	pedido7.cantBytes = 4;
-	pedidoLectura_t pedido8;
-	pedido8.pid=2;
-	pedido8.paginaRequerida = 3;
-	pedido8.offset = 4;
-	pedido8.cantBytes = 4;
-	pedidoLectura_t pedido9;
-	pedido9.pid=3;
-	pedido9.paginaRequerida = 2;
-	pedido9.offset = 4;
-	pedido9.cantBytes = 4;
-
-	buscarEnTlb(pedido7);
-	buscarEnTlb(pedido8);
-	buscarEnTlb(pedido9);
-	buscarEnTlb(pedido7);
-
-	tablaPagina_t pagina;
-	pagina.nroPagina=1;
-	pagina.marcoUtilizado=11;
-	tablaPagina_t* paginaAgregar = &pagina;
-	agregarATlb(paginaAgregar,4);
-	printf("En la posicion 1 deberia estar pid 4 \n");
-	printf("Pid: %d con contador: %d \n",tlb[0].pid,tlb[0].contadorTiempo);
-	printf("Pid: %d con contador: %d \n",tlb[1].pid,tlb[1].contadorTiempo);
-	printf("Pid: %d con contador: %d \n",tlb[2].pid,tlb[2].contadorTiempo);
-	printf("Ahora vuelve pedido con pid 2, que habia sido sacado");
-	tablaPagina_t pagina2;
-	pagina.nroPagina=3;
-	pagina.marcoUtilizado=12;
-	tablaPagina_t* paginaAgregar2 = &pagina2;
-	agregarATlb(paginaAgregar2,2);
-	printf("En ultima posicion deberia estar pid 2 \n");
-	printf("Pid: %d con contador: %d \n",tlb[0].pid,tlb[0].contadorTiempo);
-	printf("Pid: %d con contador: %d \n",tlb[1].pid,tlb[1].contadorTiempo);
-	printf("Pid: %d con contador: %d \n",tlb[2].pid,tlb[2].contadorTiempo);
-
-
-	printf(" -------------------------------------------  \n \n");
-	printf(" -------------------------------------------  \n \n");
-
-//	recibirComandos();
-	t_list* tabla = list_get(listaTablasPaginas,2);
-	tablaPagina_t* pag2 = list_get(tabla,2);
-	pag2->bitUso=0;
-	printf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
-	devolverPaginasDePid(2);
-
-	printf("Pagina a sacar con clock modificado de pid 2: %d \n", sacarConModificado(2));
-	printf("Pagina a sacar con clock de pid 2: %d \n", sacarConClock(2));
-
-	printf(" -------------------------------------------  \n \n");
-	printf(" -------------------------------------------  \n \n");
-
-	pedidoLectura_t pedido10;
-	tablaPagina_t* pag1 = list_get(tabla,1);
-
-	pag1->bitPresencia=0;
-	pag1->bitUso=0;
-	pag1->bitModificacion=1;
-	pedido10.pid=2;
-	pedido10.paginaRequerida=1;
-	pedido10.cantBytes=5;
-	printf("Lo que habia: %s \n",devolverPedidoPagina(pedido10));
-
-	printf("Bit de presencia ahora de pid 2 pag 1: %d \n", pag2->bitPresencia);
-
-	pag1->bitPresencia=0;
-	sacarDeMemoria(pag1);
-
-	printf("Lo que almacene: %s \n",almacenarBytesEnUnaPagina(pedido10,5,"CHAUU"));
-
-	recibirComandos();
-
-}
-
-
 
 // 5.Server de los cpu y de nucleo
 

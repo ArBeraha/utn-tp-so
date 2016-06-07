@@ -5,15 +5,18 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../src/cpu.c \
-../src/primitivas.c 
+../src/primitivas.c \
+../src/test.c 
 
 OBJS += \
 ./src/cpu.o \
-./src/primitivas.o 
+./src/primitivas.o \
+./src/test.o 
 
 C_DEPS += \
 ./src/cpu.d \
-./src/primitivas.d 
+./src/primitivas.d \
+./src/test.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

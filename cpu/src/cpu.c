@@ -135,6 +135,10 @@ int longitud_sentencia(t_sentencia* sentencia) {
 	return sentencia->offset_fin - sentencia->offset_inicio;
 }
 
+/**
+ * Recibo el offset absoluto y lo transformo en (numeroPagina, destino->offset_inicio, destino->offset_fin).
+ * Ej: (21,40) -> (5,1,20)
+ */
 int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
 	int offsetInicio = fuente->offset_inicio;
 	int numeroPagina = (int) (offsetInicio / tamanioPaginas); //obtengo el numero de pagina
@@ -148,17 +152,26 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
 	return numeroPagina;
 }
 
-int cantidad_paginas_ocupa(t_sentencia* sentencia) { //precondicion: el offset debe ser el relativo
+/**
+ * precondicion: el offset debe ser el relativo
+ */
+int cantidad_paginas_ocupa(t_sentencia* sentencia) {
 	int cant = (int) longitud_sentencia(sentencia) / tamanioPaginas;
 	return cant + 1;
 }
 
-int queda_espacio_en_pagina(t_sentencia* sentencia) { //precondicion: el offset debe ser el relativo
+/**
+ * precondicion: el offset debe ser el relativo
+ */
+int queda_espacio_en_pagina(t_sentencia* sentencia) {
 	int longitud = longitud_sentencia(sentencia);
 	int desp = sentencia->offset_inicio + longitud;
 	return tamanioPaginas - desp;;
 }
 
+/**
+ * Envia a UMC: pag, offest y tamaño, es decir, un t_pedido.
+ */
 void enviar_solicitud(int pagina, int offset, int size) {
 	t_pedido pedido;
 	pedido.offset = offset;
@@ -255,6 +268,9 @@ void finalizar_proceso(){ //voy a esta funcion cuando ejecuto la ultima instrucc
 	enviarPCB();		//nucleo deberia recibir el PCB para elminar las estructuras
 }
 
+/**
+ * Lanza excepcion por stack overflow y termina el proceso.
+ */
 void lanzar_excepcion(){
 	log_info(activeLogger,"Stack overflow! se intentó leer una dirección inválida.");
 	log_info(activeLogger,"Terminando la ejecución del programa actual...");
@@ -339,7 +355,9 @@ void cargarConfig() {
 	config.DEBUG_IGNORE_UMC = config_get_int_value(configCPU, "DEBUG_IGNORE_UMC");
 	config.DEBUG_NO_PROGRAMS = config_get_int_value(configCPU, "DEBUG_NO_PROGRAMS");
 	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configCPU, "DEBUG_RAISE_LOG_LEVEL");
+	config.DEBUG_RUN_TEST = config_get_int_value(configCPU, "DEBUG_RUN_TEST");
 }
+
 void inicializar() {
 	cargarConfig();
 	pcbActual = malloc(sizeof(t_PCB));
@@ -347,8 +365,8 @@ void inicializar() {
 	log_info(activeLogger, "Soy CPU de process ID %d.", getpid());
 	inicializar_primitivas();
 }
-void finalizar() {
 
+void finalizar() {
 	log_info(activeLogger,"Finalizando proceso cpu");
 
 	if (!config.DEBUG_NO_PROGRAMS) {
@@ -367,6 +385,10 @@ void finalizar() {
 }
 
 /*------------otras------------*/
+/**
+ * Para sigusr1 => terminar=1
+ * Para cualquier otra, loguea un mensaje y sigue su camino hacia el infinito y mas alla.
+ */
 void handler(int sign) {
 	if (sign == SIGUSR1) {
 		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
@@ -378,8 +400,20 @@ void handler(int sign) {
 	}
 }
 
+/**
+ * Inicializa los tests si estan habilitados (1) por configuracion.
+ */
+void correrTests(){
+	if(config.DEBUG_RUN_TEST){
+		testear(test_cpu);
+	}
+}
+
 int main() {
 	inicializar();
+
+	//tests
+	correrTests();
 
 	//conectarse a umc
 	establecerConexionConUMC();

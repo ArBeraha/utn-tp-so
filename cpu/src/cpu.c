@@ -20,6 +20,8 @@ void informarInstruccionTerminada() {
 	// Le aviso a nucleo que termino una instruccion, para que calcule cuanto quantum le queda al proceso ansisop.
 	enviarHeader(cliente_nucleo,headerTermineInstruccion);
 	// Acá nucleo tiene que mandarme el header que corresponda, segun si tengo que seguir ejecutando instrucciones o tengo que desalojar.
+	// Eso se procesa en otro lado, porque la ejeución de instrucciones esta anidada en un while
+	// por lo que no tengo que recibir el header aca
 }
 
 void instruccionTerminada(char* instr) {
@@ -36,18 +38,11 @@ void desalojarProceso() {
 	free(pcb);
 }
 
-t_pedido maximo(t_pedido pedido1, t_pedido pedido2) { //Determina que pedido está mas lejos respecto del inicio!
-	if (pedido1.pagina > pedido2.pagina) {
-		return pedido1;
-	}
-	if (pedido1.pagina == pedido2.pagina) {
-		return (pedido1.offset > pedido2.offset ? pedido1 : pedido2);
-	}
-	return pedido2;
-}
-
 /*--------FUNCIONES----------*/
 
+/**
+ * Llamo a la funcion analizadorLinea del parser y logeo
+ */
 void parsear(char* const sentencia) {
 	log_info(activeLogger, "Ejecutando la sentencia |%s|...", sentencia);
 	analizadorLinea(sentencia, &funciones, &funcionesKernel);
@@ -159,15 +154,6 @@ int cantidad_paginas_ocupa(t_sentencia* sentencia) {
 	int cant = (int) longitud_sentencia(sentencia) / tamanioPaginas;
 	bool ultimaPaginaIncompleta = (longitud_sentencia(sentencia) % tamanioPaginas) > 0; //por las dudas no sacar los parentesis
 	return ultimaPaginaIncompleta?cant+1:cant;
-}
-
-/**
- * precondicion: el offset debe ser el relativo
- */
-int queda_espacio_en_pagina(t_sentencia* sentencia) {
-	int longitud = longitud_sentencia(sentencia);
-	int desp = sentencia->offset_inicio + longitud;
-	return tamanioPaginas - desp;;
 }
 
 /**

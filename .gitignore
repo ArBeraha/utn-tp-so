@@ -51,3 +51,7 @@
 dump
 *.*~
 *~
+
+# Estos van manualmene, con add -f, solo en casos de necesidad
+*.mk
+makefile

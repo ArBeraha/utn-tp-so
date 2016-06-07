@@ -157,7 +157,8 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
  */
 int cantidad_paginas_ocupa(t_sentencia* sentencia) {
 	int cant = (int) longitud_sentencia(sentencia) / tamanioPaginas;
-	return cant + 1;
+	bool ultimaPaginaIncompleta = (longitud_sentencia(sentencia) % tamanioPaginas) > 0; //por las dudas no sacar los parentesis
+	return ultimaPaginaIncompleta?cant+1:cant;
 }
 
 /**
@@ -185,6 +186,11 @@ void enviar_solicitud(int pagina, int offset, int size) {
 	free(solicitud);
 }
 
+/**
+ * Envia a UMC: cantidad de paginas (cantRecvs) que voy a pedir,
+ * t_pedido_1, t_pedido_2, ...., t_pedido_n-1_
+ * t_pedido_n <---- Si no es la pagina completa, setea el offset fin correcto para no pedir de mas.
+ */
 void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 	int entrada = pcbActual->PC; //obtengo la entrada de la instruccion a ejecutar
 
@@ -201,8 +207,8 @@ void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 
 	log_debug(bgLogger, "La instruccion ocupa |%d| paginas", cantidad_pags);
 
-	char* cantRecvs = intToChar(cantidad_pags);
-	send_w(cliente_umc,cantRecvs, strlen(cantRecvs));		//envio a umc cuantos recvs tiene que hacer
+	char* cantRecvs = intToChar4(cantidad_pags);
+	send_w(cliente_umc,cantRecvs, sizeof(int));		//envio a umc cuantos recvs tiene que hacer
 	free(cantRecvs);
 
 	while (i < cantidad_pags) {				//me fijo si ocupa mas de una pagina

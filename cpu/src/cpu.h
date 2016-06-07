@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <math.h>
 #include <commons/string.h>
 #include <commons/log.h>
 #include <commons/config.h>
@@ -79,8 +80,6 @@ t_pedido maximo(t_pedido pedido1, t_pedido pedido2);
 
 /*--------FUNCIONES----------*/
 void parsear(char* const sentencia);
-
-/*--------Funciones----------*/
 void esperar_programas();
 void procesarHeader(char *header);
 void pedir_tamanio_paginas();
@@ -114,11 +113,10 @@ void inicializar();
 void finalizar();
 
 
-// Tests
+// ***** Test ***** //
 void correrTests();  //De cpu.c
 int testear(int (*suite)(void)); //De test.c
 int test_cpu(); //De test.c
-
 
 
 #endif /* CPU_H_ */

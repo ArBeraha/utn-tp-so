@@ -39,21 +39,63 @@ void test_cantidad_paginas_ocupa() {
 	CU_ASSERT_EQUAL(cantidad_paginas_ocupa(&sentencia),1);
 
 	tamanioPaginas=4;
-	sentencia.offset_fin=40; //ocupa 20, osea 5 pags.
-	CU_ASSERT_EQUAL(cantidad_paginas_ocupa(&sentencia),5);
+	sentencia.offset_fin=40; //ocupa 20, osea 6 pags.
+	CU_ASSERT_EQUAL(cantidad_paginas_ocupa(&sentencia),6);
 
 	tamanioPaginas = aux;
 	log_debug(bgLogger, "FIN cantidad_paginas_ocupa");
+}
+
+void test_envio_solicitudes_una_pagina(){
+
+	log_info(bgLogger,"Test de envio de solicitudes en una pagina");
+
+	tamanioPaginas=10;
+	t_sentencia* sentencia = malloc(sizeof(t_sentencia));
+
+	sentencia->offset_inicio = 2;			//el pedido es offset:2, fin:5, size:3, pag:0
+	sentencia->offset_fin= 5;
+
+	t_sentencia* sentenciaAux = malloc(sizeof(t_sentencia));
+
+	int pagina = obtener_offset_relativo(sentencia,sentenciaAux);
+
+	int longitud_aux = longitud_sentencia(sentenciaAux);
+
+	CU_ASSERT_EQUAL(pagina,0);
+	CU_ASSERT_EQUAL(sentenciaAux->offset_inicio,2);
+	CU_ASSERT_EQUAL(sentenciaAux->offset_fin,5);
+	CU_ASSERT_EQUAL(longitud_sentencia(sentencia),3);
+	CU_ASSERT_EQUAL(longitud_aux,3);
+
+	free(sentencia);
+	free(sentenciaAux);
+
+	log_debug(bgLogger, "FIN solicitudes_una_pagina");
+}
+
+void test_envio_solicitudes_varias_paginas(){ //TODO terminar
+
+	log_info(bgLogger,"Test de envio de solicitudes en varias paginas");
+
+	tamanioPaginas=10;
+	t_sentencia* sentencia = malloc(sizeof(t_sentencia));
+
+	sentencia->offset_inicio = 4;			//el pedido es offset:4, fin:9, size:5, pag:0
+	sentencia->offset_fin= 15;				//el pedido es offset:0, fin:5, size:5, pag:1
+
 }
 
 int test_cpu() {
 	log_info(activeLogger, "INICIANDO TESTS DE CPU");
 	CU_initialize_registry();
 	CU_pSuite suite_nucleo = CU_add_suite("Suite de CPU", NULL, NULL);
-	CU_add_test(suite_nucleo, "Test obtener_offset_relativo.",
-				test_obtener_offset_relativo);
-	CU_add_test(suite_nucleo, "Test cantidad_paginas_ocupa.",
-			test_cantidad_paginas_ocupa);
+	CU_add_test(suite_nucleo, "Test obtener_offset_relativo.",	test_obtener_offset_relativo);
+	CU_add_test(suite_nucleo, "Test cantidad_paginas_ocupa.", test_cantidad_paginas_ocupa);
+	CU_add_test(suite_nucleo, "Test envio_solicitudes_una_pagina",test_envio_solicitudes_una_pagina);
+	CU_add_test(suite_nucleo, "Test envio_solicitudes_varias_paginas",test_envio_solicitudes_varias_paginas);
+
+
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
 	CU_cleanup_registry();

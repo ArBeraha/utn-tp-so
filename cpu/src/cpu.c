@@ -151,9 +151,14 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
  * precondicion: el offset debe ser el relativo
  */
 int cantidad_paginas_ocupa(t_sentencia* sentencia) {
-	int cant = (int) longitud_sentencia(sentencia) / tamanioPaginas;
-	bool ultimaPaginaIncompleta = (longitud_sentencia(sentencia) % tamanioPaginas) > 0; //por las dudas no sacar los parentesis
-	return ultimaPaginaIncompleta?cant+1:cant;
+	int cant = (int)(longitud_sentencia(sentencia)/tamanioPaginas);
+	if(cant < 1){
+		if(sentencia->offset_fin > tamanioPaginas &&
+				longitud_sentencia(sentencia) % tamanioPaginas > 5){
+		cant++;
+		}
+	}
+	return cant + 1;
 }
 
 /**
@@ -201,21 +206,21 @@ void pedir_sentencia() {	//pedir al UMC la proxima sentencia a ejecutar
 											//notar que cuando paso de una pagina a otra, pierdo una unidad del size total
 		log_debug(bgLogger, "envie la pag: |%d|", pagina + i);
 
-		if (longitud_restante >= tamanioPaginas) {//si me paso de la pagina, acorto el offset fin
+		if (sentenciaAux->offset_fin > tamanioPaginas -1 || longitud_restante >= tamanioPaginas) {//si me paso de la pagina, acorto el offset fin
 
-			longitud_restante = longitud_restante - tamanioPaginas;
-			sentenciaAux->offset_fin = tamanioPaginas;
+			longitud_restante = abs(sentenciaAux->offset_fin - tamanioPaginas);//longitud_restante - tamanioPaginas;
+			sentenciaAux->offset_fin = abs(tamanioPaginas -1);
 
-			enviar_solicitud(pagina, sentenciaAux->offset_inicio,
-					longitud_sentencia(sentenciaAux));
+			enviar_solicitud(pagina, sentenciaAux->offset_inicio,longitud_sentencia(sentenciaAux));
+
+			sentenciaAux->offset_fin =longitud_restante;
 
 			sentenciaAux->offset_inicio = 0;//como es contiguo, al pasar a la otra pagina, pongo en 0
 
 		} else {			//si no me paso, sigo igual y terminaria el while
-			sentenciaAux->offset_fin = longitud_restante;
+			sentenciaAux->offset_fin = sentenciaAux->offset_inicio + longitud_restante;
 
-			enviar_solicitud(pagina, sentenciaAux->offset_inicio,
-					longitud_sentencia(sentenciaAux));
+			enviar_solicitud(pagina, sentenciaAux->offset_inicio,longitud_sentencia(sentenciaAux));
 		}
 
 		i++;
@@ -379,16 +384,13 @@ void finalizar() {
 /*------------otras------------*/
 /**
  * Para sigusr1 => terminar=1
- * Para cualquier otra, loguea un mensaje y sigue su camino hacia el infinito y mas alla.
+ *
  */
 void handler(int sign) {
 	if (sign == SIGUSR1) {
 		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
 		terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccio
 		log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");
-	} else {
-		log_info(activeLogger,
-				"Recibi la señal numero |%d|, que no es SIGUSR1, asi que me quedo :)", sign);
 	}
 }
 
@@ -402,6 +404,9 @@ void correrTests(){
 }
 
 int main() {
+
+	signal(SIGUSR1,handler); //el progama sabe que cuando se recibe SIGUSR1,se ejecuta handler
+
 	inicializar();
 
 	//tests

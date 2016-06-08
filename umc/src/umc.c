@@ -339,7 +339,6 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 		tablaPagina_t* paginaASacarDeMemoria = list_get(tablaPaginaAReemplazar, posicionPaginaSacada);
 		pthread_mutex_unlock(&lock_accesoTabla);
 
-		//TODO TODO TODO ENVIAR A SWAP!!!!!  TODO TODO TODO
 		enviarASwap(paginaASacarDeMemoria);
 		sacarDeMemoria(paginaASacarDeMemoria);
 
@@ -487,7 +486,7 @@ int inicializarPrograma(int idPrograma, char* contenido){
 	}
 }
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){  //TODO Falta lo de swap
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 
 	log_info(activeLogger,"ESCRITURA DE pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
@@ -555,7 +554,7 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 					//send_w(cliente, devolucion, 4);
 					return (devolverPedidoPagina(pedido)); //Provisorio para testear
 				}
-	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y TODO LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
+	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
 				else{
 					pthread_mutex_unlock(&lock_accesoTabla);
 					log_info(activeLogger,"Se encontro la pagina pero NO esta en memoria (ESCRITURA)! Buscando en swap: pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
@@ -694,7 +693,7 @@ void devolverTodaLaMemoria(){
 				char* contenido = malloc(config.tamanio_marco+1);
 				memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
 				contenido[config.tamanio_marco]='\0';
-				pthread_mutex_lock(&lock_accesoMemoria);
+				pthread_mutex_unlock(&lock_accesoMemoria);
 
 				imprimirRegionMemoria(contenido,config.tamanio_marco);
 			}

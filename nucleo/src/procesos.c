@@ -14,15 +14,11 @@ void rechazarProceso(int PID) {
 	if (proceso->estado != NEW)
 		log_warning(activeLogger,
 				"Se esta rechazando el proceso %d ya aceptado!", PID);
-	pthread_mutex_lock(&mutexClientes);
-	enviarHeader(clientes[proceso->consola].socket, HeaderConsolaFinalizarRechazado);
-	pthread_mutex_unlock(&mutexClientes);
+	MUTEXPROCESOS(enviarHeader(proceso->socketConsola, HeaderConsolaFinalizarRechazado));
 	log_info(bgLogger,
 			"Consola avisada sobre la finalización del proceso ansisop.");
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
-	pthread_mutex_lock(&mutexProcesos);
-	list_remove_by_value(listaProcesos, (void*) PID);
-	pthread_mutex_unlock(&mutexProcesos);
+	MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
 	// POSIBLE DOBLE ELIMINACION?
 //	pthread_mutex_lock(&mutexClientes);
 //	quitarCliente(proceso->consola);
@@ -36,27 +32,22 @@ int crearProceso(int consola) {
 	proceso->PCB->PID = (int) proceso;
 	proceso->estado = NEW;
 	proceso->consola = consola;
-	pthread_mutex_lock(&mutexClientes);
-	proceso->socketConsola = clientes[consola].socket;
-	pthread_mutex_unlock(&mutexClientes);
-	//if (!CU_is_test_running()) {
-	char* codigo = getScript(consola);
-	proceso->PCB->cantidad_paginas = ceil(((double) strlen(codigo)) / ((double) tamanio_pagina));
-	if (!pedirPaginas(proceso->PCB->PID, codigo)){
-		rechazarProceso(proceso->PCB->PID);
+	MUTEXCLIENTES(proceso->socketConsola = clientes[consola].socket);
+	if (!CU_is_test_running()) {
+		char* codigo = getScript(consola);
+		proceso->PCB->cantidad_paginas = ceil(
+				((double) strlen(codigo)) / ((double) tamanio_pagina));
+		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
+			rechazarProceso(proceso->PCB->PID);
+		} else {
+			asignarMetadataProceso(proceso, codigo);
+			MUTEXCLIENTES(clientes[consola].pid = (int) proceso);
+			proceso->cpu = SIN_ASIGNAR;
+			cambiarEstado(proceso, READY);
+			MUTEXPROCESOS(list_add(listaProcesos, proceso));
+		}
+		free(codigo);
 	}
-	else{
-		asignarMetadataProceso(proceso, codigo);
-		pthread_mutex_lock(&mutexClientes);
-		clientes[consola].pid = (int)proceso;
-		pthread_mutex_unlock(&mutexClientes);
-		proceso->cpu = SIN_ASIGNAR;
-		cambiarEstado(proceso,READY);
-		pthread_mutex_lock(&mutexProcesos);
-		list_add(listaProcesos, proceso);
-		pthread_mutex_unlock(&mutexProcesos);
-	}
-	free(codigo);
 	return proceso->PCB->PID;
 }
 
@@ -64,9 +55,7 @@ int crearProceso(int consola) {
 void finalizarProceso(int PID) {
 	t_proceso* proceso = (t_proceso*) PID;
 	cambiarEstado(proceso,EXIT);
-	pthread_mutex_lock(&mutexProcesos);
-	list_remove_by_value(listaProcesos, (void*) PID);
-	pthread_mutex_unlock(&mutexProcesos);
+	MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
 }
 void destruirProceso(int PID) {
 	log_debug(bgLogger,	"Destruyendo proceso:%d",PID);
@@ -76,9 +65,9 @@ void destruirProceso(int PID) {
 				"Se esta destruyendo el proceso %d que no libero sus recursos! y esta en estado:%d",
 				PID, proceso->estado);
 	if (!CU_is_test_running()) {
-		enviarHeader(clientes[proceso->consola].socket,
+		enviarHeader(proceso->socketConsola,
 				HeaderConsolaFinalizarNormalmente);
-		quitarCliente(proceso->consola); // Esto no es necesario, ya que si la consola funciona bien se desconectaria, pero quien sabe...
+		MUTEXCLIENTES(quitarCliente(proceso->consola));
 	}
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
 	pcb_destroy(proceso->PCB);

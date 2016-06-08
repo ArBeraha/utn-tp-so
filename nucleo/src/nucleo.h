@@ -32,6 +32,18 @@ unsigned int tamanioDireccionConsola, tamanioDireccionCPU, tamanio_pagina;
 // Hilos
 pthread_t hiloCrearProcesos, hiloBloqueos, hiloPlanificacion;
 pthread_mutex_t mutexProcesos, mutexUMC, mutexClientes, mutexEstados;
+
+// MACROS DE MUTEXS
+#define MUTEXCLIENTES(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexClientes);
+#define MUTEXPROCESOS(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexClientes);
+#define MUTEXESTADOS(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexEstados);
+#define MUTEXUMC(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexUMC);
+#define MUTEXBLOQUEOS(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexBloqueos);
 // Tipos
 typedef enum t_proceso_estado {
 	NEW, READY, EXEC, BLOCK, EXIT
@@ -115,7 +127,6 @@ void handshakearUMC();
 void recibirTamanioPagina();
 // Consola
 char* getScript(int consola);
-t_cliente* obtenerCliente(int indice); // Thread safe
 // Procesos
 int crearProceso(int consola);
 void rechazarProceso(int PID);

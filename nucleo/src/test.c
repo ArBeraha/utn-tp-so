@@ -11,13 +11,9 @@ void test_cicloDeVidaProcesos() {
 	log_debug(bgLogger, "INICIO test_cicloDeVidaProcesos");
 	int consola = 1, cpu = 2;
 	queue_push(colaCPU, (void*) cpu);
-
 	t_proceso* proceso = (t_proceso*) crearProceso(consola);
-
 	cambiarEstado(proceso,READY);
-
 	ejecutarProceso(proceso->PCB->PID, (int) queue_pop(colaCPU));
-
 	CU_ASSERT_EQUAL(proceso->estado, EXEC);
 	CU_ASSERT_EQUAL(proceso->cpu, 2)
 	CU_ASSERT_TRUE(queue_is_empty(colaCPU));

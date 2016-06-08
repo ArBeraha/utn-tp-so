@@ -35,9 +35,7 @@ void planificarProcesos() {
 	}
 }
 void planificacionRR() {
-	pthread_mutex_lock(&mutexProcesos);
-	list_iterate(listaProcesos, (void*) planificarProcesoRR);
-	pthread_mutex_unlock(&mutexProcesos);
+	MUTEXPROCESOS(list_iterate(listaProcesos, (void*) planificarProcesoRR));
 	planificacionFIFO();
 }
 void planificarProcesoRR(t_proceso* proceso) {
@@ -73,20 +71,15 @@ void asignarCPU(t_proceso* proceso, int cpu) {
 	log_debug(bgLogger, "Asignando cpu:%d a pid:%d", cpu, proceso->PCB->PID);
 	cambiarEstado(proceso,EXEC);
 	proceso->cpu = cpu;
-	pthread_mutex_lock(&mutexClientes);
-	clientes[cpu].pid = proceso->PCB->PID;
-	proceso->socketCPU = clientes[cpu].socket;
-	pthread_mutex_unlock(&mutexClientes);
-
+	MUTEXCLIENTES(clientes[cpu].pid = proceso->PCB->PID);
+	MUTEXCLIENTES(proceso->socketCPU = clientes[cpu].socket);
 }
 void desasignarCPU(t_proceso* proceso) {
 	log_debug(bgLogger, "Desasignando cpu:%d a pid:%d", proceso->cpu,
 			proceso->PCB->PID);
 	queue_push(colaCPU, (void*) proceso->cpu);
 	proceso->cpu = SIN_ASIGNAR;
-	pthread_mutex_lock(&mutexClientes);
-	clientes[proceso->cpu].pid = (int) NULL;
-	pthread_mutex_unlock(&mutexClientes);
+	MUTEXCLIENTES(clientes[proceso->cpu].pid = (int) NULL);
 }
 void ejecutarProceso(int PID, int cpu) {
 	t_proceso* proceso = (t_proceso*) PID;
@@ -96,9 +89,7 @@ void ejecutarProceso(int PID, int cpu) {
 		char* serialPCB = malloc(bytes);
 		serializar_PCB(serialPCB, proceso->PCB);
 		enviarHeader(proceso->socketCPU,HeaderPCB);
-		pthread_mutex_lock(&mutexClientes);
-		enviarLargoYSerial(cpu, bytes, serialPCB);
-		pthread_mutex_unlock(&mutexClientes);
+		MUTEXCLIENTES(enviarLargoYSerial(cpu, bytes, serialPCB));
 		free(serialPCB);
 	}
 }
@@ -120,9 +111,8 @@ void bloqueo(t_bloqueo* info) {
 	free(info);
 }
 void cambiarEstado(t_proceso* proceso, int estado) {
-	pthread_mutex_lock(&mutexEstados);
-	bool legalidad = matrizEstados[proceso->estado][estado];
-	pthread_mutex_lock(&mutexEstados);
+	bool legalidad;
+	MUTEXESTADOS(legalidad = matrizEstados[proceso->estado][estado]);
 	if (legalidad) {
 		log_debug(bgLogger, "Cambio de estado pid:%d de:%d a:%d",
 				proceso->PCB->PID, proceso->estado, estado);

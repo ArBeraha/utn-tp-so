@@ -5,12 +5,9 @@
  *      Author: utnso
  */
 #include "nucleo.h"
-t_cliente* obtenerCliente(int indice){
-	pthread_mutex_lock(&mutexClientes);
-	t_cliente* cliente = &clientes[indice];
-	pthread_mutex_unlock(&mutexClientes);
-	return cliente;
-}
+
+
+
 /* ---------- INICIO PARA UMC ---------- */
 bool pedirPaginas(int PID, char* codigo) {
 	t_proceso* proceso = (t_proceso*) PID;
@@ -295,6 +292,8 @@ int main(void) {
 	char header[1];
 	inicializar();
 
+
+
 	log_info(activeLogger, "Esperando conexiones ...");
 	while (1) {
 		FD_ZERO(&socketsParaLectura);
@@ -303,22 +302,16 @@ int main(void) {
 
 		mayorDescriptor =
 				(socketConsola > socketCPU) ? socketConsola : socketCPU;
-		pthread_mutex_lock(&mutexClientes);
-		incorporarClientes();
-		pthread_mutex_unlock(&mutexClientes);
 
-		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, NULL);
+		MUTEXCLIENTES(incorporarClientes());
 
-		if (tieneLectura(socketConsola)){
-			pthread_mutex_lock(&mutexClientes);
-			procesarNuevasConexionesExtendido(&socketConsola);
-			pthread_mutex_unlock(&mutexClientes);
-		}
-		if (tieneLectura(socketCPU)){
-			pthread_mutex_lock(&mutexClientes);
-			procesarNuevasConexionesExtendido(&socketCPU);
-			pthread_mutex_unlock(&mutexClientes);
-		}
+		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, &espera);
+		if (tieneLectura(socketConsola))
+			MUTEXCLIENTES(procesarNuevasConexionesExtendido(&socketConsola));
+
+		if (tieneLectura(socketCPU))
+			MUTEXCLIENTES(procesarNuevasConexionesExtendido(&socketCPU));
+
 
 		for (i = 0; i < getMaxClients(); i++) {
 			pthread_mutex_lock(&mutexClientes);

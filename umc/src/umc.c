@@ -37,20 +37,16 @@ void cargarCFG() {
 
 
 int estaEnTlb(pedidoLectura_t pedido){
-	printf("ACAA === 1\n");
+
 	pthread_mutex_lock(&lock_accesoTlb);
 	int i;
-	printf("ACAA === 2\n");
+
 	for(i=0;i<config.entradas_tlb; i++){
-		printf("ACAA === 3\n");
 		if(tlb[i].pid==pedido.pid && tlb[i].pagina==pedido.paginaRequerida){
-			printf("ACAA === SALI! \n");
 			pthread_mutex_unlock(&lock_accesoTlb);
 			return 1;
 		}
-		printf("ACAA === 4\n");
 	}
-	printf("ACAA === 5\n");
 	pthread_mutex_unlock(&lock_accesoTlb);
 	return 0;
 }

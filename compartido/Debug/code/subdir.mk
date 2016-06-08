@@ -7,6 +7,7 @@ C_SRCS += \
 ../code/cliente-servidor.c \
 ../code/commonTypes.c \
 ../code/header.c \
+../code/hilos.c \
 ../code/log.c \
 ../code/serializacion.c \
 ../code/stack.c 
@@ -15,6 +16,7 @@ OBJS += \
 ./code/cliente-servidor.o \
 ./code/commonTypes.o \
 ./code/header.o \
+./code/hilos.o \
 ./code/log.o \
 ./code/serializacion.o \
 ./code/stack.o 
@@ -23,6 +25,7 @@ C_DEPS += \
 ./code/cliente-servidor.d \
 ./code/commonTypes.d \
 ./code/header.d \
+./code/hilos.d \
 ./code/log.d \
 ./code/serializacion.d \
 ./code/stack.d 

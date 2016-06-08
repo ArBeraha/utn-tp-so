@@ -2,6 +2,8 @@
 
 clear
 
+sh fix
+
 cd consola
 cd Debug
 make clean

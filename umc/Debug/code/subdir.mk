@@ -7,6 +7,7 @@ C_SRCS += \
 ../../compartido/code/cliente-servidor.c \
 ../../compartido/code/commonTypes.c \
 ../../compartido/code/header.c \
+../../compartido/code/hilos.c \
 ../../compartido/code/log.c \
 ../../compartido/code/serializacion.c \
 ../../compartido/code/stack.c 
@@ -15,6 +16,7 @@ OBJS += \
 ./code/cliente-servidor.o \
 ./code/commonTypes.o \
 ./code/header.o \
+./code/hilos.o \
 ./code/log.o \
 ./code/serializacion.o \
 ./code/stack.o 
@@ -23,6 +25,7 @@ C_DEPS += \
 ./code/cliente-servidor.d \
 ./code/commonTypes.d \
 ./code/header.d \
+./code/hilos.d \
 ./code/log.d \
 ./code/serializacion.d \
 ./code/stack.d 
@@ -44,6 +47,13 @@ code/commonTypes.o: ../../compartido/code/commonTypes.c
 	@echo ' '
 
 code/header.o: ../../compartido/code/header.c
+	@echo 'Building file: $<'
+	@echo 'Invoking: GCC C Compiler'
+	gcc -I../../compartido/code -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+code/hilos.o: ../../compartido/code/hilos.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
 	gcc -I../../compartido/code -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"

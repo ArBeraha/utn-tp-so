@@ -167,19 +167,31 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 }
 
 int buscarEnSwap(pedidoLectura_t pedido){
+	char* serialPID = intToChar4(pedido.pid);
+	char* serialPagina = intToChar4(pedido.paginaRequerida);
+	char* contenidoPagina = malloc(config.tamanio_marco+1);
 
-//	send_w(swapServer, headerToMSG(HeaderOperacionLectura), 1);
-//	send_w(swapServer, intToChar(pedido.pid), 1);
-//	send_w(swapServer, intToChar(pedido.paginaRequerida), 1);
-//	char* contenido = recv_waitall_ws(swapServer,config.tamanio_marco);
+	enviarHeader(swapServer,HeaderOperacionLectura);
 
-//	char* contenido = malloc(5);
-//	contenido = "swap";
-//	contenido[4]='\0';
+	send_w(swapServer,serialPID,sizeof(int));
+	send_w(swapServer,serialPagina,sizeof(int));
 
-	char* contenido = "SWAP";
+	char* header = recv_waitall_ws(swapServer,1);
 
-	agregarAMemoria(pedido,contenido);
+	if (charToInt(header)==HeaderOperacionLectura){
+		printf("Contesto con la pagina\n");
+	}
+	else{
+		return 0;
+	}
+
+	contenidoPagina = recv_waitall_ws(swapServer,config.tamanio_marco);
+	contenidoPagina[config.tamanio_marco]='\0';
+	printf("Llego el contenido de swap:%s",contenidoPagina);
+
+	agregarAMemoria(pedido,contenidoPagina);
+
+//	char* contenido = "SWAP"; PARA TEST
 
 	return 1;
 }
@@ -290,11 +302,17 @@ void sacarDeMemoria(tablaPagina_t* pagina){
 		pthread_mutex_unlock(&lock_accesoMemoria);
 }
 
-void enviarASwap(tablaPagina_t* pagina){
-	send_w(swapServer, headerToMSG(HeaderOperacionEscritura), 1); //Swap ya sabe que va a recibir tamanio de un marco
-	char* contenido=NULL;
-	memcpy(contenido,memoria+(pagina->marcoUtilizado * config.tamanio_marco),config.tamanio_marco);
-	send_w(swapServer, contenido, strlen(contenido)); //Swap ya sabe que va a recibir tamanio de un marco
+void enviarASwap(int pid, tablaPagina_t* pagina){
+
+	char* serialPID = intToChar4(pid);
+	char* serialPagina = intToChar4(pagina->nroPagina);;
+	char* contenidoPagina = malloc(config.tamanio_marco);
+	memcpy(contenidoPagina,memoria+(pagina->marcoUtilizado * config.tamanio_marco),config.tamanio_marco);
+
+	enviarHeader(swapServer,HeaderOperacionEscritura);
+	send_w(swapServer,serialPID,sizeof(int));
+	send_w(swapServer,serialPagina,sizeof(int));
+	send_w(swapServer,contenidoPagina,config.tamanio_marco);
 }
 
 int cantPaginasEnMemoriaDePid(int pid){
@@ -339,7 +357,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 		tablaPagina_t* paginaASacarDeMemoria = list_get(tablaPaginaAReemplazar, posicionPaginaSacada);
 		pthread_mutex_unlock(&lock_accesoTabla);
 
-		enviarASwap(paginaASacarDeMemoria);
+		enviarASwap(pedido.pid,paginaASacarDeMemoria);
 		sacarDeMemoria(paginaASacarDeMemoria);
 
 		paginaASacarDeMemoria->bitPresencia=0;
@@ -469,19 +487,25 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 	}
 }
 
+int paginasQueOcupa(char* contenido){
+	return (strlen(contenido) + config.tamanio_marco - 1) / config.tamanio_marco;
+}
+
 int inicializarPrograma(int idPrograma, char* contenido){
 
-	send_w(swapServer,intToChar(HeaderConsultaEspacioSwap),4);
-	send_w(swapServer,intToChar(strlen(contenido)),4);
-	char* tieneEspacio;
-	read(swapServer , &tieneEspacio, 4);
+	char* serialPID = intToChar4(idPrograma);
+	int cantidadPags = paginasQueOcupa(contenido);
+	char* serialCantidadPaginas = intToChar4(cantidadPags);
 
-	if(atoi(tieneEspacio)){
-		send_w(swapServer,intToChar(idPrograma),4);
-		send_w(swapServer,contenido,strlen(contenido));
+	enviarHeader(swapServer,HeaderOperacionIniciarProceso);
+	send_w(swapServer,serialPID,sizeof(int));
+	send_w(swapServer,serialCantidadPaginas,sizeof(int));
+	char* header = recv_waitall_ws(swapServer,1);
+
+	if (charToInt(header)==HeaderProcesoAgregado){
+		printf("Contesto el proceso Agregado\n");
 		return 1;
-	}
-	else{
+	}else{
 		return 0;
 	}
 }
@@ -602,6 +626,8 @@ void sacarMarcosOcupados(int idPrograma){
 }
 
 void finalizarPrograma(int idPrograma){
+	enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
+	send_w(swapServer,intToChar4(idPrograma),sizeof(int));
 	sacarMarcosOcupados(idPrograma);
 	list_destroy(list_get(listaTablasPaginas,idPrograma));
 }
@@ -702,7 +728,7 @@ void devolverTodaLaMemoria(){
 			char* contenido = malloc(config.tamanio_marco+1);
 			memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
 			contenido[config.tamanio_marco]='\0';
-			pthread_mutex_lock(&lock_accesoMemoria);
+			pthread_mutex_unlock(&lock_accesoMemoria);
 
 			log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: %s ",i, unaPagina->nroPagina,unaPagina->marcoUtilizado,contenido);
 
@@ -766,7 +792,6 @@ void fRetardo(){
 	int ret = atoi(nuevoRetardo)*1000;
 	retardoMemoria = ret;
 }
-
 void dumpEstructuraMemoria(){ //Devuelve todas las tablas de paginas o de un solo pid
 	int seleccion=-1;
 	int pidDeseado;
@@ -796,7 +821,6 @@ void dumpEstructuraMemoria(){ //Devuelve todas las tablas de paginas o de un sol
 			break;
 	}
 }
-
 void dumpContenidoMemoria(){ //Devuelve toda la memoria o solo la de un pid
 	int seleccion=-1;
 	int pidDeseado;
@@ -828,6 +852,18 @@ void dumpContenidoMemoria(){ //Devuelve toda la memoria o solo la de un pid
 			devolverMemoriaDePid(pidDeseado);
 			break;
 	}
+}
+void inicializarTlb(){
+	pthread_mutex_lock(&lock_accesoTlb);
+	tiempo=0;
+	int i;
+	for(i = 0; i<config.entradas_tlb; i++){
+		tlb[i].pid=-1;
+		tlb[i].pagina=-1;
+		tlb[i].marcoUtilizado=-1;
+		tlb[i].contadorTiempo=-1;
+	}
+	pthread_mutex_unlock(&lock_accesoTlb);
 }
 void flushTlb(){
 	inicializarTlb();
@@ -878,19 +914,6 @@ void recibirComandos(){  //ANDA OK
 // FIN 2
 
 // 3. Inicializar estructura de UMC
-void inicializarTlb(){
-	pthread_mutex_lock(&lock_accesoTlb);
-	tiempo=0;
-	int i;
-	for(i = 0; i<config.entradas_tlb; i++){
-		tlb[i].pid=-1;
-		tlb[i].pagina=-1;
-		tlb[i].marcoUtilizado=-1;
-		tlb[i].contadorTiempo=-1;
-	}
-	pthread_mutex_unlock(&lock_accesoTlb);
-}
-
 void crearMemoriaYTlbYTablaPaginas(){
 
 	//Creo memoria y la relleno
@@ -915,9 +938,6 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 	retardoMemoria = config.retardo;
 
-//	vectorHilosCpu = malloc(sizeof(pthread_t) * MAXCLIENTS);
-
-//	pilaAccesosTlb = stack_create();
 
 	int i;
 	for(i=0;i<MAXCLIENTS;i++){

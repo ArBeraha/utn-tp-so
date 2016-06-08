@@ -116,8 +116,13 @@ pthread_mutex_t lock_accesoTabla;
 pthread_mutex_t lock_accesoTlb;
 pthread_mutex_t lock_accesoMarcosOcupados;
 pthread_mutex_t lock_accesoUltimaPos;
+pthread_mutex_t lock_accesoLog;
+
 
 pthread_t vectorHilosCpu[MAXCLIENTS];
+
+pthread_t hiloRecibirComandos;
+pthread_attr_t detachedAttr;
 
 int tiempo;
 

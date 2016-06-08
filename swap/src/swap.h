@@ -69,7 +69,6 @@ int hayQueCompactar(int);
 t_infoProceso* buscarProcesoSegunInicio(int);
 t_infoProceso* buscarProcesoSegunPID(int);
 int estaEnArray(t_infoProceso*);
-void sacarElemento(int);
 void compactar();
 void cargarCFG();
 void crear_archivo();

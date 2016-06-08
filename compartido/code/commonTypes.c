@@ -65,6 +65,7 @@ t_pedido* stack_max_pedido(t_stack* stack, int pagsize){ //Retorna el ultimo ped
 		pedido->pagina = nextPedido->pagina - 1;
 		pedido->offset = pagsize - sizeof(int);
 	}
+	free(nextPedido);
 	return pedido;
 }
 

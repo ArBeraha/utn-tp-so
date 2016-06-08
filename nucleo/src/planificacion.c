@@ -41,6 +41,7 @@ void planificacionRR() {
 	planificacionFIFO();
 }
 void planificarProcesoRR(t_proceso* proceso) {
+	// mutexProcesos SAFE
 	if (proceso->estado == EXEC) {
 		if (terminoQuantum(proceso))
 			expulsarProceso(proceso);
@@ -65,13 +66,17 @@ void planificarIO(char* io_id, t_IO* io) {
 	}
 }
 bool terminoQuantum(t_proceso* proceso) {
+	// mutexProcesos SAFE
 	return (!(proceso->PCB->PC % config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
 }
 void asignarCPU(t_proceso* proceso, int cpu) {
 	log_debug(bgLogger, "Asignando cpu:%d a pid:%d", cpu, proceso->PCB->PID);
 	cambiarEstado(proceso,EXEC);
 	proceso->cpu = cpu;
+	pthread_mutex_lock(&mutexClientes);
 	clientes[cpu].pid = proceso->PCB->PID;
+	proceso->socketCPU = clientes[cpu].socket;
+	pthread_mutex_unlock(&mutexClientes);
 
 }
 void desasignarCPU(t_proceso* proceso) {
@@ -79,7 +84,9 @@ void desasignarCPU(t_proceso* proceso) {
 			proceso->PCB->PID);
 	queue_push(colaCPU, (void*) proceso->cpu);
 	proceso->cpu = SIN_ASIGNAR;
+	pthread_mutex_lock(&mutexClientes);
 	clientes[proceso->cpu].pid = (int) NULL;
+	pthread_mutex_unlock(&mutexClientes);
 }
 void ejecutarProceso(int PID, int cpu) {
 	t_proceso* proceso = (t_proceso*) PID;
@@ -88,17 +95,21 @@ void ejecutarProceso(int PID, int cpu) {
 		int bytes = bytes_PCB(proceso->PCB);
 		char* serialPCB = malloc(bytes);
 		serializar_PCB(serialPCB, proceso->PCB);
-		enviarHeader(clientes[cpu].socket,HeaderPCB);
-		enviarLargoYSerial(clientes[cpu].socket, bytes, serialPCB);
+		enviarHeader(proceso->socketCPU,HeaderPCB);
+		pthread_mutex_lock(&mutexClientes);
+		enviarLargoYSerial(cpu, bytes, serialPCB);
+		pthread_mutex_unlock(&mutexClientes);
 		free(serialPCB);
 	}
 }
 void expulsarProceso(t_proceso* proceso) {
-	enviarHeader(proceso->cpu, HeaderDesalojarProceso);
+	// mutexProcesos SAFE
+	enviarHeader(proceso->socketCPU, HeaderDesalojarProceso);
 	cambiarEstado(proceso, READY);
 }
 void continuarProceso(t_proceso* proceso) {
-	enviarHeader(proceso->cpu, HeaderContinuarProceso);
+	// mutexProcesos SAFE
+	enviarHeader(proceso->socketCPU, HeaderContinuarProceso);
 }
 void bloqueo(t_bloqueo* info) {
 	log_debug(bgLogger, "Ejecutando IO pid:%d por:%dseg", info->PID,
@@ -109,7 +120,10 @@ void bloqueo(t_bloqueo* info) {
 	free(info);
 }
 void cambiarEstado(t_proceso* proceso, int estado) {
-	if (matrizEstados[proceso->estado][estado]) {
+	pthread_mutex_lock(&mutexEstados);
+	bool legalidad = matrizEstados[proceso->estado][estado];
+	pthread_mutex_lock(&mutexEstados);
+	if (legalidad) {
 		log_debug(bgLogger, "Cambio de estado pid:%d de:%d a:%d",
 				proceso->PCB->PID, proceso->estado, estado);
 		if (proceso->estado == EXEC)

@@ -31,7 +31,7 @@ struct sockaddr_in direccionConsola, direccionCPU, direccionUMC;
 unsigned int tamanioDireccionConsola, tamanioDireccionCPU, tamanio_pagina;
 // Hilos
 pthread_t hiloCrearProcesos, hiloBloqueos, hiloPlanificacion;
-pthread_mutex_t mutexProcesos, mutexUMC;
+pthread_mutex_t mutexProcesos, mutexUMC, mutexClientes, mutexEstados;
 // Tipos
 typedef enum t_proceso_estado {
 	NEW, READY, EXEC, BLOCK, EXIT
@@ -47,6 +47,8 @@ typedef struct t_proceso {
 	int cpu; // Indice de socketCliente, legible solo cuando estado sea EXEC
 	t_proceso_estado estado;
 	t_PCB* PCB;
+	int socketConsola;
+	int socketCPU;
 } t_proceso;
 typedef struct t_IO {
 	int retardo;
@@ -113,6 +115,7 @@ void handshakearUMC();
 void recibirTamanioPagina();
 // Consola
 char* getScript(int consola);
+t_cliente* obtenerCliente(int indice); // Thread safe
 // Procesos
 int crearProceso(int consola);
 void rechazarProceso(int PID);

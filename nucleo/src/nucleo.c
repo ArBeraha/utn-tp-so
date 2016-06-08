@@ -5,7 +5,12 @@
  *      Author: utnso
  */
 #include "nucleo.h"
-
+t_cliente* obtenerCliente(int indice){
+	pthread_mutex_lock(&mutexClientes);
+	t_cliente* cliente = &clientes[indice];
+	pthread_mutex_unlock(&mutexClientes);
+	return cliente;
+}
 /* ---------- INICIO PARA UMC ---------- */
 bool pedirPaginas(int PID, char* codigo) {
 	t_proceso* proceso = (t_proceso*) PID;
@@ -89,10 +94,12 @@ void recibirTamanioPagina(){
 /*  ----------INICIO CONSOLA ---------- */
 char* getScript(int consola) {
 	log_debug(bgLogger, "Recibiendo archivo de consola %d...", consola);
+	pthread_mutex_lock(&mutexClientes);
 	char* script = leerLargoYMensaje(consola);
+	clientes[consola].atentido = false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
+	pthread_mutex_unlock(&mutexClientes);
 	log_info(activeLogger, "Script de consola %d recibido:\n%s", consola,
 			script);
-	clientes[consola].atentido = false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
 	return script;
 }
 /*  ----------INICIO NUCLEO ---------- */
@@ -116,7 +123,7 @@ void cargarConfiguracion() {
 }
 void inicializar() {
 	crearLogs("Nucleo", "Nucleo",0);
-	testear(test_serializacion);
+	//testear(test_serializacion);
 	log_info(activeLogger, "INICIALIZANDO");
 	espera.tv_sec = 2;
 	espera.tv_usec = 500000;
@@ -129,8 +136,7 @@ void inicializar() {
 	tablaSEM = dictionary_create();
 	tablaGlobales = dictionary_create();
 	cargarConfiguracion();
-	//configHilos();
-	iniciarAtrrYMutexs(2,&mutexProcesos,&mutexUMC);
+	iniciarAtrrYMutexs(3,&mutexProcesos,&mutexUMC,&mutexClientes,&mutexEstados);
 	crearSemaforos();
 	crearIOs();
 	crearCompartidas();
@@ -141,7 +147,7 @@ void inicializar() {
 			&tamanioDireccionCPU, &activadoCPU);
 	inicializarClientes();
 	conectarAUMC();
-	testear(test_nucleo);
+	//testear(test_nucleo);
 	crearHilo(&hiloPlanificacion,(void*) planificar);
 }
 void finalizar() {
@@ -231,7 +237,7 @@ void atenderHandshake(int cliente){
 	clientes[cliente].atentido = false;
 }
 void procesarHeader(int cliente, char *header) {
-	// Segun el protocolo procesamos el header del mensaje recibido
+	// mutexClientes SAFE
 	log_debug(bgLogger, "Llego un mensaje con header %d", charToInt(header));
 	clientes[cliente].atentido = true;
 
@@ -255,7 +261,8 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderScript:
-		crearHilo(&hiloCrearProcesos,(void*) crearProceso);
+		// Thread mutexClientes UNSAFE
+		crearHiloConParametro(&hiloCrearProcesos,(void*) crearProceso ,(void*) cliente);
 		break;
 
 	case HeaderPedirValorVariableCompartida:
@@ -296,17 +303,25 @@ int main(void) {
 
 		mayorDescriptor =
 				(socketConsola > socketCPU) ? socketConsola : socketCPU;
+		pthread_mutex_lock(&mutexClientes);
 		incorporarClientes();
+		pthread_mutex_unlock(&mutexClientes);
 
-		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, &espera);
+		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, NULL);
 
-		if (tieneLectura(socketConsola))
+		if (tieneLectura(socketConsola)){
+			pthread_mutex_lock(&mutexClientes);
 			procesarNuevasConexionesExtendido(&socketConsola);
-
-		if (tieneLectura(socketCPU))
+			pthread_mutex_unlock(&mutexClientes);
+		}
+		if (tieneLectura(socketCPU)){
+			pthread_mutex_lock(&mutexClientes);
 			procesarNuevasConexionesExtendido(&socketCPU);
+			pthread_mutex_unlock(&mutexClientes);
+		}
 
 		for (i = 0; i < getMaxClients(); i++) {
+			pthread_mutex_lock(&mutexClientes);
 			if (tieneLectura(clientes[i].socket)) {
 				if (read(clientes[i].socket, header, 1) == 0) {
 					log_error(activeLogger, "Un cliente se desconectó.");
@@ -314,7 +329,9 @@ int main(void) {
 				} else
 					procesarHeader(i, header);
 			}
+			pthread_mutex_unlock(&mutexClientes);
 		}
+
 	}
 	finalizar();
 	return EXIT_SUCCESS;

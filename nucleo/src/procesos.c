@@ -14,13 +14,19 @@ void rechazarProceso(int PID) {
 	if (proceso->estado != NEW)
 		log_warning(activeLogger,
 				"Se esta rechazando el proceso %d ya aceptado!", PID);
+	pthread_mutex_lock(&mutexClientes);
 	enviarHeader(clientes[proceso->consola].socket, HeaderConsolaFinalizarRechazado);
+	pthread_mutex_unlock(&mutexClientes);
 	log_info(bgLogger,
 			"Consola avisada sobre la finalización del proceso ansisop.");
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
 	pthread_mutex_lock(&mutexProcesos);
 	list_remove_by_value(listaProcesos, (void*) PID);
 	pthread_mutex_unlock(&mutexProcesos);
+	// POSIBLE DOBLE ELIMINACION?
+//	pthread_mutex_lock(&mutexClientes);
+//	quitarCliente(proceso->consola);
+//	pthread_mutex_unlock(&mutexClientes);
 	pcb_destroy(proceso->PCB);
 	free(proceso);
 }
@@ -30,22 +36,27 @@ int crearProceso(int consola) {
 	proceso->PCB->PID = (int) proceso;
 	proceso->estado = NEW;
 	proceso->consola = consola;
-	clientes[consola].pid = proceso->PCB->PID;
-	proceso->cpu = SIN_ASIGNAR;
-	pthread_mutex_lock(&mutexProcesos);
-	list_add(listaProcesos, proceso);
-	pthread_mutex_unlock(&mutexProcesos);
-	if (!CU_is_test_running()) {
-		char* codigo = getScript(consola);
-		asignarMetadataProceso(proceso, codigo);
-		proceso->PCB->cantidad_paginas = ceil(
-				((double) strlen(codigo)) / ((double) tamanio_pagina));
-		if (pedirPaginas(proceso->PCB->PID, codigo))
-			cambiarEstado(proceso,READY);
-		else
-			rechazarProceso(proceso->PCB->PID);
-		free(codigo);
+	pthread_mutex_lock(&mutexClientes);
+	proceso->socketConsola = clientes[consola].socket;
+	pthread_mutex_unlock(&mutexClientes);
+	//if (!CU_is_test_running()) {
+	char* codigo = getScript(consola);
+	proceso->PCB->cantidad_paginas = ceil(((double) strlen(codigo)) / ((double) tamanio_pagina));
+	if (!pedirPaginas(proceso->PCB->PID, codigo)){
+		rechazarProceso(proceso->PCB->PID);
 	}
+	else{
+		asignarMetadataProceso(proceso, codigo);
+		pthread_mutex_lock(&mutexClientes);
+		clientes[consola].pid = (int)proceso;
+		pthread_mutex_unlock(&mutexClientes);
+		proceso->cpu = SIN_ASIGNAR;
+		cambiarEstado(proceso,READY);
+		pthread_mutex_lock(&mutexProcesos);
+		list_add(listaProcesos, proceso);
+		pthread_mutex_unlock(&mutexProcesos);
+	}
+	free(codigo);
 	return proceso->PCB->PID;
 }
 

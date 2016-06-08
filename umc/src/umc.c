@@ -37,14 +37,20 @@ void cargarCFG() {
 
 
 int estaEnTlb(pedidoLectura_t pedido){
+	printf("ACAA === 1\n");
 	pthread_mutex_lock(&lock_accesoTlb);
 	int i;
+	printf("ACAA === 2\n");
 	for(i=0;i<config.entradas_tlb; i++){
+		printf("ACAA === 3\n");
 		if(tlb[i].pid==pedido.pid && tlb[i].pagina==pedido.paginaRequerida){
+			printf("ACAA === SALI! \n");
 			pthread_mutex_unlock(&lock_accesoTlb);
 			return 1;
 		}
+		printf("ACAA === 4\n");
 	}
+	printf("ACAA === 5\n");
 	pthread_mutex_unlock(&lock_accesoTlb);
 	return 0;
 }
@@ -157,41 +163,42 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 				tlb[i].marcoUtilizado = pagina->marcoUtilizado;
 				tlb[i].pid = pidParam;
 				tlb[i].contadorTiempo = tiempo++;
+
+				pthread_mutex_unlock(&lock_accesoTlb);
 				return;
 			}
-		pthread_mutex_unlock(&lock_accesoTlb);
 		}
-
+		pthread_mutex_unlock(&lock_accesoTlb);
 		reemplazarEntradaConLru(pagina,pidParam);
 	}
 }
 
 int buscarEnSwap(pedidoLectura_t pedido){
-	char* serialPID = intToChar4(pedido.pid);
-	char* serialPagina = intToChar4(pedido.paginaRequerida);
-	char* contenidoPagina = malloc(config.tamanio_marco+1);
+//	char* serialPID = intToChar4(pedido.pid);
+//	char* serialPagina = intToChar4(pedido.paginaRequerida);
+//	char* contenidoPagina = malloc(config.tamanio_marco+1);
+//
+//	enviarHeader(swapServer,HeaderOperacionLectura);
+//
+//	send_w(swapServer,serialPID,sizeof(int));
+//	send_w(swapServer,serialPagina,sizeof(int));
+//
+//	char* header = recv_waitall_ws(swapServer,1);
+//
+//	if (charToInt(header)==HeaderOperacionLectura){
+//		printf("Contesto con la pagina\n");
+//	}
+//	else{
+//		return 0;
+//	}
+//
+//	contenidoPagina = recv_waitall_ws(swapServer,config.tamanio_marco);
+//	contenidoPagina[config.tamanio_marco]='\0';
+//	printf("Llego el contenido de swap:%s",contenidoPagina);
 
-	enviarHeader(swapServer,HeaderOperacionLectura);
-
-	send_w(swapServer,serialPID,sizeof(int));
-	send_w(swapServer,serialPagina,sizeof(int));
-
-	char* header = recv_waitall_ws(swapServer,1);
-
-	if (charToInt(header)==HeaderOperacionLectura){
-		printf("Contesto con la pagina\n");
-	}
-	else{
-		return 0;
-	}
-
-	contenidoPagina = recv_waitall_ws(swapServer,config.tamanio_marco);
-	contenidoPagina[config.tamanio_marco]='\0';
-	printf("Llego el contenido de swap:%s",contenidoPagina);
-
+	char* contenidoPagina = "SWAP";
 	agregarAMemoria(pedido,contenidoPagina);
 
-//	char* contenido = "SWAP"; PARA TEST
 
 	return 1;
 }
@@ -352,6 +359,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 		printf("PAGINA A SACAR DE MEMORIA: %d \n ", posicionPaginaSacada);
 
 
+
 		pthread_mutex_lock(&lock_accesoTabla);
 		t_list* tablaPaginaAReemplazar = list_get(listaTablasPaginas, pedido.pid);
 		tablaPagina_t* paginaASacarDeMemoria = list_get(tablaPaginaAReemplazar, posicionPaginaSacada);
@@ -367,10 +375,10 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 		tablaPagina_t* paginaACargar = list_get(tablaPaginaAReemplazar, pedido.paginaRequerida);
 		pthread_mutex_unlock(&lock_accesoTabla);
 
-		pthread_mutex_lock(&lock_accesoMarcosOcupados);
 		int unMarcoNuevo = buscarPrimerMarcoLibre();
-		vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
 		pthread_mutex_lock(&lock_accesoMarcosOcupados);
+		vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
+		pthread_mutex_unlock(&lock_accesoMarcosOcupados);
 
 		paginaACargar->marcoUtilizado = unMarcoNuevo;
 		paginaACargar->bitPresencia = 1;
@@ -386,10 +394,11 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 		tablaPagina_t* paginaACargar = list_get(tablaPaginaAReemplazar,pedido.paginaRequerida);
 		pthread_mutex_unlock(&lock_accesoTabla);
 
-		pthread_mutex_lock(&lock_accesoMarcosOcupados);
 		int unMarcoNuevo = buscarPrimerMarcoLibre();
+		pthread_mutex_lock(&lock_accesoMarcosOcupados);
 		vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
 		pthread_mutex_unlock(&lock_accesoMarcosOcupados);
+
 		paginaACargar->marcoUtilizado = unMarcoNuevo;
 		paginaACargar->bitPresencia = 1;
 		paginaACargar->bitModificacion = 0;
@@ -405,8 +414,8 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 	log_info(activeLogger,"LECTURA DE pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
 //SI ESTA EN TLB DEVUELVO
-
 	if(estaEnTlb(pedido) && config.entradas_tlb){
+
 		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d PARA LECTURA \n",pedido.pid,pedido.paginaRequerida);
 		int pos = buscarEnTlb(pedido);
 
@@ -416,9 +425,9 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 		usleep(retardoMemoria);
 
 		pthread_mutex_lock(&lock_accesoMemoria);
-		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes); // FALLANDO
+		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
 		contenido[pedido.cantBytes]='\0';
-		pthread_mutex_lock(&lock_accesoMemoria);
+		pthread_mutex_unlock(&lock_accesoMemoria);
 
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
 		return contenido;
@@ -462,12 +471,13 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 // SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y LA CARGO EN MEMORIA Y TLB Y VUELVO A LLAMAR A FUNCION
 				else{
 					pthread_mutex_unlock(&lock_accesoTabla);
-					log_info(activeLogger,"Se encontro la pagina pero NO esta en memoria (LECTURA)! Buscando en swap: pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+					log_info(activeLogger,"Se encontro la pagina pero NO esta en memoria (LECTURA)! Buscando en swap: pag:%d de pid:%d \n",pedido.paginaRequerida,pedido.pid);
 
 					int pudo = buscarEnSwap(pedido);
+
 					if(pudo){
 						agregarATlb(paginaBuscada,pedido.pid);
-						log_info(activeLogger,"Cargada pagina en memoria, agregada a TLB, se vuelve a hacer el pedido de lectura! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+						log_info(activeLogger,"Cargada pagina en memoria, agregada a TLB, se vuelve a hacer el pedido de lectura! Devolviendo pag:%d de pid:%d \n",pedido.paginaRequerida,pedido.pid);
 						devolverPedidoPagina(pedido);
 					}
 					else{
@@ -537,7 +547,7 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 
 	}
 	else{
-		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas",pedido.pid,pedido.paginaRequerida);
+		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas \n",pedido.pid,pedido.paginaRequerida);
 		printf("PID: %d \n",pedido.pid);
 		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
 			pthread_mutex_lock(&lock_accesoTabla);
@@ -555,7 +565,7 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 
 				if(paginaBuscada->bitPresencia){
 					pthread_mutex_unlock(&lock_accesoTabla);
-					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Escribiendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Escribiendo pag:%d de pid:%d \n",pedido.paginaRequerida,pedido.pid);
 
 					printf("Accediendo a memoria... \n ");
 					usleep(retardoMemoria);
@@ -944,6 +954,15 @@ void crearMemoriaYTlbYTablaPaginas(){
 		vectorUltimaPosicionSacada[i]=0;
 	}
 
+	pthread_attr_init(&detachedAttr);
+	pthread_attr_setdetachstate(&detachedAttr, PTHREAD_CREATE_DETACHED);
+	pthread_mutex_init(&lock_accesoMarcosOcupados, NULL);
+	pthread_mutex_init(&lock_accesoLog, NULL);
+	pthread_mutex_init(&lock_accesoMemoria, NULL);
+	pthread_mutex_init(&lock_accesoTabla, NULL);
+	pthread_mutex_init(&lock_accesoTlb, NULL);
+	pthread_mutex_init(&lock_accesoUltimaPos, NULL);
+
 }
 // FIN 3
 
@@ -1067,7 +1086,7 @@ void procesarHeader(int cliente, char *header){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
 			clientes[cliente].identidad = charToInt(payload);
 			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
-			pthread_create(&(vectorHilosCpu[cliente]),NULL,(void*)esperar_header,(void*)cliente);
+			pthread_create(&(vectorHilosCpu[cliente]),&detachedAttr,(void*)esperar_header,(void*)cliente);
 
 		}else if(charToInt(payload)==SOYNUCLEO){
 			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
@@ -1186,17 +1205,29 @@ int main(void) {
 
 	test2();
 
+	recibirComandos();
+
 //	test();
 
 //	pthread_create(&hiloRecibirComandos,NULL,(void*)recibirComandos,NULL);
 
 //	servidorCPUyNucleoExtendido();
-
+//
 //	conexionASwap();
+//
+//	pedidoLectura_t pedido1;
+//			pedido1.pid=2;
+//			pedido1.paginaRequerida=1;
+//			pedido1.offset=0;
+//			pedido1.cantBytes=5;
+//
+//	buscarEnSwap(pedido1);
+//
+//	recibirComandos();
 
 
 
-//	finalizar();
+	finalizar();
 
 	return 0;
 }
@@ -1440,7 +1471,7 @@ void ejemploSWAP(){
 
 void conexionASwap(){ //Creada para unir las dos funciones y crear un hilo
 	realizarConexionASwap();
-	ejemploSWAP();
+//	ejemploSWAP();
 	escucharPedidosDeSwap();
 
 }

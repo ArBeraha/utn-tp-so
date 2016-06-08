@@ -114,12 +114,6 @@ void cargarConfiguracion() {
 	config.sharedVars = config_get_array_value(configNucleo, "SHARED_VARS");
 	config_destroy(configNucleo);
 }
-void configHilos() {
-	pthread_attr_init(&detachedAttr);
-	pthread_attr_setdetachstate(&detachedAttr, PTHREAD_CREATE_DETACHED);
-	pthread_mutex_init(&mutexProcesos, NULL);
-	pthread_mutex_init(&mutexUMC, NULL);
-}
 void inicializar() {
 	crearLogs("Nucleo", "Nucleo",0);
 	testear(test_serializacion);
@@ -135,7 +129,8 @@ void inicializar() {
 	tablaSEM = dictionary_create();
 	tablaGlobales = dictionary_create();
 	cargarConfiguracion();
-	configHilos();
+	//configHilos();
+	iniciarAtrrYMutexs(2,&mutexProcesos,&mutexUMC);
 	crearSemaforos();
 	crearIOs();
 	crearCompartidas();
@@ -147,8 +142,7 @@ void inicializar() {
 	inicializarClientes();
 	conectarAUMC();
 	testear(test_nucleo);
-	pthread_create(&hiloPlanificacion, &detachedAttr, (void*) planificar, NULL);
-
+	crearHilo(&hiloPlanificacion,(void*) planificar);
 }
 void finalizar() {
 	log_info(activeLogger, "FINALIZANDO");
@@ -157,9 +151,7 @@ void finalizar() {
 	queue_destroy(colaCPU);
 	queue_destroy(colaListos);
 	queue_destroy(colaSalida);
-	pthread_mutex_destroy(&mutexProcesos);
-	pthread_mutex_destroy(&mutexUMC);
-	pthread_attr_destroy(&detachedAttr);
+	finalizarAtrrYMutexs();
 	destruirSemaforos();
 	destruirIOs();
 	destruirCompartidas();
@@ -263,8 +255,7 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderScript:
-		pthread_create(&hiloCrearProcesos, &detachedAttr, (void*) crearProceso,
-				(void*) cliente);
+		crearHilo(&hiloCrearProcesos,(void*) crearProceso);
 		break;
 
 	case HeaderPedirValorVariableCompartida:

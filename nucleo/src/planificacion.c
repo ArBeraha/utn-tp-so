@@ -61,7 +61,7 @@ void planificarIO(char* io_id, t_IO* io) {
 		t_bloqueo* info = malloc(sizeof(t_bloqueo));
 		info->IO = io;
 		info->PID = (int) queue_pop(io->cola);
-		pthread_create(&hiloBloqueos, &detachedAttr, (void*) bloqueo, info);
+		crearHiloConParametro(&hiloBloqueos,(void*) bloqueo, info);
 	}
 }
 bool terminoQuantum(t_proceso* proceso) {

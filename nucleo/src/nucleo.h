@@ -7,7 +7,6 @@
 #ifndef NUCLEO_H_
 #define NUCLEO_H_
 
-#include <pthread.h>
 #include <stdbool.h>
 #include <commons/string.h>
 #include <commons/log.h>
@@ -19,6 +18,7 @@
 #include "log.h"
 #include "commonTypes.h"
 #include "serializacion.h"
+#include "hilos.h"
 
 #define SIN_ASIGNAR -1
 /* ---------- INICIO DEBUG ---------- */
@@ -31,7 +31,6 @@ struct sockaddr_in direccionConsola, direccionCPU, direccionUMC;
 unsigned int tamanioDireccionConsola, tamanioDireccionCPU, tamanio_pagina;
 // Hilos
 pthread_t hiloCrearProcesos, hiloBloqueos, hiloPlanificacion;
-pthread_attr_t detachedAttr; // Config para todos los hilos!
 pthread_mutex_t mutexProcesos, mutexUMC;
 // Tipos
 typedef enum t_proceso_estado {
@@ -92,7 +91,6 @@ t_planificacion algoritmo;
 struct timeval espera;
 // Nucleo
 void cargarCFG();
-void configHilos();
 void procesarHeader(int cliente, char *header);
 void finalizar();
 int getHandshake();

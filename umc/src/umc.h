@@ -79,7 +79,8 @@ typedef struct{ //No hace falta indicar el numero de la pagina, es la posicion
 }tablaPagina_t;
 
 
-//Globales servidor
+//Globales
+
 int socketCPU, socketNucleo;
 int activadoCPU, activadoNucleo; //No hace falta iniciarlizarlas. Lo hacer la funcion permitir reutilizacion ahora.
 struct sockaddr_in direccionCPU, direccionNucleo;
@@ -92,36 +93,31 @@ int swapServer;
 
 t_log *activeLogger, *bgLogger;
 char* memoria;
-//int* memoria;
 
 char* pedidoPaginaPid ;
 char* pedidoPaginaTamanioContenido;
 
 t_list* listaTablasPaginas;
-//t_list* tabla5;
-
 tlb_t* tlb;
 
-unsigned int* vectorMarcosOcupados; //vectorMarcosOcupados[n]== 1 -> Esta ocupado
+unsigned int* vectorMarcosOcupados;
 
 int tamanioMemoria;
 
 t_log *dump;
 
-char* ultimoByteOcupado;
 
 char* vectorClientes;
 
 int retardoMemoria;
 
-
 pthread_mutex_t lock_accesoMemoria;
+pthread_mutex_t lock_accesoTabla;
+pthread_mutex_t lock_accesoTlb;
+pthread_mutex_t lock_accesoMarcosOcupados;
+pthread_mutex_t lock_accesoUltimaPos;
 
 pthread_t vectorHilosCpu[MAXCLIENTS];
-
-//pthread_t* vectorHilosCpu;
-
-//t_stack* pilaAccesosTlb;
 
 int tiempo;
 
@@ -179,10 +175,6 @@ void crearMemoriaYTlbYTablaPaginas();
 void test();
 
 //Fin prototipos
-
-
-
-
 
 
 #endif /* UMC_H_ */

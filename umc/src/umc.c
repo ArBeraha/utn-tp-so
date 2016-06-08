@@ -37,58 +37,68 @@ void cargarCFG() {
 
 
 int estaEnTlb(pedidoLectura_t pedido){
+	pthread_mutex_lock(&lock_accesoTlb);
 	int i;
 	for(i=0;i<config.entradas_tlb; i++){
 		if(tlb[i].pid==pedido.pid && tlb[i].pagina==pedido.paginaRequerida){
+			pthread_mutex_unlock(&lock_accesoTlb);
 			return 1;
 		}
 	}
+	pthread_mutex_unlock(&lock_accesoTlb);
 	return 0;
 }
 
 int buscarEnTlb(pedidoLectura_t pedido){ //Repito codigo, i know, pero esta soluc no funciona para las dos, porque si se encuentra el pedido en tlb[0] y retornas 'i', "no estaria en tlb" cuando si
+	pthread_mutex_lock(&lock_accesoTlb);
 	int i;
 	for(i=0;i<config.entradas_tlb; i++){
 		if(tlb[i].pid==pedido.pid && tlb[i].pagina==pedido.paginaRequerida){
 			tlb[i].contadorTiempo = tiempo++;
+			pthread_mutex_unlock(&lock_accesoTlb);
 			return i;
 		}
 	}
+	pthread_mutex_unlock(&lock_accesoTlb);
 	return 0;
 }
 
 int existePidEnListadeTablas(int pid){
 	t_list* lista = list_create();
+	pthread_mutex_lock(&lock_accesoTabla);
 	lista=list_get(listaTablasPaginas, pid);
 	if(list_size(lista)==0){
+		pthread_mutex_unlock(&lock_accesoTabla);
 		return 0;
 	}else{
+		pthread_mutex_unlock(&lock_accesoTabla);
 		return 1;
 	}
 }
 
 int existePaginaBuscadaEnTabla(int pag, t_list* tablaPaginaBuscada){
 	tablaPagina_t* tabla = malloc(sizeof(tablaPagina_t));
-		tabla=list_get(tablaPaginaBuscada, pag);
-		if(tabla){
-			return 1;
-		}else{
-			return 0;
-		}
-}
-
-char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido){ //Necesito esta funcion?
-	int pos = marcoBuscado * config.tamanio_marco;
-	return &memoria[pos];  //TODO VER!
+	pthread_mutex_lock(&lock_accesoTabla);
+	tabla=list_get(tablaPaginaBuscada, pag);
+	if(tabla){
+		pthread_mutex_unlock(&lock_accesoTabla);
+		return 1;
+	}else{
+		pthread_mutex_unlock(&lock_accesoTabla);
+		return 0;
+	}
 }
 
 int buscarPrimerMarcoLibre(){
 	int i;
+	pthread_mutex_lock(&lock_accesoMarcosOcupados);
 	for(i=0;i<config.cantidad_marcos;i++){
 		if(vectorMarcosOcupados[i]==0){
+			pthread_mutex_unlock(&lock_accesoMarcosOcupados);
 			return i;
 		}
 	}
+	pthread_mutex_unlock(&lock_accesoMarcosOcupados);
 	return -1;
 }
 
@@ -96,11 +106,13 @@ int cantidadMarcosLibres(){
 	int i;
 	int c=0;
 
+	pthread_mutex_lock(&lock_accesoMarcosOcupados);
 	for(i=0;i<config.cantidad_marcos;i++){
 		if(vectorMarcosOcupados[i]==0){
 			c++;
 		}
 	}
+	pthread_mutex_unlock(&lock_accesoMarcosOcupados);
 	return c;
 }
 
@@ -110,6 +122,7 @@ int cantidadMarcosLibres(){
 // 1. Funciones principales
 
 void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam){ //Y la agrega tmb...
+	pthread_mutex_lock(&lock_accesoTlb);
 	int menorTiempo= tlb[0].contadorTiempo;
 	int posicionMenorTiempo = 0;
 	int i;
@@ -123,7 +136,7 @@ void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam){ //Y la agrega 
 	tlb[posicionMenorTiempo].pagina=pagina->nroPagina;
 	tlb[posicionMenorTiempo].marcoUtilizado=pagina->marcoUtilizado;
 	tlb[posicionMenorTiempo].contadorTiempo=tiempo++;
-
+	pthread_mutex_unlock(&lock_accesoTlb);
 }
 
 
@@ -136,6 +149,7 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 
 	if(estaEnTlb(pedido)==0){
 		int i;
+		pthread_mutex_lock(&lock_accesoTlb);
 		for(i=0;i<config.entradas_tlb;i++){
 			if(tlb[i].pid==-1){
 				//Se encontro un espacio libre en la tlb, vamos a guardarlo ahi
@@ -145,6 +159,7 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 				tlb[i].contadorTiempo = tiempo++;
 				return;
 			}
+		pthread_mutex_unlock(&lock_accesoTlb);
 		}
 
 		reemplazarEntradaConLru(pagina,pidParam);
@@ -170,6 +185,9 @@ int buscarEnSwap(pedidoLectura_t pedido){
 }
 
 int sacarConClock(int pid){
+
+	pthread_mutex_lock(&lock_accesoTabla);
+	pthread_mutex_lock(&lock_accesoUltimaPos);
 
 	printf("El pid: %d \n",pid);
 	t_list* tabla = list_get(listaTablasPaginas, pid); //TABLA CON ID A REEMPLAZAR
@@ -198,10 +216,15 @@ int sacarConClock(int pid){
 		}
 	}
 
+	pthread_mutex_unlock(&lock_accesoUltimaPos);
+	pthread_mutex_unlock(&lock_accesoTabla);
 	printf("Algo fallo en CLOCK \n");
 }
 
 int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO QUE ANDE!
+
+	pthread_mutex_lock(&lock_accesoTabla);
+	pthread_mutex_lock(&lock_accesoUltimaPos);
 
 	t_list* tabla = list_get(listaTablasPaginas, pid); //TABLA CON ID A REEMPLAZAR
 	int cantidadPaginas = list_size(tabla);
@@ -250,14 +273,21 @@ int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO Q
 		}
 	}
 
+	pthread_mutex_unlock(&lock_accesoUltimaPos);
+	pthread_mutex_unlock(&lock_accesoTabla);
+
 	printf("Algo fallo en CLOCK MODIFICADO \n");
 	return -1;
 }
 
 void sacarDeMemoria(tablaPagina_t* pagina){
+		pthread_mutex_lock(&lock_accesoMemoria);
 	memset(memoria+(pagina->marcoUtilizado * config.tamanio_marco),'\0',config.tamanio_marco);
+		pthread_mutex_lock(&lock_accesoMarcosOcupados);
 	vectorMarcosOcupados[pagina->marcoUtilizado]=0;
+		pthread_mutex_unlock(&lock_accesoMarcosOcupados);
 	pagina->marcoUtilizado=-1;
+		pthread_mutex_unlock(&lock_accesoMemoria);
 }
 
 void enviarASwap(tablaPagina_t* pagina){
@@ -268,9 +298,10 @@ void enviarASwap(tablaPagina_t* pagina){
 }
 
 int cantPaginasEnMemoriaDePid(int pid){
-
+	pthread_mutex_lock(&lock_accesoTabla);
 	t_list* tablaPaginaAReemplazar = list_get(listaTablasPaginas, pid);
 	int cantidadPaginas = list_size(tablaPaginaAReemplazar);
+
 	int i;
 	int contador=0;
 
@@ -281,7 +312,7 @@ int cantPaginasEnMemoriaDePid(int pid){
 			contador++;
 		}
 	}
-
+	pthread_mutex_unlock(&lock_accesoTabla);
 	return contador;
 }
 
@@ -302,20 +333,28 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 		}
 		printf("PAGINA A SACAR DE MEMORIA: %d \n ", posicionPaginaSacada);
 
-		t_list* tablaPaginaAReemplazar = list_get(listaTablasPaginas, pedido.pid);
 
+		pthread_mutex_lock(&lock_accesoTabla);
+		t_list* tablaPaginaAReemplazar = list_get(listaTablasPaginas, pedido.pid);
 		tablaPagina_t* paginaASacarDeMemoria = list_get(tablaPaginaAReemplazar, posicionPaginaSacada);
+		pthread_mutex_unlock(&lock_accesoTabla);
 
 		//TODO TODO TODO ENVIAR A SWAP!!!!!  TODO TODO TODO
 		enviarASwap(paginaASacarDeMemoria);
 		sacarDeMemoria(paginaASacarDeMemoria);
+
 		paginaASacarDeMemoria->bitPresencia=0;
 		paginaASacarDeMemoria->marcoUtilizado=-1;
 
+		pthread_mutex_lock(&lock_accesoTabla);
 		tablaPagina_t* paginaACargar = list_get(tablaPaginaAReemplazar, pedido.paginaRequerida);
+		pthread_mutex_unlock(&lock_accesoTabla);
 
-			int unMarcoNuevo = buscarPrimerMarcoLibre();
-			vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
+		pthread_mutex_lock(&lock_accesoMarcosOcupados);
+		int unMarcoNuevo = buscarPrimerMarcoLibre();
+		vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
+		pthread_mutex_lock(&lock_accesoMarcosOcupados);
+
 		paginaACargar->marcoUtilizado = unMarcoNuevo;
 		paginaACargar->bitPresencia = 1;
 		paginaACargar->bitModificacion = 0;
@@ -325,12 +364,15 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 		almacenarBytesEnUnaPagina(pedido,config.tamanio_marco,contenido);
 	}
 	else{
-
+		pthread_mutex_lock(&lock_accesoTabla);
 		t_list* tablaPaginaAReemplazar = list_get(listaTablasPaginas, pedido.pid);
 		tablaPagina_t* paginaACargar = list_get(tablaPaginaAReemplazar,pedido.paginaRequerida);
+		pthread_mutex_unlock(&lock_accesoTabla);
 
+		pthread_mutex_lock(&lock_accesoMarcosOcupados);
 		int unMarcoNuevo = buscarPrimerMarcoLibre();
 		vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
+		pthread_mutex_unlock(&lock_accesoMarcosOcupados);
 		paginaACargar->marcoUtilizado = unMarcoNuevo;
 		paginaACargar->bitPresencia = 1;
 		paginaACargar->bitModificacion = 0;
@@ -356,8 +398,10 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 		printf("Accediendo a memoria... \n");
 		usleep(retardoMemoria);
 
+		pthread_mutex_lock(&lock_accesoMemoria);
 		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes); // FALLANDO
 		contenido[pedido.cantBytes]='\0';
+		pthread_mutex_lock(&lock_accesoMemoria);
 
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
 		return contenido;
@@ -367,24 +411,29 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 	else{
 		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas",pedido.pid,pedido.paginaRequerida);
 		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
+			pthread_mutex_lock(&lock_accesoTabla);
 			t_list* tablaPaginaBuscada = list_get(listaTablasPaginas, pedido.pid);
+			pthread_mutex_unlock(&lock_accesoTabla);
 			if(existePaginaBuscadaEnTabla(pedido.paginaRequerida,tablaPaginaBuscada)){ //Si la pagina existe dentro de la tabla particular
+				pthread_mutex_lock(&lock_accesoTabla);
 				tablaPagina_t* paginaBuscada = list_get(tablaPaginaBuscada, pedido.paginaRequerida);
-
 //SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
 
 				printf("Accediendo a memoria... \n"); //Accedo a memoria para leer la tabla
 				usleep(retardoMemoria);
 
 				if(paginaBuscada->bitPresencia){
+					pthread_mutex_unlock(&lock_accesoTabla);
 					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
 					printf("Accediendo a memoria... \n");
 					usleep(retardoMemoria);
 
 					char* contenido = malloc(pedido.cantBytes + 1);
+					pthread_mutex_lock(&lock_accesoMemoria);
 					memcpy(contenido,memoria+paginaBuscada->marcoUtilizado * config.tamanio_marco+pedido.offset,pedido.cantBytes);
 					contenido[pedido.cantBytes]='\0';
+					pthread_mutex_unlock(&lock_accesoMemoria);
 
 					printf("marco tlb: %d \n", paginaBuscada->marcoUtilizado);
 
@@ -395,6 +444,7 @@ char* devolverPedidoPagina(pedidoLectura_t pedido){
 				}
 // SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y LA CARGO EN MEMORIA Y TLB Y VUELVO A LLAMAR A FUNCION
 				else{
+					pthread_mutex_unlock(&lock_accesoTabla);
 					log_info(activeLogger,"Se encontro la pagina pero NO esta en memoria (LECTURA)! Buscando en swap: pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
 					int pudo = buscarEnSwap(pedido);
@@ -452,7 +502,9 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 		printf("Accediendo a memoria... \n ");
 		usleep(retardoMemoria);
 
+		pthread_mutex_lock(&lock_accesoMemoria);
 		memcpy(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, buffer, strlen(buffer)); //size??? PARA QUE??
+		pthread_mutex_unlock(&lock_accesoMemoria);
 
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
 
@@ -465,9 +517,12 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas",pedido.pid,pedido.paginaRequerida);
 		printf("PID: %d \n",pedido.pid);
 		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
-		t_list* tablaPaginaBuscada = list_get(listaTablasPaginas, pedido.pid);
+			pthread_mutex_lock(&lock_accesoTabla);
+			t_list* tablaPaginaBuscada = list_get(listaTablasPaginas, pedido.pid);
+			pthread_mutex_unlock(&lock_accesoTabla);
 
 			if(existePaginaBuscadaEnTabla(pedido.paginaRequerida,tablaPaginaBuscada)){ //Si la pagina existe dentro de la tabla particular
+				pthread_mutex_lock(&lock_accesoTabla);
 				tablaPagina_t* paginaBuscada = list_get(tablaPaginaBuscada, pedido.paginaRequerida);
 
 	//SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
@@ -476,14 +531,19 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 				usleep(retardoMemoria);
 
 				if(paginaBuscada->bitPresencia){
-
+					pthread_mutex_unlock(&lock_accesoTabla);
 					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Escribiendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
 					printf("Accediendo a memoria... \n ");
 					usleep(retardoMemoria);
 
+					pthread_mutex_lock(&lock_accesoTabla);
 					paginaBuscada->bitModificacion = 1;  //NEW
+					pthread_mutex_unlock(&lock_accesoTabla);
+
+					pthread_mutex_lock(&lock_accesoMemoria);
 					memcpy(memoria+paginaBuscada->marcoUtilizado*config.tamanio_marco+pedido.offset, buffer, strlen(buffer)); //size??? PARA QUE??
+					pthread_mutex_unlock(&lock_accesoMemoria);
 
 					printf("Marco de la pagina: %d \n", paginaBuscada->marcoUtilizado);
 
@@ -494,10 +554,10 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 
 					//send_w(cliente, devolucion, 4);
 					return (devolverPedidoPagina(pedido)); //Provisorio para testear
-
 				}
 	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y TODO LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
 				else{
+					pthread_mutex_unlock(&lock_accesoTabla);
 					log_info(activeLogger,"Se encontro la pagina pero NO esta en memoria (ESCRITURA)! Buscando en swap: pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
 					int pudo = buscarEnSwap(pedido);
@@ -525,6 +585,8 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer){
 
 void sacarMarcosOcupados(int idPrograma){
 	t_list* auxiliar = list_create();
+
+	pthread_mutex_lock(&lock_accesoTabla);
 	auxiliar = list_get(listaTablasPaginas,idPrograma);
 
 	tablaPagina_t* tabla = malloc(sizeof(tablaPagina_t));
@@ -532,8 +594,12 @@ void sacarMarcosOcupados(int idPrograma){
 	int size = list_size(auxiliar);
 	for(i=0;i<size;i++){
 		tabla = list_get(auxiliar,i);
+
+		pthread_mutex_lock(&lock_accesoMarcosOcupados);
 		vectorMarcosOcupados[tabla->marcoUtilizado] = 0;
+		pthread_mutex_unlock(&lock_accesoMarcosOcupados);
 	}
+	pthread_mutex_unlock(&lock_accesoTabla);
 }
 
 void finalizarPrograma(int idPrograma){
@@ -547,6 +613,7 @@ void finalizarPrograma(int idPrograma){
 //2. Funciones que se mandan por consola
 
 void devolverTodasLasPaginas(){  //OK
+	pthread_mutex_lock(&lock_accesoTabla);
 	int cantidadTablas = list_size(listaTablasPaginas);
 	int i;
 
@@ -567,9 +634,11 @@ void devolverTodasLasPaginas(){  //OK
 			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d \n",i,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
 		}
 	}
+	pthread_mutex_unlock(&lock_accesoTabla);
 }
 
 void devolverPaginasDePid(int pid){ //OK
+	pthread_mutex_lock(&lock_accesoTabla);
 	t_list* unaTabla = malloc(sizeof(t_list));
 
 	if(existePidEnListadeTablas(pid)){
@@ -587,6 +656,7 @@ void devolverPaginasDePid(int pid){ //OK
 	}else{
 		printf("Ese pid no existe o no esta en uso! \n");
 	}
+	pthread_mutex_unlock(&lock_accesoTabla);
 }
 
 void imprimirRegionMemoria(char* region, int size){
@@ -597,7 +667,7 @@ void imprimirRegionMemoria(char* region, int size){
 }
 
 void devolverTodaLaMemoria(){
-
+	pthread_mutex_lock(&lock_accesoTabla);
 	int cantidadTablas = list_size(listaTablasPaginas);
 	int i;
 
@@ -620,26 +690,32 @@ void devolverTodaLaMemoria(){
 			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",i, unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
 			if(unaPagina->bitPresencia==1){
+				pthread_mutex_lock(&lock_accesoMemoria);
 				char* contenido = malloc(config.tamanio_marco+1);
 				memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
 				contenido[config.tamanio_marco]='\0';
+				pthread_mutex_lock(&lock_accesoMemoria);
 
 				imprimirRegionMemoria(contenido,config.tamanio_marco);
 			}
 
+			pthread_mutex_lock(&lock_accesoMemoria);
 			char* contenido = malloc(config.tamanio_marco+1);
 			memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
 			contenido[config.tamanio_marco]='\0';
+			pthread_mutex_lock(&lock_accesoMemoria);
 
 			log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: %s ",i, unaPagina->nroPagina,unaPagina->marcoUtilizado,contenido);
 
 			printf("\n");
 		}
 	}
+	pthread_mutex_unlock(&lock_accesoTabla);
 	printf("\n");
 }
 
 void devolverMemoriaDePid(int pid){ //OK
+	pthread_mutex_lock(&lock_accesoTabla);
 	t_list* unaTabla = malloc(sizeof(t_list));
 	int tamanioLista = list_size(listaTablasPaginas);
 
@@ -659,9 +735,11 @@ void devolverMemoriaDePid(int pid){ //OK
 
 				printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
+				pthread_mutex_lock(&lock_accesoMemoria);
 				char* contenido = malloc(config.tamanio_marco+1);
 				memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
 				contenido[config.tamanio_marco]='\0';
+				pthread_mutex_unlock(&lock_accesoMemoria);
 
 				imprimirRegionMemoria(contenido,config.tamanio_marco);
 				log_info(dump, "Pid: %d, Pag: %d, Marco: %d, Contenido: %s ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,contenido);
@@ -678,6 +756,7 @@ void devolverMemoriaDePid(int pid){ //OK
 		printf("El pid supera la cantidad de tablas \n");
 		log_info(dump, "El pid supera la cantidad de tablas ");
 	}
+	pthread_mutex_unlock(&lock_accesoTabla);
 }
 
 void fRetardo(){
@@ -755,6 +834,7 @@ void flushTlb(){
 	inicializarTlb();
 }
 void flushMemory(){ //Pone a todas las paginas bit de modificacion en 1
+	pthread_mutex_lock(&lock_accesoTabla);
 	int cantidadTablas = list_size(listaTablasPaginas);
 	int i;
 	for(i=0;i<cantidadTablas;i++){
@@ -769,6 +849,7 @@ void flushMemory(){ //Pone a todas las paginas bit de modificacion en 1
 			unaPagina->bitModificacion=1;
 		}
 	}
+	pthread_mutex_unlock(&lock_accesoTabla);
 }
 
 void recibirComandos(){  //ANDA OK
@@ -799,6 +880,7 @@ void recibirComandos(){  //ANDA OK
 
 // 3. Inicializar estructura de UMC
 void inicializarTlb(){
+	pthread_mutex_lock(&lock_accesoTlb);
 	tiempo=0;
 	int i;
 	for(i = 0; i<config.entradas_tlb; i++){
@@ -807,6 +889,7 @@ void inicializarTlb(){
 		tlb[i].marcoUtilizado=-1;
 		tlb[i].contadorTiempo=-1;
 	}
+	pthread_mutex_unlock(&lock_accesoTlb);
 }
 
 void crearMemoriaYTlbYTablaPaginas(){
@@ -828,9 +911,6 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 	memset(vectorMarcosOcupados,0,sizeof(int) * config.cantidad_marcos);
 
-	ultimoByteOcupado = malloc(config.cantidad_marcos * sizeof(int));
-	memset(ultimoByteOcupado,0,sizeof(int) * config.cantidad_marcos);
-
 	vectorClientes = malloc(MAXCLIENTS * sizeof(int));
 	memset(vectorClientes,-1, MAXCLIENTS * sizeof(int));
 
@@ -851,45 +931,11 @@ void crearMemoriaYTlbYTablaPaginas(){
 // 4. Procesar headers
 
 int primerNumeroPaginaLibre(int pid){
+	pthread_mutex_lock(&lock_accesoTabla);
 	t_list* auxiliar = list_create();
 	auxiliar= list_get(listaTablasPaginas,pid);
+	pthread_mutex_unlock(&lock_accesoTabla);
 	return list_size(auxiliar);
-}
-
-int reservarPaginaEnMemoria(int cantPaginasPedidas, int pid){ // COPIO COMPLETO EL CODIGO A FINES DE MAS EXPRESIVIDAD Y DE NO ROMPER NADA HECHO
-
-	if(cantidadMarcosLibres()>=cantPaginasPedidas){ //Si alcanzan los marcos libres...
-
-		int i;
-		for(i=0;i<cantPaginasPedidas;i++){
-
-			tablaPagina_t *nuevaPag = malloc(sizeof(tablaPagina_t));
-
-			int unMarcoNuevo = buscarPrimerMarcoLibre();
-			vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
-
-			int posicion;
-			if(existePidEnListadeTablas(pid)){
-				posicion = primerNumeroPaginaLibre(pid);
-			}else{
-				posicion = i;
-			}
-
-			nuevaPag->nroPagina = posicion;
-			nuevaPag->marcoUtilizado = unMarcoNuevo;
-			nuevaPag->bitPresencia=1;
-			nuevaPag->bitModificacion=0;
-			nuevaPag->bitUso=0;
-
-			t_list* tablaPag = list_get(listaTablasPaginas,pid);
-			list_add_in_index(tablaPag,posicion,nuevaPag);
-		}
-		return 1;
-	}
-	else {
-//		sacarConClock(cantPaginasPedidas); MEPA QUE NO VA!
-		return 0;
-	}
 }
 
 int reservarPagina(int cantPaginasPedidas, int pid) { // OK
@@ -906,6 +952,7 @@ int reservarPagina(int cantPaginasPedidas, int pid) { // OK
 			posicion = i;
 		}
 
+		pthread_mutex_lock(&lock_accesoTabla);
 		nuevaPag->nroPagina = posicion;
 		nuevaPag->marcoUtilizado = -1;
 		nuevaPag->bitPresencia = 0;
@@ -914,7 +961,9 @@ int reservarPagina(int cantPaginasPedidas, int pid) { // OK
 
 		t_list* tablaPag = list_get(listaTablasPaginas, pid);
 		list_add_in_index(tablaPag, posicion, nuevaPag);
+		pthread_mutex_unlock(&lock_accesoTabla);
 	}
+	return 1;
 }
 
 
@@ -1088,6 +1137,11 @@ void finalizar() {
 	log_destroy(dump);
 	list_destroy(listaTablasPaginas);
 	free(memoria);
+	pthread_mutex_destroy(&lock_accesoMarcosOcupados);
+	pthread_mutex_destroy(&lock_accesoMemoria);
+	pthread_mutex_destroy(&lock_accesoTabla);
+	pthread_mutex_destroy(&lock_accesoTlb);
+	pthread_mutex_destroy(&lock_accesoUltimaPos);
 }
 
 

@@ -119,8 +119,10 @@ void cerrarArchivo() {
 	munmap(archivo, archivoEnPaginas);
 	close(fd);
 }
-void finalizar() { //TODO irian mas cosas, tipo free de mallocs y esas cosas
+void finalizar() {
 	cerrarArchivo();
+	bitarray_destroy(espacio);
+	list_destroy(espacioUtilizado);
 	log_info(activeLogger, "Proceso Swap terminado");
 }
 // Funciones de comunicacion con umc
@@ -236,19 +238,6 @@ int primerEspacioLibre() {
 	}
 	return 0;
 }
-void sacarElemento(int unPid) {
-	t_infoProceso* datoProceso;
-	int i = 0;
-	int cantidadProcesos = list_size(espacioUtilizado);
-	for (i = 0; i < cantidadProcesos; i++) {
-		datoProceso = (t_infoProceso*) list_get(espacioUtilizado, i);
-		if (datoProceso->pid == unPid) {
-			list_remove(espacioUtilizado, i);
-			break;
-		}
-	}
-
-}
 void asignarEspacioANuevoProceso(int pid, int paginasAIniciar) {
 	if (paginasAIniciar <= espacioDisponible) {
 		//Me fijo si hay fragmentacion para asi ver si necesito compactar
@@ -314,7 +303,8 @@ void imprimirBitarray() {
 void limpiarEstructuras() {
 	limpiarPosiciones(espacio, 0, config.cantidad_paginas);
 	bzero(archivo, config.cantidad_paginas * config.tamanio_pagina);
-	list_clean(espacioUtilizado);
+	//list_clean(espacioUtilizado);
+	list_clean_and_destroy_elements(espacioUtilizado,free);
 	espacioDisponible = config.cantidad_paginas;
 }
 // Funciones para el manejo de Paginas
@@ -372,26 +362,21 @@ void moverProceso(t_infoProceso* proceso, int nuevoInicio) {
 	proceso->posPagina = nuevoInicio;
 }
 void finalizarProceso(int pid) {
-	//Busco el proceso en la lista de espacio utilizado, guardo sus datos y lo elimino de la lista
+	//Busco el proceso en la lista de espacio utilizado y lo elimino de la lista
 	t_infoProceso* proceso;
-	if (estaProceso(pid)) {
-		proceso = buscarProcesoSegunPID(pid);
-		limpiarPosiciones(espacio, proceso->posPagina,
-				proceso->cantidadDePaginas);
-		sacarElemento(pid);
-		//usleep(config.retardo_acceso);
-		printf("Proceso eliminado exitosamente\n");
-		log_info(activeLogger,
-				"El programa %d - Pagina Inicial:%d Tamanio:%d Eliminado correctamente.",
-				pid, proceso->posPagina, proceso->cantidadDePaginas);
-		//send_w(cliente, headerToMSG(HeaderProcesoEliminado), 1);
-		free(proceso);
-	} else {
-		printf("Proceso no encontrado\n");
-		log_error(activeLogger,
-				"El proceso no fue encontrado, error al eliminar el proceso %d",
-				pid);
-		//send_w(cliente,headerToMSG(HeaderProcesoNOEliminado),1);
+	int i = 0;
+	int cantidadProcesos = list_size(espacioUtilizado);
+	for (i = 0; i < cantidadProcesos; i++) {
+		proceso = (t_infoProceso*) list_get(espacioUtilizado, i);
+		if (proceso->pid == pid) {
+			limpiarPosiciones(espacio, proceso->posPagina,
+					proceso->cantidadDePaginas);
+			list_remove_and_destroy_element(espacioUtilizado, i, free);
+			log_info(activeLogger,
+					"El programa %d - Pagina Inicial:%d Tamanio:%d Eliminado correctamente.",
+					pid, proceso->posPagina, proceso->cantidadDePaginas);
+			break;
+		}
 	}
 }
 bool estaProceso(int unPid) {
@@ -418,8 +403,9 @@ t_infoProceso* buscarProcesoSegunPID(int unPid) {
 }
 t_infoProceso* buscarProcesoSegunInicio(int marcoInicial) {
 	int i;
+	printf("BUSCANDO PROCESO POR INICIO\n");
 	int cantidadProcesos = list_size(espacioUtilizado);
-	t_infoProceso* datoProceso = malloc(sizeof(t_infoProceso));
+	t_infoProceso* datoProceso; //= malloc(sizeof(t_infoProceso));
 	for (i = 0; i < cantidadProcesos; i++) {
 		datoProceso = (t_infoProceso*) list_get(espacioUtilizado, i);
 		if (datoProceso->posPagina == marcoInicial)

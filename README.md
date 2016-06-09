@@ -1,9 +1,17 @@
 # tp-2016-1c-Con-16-bits-me-hago-alto-kernel
 
-# Mandar archivos ansisop a rolete :D
+# Bash
+## Mandar archivos ansisop a rolete :D
 [![Link](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/Mandar-archivos-a-lo-loco)](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/Mandar-archivos-a-lo-loco)
 
-# Agregas alias, comandos útiles
+    for n in {1..100}; do ./facil.ansisop; done
+    
+## Testear SIGUSR1
+
+    kill -s SIGUSR1 <<pid>>, pudiendose conocer el pid con:
+    ps -a
+
+# Agregar alias, comandos útiles
 en el home:
 
     sudo leafpad .bashrc

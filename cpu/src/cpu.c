@@ -240,7 +240,7 @@ void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecu
 
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	if(pcbActual!=NULL){ //Al principio esta en null, asi no se inicializa.
-		pcb_destroy(&pcbActual);
+		pcb_destroy(pcbActual);
 	}else{
 		pcbActual=malloc(sizeof(t_PCB));
 	}

@@ -236,7 +236,7 @@ void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecu
 }
 
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
-	char* pcb = recv_waitall_ws(cliente_nucleo, sizeof(t_PCB));
+	char* pcb = leerLargoYMensaje(cliente_nucleo);
 	deserializar_PCB(pcbActual, pcb);//reemplazo en el pcb actual de cpu que tiene como variable global
 
 	stack = pcbActual->SP;

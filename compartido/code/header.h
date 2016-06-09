@@ -62,7 +62,8 @@ typedef enum {
 	HeaderProcesoEliminado,
 	HeaderProcesoNOEliminado,
 	HeaderEscrituraCorrecta,
-	HeaderEscrituraErronea
+	HeaderEscrituraErronea,
+	HeaderProcesoNoEncontrado
 } header_t;
 
 char* headerToMSG(header_t header);

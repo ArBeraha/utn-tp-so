@@ -16,6 +16,8 @@ int test_swap() {
 			test_escrituraYLecturaEstatica);
 	CU_add_test(suite_swap, "Test de llenado del bitarray",
 			test_asignacionProcesos);
+	CU_add_test(suite_swap, "Test de agregar proceso a swap llena",
+				test_espacioLleno);
 	CU_add_test(suite_swap,
 			"Test de Escritura y Lectura Dinamica (Con compactacion)",
 			test_escrituraYLecturaDinamica);
@@ -51,6 +53,19 @@ void test_asignacionProcesos(){
 	CU_ASSERT_EQUAL(list_size(espacioUtilizado),2);
 	limpiarEstructuras();
 }
+
+void test_espacioLleno(){
+	espacioDisponible=config.cantidad_paginas;
+	asignarEspacioANuevoProceso(1,2);
+	printf("tengo %d espacio disponible\n", espacioDisponible);
+	printf("que devuelve buscarEspacio %d\n", buscarEspacio(config.cantidad_paginas-2));
+	asignarEspacioANuevoProceso(2,config.cantidad_paginas-2);
+    asignarEspacioANuevoProceso(3,1);
+    CU_ASSERT_EQUAL(espacioDisponible, 0);
+	limpiarEstructuras();
+}
+
+
 void test_compactacion(){
 	asignarEspacioANuevoProceso(1,7);
 	asignarEspacioANuevoProceso(2,10);

@@ -239,6 +239,11 @@ void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecu
 }
 
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
+	if(pcbActual!=NULL){ //Al principio esta en null, asi no se inicializa.
+		pcb_destroy(&pcbActual);
+	}else{
+		pcbActual=malloc(sizeof(t_PCB));
+	}
 	log_debug(bgLogger, "Recibiendo PCB...");
 	char* pcb = leerLargoYMensaje(cliente_nucleo);
 	log_debug(bgLogger, "PCB recibido!");
@@ -292,7 +297,7 @@ void finalizar_proceso(){ //voy a esta funcion cuando ejecuto la ultima instrucc
 	log_info(activeLogger,"El proceso ansisop ejecutó su última instrucción.");
 	enviarHeader(cliente_nucleo, HeaderTerminoProceso);
 	enviarPCB();		//nucleo deberia recibir el PCB para elminar las estructuras
-	pcb_destroy(&pcbActual);
+	pcb_destroy(pcbActual);
 }
 
 /**
@@ -325,7 +330,7 @@ void cargarConfig() {
 void inicializar() {
 	cargarConfig();
 	terminar = false;
-	pcbActual = malloc(sizeof(t_PCB));
+	pcbActual = NULL; //lo dejo en NULL por chequeos en otro lado. Si está en NULL, hace el malloc antes de deserializar, asi que no rompe nada.
 	crearLogs(string_from_format("cpu_%d", getpid()), "CPU", config.DEBUG_RAISE_LOG_LEVEL);
 	log_info(activeLogger, "Soy CPU de process ID %d.", getpid());
 	inicializar_primitivas();

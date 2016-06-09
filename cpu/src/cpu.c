@@ -74,7 +74,7 @@ void procesarHeader(char *header) {
 		obtenerPCB(); //inicio el proceso de aumentar el PC, pedir a UMC sentencia...
 		break;
 
-	case HeaderSentencia:
+	case HeaderContinuarProceso:
 		obtener_y_parsear();
 		break;
 

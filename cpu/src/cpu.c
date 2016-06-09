@@ -144,9 +144,12 @@ void enviar_solicitud(int pagina, int offset, int size) {
 	pedido.size = size;
 
 	char* solicitud = string_new();
+
 	int tamanio = serializar_pedido(solicitud, &pedido);
 
 	send_w(cliente_umc, solicitud, tamanio);
+
+	printf("Tamanio: %d, solicitud: %s \n", tamanio,solicitud);
 	log_info(activeLogger,"Solicitud enviada: (nroPag,offsetInicio,tamaño) = (%d,%d,%d)", pagina, offset, size);
 	free(solicitud);
 }
@@ -366,14 +369,22 @@ int main() {
 	//conectarse a umc
 	establecerConexionConUMC();
 
-	//conectarse a nucleo
-	establecerConexionConNucleo();
+	ejemploPedidoLecturaUmc();
 
-	pedir_tamanio_paginas();
+	//conectarse a nucleo
+//	establecerConexionConNucleo();
+
 
 	//CPU se pone a esperar que nucleo le envie PCB
-	esperar_programas();
+	//esperar_programas();
 
-	finalizar();
+
+//	finalizar();
 	return EXIT_SUCCESS;
+}
+
+void ejemploPedidoLecturaUmc(){ //COMENTAR: finalizar, establecerConexNucleo y esperarProgramas
+	enviarHeader(cliente_umc,HeaderSolicitudSentencia);
+		enviar_solicitud(1,0,4);
+		printf("El resultado del pedido: %s \n",recibir_sentencia(4));
 }

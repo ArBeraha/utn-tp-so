@@ -30,7 +30,7 @@ void instruccionTerminada(char* instr) {
 }
 
 void desalojarProceso() {
-	char* pcb = NULL;
+	char* pcb = malloc(sizeof(t_PCB));
 	int size = serializar_PCB(pcb, pcbActual);
 	send_w(cliente_nucleo, pcb, size); //Envio a nucleo el PCB con el PC actualizado.
 	// Nucleo no puede hacer pbc->pc+=quantum porque el quantum puede variar en tiempo de ejecución.
@@ -45,7 +45,7 @@ void esperar_programas() {
 	if (config.DEBUG_IGNORE_PROGRAMS) {
 		 warnDebug();
 	}else{
-		while (!terminar) {	//mientras no tenga que terminar
+		while (!stackOverflow) {	//mientras no tenga que terminar porque hubo una excepcion
 			header = recv_waitall_ws(cliente_nucleo, 1);
 			procesarHeader(header);
 			free(header);
@@ -96,20 +96,21 @@ void procesarHeader(char *header) {
 	}
 }
 
+/**
+ * Pido el tamaño de tamaño de pagina a UMC,
+ * Si ignoro UMC por config, lo seteo en -99999
+ */
 void pedir_tamanio_paginas() {
 	if (!config.DEBUG_IGNORE_UMC) {
-
 		enviarHeader(cliente_umc,HeaderTamanioPagina); //le pido a umc el tamanio de las paginas
 		char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
-
 		tamanioPaginas = char4ToInt(tamanio);
 		log_debug(activeLogger, "El tamaño de paginas es: |%d|",tamanioPaginas);
 		free(tamanio);
-
 	} else {
-		tamanioPaginas = -1;
-		log_debug(activeLogger,
-				"UMC DEBUG ACTIVADO! tamanioPaginas va a valer -1.");
+		tamanioPaginas = -99999;
+		warnDebug();
+		log_debug(activeLogger, "UMC DEBUG ACTIVADO! tamanioPaginas va a valer -99999.");
 	}
 }
 
@@ -289,6 +290,7 @@ void obtener_y_parsear() {
 
 
 void finalizar_proceso(){ //voy a esta funcion cuando ejecuto la ultima instruccion o hay una excepcion
+	log_info(activeLogger,"El proceso ansisop ejecutó su última instrucción.");
 	enviarHeader(cliente_nucleo, HeaderTerminoProceso);
 	enviarPCB();		//nucleo deberia recibir el PCB para elminar las estructuras
 }
@@ -343,6 +345,7 @@ void finalizar() {
 
 	close(cliente_nucleo);
 	close(cliente_umc);
+	printf("Proceso CPU de PID: |%d| finalizó correctamente.",getpid());
 	exit(EXIT_SUCCESS);
 }
 
@@ -353,7 +356,7 @@ void finalizar() {
 void handler(int sign) {
 	if (sign == SIGUSR1) {
 		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
-		terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccion
+		stackOverflow = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccion
 		log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");
 	}
 }

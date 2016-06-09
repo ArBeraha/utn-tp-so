@@ -63,7 +63,7 @@ t_stack* stack;
 t_config* configCPU;
 customConfig_t config;
 
-bool terminar;						//flag para que el proceso sepa cuando terminar
+bool stackOverflow;						//flag para que el proceso sepa cuando terminar
 
 
 /*----- Operaciones sobre el PC y avisos por quantum -----*/

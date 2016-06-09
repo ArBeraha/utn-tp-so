@@ -7,7 +7,7 @@
 
 #include "swap.h"
 
-//
+
 void inicializar() {
 	crearLogs("SWAP", "SWAP", 0);
 	crearLogs(string_from_format("swap_%d", getpid()), "SWAP", 0);
@@ -160,8 +160,12 @@ void operacionEscritura(){
 	int pid = char4ToInt(serialPID);
 	int pagina = char4ToInt(serialPagina);
 	contenido = recv_waitall_ws(cliente,config.tamanio_pagina);
-	escribirPagina(buscarProcesoSegunPID(pid)->posPagina+pagina,contenido);
-	//usleep(config.retardo_acceso);
+	if(existeElPid(pid)){
+		escribirPagina(buscarProcesoSegunPID(pid)->posPagina+pagina,contenido);
+		enviarHeader(cliente,HeaderEscrituraCorrecta);
+		//usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
+	}
+	else enviarHeader(cliente,HeaderProcesoNoEncontrado);
 	free(serialPID);
 	free(serialPagina);
 	free(contenido);
@@ -175,15 +179,18 @@ void operacionLectura(){
 	serialPagina = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
 	int pagina = char4ToInt(serialPagina);
-	char* contenido = leerPagina(
-			buscarProcesoSegunPID(pid)->posPagina
+	if(existeElPid(pid)){
+	   char* contenido = leerPagina(
+		  	  buscarProcesoSegunPID(pid)->posPagina
 					+ pagina);
-	//usleep(config.retardo_acceso);
-	enviarHeader(cliente, HeaderOperacionLectura);
-	send_w(cliente, contenido, config.tamanio_pagina);
+	   //usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
+	   enviarHeader(cliente, HeaderOperacionLectura);
+	   send_w(cliente, contenido, config.tamanio_pagina);
+	   free(contenido);
+	}
+	else enviarHeader(cliente,HeaderProcesoNoEncontrado);
 	free(serialPID);
 	free(serialPagina);
-	free(contenido);
 	free(datosPedido);
 }
 void operacionFinalizar(){
@@ -191,7 +198,11 @@ void operacionFinalizar(){
 	char* serialPID = malloc(sizeof(int));
 	serialPID = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
-	finalizarProceso(pid);
+	if(existeElPid(pid)){
+		finalizarProceso(pid);
+		enviarHeader(cliente,HeaderProcesoEliminado);
+	}
+	else enviarHeader(cliente,HeaderProcesoNoEncontrado);
 	free(serialPID);
 }
 // Funciones para el manejo del Espacio
@@ -419,6 +430,19 @@ t_infoProceso* buscarProcesoSegunInicio(int marcoInicial) {
 	}
 	return NULL;
 }
+
+int existeElPid(int unPid){
+	int i;
+	int cantidadProcesos = list_size(espacioUtilizado);
+	t_infoProceso* datoProceso = malloc(sizeof(t_infoProceso));
+	int estado=0;
+	for (i = 0; i < cantidadProcesos; i++) {
+		datoProceso = (t_infoProceso*) list_get(espacioUtilizado, i);
+		if (datoProceso->pid == unPid) estado=1;
+	}
+	return estado;
+}
+
 
 //**************************************************MAIN SWAP*****************************************************************
 int main() {

@@ -216,6 +216,8 @@ int sacarConClock(int pid){
 			puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
 			if(puntero->bitUso==0 && puntero->bitPresencia==1){
 				vectorUltimaPosicionSacada[pid]=posAReemplazar;
+				pthread_mutex_unlock(&lock_accesoUltimaPos);
+				pthread_mutex_unlock(&lock_accesoTabla);
 				return posAReemplazar;
 			}else{
 				puntero->bitUso=0;
@@ -227,6 +229,8 @@ int sacarConClock(int pid){
 		puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitPresencia==1){
 			vectorUltimaPosicionSacada[pid]=posAReemplazar;
+			pthread_mutex_unlock(&lock_accesoUltimaPos);
+			pthread_mutex_unlock(&lock_accesoTabla);
 			return posAReemplazar;
 		}
 	}
@@ -234,6 +238,7 @@ int sacarConClock(int pid){
 	pthread_mutex_unlock(&lock_accesoUltimaPos);
 	pthread_mutex_unlock(&lock_accesoTabla);
 	printf("Algo fallo en CLOCK \n");
+	return -1;
 }
 
 int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO QUE ANDE!
@@ -251,6 +256,8 @@ int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO Q
 		puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitModificacion==0 && puntero->bitPresencia==1){
 			vectorUltimaPosicionSacada[pid]=posAReemplazar;
+			pthread_mutex_unlock(&lock_accesoUltimaPos);
+			pthread_mutex_unlock(&lock_accesoTabla);
 			return posAReemplazar;
 		}
 	}
@@ -260,6 +267,8 @@ int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO Q
 		puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitModificacion==1 && puntero->bitPresencia==1){
 			vectorUltimaPosicionSacada[pid]=posAReemplazar;
+			pthread_mutex_unlock(&lock_accesoUltimaPos);
+			pthread_mutex_unlock(&lock_accesoTabla);
 			return posAReemplazar;
 		}else{
 			puntero->bitUso=0;
@@ -271,6 +280,8 @@ int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO Q
 		puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitPresencia==1){
 			vectorUltimaPosicionSacada[pid]=posAReemplazar;
+			pthread_mutex_unlock(&lock_accesoUltimaPos);
+			pthread_mutex_unlock(&lock_accesoTabla);
 			return posAReemplazar;
 		}else{
 			puntero->bitUso=0;
@@ -282,6 +293,8 @@ int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO Q
 		puntero = list_get(tabla,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitModificacion==1 && puntero->bitPresencia==1){
 			vectorUltimaPosicionSacada[pid]=posAReemplazar;
+			pthread_mutex_unlock(&lock_accesoUltimaPos);
+			pthread_mutex_unlock(&lock_accesoTabla);
 			return posAReemplazar;
 		}else{
 			puntero->bitUso=0;
@@ -341,6 +354,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 
 	if(cantPaginasEnMemoriaDePid(pedido.pid)>=config.marcos_x_proceso){
 		int posicionPaginaSacada=0;
+
 		if(strcmp(config.algoritmo_paginas,"CLOCK")==0){
 			posicionPaginaSacada=sacarConClock(pedido.pid);
 		}else {
@@ -354,9 +368,8 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido){
 		}
 		printf("PAGINA A SACAR DE MEMORIA: %d \n ", posicionPaginaSacada);
 
-
-
 		pthread_mutex_lock(&lock_accesoTabla);
+
 		t_list* tablaPaginaAReemplazar = list_get(listaTablasPaginas, pedido.pid);
 		tablaPagina_t* paginaASacarDeMemoria = list_get(tablaPaginaAReemplazar, posicionPaginaSacada);
 		pthread_mutex_unlock(&lock_accesoTabla);

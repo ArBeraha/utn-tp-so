@@ -43,8 +43,7 @@ void esperar_programas() {
 	log_debug(bgLogger, "Esperando programas de nucleo.");
 	char* header;
 	if (config.DEBUG_IGNORE_PROGRAMS) {
-		log_debug(activeLogger,
-				"DEBUG NO PROGRAMS activado! Ignorando programas...");
+		 warnDebug();
 	}else{
 		while (!terminar) {	//mientras no tenga que terminar
 			header = recv_waitall_ws(cliente_nucleo, 1);

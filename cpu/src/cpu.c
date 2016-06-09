@@ -238,7 +238,9 @@ void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecu
 }
 
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
+	log_debug(bgLogger, "Recibiendo PCB...");
 	char* pcb = leerLargoYMensaje(cliente_nucleo);
+	log_debug(bgLogger, "PCB recibido!");
 	deserializar_PCB(pcbActual, pcb);//reemplazo en el pcb actual de cpu que tiene como variable global
 
 	stack = pcbActual->SP;
@@ -247,10 +249,12 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 }
 
 void enviarPCB() {
+	log_debug(bgLogger, "Enviando PCB...");
 	char* pcb = string_new();
 	serializar_PCB(pcb, pcbActual);
 
 	send_w(cliente_nucleo, pcb, sizeof(t_PCB));
+	log_debug(bgLogger, "PCB Enviado!");
 	free(pcb);
 }
 
@@ -266,9 +270,15 @@ void parsear(char* const sentencia) {
  * Recibo la sentencia previamente pedida.
  */
 char* recibir_sentencia(int tamanio){
-	return recv_waitall_ws(cliente_umc, tamanio);
+	log_debug(bgLogger, "Recibiendo sentencia de tamaño |%d|...", tamanio);
+	char* sentencia = recv_waitall_ws(cliente_umc, tamanio);
+	log_debug(bgLogger, "Recibida la sentencia: |%s|", sentencia);
+	return sentencia;
 }
 
+/**
+ * Loggeada en las funciones que llama
+ */
 void obtener_y_parsear() {
 	int tamanio;
 	pedir_sentencia(&tamanio);
@@ -334,8 +344,6 @@ void finalizar() {
 	close(cliente_nucleo);
 	close(cliente_umc);
 	exit(EXIT_SUCCESS);
-
-	log_info(activeLogger,"Proceso cpu finalizado");
 }
 
 /*------------otras------------*/

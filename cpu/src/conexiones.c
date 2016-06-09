@@ -15,8 +15,8 @@ int getHandshake(int cli) {
 
 void warnDebug() {
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
-	log_info(activeLogger,
-			"Para ingresar manualmente un archivo: Cambiar true por false en cpu.c -> #define DEBUG_IGNORE_UMC, y despues recompilar.");
+	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
+	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 }
 
@@ -66,6 +66,10 @@ void establecerConexionConUMC() {
 	}
 }
 void establecerConexionConNucleo() {
-	conectar_nucleo();
-	hacer_handshake_nucleo();
+	if(!config.DEBUG_IGNORE_NUCLEO){
+		conectar_nucleo();
+		hacer_handshake_nucleo();
+	}else{
+		warnDebug();
+	}
 }

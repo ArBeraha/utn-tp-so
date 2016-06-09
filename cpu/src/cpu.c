@@ -42,7 +42,7 @@ void desalojarProceso() {
 void esperar_programas() {
 	log_debug(bgLogger, "Esperando programas de nucleo.");
 	char* header;
-	if (config.DEBUG_NO_PROGRAMS) {
+	if (config.DEBUG_IGNORE_PROGRAMS) {
 		log_debug(activeLogger,
 				"DEBUG NO PROGRAMS activado! Ignorando programas...");
 	}else{
@@ -304,7 +304,8 @@ void cargarConfig() {
 	config.puertoUMC = config_get_int_value(configCPU, "PUERTO_UMC");
 	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
 	config.DEBUG_IGNORE_UMC = config_get_int_value(configCPU, "DEBUG_IGNORE_UMC");
-	config.DEBUG_NO_PROGRAMS = config_get_int_value(configCPU, "DEBUG_NO_PROGRAMS");
+	config.DEBUG_IGNORE_PROGRAMS = config_get_int_value(configCPU, "DEBUG_IGNORE_PROGRAMS");
+	config.DEBUG_IGNORE_NUCLEO = config_get_int_value(configCPU, "DEBUG_IGNORE_NUCLEO");
 	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configCPU, "DEBUG_RAISE_LOG_LEVEL");
 	config.DEBUG_RUN_TEST = config_get_int_value(configCPU, "DEBUG_RUN_TEST");
 }
@@ -320,7 +321,7 @@ void inicializar() {
 void finalizar() {
 	log_info(activeLogger,"Finalizando proceso cpu");
 
-	if (!config.DEBUG_NO_PROGRAMS) {
+	if (!config.DEBUG_IGNORE_PROGRAMS) {
 		log_debug(activeLogger, "Destruyendo pcb...");
 		pcb_destroy(pcbActual);
 		log_debug(activeLogger, "PCB Destruido...");
@@ -338,7 +339,6 @@ void finalizar() {
 /*------------otras------------*/
 /**
  * Para sigusr1 => terminar=1
- *
  */
 void handler(int sign) {
 	if (sign == SIGUSR1) {
@@ -357,6 +357,13 @@ void correrTests(){
 	}
 }
 
+
+void ejemploPedidoLecturaUmc(){ //COMENTAR: finalizar, establecerConexNucleo y esperarProgramas
+	enviarHeader(cliente_umc,HeaderSolicitudSentencia);
+		enviar_solicitud(1,0,4);
+		printf("El resultado del pedido: %s \n",recibir_sentencia(4));
+}
+
 int main() {
 
 	signal(SIGUSR1,handler); //el progama sabe que cuando se recibe SIGUSR1,se ejecuta handler
@@ -369,7 +376,7 @@ int main() {
 	//conectarse a umc
 	establecerConexionConUMC();
 
-	ejemploPedidoLecturaUmc();
+	//ejemploPedidoLecturaUmc();
 
 	//conectarse a nucleo
 	establecerConexionConNucleo();
@@ -381,10 +388,4 @@ int main() {
 
 	finalizar();
 	return EXIT_SUCCESS;
-}
-
-void ejemploPedidoLecturaUmc(){ //COMENTAR: finalizar, establecerConexNucleo y esperarProgramas
-	enviarHeader(cliente_umc,HeaderSolicitudSentencia);
-		enviar_solicitud(1,0,4);
-		printf("El resultado del pedido: %s \n",recibir_sentencia(4));
 }

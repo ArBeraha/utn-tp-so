@@ -41,7 +41,8 @@ typedef struct customConfig {
 	int puertoUMC;
 	char* ipUMC;
 	int DEBUG_IGNORE_UMC;
-	int DEBUG_NO_PROGRAMS;
+	int DEBUG_IGNORE_PROGRAMS;
+	int DEBUG_IGNORE_NUCLEO;
 	int DEBUG_RAISE_LOG_LEVEL;
 	int DEBUG_RUN_TEST;
 } customConfig_t;

@@ -292,6 +292,7 @@ void finalizar_proceso(){ //voy a esta funcion cuando ejecuto la ultima instrucc
 	log_info(activeLogger,"El proceso ansisop ejecutó su última instrucción.");
 	enviarHeader(cliente_nucleo, HeaderTerminoProceso);
 	enviarPCB();		//nucleo deberia recibir el PCB para elminar las estructuras
+	pcb_destroy(&pcbActual);
 }
 
 /**
@@ -332,12 +333,6 @@ void inicializar() {
 
 void finalizar() {
 	log_info(activeLogger,"Finalizando proceso cpu");
-
-	if (!config.DEBUG_IGNORE_PROGRAMS) {
-		log_debug(activeLogger, "Destruyendo pcb...");
-		pcb_destroy(pcbActual);
-		log_debug(activeLogger, "PCB Destruido...");
-	}
 	liberar_primitivas();
 
 	close(cliente_nucleo);

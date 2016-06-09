@@ -257,13 +257,17 @@ int buscarEspacio(int paginasAIniciar) {
 	int i, espacioTotal = 0;
 	for (i = 0; i < config.cantidad_paginas; i++) {
 		if (bitarray_test_bit(espacio, i))
-			espacioTotal = 0;
+			espacioTotal =0;
 		else {
-			if (++espacioTotal > paginasAIniciar) {
-				return i - paginasAIniciar;
+			espacioTotal++;
+			if (espacioTotal > paginasAIniciar) {
+				return i - paginasAIniciar ;
 			}
 		}
 	}
+	if (++espacioTotal==paginasAIniciar+1)
+		return config.cantidad_paginas-paginasAIniciar;
+
 	return -1;
 }
 void compactar() {
@@ -282,12 +286,12 @@ void compactar() {
 			i += (procesoActual->cantidadDePaginas) - 1;
 		}
 	}
-	//sleep(config.retardo_compactacion); //TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
+	//usleep(config.retardo_compactacion); //TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
 	log_info(activeLogger, "Compactación finalizada.");
 }
 void configurarBitarray() {
 	/* bitarray manejo de paginas */
-	int tamanio = (config.cantidad_paginas / 8);
+	int tamanio = (config.cantidad_paginas);
 	char* data = malloc(tamanio + 1);
 	strcpy(data, "\0");
 	espacio = bitarray_create(data, tamanio);

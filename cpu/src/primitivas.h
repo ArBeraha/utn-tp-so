@@ -45,12 +45,12 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 void asignar(t_puntero direccion_variable, t_valor_variable valor);
 void irAlLaber(t_nombre_etiqueta etiqueta);
 void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar);
-t_puntero_instruccion retornar(t_valor_variable variable);
-void imprimir(t_valor_variable valor);
+void retornar(t_valor_variable variable);
+void imprimir_variable(t_valor_variable valor);
 void imprimir_texto(char* texto);
 void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo);
-void wait(t_nombre_semaforo identificador_semaforo);
-void signal_con_semaforo(t_nombre_semaforo identificador_semaforo);
+void wait_semaforo(t_nombre_semaforo identificador_semaforo);
+void signal_semaforo(t_nombre_semaforo identificador_semaforo);
 
 
 /* ------ Funciones para usar con el parser ----- */

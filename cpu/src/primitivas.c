@@ -115,7 +115,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
  */
 t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartida) { // Pido a Nucleo el valor de la variable
 	log_info(activeLogger, "Obtener valor de variable compartida |%s|.",nombreVarCompartida);
-	t_valor_variable valor;
+	t_valor_variable valorVarCompartida;
 	int nameSize = strlen(nombreVarCompartida) + 1;
 
 	enviarHeader(cliente_umc,HeaderPedirValorVariableCompartida);
@@ -124,13 +124,13 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 	send_w(cliente_nucleo, nombreVarCompartida, nameSize);
 
 	char* value = recv_waitall_ws(cliente_nucleo, sizeof(int));
-	valor = char4ToInt(value);
+	valorVarCompartida = char4ToInt(value);
 
-	log_info(activeLogger, "Valor obtenido: |%s| vale |%d|.",nombreVarCompartida, valor);
+	log_info(activeLogger, "Valor obtenido: |%s| vale |%d|.",nombreVarCompartida, valorVarCompartida);
 	free(value);
 	incrementarPC(pcbActual);
 	instruccionTerminada("Obtener_valor_compartida");
-	return valor;
+	return valorVarCompartida;
 }
 
 
@@ -150,8 +150,6 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 	char* valor = intToChar4(valorVarCompartida);
 	send_w(cliente_nucleo, valor, sizeof(int));
 
-	//Espero a que nucleo informe la asignacion, para no usar un valor antiguo.
-	char* respuesta = recv_nowait_ws(cliente_nucleo, 1);
 	log_info(activeLogger,
 				"Asignado el valor |%d| a la variable compartida |%s|.",
 				valorVarCompartida, nombreVarCompartida);
@@ -165,7 +163,6 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 /**
  * Directiva 7
  */
-// fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
 void irAlLabel(t_nombre_etiqueta etiqueta) {
 	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
 	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
@@ -182,7 +179,6 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	}
 	setearPC(pcbActual, posicionPrimeraInstrUtil);
 	instruccionTerminada("ir_al_label");
-	//return posicionPrimeraInstrUtil;
 }
 
 /**
@@ -210,7 +206,7 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar)
 /**
  * Directiva 9
  */
-t_puntero_instruccion retornar(t_valor_variable variable) {
+void retornar(t_valor_variable variable) {
 	t_stack_item* head = stack_pop(stack);
 	t_puntero_instruccion retorno = head->posicionRetorno;
 	log_info(activeLogger,
@@ -221,7 +217,6 @@ t_puntero_instruccion retornar(t_valor_variable variable) {
 	stack_item_destroy(head);
 	setearPC(pcbActual, retorno);
 	instruccionTerminada("Retornar");
-	return retorno;
 }
 
 
@@ -229,7 +224,7 @@ t_puntero_instruccion retornar(t_valor_variable variable) {
  * Directiva 10
  */
 // fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
-void imprimir(t_valor_variable valor) { //fixme, no era distinto esto?
+void imprimir_variable(t_valor_variable valor) { //fixme, no era distinto esto?
 	log_info(activeLogger, "Imprimir |%d|", valor);
 
 	enviarHeader(cliente_nucleo,HeaderImprimirVariableNucleo);
@@ -284,7 +279,7 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) 
 /**
  * Directiva 13
  */
-void wait(t_nombre_semaforo identificador_semaforo) {
+void wait_semaforo(t_nombre_semaforo identificador_semaforo) {
 	log_info(activeLogger, "Comunicar nucleo de hacer wait con semaforo: |%s|",
 			identificador_semaforo);
 
@@ -301,7 +296,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 /**
  * Directiva 14
  */
-void signal_con_semaforo(t_nombre_semaforo identificador_semaforo) {
+void signal_semaforo(t_nombre_semaforo identificador_semaforo) {
 	log_info(activeLogger,"Comunicar nucleo de hacer signal con semaforo: |%s|",identificador_semaforo);
 
 	enviarHeader(cliente_nucleo,HeaderSignal);
@@ -322,13 +317,13 @@ void inicializar_primitivas() {
 	funciones.AnSISOP_obtenerValorCompartida = &obtener_valor_compartida;
 	funciones.AnSISOP_asignarValorCompartida = &asignar_valor_compartida;
 	funciones.AnSISOP_irAlLabel = &irAlLabel;
-	funciones.AnSISOP_imprimir = &imprimir;
+	funciones.AnSISOP_imprimir = &imprimir_variable;
 	funciones.AnSISOP_imprimirTexto = &imprimir_texto;
 	funciones.AnSISOP_llamarConRetorno = &llamar_con_retorno;
 	funciones.AnSISOP_retornar = &retornar;
 	funciones.AnSISOP_entradaSalida = &entrada_salida;
-	funcionesKernel.AnSISOP_wait = &wait;
-	funcionesKernel.AnSISOP_signal = &signal_con_semaforo;
+	funcionesKernel.AnSISOP_wait = &wait_semaforo;
+	funcionesKernel.AnSISOP_signal = &signal_semaforo;
 	log_info(activeLogger, "Primitivas Inicializadas.");
 }
 

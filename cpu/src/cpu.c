@@ -164,8 +164,8 @@ t_sentencia* obtener_sentencia_relativa(int* paginaInicioSentencia) {
 /**
  * Si no le ponia el _ me daba error :(
  */
-int maximo_(int a, int b) {
-	return a > b ? a : b;
+int minimo(int a, int b) {
+	return a < b ? a : b;
 }
 
 /**
@@ -186,7 +186,7 @@ void pedirPaginaCompleta(int pagina) {
 }
 
 void pedirPrimeraSentencia(t_sentencia* sentenciaRelativa, int pagina, int* longitud_restante) {
-	int tamanioPrimeraSentencia = maximo_(*longitud_restante,
+	int tamanioPrimeraSentencia = minimo(*longitud_restante,
 				tamanioPaginas - sentenciaRelativa->offset_inicio); //llega hasta su final o hasta que se termine la pagina, lo mas pequeño
 	enviar_solicitud(pagina, sentenciaRelativa->offset_inicio, tamanioPrimeraSentencia);
 	(*longitud_restante) -= tamanioPrimeraSentencia;
@@ -223,8 +223,11 @@ void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecu
 	}
 
 	// Si quedase una pagina sin pedir, por no estar completa la ultima pagina, la pido.
-	pedirUltimaSentencia(sentenciaRelativa, paginaAPedir, longitud_restante);
-	paginaAPedir++;
+	if(longitud_restante>0){
+		pedirUltimaSentencia(sentenciaRelativa, paginaAPedir, longitud_restante);
+		paginaAPedir++;
+	}
+
 
 	log_info(activeLogger, "Pedido de sentencia finalizado.");
 	log_info(activeLogger,

@@ -372,14 +372,14 @@ int main() {
 	ejemploPedidoLecturaUmc();
 
 	//conectarse a nucleo
-//	establecerConexionConNucleo();
+	establecerConexionConNucleo();
 
 
 	//CPU se pone a esperar que nucleo le envie PCB
-	//esperar_programas();
+	esperar_programas();
 
 
-//	finalizar();
+	finalizar();
 	return EXIT_SUCCESS;
 }
 

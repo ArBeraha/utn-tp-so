@@ -5,6 +5,12 @@
  *      Author: utnso
  */
 
+/**
+ * Cobertura:  ^ = Protocolo OK
+ *  ^ ^ = Funciona OK
+ */
+
+
 #include "primitivas.h"
 /*--------Primitivas----------*/
 
@@ -105,7 +111,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 
 
 /**
- * Directiva 5
+ * Directiva 5 ^
  */
 t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartida) { // Pido a Nucleo el valor de la variable
 	log_info(activeLogger, "Obtener valor de variable compartida |%s|.",nombreVarCompartida);
@@ -129,7 +135,7 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 
 
 /**
- * Directiva 6
+ * Directiva 6 ^
  */
 t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartida, t_valor_variable valorVarCompartida) {
 	log_info(activeLogger, //envio el nombre de la variable
@@ -146,16 +152,9 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 
 	//Espero a que nucleo informe la asignacion, para no usar un valor antiguo.
 	char* respuesta = recv_nowait_ws(cliente_nucleo, 1);
-	if (!charToInt(respuesta) == HeaderAsigneValorVariableCompartida) {
-		log_error(activeLogger,
-				"Se esperaba que nucleo asigne el valor |%d| a la variable compartida |%s| y no sucedio",
-				valorVarCompartida, nombreVarCompartida);
-		log_info(activeLogger, "Se continua la ejecucion de todas formas");
-	} else {
-		log_info(activeLogger,
+	log_info(activeLogger,
 				"Asignado el valor |%d| a la variable compartida |%s|.",
 				valorVarCompartida, nombreVarCompartida);
-	}
 
 	incrementarPC(pcbActual);
 	instruccionTerminada("asignar_valor_compartida");
@@ -262,18 +261,18 @@ void imprimir_texto(char* texto) {
 
 
 /**
- * Directiva 12
+ * Directiva 12 ^
  */
-//cambiar valor de retorno a int
-void entrada_salida(t_nombre_dispositivo dispositivo, int tiempo) {
+// TODO cambiar valor de retorno a int? el enunciado dice eso pero no que retorna!
+void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) {
 	log_info(activeLogger,"Informar a nucleo que el programa quiere usar |%s| durante |%d| unidades de tiempo",
-			dispositivo, tiempo);
+			dispositivo, tiempoUsoDispositivo);
 
 	enviarHeader(cliente_nucleo,HeaderEntradaSalida);
 
 	enviarLargoYString(cliente_nucleo,dispositivo);				//envio la cadena
 
-	char* time = intToChar(tiempo);							//envio el tiempo
+	char* time = intToChar(tiempoUsoDispositivo);							//envio el tiempo
 	send_w(cliente_nucleo,time,strlen(time));
 	free(time);
 

@@ -165,7 +165,10 @@ void operacionEscritura(){
 		enviarHeader(cliente,HeaderEscrituraCorrecta);
 		//usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
 	}
-	else enviarHeader(cliente,HeaderProcesoNoEncontrado);
+	else {
+		enviarHeader(cliente,HeaderProcesoNoEncontrado);
+		printf("Proceso %d no encontrado\n",pid);
+	}
 	free(serialPID);
 	free(serialPagina);
 	free(contenido);
@@ -188,7 +191,10 @@ void operacionLectura(){
 	   send_w(cliente, contenido, config.tamanio_pagina);
 	   free(contenido);
 	}
-	else enviarHeader(cliente,HeaderProcesoNoEncontrado);
+	else{
+		enviarHeader(cliente,HeaderProcesoNoEncontrado);
+		printf("Proceso %d no encontrado\n",pid);
+	}
 	free(serialPID);
 	free(serialPagina);
 	free(datosPedido);
@@ -202,7 +208,10 @@ void operacionFinalizar(){
 		finalizarProceso(pid);
 		enviarHeader(cliente,HeaderProcesoEliminado);
 	}
-	else enviarHeader(cliente,HeaderProcesoNoEncontrado);
+	else{
+		enviarHeader(cliente,HeaderProcesoNoEncontrado);
+		printf("Proceso %d no encontrado\n",pid);
+	}
 	free(serialPID);
 }
 // Funciones para el manejo del Espacio

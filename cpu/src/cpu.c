@@ -45,7 +45,7 @@ void esperar_programas() {
 	if (config.DEBUG_IGNORE_PROGRAMS) {
 		 warnDebug();
 	}else{
-		while (!stackOverflow) {	//mientras no tenga que terminar porque hubo una excepcion
+		while (!terminar) {	//mientras no tenga que terminar porque hubo una excepcion
 			header = recv_waitall_ws(cliente_nucleo, 1);
 			procesarHeader(header);
 			free(header);
@@ -288,7 +288,6 @@ void obtener_y_parsear() {
 	free(sentencia);
 }
 
-
 void finalizar_proceso(){ //voy a esta funcion cuando ejecuto la ultima instruccion o hay una excepcion
 	log_info(activeLogger,"El proceso ansisop ejecutó su última instrucción.");
 	enviarHeader(cliente_nucleo, HeaderTerminoProceso);
@@ -307,8 +306,6 @@ void lanzar_excepcion_overflow(){
 	log_info(activeLogger,"Proceso terminado!");
 }
 
-
-
 // ***** Funciones de inicializacion y finalizacion ***** //
 void cargarConfig() {
 	t_config* configCPU;
@@ -326,6 +323,7 @@ void cargarConfig() {
 
 void inicializar() {
 	cargarConfig();
+	terminar = false;
 	pcbActual = malloc(sizeof(t_PCB));
 	crearLogs(string_from_format("cpu_%d", getpid()), "CPU", config.DEBUG_RAISE_LOG_LEVEL);
 	log_info(activeLogger, "Soy CPU de process ID %d.", getpid());
@@ -341,11 +339,12 @@ void finalizar() {
 		log_debug(activeLogger, "PCB Destruido...");
 	}
 	liberar_primitivas();
-	destruirLogs();
 
 	close(cliente_nucleo);
 	close(cliente_umc);
-	printf("Proceso CPU de PID: |%d| finalizó correctamente.",getpid());
+
+	log_info(activeLogger,"Proceso CPU de PID: |%d| finalizó correctamente.",getpid());
+	destruirLogs();
 	exit(EXIT_SUCCESS);
 }
 
@@ -356,7 +355,7 @@ void finalizar() {
 void handler(int sign) {
 	if (sign == SIGUSR1) {
 		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
-		stackOverflow = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccion
+		terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccion
 		log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");
 	}
 }
@@ -370,11 +369,10 @@ void correrTests(){
 	}
 }
 
-
 void ejemploPedidoLecturaUmc(){ //COMENTAR: finalizar, establecerConexNucleo y esperarProgramas
 	enviarHeader(cliente_umc,HeaderSolicitudSentencia);
-		enviar_solicitud(1,0,4);
-		printf("El resultado del pedido: %s \n",recibir_sentencia(4));
+	enviar_solicitud(1,0,4);
+	printf("El resultado del pedido: %s \n",recibir_sentencia(4));
 }
 
 int main() {
@@ -387,7 +385,7 @@ int main() {
 	correrTests();
 
 	//conectarse a umc
-	establecerConexionConUMC();
+	//establecerConexionConUMC();
 
 	//ejemploPedidoLecturaUmc();
 
@@ -397,7 +395,6 @@ int main() {
 
 	//CPU se pone a esperar que nucleo le envie PCB
 	esperar_programas();
-
 
 	finalizar();
 	return EXIT_SUCCESS;

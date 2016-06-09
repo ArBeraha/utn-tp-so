@@ -95,6 +95,7 @@ void test_escrituraYLecturaEstatica();
 void test_escrituraYLecturaDinamica();
 void test_compactacion();
 void test_asignacionProcesos();
+void test_espacioLleno();
 void test_espacioDisponibleYFinalizarProceso();
 int testear(int (*suite)(void));
 int test_swap();

@@ -228,13 +228,13 @@ char* leerLargoYMensaje(int cliente){
 	return mensaje;
 }
 
-void enviarLargoYString(int cliente, char* mensaje){
-	enviarLargoYSerial(cliente, strlen(mensaje)+1, mensaje);
+void enviarLargoYString(int sock, char* mensaje){
+	enviarLargoYSerial(sock, strlen(mensaje)+1, mensaje);
 }
-void enviarLargoYSerial(int cliente, int largo, char* mensaje){
+void enviarLargoYSerial(int sock, int largo, char* mensaje){
 	char* serialLargo = intToChar4(largo);
-	send_w(clientes[cliente].socket,serialLargo, sizeof(int));
-	send_w(clientes[cliente].socket, mensaje, largo);
+	send_w(sock,serialLargo, sizeof(int));
+	send_w(sock, mensaje, largo);
 	free(serialLargo);
 }
 

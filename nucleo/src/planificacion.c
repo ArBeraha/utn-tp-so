@@ -89,7 +89,7 @@ void ejecutarProceso(int PID, int cpu) {
 		char* serialPCB = malloc(bytes);
 		serializar_PCB(serialPCB, proceso->PCB);
 		enviarHeader(proceso->socketCPU,HeaderPCB);
-		MUTEXCLIENTES(enviarLargoYSerial(cpu, bytes, serialPCB));
+		MUTEXCLIENTES(enviarLargoYSerial(proceso->socketCPU, bytes, serialPCB));
 		free(serialPCB);
 	}
 }

@@ -37,15 +37,15 @@ int crearProceso(int consola) {
 		char* codigo = getScript(consola);
 		proceso->PCB->cantidad_paginas = ceil(
 				((double) strlen(codigo)) / ((double) tamanio_pagina));
-		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
-			rechazarProceso(proceso->PCB->PID);
-		} else {
+//		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
+//			rechazarProceso(proceso->PCB->PID);
+//		} else {
 			asignarMetadataProceso(proceso, codigo);
 			MUTEXCLIENTES(clientes[consola].pid = (int) proceso);
 			proceso->cpu = SIN_ASIGNAR;
 			cambiarEstado(proceso, READY);
 			MUTEXPROCESOS(list_add(listaProcesos, proceso));
-		}
+		//}
 		free(codigo);
 	}
 	return proceso->PCB->PID;
@@ -80,6 +80,9 @@ void actualizarPCB(t_PCB PCB) { //
 	//t_proceso* proceso = list_get(listaProcesos, PCB->PID);
 	pthread_mutex_unlock(&mutexProcesos);
 	//proceso->PCB=PCB;
+}
+void ingresarCPU(int cliente){
+	queue_push(colaCPU,cliente);
 }
 void bloquearProcesoIO(int PID, char* IO) {
 	bloquearProceso(PID);

@@ -34,7 +34,6 @@ void asignarCompartida(int cliente) {
 }
 void devolverCompartida(int cliente) {
 	char* compartida = leerLargoYMensaje(clientes[cliente].socket);
-	//send_w(clientes[cliente].socket, intToChar(HeaderDevolverCompartida),1); TODO crear el header
 	char* valor = intToChar4(*(int*) dictionary_get(tablaGlobales, compartida));
 	send_w(clientes[cliente].socket, valor, sizeof(int));
 	free(compartida);
@@ -44,13 +43,9 @@ void imprimirVariable(int cliente) {
 	int socketConsola = clientes[((t_proceso*) clientes[cliente].pid)->consola].socket;
 	char* serialValor = malloc( sizeof(ansisop_var_t));
 	read(cliente, serialValor, sizeof(ansisop_var_t));
-	char* name = malloc(sizeof(char));
-	read(cliente, name, sizeof(char));
 	enviarHeader(socketConsola, HeaderImprimirVariableConsola);
 	send_w(socketConsola, serialValor, sizeof(ansisop_var_t));
-	send_w(socketConsola, name, sizeof(char));
 	free(serialValor);
-	free(name);
 }
 void imprimirTexto(int cliente) {
 	int socketConsola = clientes[((t_proceso*) clientes[cliente].pid)->consola].socket;
@@ -62,5 +57,6 @@ void imprimirTexto(int cliente) {
 void entradaSalida(int cliente) {
 	char* serialIO = leerLargoYMensaje(clientes[cliente].socket);
 	bloquearProcesoIO(clientes[cliente].pid,serialIO);
+	// TODO Leer un int extra que es el tiempo de uso
 	free(serialIO);
 }

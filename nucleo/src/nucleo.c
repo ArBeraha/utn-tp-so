@@ -92,7 +92,7 @@ void recibirTamanioPagina(){
 char* getScript(int consola) {
 	log_debug(bgLogger, "Recibiendo archivo de consola %d...", consola);
 	pthread_mutex_lock(&mutexClientes);
-	char* script = leerLargoYMensaje(consola);
+	char* script = leerLargoYMensaje(clientes[consola].socket);
 	clientes[consola].atentido = false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
 	pthread_mutex_unlock(&mutexClientes);
 	log_info(activeLogger, "Script de consola %d recibido:\n%s", consola,
@@ -119,6 +119,7 @@ void cargarConfiguracion() {
 	config_destroy(configNucleo);
 }
 void inicializar() {
+	system("rm -rf *.log");
 	crearLogs("Nucleo", "Nucleo",0);
 	//testear(test_serializacion);
 	log_info(activeLogger, "INICIALIZANDO");
@@ -224,6 +225,8 @@ void atenderHandshake(int cliente){
 		log_debug(bgLogger, "Es un cliente apropiado! Respondiendo handshake");
 		clientes[cliente].identidad = charToInt(header);
 		enviarHeader(clientes[cliente].socket, SOYNUCLEO);
+		if (charToInt(header) == SOYCPU)
+			ingresarCPU(cliente);
 	} else {
 		log_error(activeLogger,
 				"No es un cliente apropiado! rechazada la conexion");
@@ -317,7 +320,7 @@ int main(void) {
 			pthread_mutex_lock(&mutexClientes);
 			if (tieneLectura(clientes[i].socket)) {
 				if (read(clientes[i].socket, header, 1) == 0) {
-					log_error(activeLogger, "Un cliente se desconectó.");
+					log_info(activeLogger, "Un cliente se desconectó.");
 					quitarCliente(i);
 				} else
 					procesarHeader(i, header);

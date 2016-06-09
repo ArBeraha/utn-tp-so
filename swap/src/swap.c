@@ -161,6 +161,7 @@ void operacionEscritura(){
 	int pagina = char4ToInt(serialPagina);
 	contenido = recv_waitall_ws(cliente,config.tamanio_pagina);
 	escribirPagina(buscarProcesoSegunPID(pid)->posPagina+pagina,contenido);
+	//usleep(config.retardo_acceso);
 	free(serialPID);
 	free(serialPagina);
 	free(contenido);
@@ -177,6 +178,7 @@ void operacionLectura(){
 	char* contenido = leerPagina(
 			buscarProcesoSegunPID(pid)->posPagina
 					+ pagina);
+	//usleep(config.retardo_acceso);
 	enviarHeader(cliente, HeaderOperacionLectura);
 	send_w(cliente, contenido, config.tamanio_pagina);
 	free(serialPID);

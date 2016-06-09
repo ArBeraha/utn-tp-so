@@ -144,9 +144,12 @@ void enviar_solicitud(int pagina, int offset, int size) {
 	pedido.size = size;
 
 	char* solicitud = string_new();
+
 	int tamanio = serializar_pedido(solicitud, &pedido);
 
 	send_w(cliente_umc, solicitud, tamanio);
+
+	printf("Tamanio: %d, solicitud: %s \n", tamanio,solicitud);
 	log_info(activeLogger,"Solicitud enviada: (nroPag,offsetInicio,tamaño) = (%d,%d,%d)", pagina, offset, size);
 	free(solicitud);
 }
@@ -233,7 +236,7 @@ void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecu
 }
 
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
-	char* pcb = recv_waitall_ws(cliente_nucleo, sizeof(t_PCB));
+	char* pcb = leerLargoYMensaje(cliente_nucleo);
 	deserializar_PCB(pcbActual, pcb);//reemplazo en el pcb actual de cpu que tiene como variable global
 
 	stack = pcbActual->SP;
@@ -366,14 +369,22 @@ int main() {
 	//conectarse a umc
 	establecerConexionConUMC();
 
+	ejemploPedidoLecturaUmc();
+
 	//conectarse a nucleo
 	establecerConexionConNucleo();
 
-	pedir_tamanio_paginas();
 
 	//CPU se pone a esperar que nucleo le envie PCB
 	esperar_programas();
 
+
 	finalizar();
 	return EXIT_SUCCESS;
+}
+
+void ejemploPedidoLecturaUmc(){ //COMENTAR: finalizar, establecerConexNucleo y esperarProgramas
+	enviarHeader(cliente_umc,HeaderSolicitudSentencia);
+		enviar_solicitud(1,0,4);
+		printf("El resultado del pedido: %s \n",recibir_sentencia(4));
 }

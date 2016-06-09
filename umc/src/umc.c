@@ -174,13 +174,16 @@ int buscarEnSwap(pedidoLectura_t pedido){
 //	char* serialPagina = intToChar4(pedido.paginaRequerida);
 //	char* contenidoPagina = malloc(config.tamanio_marco+1);
 //
+//	printf("Pase por aca 1  \n");
 //	enviarHeader(swapServer,HeaderOperacionLectura);
 //
 //	send_w(swapServer,serialPID,sizeof(int));
 //	send_w(swapServer,serialPagina,sizeof(int));
 //
+//	printf("Pase por aca 2  \n");
 //	char* header = recv_waitall_ws(swapServer,1);
 //
+//	printf("Pase por aca 3  \n");
 //	if (charToInt(header)==HeaderOperacionLectura){
 //		printf("Contesto con la pagina\n");
 //	}
@@ -188,7 +191,10 @@ int buscarEnSwap(pedidoLectura_t pedido){
 //		return 0;
 //	}
 //
+//	printf("Pase por aca 4  \n");
 //	contenidoPagina = recv_waitall_ws(swapServer,config.tamanio_marco);
+//
+//	printf("Pase por aca 5  \n");
 //	contenidoPagina[config.tamanio_marco]='\0';
 //	printf("Llego el contenido de swap:%s",contenidoPagina);
 
@@ -1044,26 +1050,28 @@ char* getScript(int clienteNucleo) {
 }
 
 void pedidoLectura(){
-	log_info(activeLogger,"Se recibio pedido de lectura");
-	printf("PEDIDO LECTURA 1 \n");
-	t_pedido* pedidoCpu = NULL;
-	char* pedidoSerializado = NULL;
-	char* id = NULL;
-	read(clientes[cliente].socket, id, sizeof(int));
-	printf("PEDIDO LECTURA 2: id: %s \n",id);
+
+	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
+	char* pedidoSerializado = malloc(sizeof(t_pedido));
+	int id = clientes[cliente].pid;
+
+	log_info(activeLogger,"Se recibio pedido de lectura de id: %d \n",id);
+
 	read(clientes[cliente].socket, pedidoSerializado, sizeof(t_pedido));
-	printf("PEDIDO LECTURA 3 pedido serialziado: %s \n",pedidoSerializado);
-	int pude = deserializar_pedido(pedidoCpu, pedidoSerializado);
-	printf("PEDIDO LECTURA 3,5	 \n");
+
+	imprimir_serializacion(pedidoSerializado,12);
+	deserializar_pedido(pedidoCpu, pedidoSerializado);
 
 	pedidoLectura_t pedidoLectura;
-	pedidoLectura.pid = atoi(id);
+	pedidoLectura.pid = id;
 	pedidoLectura.paginaRequerida = pedidoCpu->pagina;
 	pedidoLectura.offset = pedidoCpu->offset;
 	pedidoLectura.cantBytes = pedidoCpu->size;
-	printf("PEDIDO LECTURA 4 \n");
-	send_w(clientes[cliente].socket, devolverPedidoPagina(pedidoLectura),pedidoCpu->size);
-	printf("PEDIDO LECTURA 5 \n");
+
+
+	char* contenidoAEnviar =  devolverPedidoPagina(pedidoLectura);
+	printf("Contenido a enviado a Cpu: %s \n", contenidoAEnviar);
+	send_w(clientes[cliente].socket, contenidoAEnviar,pedidoCpu->size);
 }
 
 void procesarHeader(int cliente, char *header){
@@ -1117,6 +1125,10 @@ void procesarHeader(int cliente, char *header){
 			break;
 
 		case HeaderPedirValorVariable:  //OK
+			pedidoLectura();
+			break;
+
+		case HeaderSolicitudSentencia:
 			pedidoLectura();
 			break;
 
@@ -1214,13 +1226,12 @@ int main(void) {
 
 	test2();
 
-	recibirComandos();
-
-//	test();
+//	recibirComandos();
 
 //	pthread_create(&hiloRecibirComandos,NULL,(void*)recibirComandos,NULL);
 
-//	servidorCPUyNucleoExtendido();
+	servidorCPUyNucleoExtendido();
+
 //
 //	conexionASwap();
 //
@@ -1231,7 +1242,7 @@ int main(void) {
 //			pedido1.cantBytes=5;
 //
 //	buscarEnSwap(pedido1);
-//
+
 //	recibirComandos();
 
 
@@ -1277,10 +1288,10 @@ void mostrarTlb(){
 
 void test2(){
 
-	reservarPagina(3,5);
+	reservarPagina(3,0);
 
 	pedidoLectura_t pedido1;
-		pedido1.pid=5;
+		pedido1.pid=0;
 		pedido1.paginaRequerida=1;
 		pedido1.offset=0;
 		pedido1.cantBytes=5;
@@ -1288,7 +1299,7 @@ void test2(){
 	devolverPedidoPagina(pedido1);
 
 	pedidoLectura_t pedido2;
-		pedido2.pid=5;
+		pedido2.pid=0;
 		pedido2.paginaRequerida=2;
 		pedido2.offset=0;
 		pedido2.cantBytes=5;
@@ -1299,10 +1310,10 @@ void test2(){
 
 	almacenarBytesEnUnaPagina(pedido2,2,"XX");
 
-	printf("CANT PAGS PID 5 EN MEM: %d \n", cantPaginasEnMemoriaDePid(5));
+	printf("CANT PAGS PID 0 EN MEM: %d \n", cantPaginasEnMemoriaDePid(0));
 
 
-	recibirComandos();
+//	recibirComandos();
 }
 
 // 5.Server de los cpu y de nucleo

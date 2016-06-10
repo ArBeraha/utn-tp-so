@@ -7,8 +7,28 @@
 #include <CUnit/Basic.h>
 #include "cpu.h"
 
+/*------FUNCIONES DE INICIALIZACION / FINALIZACION -------------*/
+void init(){
+	pcbActual = malloc(sizeof(t_PCB));
+
+	stack =stack_create();
+	t_stack_item* item = malloc(sizeof(t_stack_item));
+	item->identificadores =  dictionary_create();
+	stack_push(stack,item);
+
+	pcbActual->indice_etiquetas = dictionary_create();
+}
+
+void fin(){
+
+	dictionary_clean(pcbActual->indice_etiquetas);
+	dictionary_destroy(pcbActual->indice_etiquetas);
+
+	stack_destroy(stack);
+	free(pcbActual);
+}
+
 void test_obtener_offset_relativo() {
-	log_debug(bgLogger, "INICIO test_obtener_offset_relativo");
 	int aux = tamanioPaginas;
 	t_sentencia fuente, destino;
 	tamanioPaginas=4;
@@ -19,38 +39,9 @@ void test_obtener_offset_relativo() {
 	CU_ASSERT_EQUAL(destino.offset_inicio,1);
 	CU_ASSERT_EQUAL(destino.offset_fin,20);
 	tamanioPaginas = aux;
-	log_debug(bgLogger, "FIN test_obtener_offset_relativo");
 }
 
-/**
- * Esta funcion ya no es necesaria.
- */
-//void test_cantidad_paginas_ocupa() {
-//	log_debug(bgLogger, "INICIO cantidad_paginas_ocupa");
-//	int aux = tamanioPaginas;
-//	t_sentencia sentencia;
-//
-//	tamanioPaginas=4;
-//	sentencia.offset_inicio=20;
-//	sentencia.offset_fin=41; //ocupa 21, osea 5,25 pags, osea 6 pags.
-//	CU_ASSERT_EQUAL(cantidad_paginas_ocupa(&sentencia),6);
-//
-//	tamanioPaginas=20;	//ahora ocuparia 2 paginas. Una completa (20/20) y casi nada de otra (1/20)
-//	CU_ASSERT_EQUAL(cantidad_paginas_ocupa(&sentencia),2);
-//
-//	tamanioPaginas=8000;
-//	CU_ASSERT_EQUAL(cantidad_paginas_ocupa(&sentencia),1);
-//
-//	tamanioPaginas=4;
-//	sentencia.offset_fin=40; //ocupa 20, osea 6 pags.
-//	CU_ASSERT_EQUAL(cantidad_paginas_ocupa(&sentencia),6);
-//
-//	tamanioPaginas = aux;
-//	log_debug(bgLogger, "FIN cantidad_paginas_ocupa");
-//}
-
 void test_envio_solicitudes_una_pagina(){
-	log_info(bgLogger,"Test de envio de solicitudes en una pagina");
 
 	tamanioPaginas=10;
 	t_sentencia* sentencia = malloc(sizeof(t_sentencia));
@@ -68,12 +59,9 @@ void test_envio_solicitudes_una_pagina(){
 
 	free(sentencia);
 	free(sentenciaAux);
-	log_debug(bgLogger, "FIN solicitudes_una_pagina");
 }
 
 void test_envio_solicitudes_varias_paginas(){
-
-	log_info(bgLogger,"Test de envio de solicitudes en varias paginas");
 
 	tamanioPaginas=4;
 	t_sentencia* sentencia = malloc(sizeof(t_sentencia));
@@ -90,63 +78,38 @@ void test_envio_solicitudes_varias_paginas(){
 	CU_ASSERT_EQUAL(sentenciaAux->offset_inicio,0);
 	CU_ASSERT_EQUAL(sentenciaAux->offset_fin,11);
 
-	log_debug(bgLogger, "FIN test_envio_solicitudes_varias_paginas");
-}
-
-void preparar_stack(){
-	tamanioPaginas = 4;
-
-	pcbActual = malloc(sizeof(t_PCB));
-	pcbActual->PC = 0;
-	stack =stack_create();
-
-	t_stack_item* item = malloc(sizeof(t_stack_item));
-	item->identificadores =  dictionary_create();
-	stack_push(stack,item);
-}
-
-void devolver(){
-	stack_destroy(stack);
-	free(pcbActual);
 }
 
 void test_definir_variable(){
 
-	log_debug(bgLogger, "Test primitiva definir variable");
-	preparar_stack();
-
-	definir_variable('a');				//ejecuto la primitiva
+	pcbActual->PC = 0;
+	tamanioPaginas = 4;
+	definir_variable('a');
 
 	t_stack_item* item = stack_pop(stack);
+
 	CU_ASSERT_EQUAL(pcbActual->PC,1);
 	CU_ASSERT(dictionary_has_key(item->identificadores, "a"));
 
 	stack_push(stack,item);
 
-	definir_variable('b');				//ejecuto la primitiva
-
-	t_stack_item* res = stack_pop(stack);
-
+	definir_variable('b');
+	t_stack_item* otroItem = stack_pop(stack);
 	CU_ASSERT_EQUAL(pcbActual->PC,2);
-	CU_ASSERT(dictionary_has_key(res->identificadores,"b"));
-
-	dictionary_clean(res->identificadores);
-	dictionary_destroy(res->identificadores);
-
-	devolver();
-	log_debug(bgLogger, "FIN test_definir_variable");
+	CU_ASSERT(dictionary_has_key(otroItem->identificadores,"b"));
 
 }
 
-void test_ir_al_label(){
-	pcbActual = malloc(sizeof(t_PCB));
+void test_ir_al_label(){ //TODO rompe la primitiva
 	pcbActual->PC = 0;
-	pcbActual->indice_etiquetas = dictionary_create();
 	irAlLabel("goku");
 	CU_ASSERT_EQUAL(pcbActual->PC,-1);
 
-	dictionary_destroy(pcbActual->indice_etiquetas);
-	free(pcbActual);
+	//	dictionary_put(pcbActual->indice_etiquetas,"double", (void *)3);
+	//
+	//irAlLabel("double");
+	//CU_ASSERT_EQUAL(pcbActual->PC,3);
+
 }
 
 int test_cpu() {
@@ -155,14 +118,17 @@ int test_cpu() {
 
 	CU_pSuite suite_cpu = CU_add_suite("Suite de CPU", NULL, NULL);
 	CU_add_test(suite_cpu, "Test obtener_offset_relativo.",	test_obtener_offset_relativo);
-	//CU_add_test(suite_nucleo, "Test cantidad_paginas_ocupa.", test_cantidad_paginas_ocupa);
 	CU_add_test(suite_cpu, "Test envio_solicitudes_una_pagina",test_envio_solicitudes_una_pagina);
 	CU_add_test(suite_cpu, "Test envio_solicitudes_varias_paginas",test_envio_solicitudes_varias_paginas);
 	CU_add_test(suite_cpu, "Test primitiva #1: definir_variables",test_definir_variable);
 	CU_add_test(suite_cpu, "Test primitiva #7: ir_al_label",test_ir_al_label);
 
+	init();
+
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
+
+	fin();
 
 	CU_cleanup_registry();
 	log_info(activeLogger, "FINALIZADO TESTS DE CPU");

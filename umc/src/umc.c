@@ -88,6 +88,18 @@ int buscarEnTlb(pedidoLectura_t pedido){ //Repito codigo, i know, pero esta solu
 	return 0;
 }
 
+int buscarPosicionTabla(int pidBusca){
+	int size = list_size(listaTablasPaginas);
+	int i;
+
+	for(i=0;i<size;i++){
+		tabla_t* tabla;
+		tabla = list_get(listaTablasPaginas,i);
+		if(tabla->pid==pidBusca) return i;
+	}
+	return NULL; //No existe, avisa que hay que agregarla para reservarPagina
+}
+
 tabla_t* buscarTabla(int pidBusca){
 	int size = list_size(listaTablasPaginas);
 	int i;
@@ -691,10 +703,13 @@ void sacarMarcosOcupados(int idPrograma){
 }
 
 void finalizarPrograma(int idPrograma){
-	enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
-	send_w(swapServer,intToChar4(idPrograma),sizeof(int));
+//	enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
+//	send_w(swapServer,intToChar4(idPrograma),sizeof(int));
 	sacarMarcosOcupados(idPrograma);
-	list_destroy(list_get(listaTablasPaginas,idPrograma));
+	flushTlb();
+	tabla_t* tabla = buscarTabla(idPrograma);
+	list_destroy((t_list*)tabla->listaPaginas);
+	list_remove(listaTablasPaginas,buscarPosicionTabla(idPrograma));
 }
 
 //FIN 1
@@ -1371,24 +1386,25 @@ void test2(){
 
 	printf("CANT PAGS PID 0 EN MEM: %d \n", cantPaginasEnMemoriaDePid(-3));
 
-//	reservarPagina(3,1);
-//
-//		pedidoLectura_t pedido3;
-//			pedido3.pid=1;
-//			pedido3.paginaRequerida=1;
-//			pedido3.offset=0;
-//			pedido3.cantBytes=5;
-//
-//		devolverPedidoPagina(pedido3,0);
-//
-//		pedidoLectura_t pedido4;
-//			pedido4.pid=0;
-//			pedido4.paginaRequerida=2;
-//			pedido4.offset=0;
-//			pedido4.cantBytes=5;
-//
-//		devolverPedidoPagina(pedido4,0);
+	reservarPagina(3,1);
 
+		pedidoLectura_t pedido3;
+			pedido3.pid=1;
+			pedido3.paginaRequerida=1;
+			pedido3.offset=0;
+			pedido3.cantBytes=5;
+
+		devolverPedidoPagina(pedido3,0);
+
+		pedidoLectura_t pedido4;
+			pedido4.pid=1;
+			pedido4.paginaRequerida=2;
+			pedido4.offset=0;
+			pedido4.cantBytes=5;
+
+		devolverPedidoPagina(pedido4,0);
+
+	finalizarPrograma(-3);
 
 	recibirComandos();
 }

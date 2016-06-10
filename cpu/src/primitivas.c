@@ -22,9 +22,12 @@ t_puntero definir_variable(t_nombre_variable variable) {
 
 	t_pedido* direccion = stack_next_pedido(stack, tamanioPaginas);
 	t_stack_item* head = stack_pop(stack);
-	dictionary_put(head->identificadores, &variable, (void*) direccion);
+	char* cadena = string_new();
+
+	dictionary_put(head->identificadores, append(cadena,(char)variable), (void*) direccion); //agrego el caracter a una cadena
 	stack_push(stack, head);
 
+	free(cadena);
 	instruccionTerminada("Definir_variable");
 	return head->posicion;
 }

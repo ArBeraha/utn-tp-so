@@ -8,7 +8,9 @@
 
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
 void setearPC(t_PCB* pcb, int pc) {
-	log_info(activeLogger, "Actualizando PC de |%d| a |%d|.", pcb->PC, pc);
+	if(!CU_is_test_running()){
+		log_info(activeLogger, "Actualizando PC de |%d| a |%d|.", pcb->PC, pc);
+	}
 	pcb->PC = pc;
 }
 

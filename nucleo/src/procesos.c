@@ -83,7 +83,7 @@ void actualizarPCB(t_PCB PCB) { //
 	//proceso->PCB=PCB;
 }
 void ingresarCPU(int cliente){
-	queue_push(colaCPU,cliente);
+	queue_push(colaCPU,(void*)cliente);
 }
 void bloquearProcesoIO(int PID, char* IO) {
 	bloquearProceso(PID);

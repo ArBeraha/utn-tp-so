@@ -6,8 +6,6 @@
  */
 #include "nucleo.h"
 
-
-
 /* ---------- INICIO PARA UMC ---------- */
 bool pedirPaginas(int PID, char* codigo) {
 	t_proceso* proceso = (t_proceso*) PID;
@@ -100,6 +98,37 @@ char* getScript(int consola) {
 	return script;
 }
 /*  ----------INICIO NUCLEO ---------- */
+void inicializar() {
+	system("rm -rf *.log");
+	crearLogs("Nucleo", "Nucleo",0);
+	//testear(test_serializacion);
+	log_info(activeLogger, "INICIALIZANDO");
+	espera.tv_sec = 2;
+	espera.tv_usec = 500000;
+	tamanio_pagina=100;
+	listaProcesos = list_create();
+	colaCPU = queue_create();
+	colaListos = queue_create();
+	colaSalida = queue_create();
+	tablaIO = dictionary_create();
+	tablaSEM = dictionary_create();
+	tablaGlobales = dictionary_create();
+	cargarConfiguracion();
+	iniciarVigilanciaConfiguracion();
+	iniciarAtrrYMutexs(3,&mutexProcesos,&mutexUMC,&mutexClientes,&mutexEstados);
+	crearSemaforos();
+	crearIOs();
+	crearCompartidas();
+	algoritmo = FIFO;
+	configurarServidorExtendido(&socketConsola, &direccionConsola,
+			config.puertoConsola, &tamanioDireccionConsola, &activadoConsola);
+	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puertoCPU,
+			&tamanioDireccionCPU, &activadoCPU);
+	inicializarClientes();
+	conectarAUMC();
+	//testear(test_nucleo);
+	crearHilo(&hiloPlanificacion, planificar);
+}
 void cargarConfiguracion() {
 	log_debug(bgLogger, "Cargando archivo de configuracion");
 	t_config* configNucleo;
@@ -118,35 +147,37 @@ void cargarConfiguracion() {
 	config.sharedVars = config_get_array_value(configNucleo, "SHARED_VARS");
 	config_destroy(configNucleo);
 }
-void inicializar() {
-	system("rm -rf *.log");
-	crearLogs("Nucleo", "Nucleo",0);
-	//testear(test_serializacion);
-	log_info(activeLogger, "INICIALIZANDO");
-	espera.tv_sec = 2;
-	espera.tv_usec = 500000;
-	tamanio_pagina=100;
-	listaProcesos = list_create();
-	colaCPU = queue_create();
-	colaListos = queue_create();
-	colaSalida = queue_create();
-	tablaIO = dictionary_create();
-	tablaSEM = dictionary_create();
-	tablaGlobales = dictionary_create();
-	cargarConfiguracion();
-	iniciarAtrrYMutexs(3,&mutexProcesos,&mutexUMC,&mutexClientes,&mutexEstados);
-	crearSemaforos();
-	crearIOs();
-	crearCompartidas();
-	algoritmo = FIFO;
-	configurarServidorExtendido(&socketConsola, &direccionConsola,
-			config.puertoConsola, &tamanioDireccionConsola, &activadoConsola);
-	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puertoCPU,
-			&tamanioDireccionCPU, &activadoCPU);
-	inicializarClientes();
-	conectarAUMC();
-	//testear(test_nucleo);
-	crearHilo(&hiloPlanificacion, planificar);
+void recargarConfiguracion() {
+	log_debug(bgLogger, "Cargando archivo de configuracion");
+	t_config* configNucleo;
+	configNucleo = config_create("nucleo.cfg");
+	config.quantum = config_get_int_value(configNucleo, "QUANTUM");
+	config.queantum_sleep = config_get_int_value(configNucleo, "QUANTUM_SLEEP");
+	config_destroy(configNucleo);
+}
+void iniciarVigilanciaConfiguracion(){
+	cambiosConfiguracion = inotify_init();
+	inotify_add_watch(cambiosConfiguracion,".",IN_CLOSE_WRITE);
+}
+void procesarCambiosConfiguracion(){
+	char buffer[EVENT_BUF_LEN];
+	int length = read(cambiosConfiguracion, buffer, EVENT_BUF_LEN);
+	int e = 0;
+	while (e < length) {
+		struct inotify_event *event =
+				(struct inotify_event *) &buffer[e];
+		if (event->len) {
+			if (event->mask & IN_CLOSE_WRITE) {
+				if (strcmp(event->name, "nucleo.cfg") == 0) {
+					log_info(activeLogger,
+							"Se modifico el archivo %s y se releera",
+							event->name);
+					recargarConfiguracion();
+				}
+			}
+		}
+		e += EVENT_SIZE + event->len;
+	}
 }
 void finalizar() {
 	log_info(activeLogger, "FINALIZANDO");
@@ -263,7 +294,7 @@ void procesarHeader(int cliente, char *header) {
 
 	case HeaderScript:
 		// Thread mutexClientes UNSAFE
-		crearHiloConParametro(&hiloCrearProcesos, crearProceso ,(void*) cliente);
+		crearHiloConParametro(&hiloCrearProcesos, (HILO)crearProceso ,(void*) cliente);
 		break;
 
 	case HeaderPedirValorVariableCompartida:
@@ -300,26 +331,26 @@ int main(void) {
 	char header[1];
 	inicializar();
 
-
-
 	log_info(activeLogger, "Esperando conexiones ...");
 	while (1) {
 		FD_ZERO(&socketsParaLectura);
 		FD_SET(socketConsola, &socketsParaLectura);
 		FD_SET(socketCPU, &socketsParaLectura);
-
+		FD_SET(cambiosConfiguracion, &socketsParaLectura);
 		mayorDescriptor =
-				(socketConsola > socketCPU) ? socketConsola : socketCPU;
-
+				(((socketConsola > socketCPU) ? socketConsola : socketCPU)
+						< cambiosConfiguracion) ?
+						cambiosConfiguracion :
+						((socketConsola > socketCPU) ? socketConsola : socketCPU);
 		MUTEXCLIENTES(incorporarClientes());
 
 		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, &espera);
 		if (tieneLectura(socketConsola))
 			MUTEXCLIENTES(procesarNuevasConexionesExtendido(&socketConsola));
-
 		if (tieneLectura(socketCPU))
 			MUTEXCLIENTES(procesarNuevasConexionesExtendido(&socketCPU));
-
+		if (tieneLectura(cambiosConfiguracion))
+			procesarCambiosConfiguracion();
 
 		for (i = 0; i < getMaxClients(); i++) {
 			pthread_mutex_lock(&mutexClientes);
@@ -332,7 +363,6 @@ int main(void) {
 			}
 			pthread_mutex_unlock(&mutexClientes);
 		}
-
 	}
 	finalizar();
 	return EXIT_SUCCESS;

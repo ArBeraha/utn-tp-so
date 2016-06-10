@@ -57,7 +57,7 @@ void planificarIO(char* io_id, t_IO* io) {
 		t_bloqueo* info = malloc(sizeof(t_bloqueo));
 		info->IO = io;
 		info->PID = (int) queue_pop(io->cola);
-		crearHiloConParametro(&hiloBloqueos, bloqueo, info);
+		crearHiloConParametro(&hiloBloqueos, (HILO)bloqueo, info);
 	}
 }
 bool terminoQuantum(t_proceso* proceso) {
@@ -99,9 +99,10 @@ void expulsarProceso(t_proceso* proceso) {
 	cambiarEstado(proceso, READY);
 	char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
 	pcb_destroy(proceso->PCB);
-	t_PCB* pcb;
+	t_PCB* pcb = malloc(sizeof(t_PCB));
 	deserializar_PCB(pcb,serialPcb);
 	proceso->PCB = pcb;
+	// TODO usar actualizarPCB
 }
 void continuarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE

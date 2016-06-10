@@ -19,6 +19,9 @@
 #include "commonTypes.h"
 #include "serializacion.h"
 #include "hilos.h"
+#include <sys/inotify.h>
+#define EVENT_SIZE  ( sizeof (struct inotify_event) )
+#define EVENT_BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
 
 #define SIN_ASIGNAR -1
 /* ---------- INICIO DEBUG ---------- */
@@ -26,7 +29,7 @@
 #define DEBUG_IGNORE_UMC true
 #define DEBUG_IGNORE_UMC_PAGES true
 /* ---------- INICIO DEBUG ---------- */
-int socketConsola, socketCPU, activadoCPU, activadoConsola, umc;
+int socketConsola, socketCPU, activadoCPU, activadoConsola, umc, cambiosConfiguracion;
 struct sockaddr_in direccionConsola, direccionCPU, direccionUMC;
 unsigned int tamanioDireccionConsola, tamanioDireccionCPU, tamanio_pagina;
 // Hilos
@@ -106,7 +109,7 @@ t_config* configNucleo;
 t_planificacion algoritmo;
 struct timeval espera;
 // Nucleo
-void cargarCFG();
+void cargarConfiguracion();
 void procesarHeader(int cliente, char *header);
 void finalizar();
 int getHandshake();
@@ -121,6 +124,8 @@ void destruirIOs();
 void destruirCompartida(int* compartida);
 void destruirCompartidas();
 void atenderHandshake(int cliente);
+void iniciarVigilanciaConfiguracion();
+void procesarCambiosConfiguracion();
 // UMC
 bool pedirPaginas(int PID, char* codigo);
 void establecerConexionConUMC();
@@ -129,6 +134,8 @@ void handshakearUMC();
 void recibirTamanioPagina();
 // Consola
 char* getScript(int consola);
+// CPU
+void ingresarCPU(int cliente);
 // Procesos
 HILO crearProceso(int consola);
 void rechazarProceso(int PID);
@@ -155,6 +162,7 @@ void cambiarEstado(t_proceso* proceso, int estado);
 void continuarProceso(t_proceso* proceso);
 void expulsarProceso(t_proceso* proceso);
 void ejecutarProceso(int PID, int cpu);
+void rafagaProceso(int cliente);
 // Primitivas
 void signalSemaforo(int cliente);
 void waitSemaforo(int cliente);

@@ -36,12 +36,30 @@ void crearLogs(char* logname, char* procName, int logLevel)
 		}
 	}
 	activeLogger = log_create(string_from_format("%s.log",logname),procName,activeLoggerIsActive,LOG_LEVEL_INFO);
-	bgLogger = log_create(string_from_format("%s.log",logname),procName,bgLoggerIsActive,LOG_LEVEL_DEBUG);
+	bgLogger = log_create(string_from_format("%s.log",logname),procName,bgLoggerIsActive,LOG_LEVEL_INFO);
 	iniciarLog();
 }
 
-void destruirLogs()
-{
+
+/**
+ * No usar esta función si en paralelo puede haber algo escribiendo en los logs!
+ */
+void desactivarLogs(){
+	log_info(activeLogger, "Desactivando logs para testear...");
+	activeLogger->detail=LOG_LEVEL_ERROR;
+	bgLogger->detail=LOG_LEVEL_ERROR;
+}
+
+/**
+ * No usar esta función si en paralelo puede haber algo escribiendo en los logs!
+ */
+void reactivarLogs(){
+	log_info(activeLogger, "Desactivando logs para testear...");
+	activeLogger->detail=LOG_LEVEL_INFO;
+	bgLogger->detail=LOG_LEVEL_INFO;
+}
+
+void destruirLogs(){
 	log_destroy(activeLogger);
 	log_destroy(bgLogger);
 }

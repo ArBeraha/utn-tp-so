@@ -6,6 +6,8 @@
  */
 #include "nucleo.h"
 
+
+
 static bool matrizEstados[5][5] = {
 //		     		NEW    READY  EXEC   BLOCK  EXIT
 		/* NEW 	 */{ false, true, false, false, true },
@@ -15,30 +17,16 @@ static bool matrizEstados[5][5] = {
 		/* EXIT  */{ false, false, false, false, false } };
 
 /*  ----------INICIO PLANIFICACION ---------- */
-void planificar() {
+HILO planificar() {
 	while (1) {
-		//Procesos
-		planificarProcesos();
-		//IO
+		//Planificacion de Ejecucion y Destruccion de procesos
+		planificacionFIFO();
+
+		//Planificacion IO
 		dictionary_iterator(tablaIO, (void*) planificarIO);
 	}
 }
-void planificarProcesos() {
-	switch (algoritmo) {
-
-	case RR:
-		planificacionRR();
-		break;
-	case FIFO:
-		planificacionFIFO();
-		break;
-	}
-}
-void planificacionRR() {
-	MUTEXPROCESOS(list_iterate(listaProcesos, (void*) planificarProcesoRR));
-	planificacionFIFO();
-}
-void planificarProcesoRR(t_proceso* proceso) {
+void planificarExpulsion(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	if (proceso->estado == EXEC) {
 		if (terminoQuantum(proceso))
@@ -47,30 +35,40 @@ void planificarProcesoRR(t_proceso* proceso) {
 			continuarProceso(proceso);
 	}
 }
+void rafagaProceso(cliente){
+	// mutexClientes SAFE
+	log_info(activeLogger,"EL PID TERMINO UNA INSTRUCCION");
+	t_proceso* proceso = (t_proceso*) clientes[cliente].pid;
+	proceso->rafagas++;
+	planificarExpulsion(proceso);
+}
 void planificacionFIFO() {
+	// mutexProcesos SAFE
 	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
 		ejecutarProceso((int) queue_pop(colaListos), (int) queue_pop(colaCPU));
 
 	while (!queue_is_empty(colaSalida))
 		destruirProceso((int) queue_pop(colaSalida));
 }
+
 void planificarIO(char* io_id, t_IO* io) {
 	if (io->estado == INACTIVE && (!queue_is_empty(io->cola))) {
 		io->estado = ACTIVE;
 		t_bloqueo* info = malloc(sizeof(t_bloqueo));
 		info->IO = io;
 		info->PID = (int) queue_pop(io->cola);
-		crearHiloConParametro(&hiloBloqueos,(void*) bloqueo, info);
+		crearHiloConParametro(&hiloBloqueos, bloqueo, info);
 	}
 }
 bool terminoQuantum(t_proceso* proceso) {
 	// mutexProcesos SAFE
-	return (!(proceso->PCB->PC % config.quantum)); // Si el PC es divisible por QUANTUM quiere decir que hizo QUANTUM ciclos
+	return (proceso->rafagas>=config.quantum);
 }
 void asignarCPU(t_proceso* proceso, int cpu) {
 	log_debug(bgLogger, "Asignando cpu:%d a pid:%d", cpu, proceso->PCB->PID);
 	cambiarEstado(proceso,EXEC);
 	proceso->cpu = cpu;
+	proceso->rafagas=0;
 	MUTEXCLIENTES(clientes[cpu].pid = proceso->PCB->PID);
 	MUTEXCLIENTES(proceso->socketCPU = clientes[cpu].socket);
 }
@@ -82,6 +80,7 @@ void desasignarCPU(t_proceso* proceso) {
 	MUTEXCLIENTES(clientes[proceso->cpu].pid = (int) NULL);
 }
 void ejecutarProceso(int PID, int cpu) {
+	// mutexProcesos SAFE
 	t_proceso* proceso = (t_proceso*) PID;
 	asignarCPU(proceso,cpu);
 	if (!CU_is_test_running()) {
@@ -89,7 +88,8 @@ void ejecutarProceso(int PID, int cpu) {
 		char* serialPCB = malloc(bytes);
 		serializar_PCB(serialPCB, proceso->PCB);
 		enviarHeader(proceso->socketCPU,HeaderPCB);
-		MUTEXCLIENTES(enviarLargoYSerial(proceso->socketCPU, bytes, serialPCB));
+		enviarLargoYSerial(proceso->socketCPU, bytes, serialPCB);
+		enviarHeader(proceso->socketCPU, HeaderContinuarProceso);
 		free(serialPCB);
 	}
 }
@@ -97,19 +97,25 @@ void expulsarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	enviarHeader(proceso->socketCPU, HeaderDesalojarProceso);
 	cambiarEstado(proceso, READY);
+	char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
+	pcb_destroy(proceso->PCB);
+	t_PCB* pcb;
+	deserializar_PCB(pcb,serialPcb);
+	proceso->PCB = pcb;
 }
 void continuarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	enviarHeader(proceso->socketCPU, HeaderContinuarProceso);
 }
-void bloqueo(t_bloqueo* info) {
+HILO bloqueo(t_bloqueo* info) {
 	log_debug(bgLogger, "Ejecutando IO pid:%d por:%dseg", info->PID,
 			info->IO->retardo);
 	sleep(info->IO->retardo);
 	desbloquearProceso(info->PID);
 	info->IO->estado = INACTIVE;
 	free(info);
-}
+	return NULL;
+	}
 void cambiarEstado(t_proceso* proceso, int estado) {
 	bool legalidad;
 	MUTEXESTADOS(legalidad = matrizEstados[proceso->estado][estado]);

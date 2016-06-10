@@ -26,7 +26,7 @@ void rechazarProceso(int PID) {
 	pcb_destroy(proceso->PCB);
 	free(proceso);
 }
-int crearProceso(int consola) {
+HILO crearProceso(int consola) {
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	proceso->PCB = pcb_create();
 	proceso->PCB->PID = (int) proceso;
@@ -37,18 +37,18 @@ int crearProceso(int consola) {
 		char* codigo = getScript(consola);
 		proceso->PCB->cantidad_paginas = ceil(
 				((double) strlen(codigo)) / ((double) tamanio_pagina));
-//		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
-//			rechazarProceso(proceso->PCB->PID);
-//		} else {
+		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
+			rechazarProceso(proceso->PCB->PID);
+		} else {
 			asignarMetadataProceso(proceso, codigo);
 			MUTEXCLIENTES(clientes[consola].pid = (int) proceso);
 			proceso->cpu = SIN_ASIGNAR;
 			cambiarEstado(proceso, READY);
 			MUTEXPROCESOS(list_add(listaProcesos, proceso));
-		//}
+		}
 		free(codigo);
 	}
-	return proceso->PCB->PID;
+	return proceso;
 }
 
 
@@ -58,6 +58,7 @@ void finalizarProceso(int PID) {
 	MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
 }
 void destruirProceso(int PID) {
+	// mutexProcesos SAFE
 	log_debug(bgLogger,	"Destruyendo proceso:%d",PID);
 	t_proceso* proceso = (t_proceso*) PID;
 	if (proceso->estado != EXIT)

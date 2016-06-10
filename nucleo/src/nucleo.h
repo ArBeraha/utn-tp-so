@@ -32,7 +32,8 @@ unsigned int tamanioDireccionConsola, tamanioDireccionCPU, tamanio_pagina;
 // Hilos
 pthread_t hiloCrearProcesos, hiloBloqueos, hiloPlanificacion;
 pthread_mutex_t mutexProcesos, mutexUMC, mutexClientes, mutexEstados;
-
+// defino la palabra clave THREAD para reconocer las funciones que son main de un hilo
+#define HILO void*
 // MACROS DE MUTEXS
 #define MUTEXCLIENTES(CONTENIDO) \
 	MUTEX(CONTENIDO,mutexClientes);
@@ -61,6 +62,7 @@ typedef struct t_proceso {
 	t_PCB* PCB;
 	int socketConsola;
 	int socketCPU;
+	int rafagas;
 } t_proceso;
 typedef struct t_IO {
 	int retardo;
@@ -128,7 +130,7 @@ void recibirTamanioPagina();
 // Consola
 char* getScript(int consola);
 // Procesos
-int crearProceso(int consola);
+HILO crearProceso(int consola);
 void rechazarProceso(int PID);
 void bloquearProceso(int PID);
 void bloquearProcesoIO(int PID, char* IO);
@@ -139,16 +141,16 @@ void destruirProceso(int PID);
 void actualizarPCB(t_PCB PCB);
 void asignarMetadataProceso(t_proceso* p, char* codigo);
 // Planificacion
-void planificar();
+HILO planificar();
 void planificacionFIFO();
 void planificacionRR();
-void planificarProcesoRR();
+void planificarExpulsion();
 void planificarProcesos();
 void planificarIO(char* io_id, t_IO* io);
 bool terminoQuantum(t_proceso* proceso);
 void asignarCPU(t_proceso* proceso, int cpu);
 void desasignarCPU(t_proceso* proceso);
-void bloqueo(t_bloqueo* info);
+HILO bloqueo(t_bloqueo* info);
 void cambiarEstado(t_proceso* proceso, int estado);
 void continuarProceso(t_proceso* proceso);
 void expulsarProceso(t_proceso* proceso);

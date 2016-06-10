@@ -146,7 +146,7 @@ void inicializar() {
 	inicializarClientes();
 	conectarAUMC();
 	//testear(test_nucleo);
-	crearHilo(&hiloPlanificacion,(void*) planificar);
+	crearHilo(&hiloPlanificacion, planificar);
 }
 void finalizar() {
 	log_info(activeLogger, "FINALIZANDO");
@@ -236,6 +236,7 @@ void atenderHandshake(int cliente){
 	free(header);
 	clientes[cliente].atentido = false;
 }
+
 void procesarHeader(int cliente, char *header) {
 	// mutexClientes SAFE
 	log_debug(bgLogger, "Llego un mensaje con header %d", charToInt(header));
@@ -262,7 +263,7 @@ void procesarHeader(int cliente, char *header) {
 
 	case HeaderScript:
 		// Thread mutexClientes UNSAFE
-		crearHiloConParametro(&hiloCrearProcesos,(void*) crearProceso ,(void*) cliente);
+		crearHiloConParametro(&hiloCrearProcesos, crearProceso ,(void*) cliente);
 		break;
 
 	case HeaderPedirValorVariableCompartida:
@@ -279,6 +280,10 @@ void procesarHeader(int cliente, char *header) {
 
 	case HeaderWait:
 		waitSemaforo(cliente);
+		break;
+
+	case headerTermineInstruccion:
+		rafagaProceso(cliente);
 		break;
 
 	default:

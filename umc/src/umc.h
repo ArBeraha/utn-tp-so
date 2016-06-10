@@ -36,6 +36,7 @@
 #include "CUnit/Basic.h"
 #include <mcheck.h>
 #include "serializacion.h"
+#include "hilos.h"
 
 typedef struct customConfig {
 	int puerto_umc_nucleo;
@@ -75,9 +76,18 @@ typedef struct{ //No hace falta indicar el numero de la pagina, es la posicion
 	int marcoUtilizado;
 	char bitPresencia;
 	char bitModificacion;
-	char bitUso; //Quizas vuele..
+	char bitUso;
 }tablaPagina_t;
 
+typedef struct{
+	int pid;
+	t_list* listaPaginas;
+}tabla_t;
+
+typedef struct{
+	int pid;
+	int posicion;
+}ultimaSacada_t;
 
 //Globales
 
@@ -88,7 +98,6 @@ unsigned int tamanioDireccionCPU, tamanioDireccionNucleo;
 
 typedef int ansisop_var_t;
 
-int cliente;
 int swapServer;
 
 t_log *activeLogger, *bgLogger;
@@ -119,14 +128,18 @@ pthread_mutex_t lock_accesoUltimaPos;
 pthread_mutex_t lock_accesoLog;
 
 
-pthread_t vectorHilosCpu[MAXCLIENTS];
+//pthread_t vectorHilosCpu[MAXCLIENTS];
+
+pthread_t hiloParaCpu;
 
 pthread_t hiloRecibirComandos;
 pthread_attr_t detachedAttr;
 
 int tiempo;
 
-int vectorUltimaPosicionSacada[MAXCLIENTS];
+//int vectorUltimaPosicionSacada[MAXCLIENTS];
+t_list* listaUltimaPosicionSacada;
+
 
 //Prototipos
 
@@ -135,18 +148,17 @@ void reemplazarEntradaConClock(tablaPagina_t* pagina,int pidParam); //TODO
 int estaEnTlb(pedidoLectura_t pedido);
 int buscarEnTlb(pedidoLectura_t pedido);
 int existePidEnListadeTablas(int pid);
-int existePaginaBuscadaEnTabla(int pag, t_list* tablaPaginaBuscada);
+int existePaginaBuscadaEnTabla(int pag, tabla_t* tablaPaginaBuscada);
 char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido);
 int buscarPrimerMarcoLibre();
 int cantidadMarcosLibres();
 
-int buscarEnSwap(pedidoLectura_t pedido);
-void agregarAMemoria(pedidoLectura_t pedido, char* contenido);
+int buscarEnSwap(pedidoLectura_t pedido, int cliente);
+void agregarAMemoria(pedidoLectura_t pedido, char* contenido, int cliente);
 
-char* devolverPedidoPagina(pedidoLectura_t pedido);   // todos estos volver a devolver void, devuelven cosas para testear
+char* devolverPedidoPagina(pedidoLectura_t pedido,int cliente);   // todos estos volver a devolver void, devuelven cosas para testear
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer);
-char* almacenarBytesEnUnaPaginaContiguo(pedidoLectura_t pedido, int size, char* buffer);
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer, int cliente);
 void finalizarPrograma(int idPrograma);
 int inicializarPrograma(int idPrograma, char* contenido);
 int reservarPagina(int,int);

@@ -7,7 +7,6 @@
 
 #include "auxiliaresDePrimitivas.h"
 
-
 bool esVariableDeclarada(t_stack_item* item, t_nombre_variable* variable) {
 	return dictionary_has_key(item->identificadores, variable);
 }
@@ -60,8 +59,3 @@ char *append(const char *s, char c)
     buf[len + 1] = 0;
     return strdup(buf);
 }
-
-
-
-
-

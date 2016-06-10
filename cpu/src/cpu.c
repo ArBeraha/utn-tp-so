@@ -387,13 +387,12 @@ int main() {
 	correrTests();
 
 	//conectarse a umc
-	//establecerConexionConUMC();
+	establecerConexionConUMC();
 
 	//ejemploPedidoLecturaUmc();
 
 	//conectarse a nucleo
 	establecerConexionConNucleo();
-
 
 	//CPU se pone a esperar que nucleo le envie PCB
 	esperar_programas();

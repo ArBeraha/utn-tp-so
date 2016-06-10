@@ -167,18 +167,24 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
  * Directiva 7
  */
 void irAlLabel(t_nombre_etiqueta etiqueta) {
-	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
+	if(!CU_is_test_running()){
+		log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
+	}
 	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
 	if (existeLabel(etiqueta)) {
 		// Casteo el puntero a void como puntero a int y despunterizo eso: void*->t_puntero_instruccion*, y t_puntero_instruccion*->t_puntero_instruccion.
 		posicionPrimeraInstrUtil = *(t_puntero_instruccion*) dictionary_get(
 				pcbActual->indice_etiquetas, etiqueta);
-		log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
+		if(!CU_is_test_running()){
+			log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
 				etiqueta, posicionPrimeraInstrUtil);
+		}
 	} else {
-		log_info(activeLogger,
+		if(!CU_is_test_running()){
+			log_info(activeLogger,
 				"La etiqueta |%s| no existe, por lo que la posición a retornar será -1.",
 				etiqueta);
+		}
 	}
 	setearPC(pcbActual, posicionPrimeraInstrUtil);
 	instruccionTerminada("ir_al_label");

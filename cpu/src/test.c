@@ -93,8 +93,7 @@ void test_envio_solicitudes_varias_paginas(){
 	log_debug(bgLogger, "FIN test_envio_solicitudes_varias_paginas");
 }
 
-void test_definir_variable(){
-	log_debug(bgLogger, "Test primitiva definir variable");
+void preparar_stack(){
 	tamanioPaginas = 4;
 
 	pcbActual = malloc(sizeof(t_PCB));
@@ -104,27 +103,41 @@ void test_definir_variable(){
 	t_stack_item* item = malloc(sizeof(t_stack_item));
 	item->identificadores =  dictionary_create();
 	stack_push(stack,item);
+}
 
-	definir_variable('a');
-	item = stack_pop(stack);
+void test_definir_variable(){
+	log_debug(bgLogger, "Test primitiva definir variable");
+	preparar_stack();
 
+	definir_variable('a');				//ejecuto la primitiva
+
+	t_stack_item* item = stack_pop(stack);
 	CU_ASSERT_EQUAL(pcbActual->PC,1);
 	CU_ASSERT(dictionary_has_key(item->identificadores, "a"));
+
+	stack_push(stack,item);
+
+	definir_variable('b');				//ejecuto la primitiva
+
+	t_stack_item* res = stack_pop(stack);
+
+	CU_ASSERT_EQUAL(pcbActual->PC,2);
+	CU_ASSERT(dictionary_has_key(res->identificadores,"b"));
 
 	log_debug(bgLogger, "FIN test_definir_variable");
 }
 
-
-
 int test_cpu() {
+
 	log_info(activeLogger, "INICIANDO TESTS DE CPU");
 	CU_initialize_registry();
-	CU_pSuite suite_nucleo = CU_add_suite("Suite de CPU", NULL, NULL);
-	CU_add_test(suite_nucleo, "Test obtener_offset_relativo.",	test_obtener_offset_relativo);
+
+	CU_pSuite suite_cpu = CU_add_suite("Suite de CPU", NULL, NULL);
+	CU_add_test(suite_cpu, "Test obtener_offset_relativo.",	test_obtener_offset_relativo);
 	//CU_add_test(suite_nucleo, "Test cantidad_paginas_ocupa.", test_cantidad_paginas_ocupa);
-	CU_add_test(suite_nucleo, "Test envio_solicitudes_una_pagina",test_envio_solicitudes_una_pagina);
-	CU_add_test(suite_nucleo, "Test envio_solicitudes_varias_paginas",test_envio_solicitudes_varias_paginas);
-	CU_add_test(suite_nucleo, "Test definir_variables",test_definir_variable);
+	CU_add_test(suite_cpu, "Test envio_solicitudes_una_pagina",test_envio_solicitudes_una_pagina);
+	CU_add_test(suite_cpu, "Test envio_solicitudes_varias_paginas",test_envio_solicitudes_varias_paginas);
+	CU_add_test(suite_cpu, "Test definir_variables",test_definir_variable);
 
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();

@@ -21,6 +21,7 @@ t_log *activeLogger, *bgLogger;
 void crearLogs(char* logname, char* procName, int logLevel);
 void destruirLogs();
 void reactivarLogs();
+void desactivarLogs();
 void destruirLogs();
 
 #endif /* OTROS_LOG_H_ */

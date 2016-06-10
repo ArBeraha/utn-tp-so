@@ -167,24 +167,22 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
  * Directiva 7
  */
 void irAlLabel(t_nombre_etiqueta etiqueta) {
-	if(!CU_is_test_running()){
-		log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
-	}
+
+	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
 	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
 	if (existeLabel(etiqueta)) {
 		// Casteo el puntero a void como puntero a int y despunterizo eso: void*->t_puntero_instruccion*, y t_puntero_instruccion*->t_puntero_instruccion.
 		posicionPrimeraInstrUtil = *(t_puntero_instruccion*) dictionary_get(
 				pcbActual->indice_etiquetas, etiqueta);
-		if(!CU_is_test_running()){
-			log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
+
+		log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
 				etiqueta, posicionPrimeraInstrUtil);
-		}
+
 	} else {
-		if(!CU_is_test_running()){
-			log_info(activeLogger,
+
+		log_info(activeLogger,
 				"La etiqueta |%s| no existe, por lo que la posición a retornar será -1.",
 				etiqueta);
-		}
 	}
 	setearPC(pcbActual, posicionPrimeraInstrUtil);
 	instruccionTerminada("ir_al_label");
@@ -193,7 +191,6 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 /**
  * Directiva 8
  */
-//Cambio respecto de la version inicial del enunciado! esta version es acorde a la nueva.
 void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar) {
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
 	int posicionFuncion = 0; // TODO acá va la de la funcion
@@ -232,7 +229,6 @@ void retornar(t_valor_variable variable) {
 /**
  * Directiva 10
  */
-// fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
 void imprimir_variable(t_valor_variable valor) { //fixme, no era distinto esto?
 	log_info(activeLogger, "Imprimir |%d|", valor);
 
@@ -240,14 +236,12 @@ void imprimir_variable(t_valor_variable valor) { //fixme, no era distinto esto?
 	send_w(cliente_nucleo, intToChar4(valor), sizeof(t_valor_variable));
 	incrementarPC(pcbActual);
 	instruccionTerminada("Imprimir");
-	//return digitosDe(valor);
 }
 
 
 /**
  * Directiva 11
  */
-// fixme: tipo incompatible con el del enunciado! no borrar el return comentado!
 void imprimir_texto(char* texto) {
 
 	log_debug(activeLogger, "Enviando a nucleo la cadena: |%s|...", texto);
@@ -260,14 +254,12 @@ void imprimir_texto(char* texto) {
 
 	incrementarPC(pcbActual);
 	instruccionTerminada("Imprimir texto");
-	//return strlen(texto); //Size tiene el \0, que no se imprime.
 }
 
 
 /**
  * Directiva 12 ^
  */
-// TODO cambiar valor de retorno a int? el enunciado dice eso pero no que retorna!
 void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) {
 	log_info(activeLogger,"Informar a nucleo que el programa quiere usar |%s| durante |%d| unidades de tiempo",
 			dispositivo, tiempoUsoDispositivo);

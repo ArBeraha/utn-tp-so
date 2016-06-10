@@ -367,7 +367,9 @@ void handler(int sign) {
  */
 void correrTests(){
 	if(config.DEBUG_RUN_TEST){
+		desactivarLogs();
 		testear(test_cpu);
+		reactivarLogs();
 	}
 }
 

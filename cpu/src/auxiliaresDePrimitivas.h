@@ -39,7 +39,6 @@ bool esParametro(t_nombre_variable variable);
 int tipoVaraible(t_nombre_variable variable, t_stack_item* head);
 void enviar_direccion_umc(t_puntero direccion);
 bool existeLabel(t_nombre_etiqueta etiqueta);
-int digitosDe(t_valor_variable valor);
 char *append(const char *s, char c);
 
 #endif /* AUXILIARES_DE_PRIMITIVAS_H_ */

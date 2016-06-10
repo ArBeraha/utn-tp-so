@@ -46,10 +46,6 @@ bool existeLabel(t_nombre_etiqueta etiqueta) {
 	return dictionary_has_key(pcbActual->indice_etiquetas, etiqueta);
 }
 
-int digitosDe(t_valor_variable valor) {
-	return snprintf(0, 0, "%d", valor);
-}
-
 char *append(const char *s, char c)
 {
     int len = strlen(s);

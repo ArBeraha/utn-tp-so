@@ -488,14 +488,14 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, int cliente){
 		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d PARA LECTURA \n",pedido.pid,pedido.paginaRequerida);
 		int pos = buscarEnTlb(pedido);
 
-		char* contenido = malloc(pedido.cantBytes + 1);
+		char* contenido = malloc(pedido.cantBytes);
 
 		printf("Accediendo a memoria... \n");
 		usleep(retardoMemoria);
 
 		pthread_mutex_lock(&lock_accesoMemoria);
 		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
-		contenido[pedido.cantBytes]='\0';
+
 		pthread_mutex_unlock(&lock_accesoMemoria);
 
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
@@ -524,10 +524,10 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, int cliente){
 					printf("Accediendo a memoria... \n");
 					usleep(retardoMemoria);
 
-					char* contenido = malloc(pedido.cantBytes + 1);
+					char* contenido = malloc(pedido.cantBytes);
 					pthread_mutex_lock(&lock_accesoMemoria);
 					memcpy(contenido,memoria+paginaBuscada->marcoUtilizado * config.tamanio_marco+pedido.offset,pedido.cantBytes);
-					contenido[pedido.cantBytes]='\0';
+
 					pthread_mutex_unlock(&lock_accesoMemoria);
 
 					printf("marco tlb: %d \n", paginaBuscada->marcoUtilizado);
@@ -1115,7 +1115,6 @@ char* getScript(int clienteNucleo) {
 	script = malloc(sizeof(char) * size);
 	read(clientes[clienteNucleo].socket, script, size);
 	log_info(activeLogger, "Script de nucleo %d recibido:\n%s", clienteNucleo, script);
-	clientes[clienteNucleo].atentido=false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
 	return script;
 }
 
@@ -1138,9 +1137,14 @@ void pedidoLectura(int cliente){
 	pedidoLectura.offset = pedidoCpu->offset;
 	pedidoLectura.cantBytes = pedidoCpu->size;
 
+	if(!existePaginaBuscadaEnTabla(pedidoCpu->pagina,buscarTabla(id))){
+		send_w(clientes[cliente].socket, intToChar4(0),sizeof(int));
+		return;
+	}
 
 	char* contenidoAEnviar =  devolverPedidoPagina(pedidoLectura,cliente);
-	printf("Contenido a enviado a Cpu: %s \n", contenidoAEnviar);
+	printf("Contenido enviado a Cpu: %s \n", contenidoAEnviar);
+	send_w(clientes[cliente].socket, intToChar4(1),sizeof(int));
 	send_w(clientes[cliente].socket, contenidoAEnviar,pedidoCpu->size);
 }
 
@@ -1160,7 +1164,13 @@ void headerEscribirPagina(int cliente){
 	pedido.offset = pedidoCpuEscritura->offset;
 	pedido.cantBytes = pedidoCpuEscritura->size;
 
+	if(!existePaginaBuscadaEnTabla(pedidoCpuEscritura->pagina,buscarTabla(id))){
+		send_w(clientes[cliente].socket, intToChar4(0),sizeof(int));
+		return;
+	}
+
 	almacenarBytesEnUnaPagina(pedido,strlen(buffer),buffer,cliente);
+	send_w(clientes[cliente].socket, intToChar4(1),sizeof(int));
 }
 
 void procesarHeader(int cliente, char *header){

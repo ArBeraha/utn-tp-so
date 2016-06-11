@@ -623,9 +623,9 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer,i
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
 
 		printf("Lo que acabo de almacenar: %s .\n \n ",memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset);
-		printf("Ahora llamo a la funcion devolverPedidoPagina (conecto las dos func) \n \n");
-		return (devolverPedidoPagina(pedido,cliente)); //Provisorio para testear
-
+//		printf("Ahora llamo a la funcion devolverPedidoPagina (conecto las dos func) \n \n");
+//		return (devolverPedidoPagina(pedido,cliente)); //Provisorio para testear
+		return "";
 	}
 	else{
 		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas \n",pedido.pid,pedido.paginaRequerida);
@@ -662,12 +662,13 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer,i
 					printf("Marco de la pagina: %d \n", paginaBuscada->marcoUtilizado);
 
 					printf("Lo que acabo de almacenar: %s .\n \n ",memoria+paginaBuscada->marcoUtilizado*config.tamanio_marco+pedido.offset);
-					printf("Ahora llamo a la funcion devolverPedidoPagina (conecto las dos func) \n \n");
+//					printf("Ahora llamo a la funcion devolverPedidoPagina (conecto las dos func) \n \n");
 
 					agregarATlb(paginaBuscada,pedido.pid);
 
 					//send_w(cliente, devolucion, 4);
-					return (devolverPedidoPagina(pedido,cliente)); //Provisorio para testear
+//					return (devolverPedidoPagina(pedido,cliente)); //Provisorio para testear
+					return "";
 				}
 	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
 				else{
@@ -678,7 +679,7 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer,i
 					if(pudo){
 						agregarATlb(paginaBuscada,pedido.pid);
 						log_info(activeLogger,"Cargada pagina en memoria, agregada a TLB, se vuelve a hacer el pedido de escritura! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
-						devolverPedidoPagina(pedido,cliente);
+						almacenarBytesEnUnaPagina(pedido,size,buffer,cliente);
 					}
 					else{
 						return "Error busqueda en swap";
@@ -1140,11 +1141,12 @@ void pedidoLectura(int cliente){
 	if(!existePaginaBuscadaEnTabla(pedidoCpu->pagina,buscarTabla(id))){
 		send_w(clientes[cliente].socket, intToChar4(0),sizeof(int));
 		return;
+	}else{
+		send_w(clientes[cliente].socket, intToChar4(1),sizeof(int));
 	}
 
 	char* contenidoAEnviar =  devolverPedidoPagina(pedidoLectura,cliente);
 	printf("Contenido enviado a Cpu: %s \n", contenidoAEnviar);
-	send_w(clientes[cliente].socket, intToChar4(1),sizeof(int));
 	send_w(clientes[cliente].socket, contenidoAEnviar,pedidoCpu->size);
 }
 
@@ -1156,18 +1158,24 @@ void headerEscribirPagina(int cliente){
 
 	read(clientes[cliente].socket, pedidoSerializadoEscritura, sizeof(t_pedido));
 	deserializar_pedido(pedidoCpuEscritura,pedidoSerializadoEscritura);
+
+	if(!existePaginaBuscadaEnTabla(pedidoCpuEscritura->pagina,buscarTabla(id))){
+		send_w(clientes[cliente].socket, intToChar4(0),sizeof(int));
+		return;
+	}else{
+		send_w(clientes[cliente].socket, intToChar4(1),sizeof(int));
+	}
+
 	read(clientes[cliente].socket, buffer, sizeof(int));
+	printf("Lo que me mando a escribir: %s \n",buffer);
 
 	pedidoLectura_t pedido;
 	pedido.pid = id;
 	pedido.paginaRequerida = pedidoCpuEscritura->pagina;
 	pedido.offset = pedidoCpuEscritura->offset;
 	pedido.cantBytes = pedidoCpuEscritura->size;
+	printf("------****************-Pagina:%d Offset:%d CantBytes:%d \n",pedidoCpuEscritura->pagina,pedidoCpuEscritura->offset,pedidoCpuEscritura->size);
 
-	if(!existePaginaBuscadaEnTabla(pedidoCpuEscritura->pagina,buscarTabla(id))){
-		send_w(clientes[cliente].socket, intToChar4(0),sizeof(int));
-		return;
-	}
 
 	almacenarBytesEnUnaPagina(pedido,strlen(buffer),buffer,cliente);
 	send_w(clientes[cliente].socket, intToChar4(1),sizeof(int));
@@ -1313,9 +1321,8 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 
 //	recibirComandos();
 
-//	pthread_create(&hiloRecibirComandos,NULL,(void*)recibirComandos,NULL);
-
-//	servidorCPUyNucleoExtendido();
+	pthread_create(&hiloRecibirComandos,&detachedAttr,(void*)recibirComandos,NULL);
+	servidorCPUyNucleoExtendido();
 
 //
 //	conexionASwap();
@@ -1328,7 +1335,7 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 //
 //	buscarEnSwap(pedido1);
 
-//	recibirComandos();
+
 
 
 
@@ -1417,7 +1424,7 @@ void test2(){
 
 	reservarPagina(3,-3);
 
-	recibirComandos();
+//	recibirComandos();
 }
 
 // 5.Server de los cpu y de nucleo

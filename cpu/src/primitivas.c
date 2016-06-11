@@ -24,10 +24,16 @@ t_puntero definir_variable(t_nombre_variable variable) {
 	t_stack_item* head = stack_pop(stack);
 	char* cadena = string_new();
 
-	dictionary_put(head->identificadores, char_append(cadena,(char)variable), (void*) direccion); //agrego el caracter a una cadena
+	if(esParametro(variable))
+	{
+		list_add(head->argumentos,(void*)direccion);
+	}else{
+		dictionary_put(head->identificadores, char_append(cadena,(char)variable), (void*) direccion); //agrego el caracter a una cadena
+	}
+
 
 	stack_push(stack, head);
-	head->posicion = stack_size(stack) - 1; // si size es 1 -> pos = 0
+	head->posicion = stack_size(stack) - 1; // si size es 1 -> pos = 0. Se calcula con el elemento ya agregado!
 
 	free(cadena);
 	instruccionTerminada("Definir_variable");
@@ -188,15 +194,14 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
  */
 void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar) {
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
-	int posicionFuncion = 0; // TODO acá va la de la funcion
+	int posicionFuncion = 0; //TODO DE DONDE SACO ESTO?
 
 	t_stack_item* newHead = stack_item_create();
-	//newHead->argumentos; //fixme: ¿Como lleno esto? stack_next_pedido parece ser re util
-	//aca, pero no se como saber cuantos argumentos tengo :(
-	//parsear la linea a mano no me parece una solucion, pese a que funcionaria...
+	//newHead->argumentos El parser llama a definir variable y se ocupa de esto
 	//newHead->identificadores no tiene nada por ahora. Se va llenando en otras primitivas, a medida que se declaren variables locales.
-	newHead->posicionRetorno = dondeRetornar;
+	newHead->posicionRetorno = dondeRetornar; // fixme: ver issue #30
 	newHead->posicion = stack_size(stack); // Si el stack tiene pos 0, size=1, si tiene 0 y 1, size=2,... Da la posicion del lugar nuevo.
+	//newHead->valorDeRetorno se completa en otro lado.
 	stack_push(stack, newHead);
 
 	setearPC(pcbActual, posicionFuncion);

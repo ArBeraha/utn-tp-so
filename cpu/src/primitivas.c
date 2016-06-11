@@ -164,8 +164,9 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
 	if (existeLabel(etiqueta)) {
 		// Casteo el puntero a void como puntero a int y despunterizo eso: void*->t_puntero_instruccion*, y t_puntero_instruccion*->t_puntero_instruccion.
-		posicionPrimeraInstrUtil = *(t_puntero_instruccion*) dictionary_get(
-				pcbActual->indice_etiquetas, etiqueta);
+		posicionPrimeraInstrUtil = dictionary_get(pcbActual->indice_etiquetas, etiqueta);  //al parecer esto anda
+
+		//*(t_puntero_instruccion*) dictionary_get(pcbActual->indice_etiquetas, etiqueta);
 
 		log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
 				etiqueta, posicionPrimeraInstrUtil);
@@ -302,7 +303,7 @@ void signal_semaforo(t_nombre_semaforo identificador_semaforo) {
 
 /* ------ Funciones para usar con el parser ----- */
 void inicializar_primitivas() {
-	log_info(bgLogger, "Inicianlizando primitivas...");
+	log_info(bgLogger, "Inicializando primitivas...");
 	funciones.AnSISOP_definirVariable = &definir_variable;
 	funciones.AnSISOP_obtenerPosicionVariable = &obtener_posicion_de;
 	funciones.AnSISOP_dereferenciar = &dereferenciar;

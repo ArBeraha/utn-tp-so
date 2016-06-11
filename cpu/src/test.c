@@ -8,27 +8,23 @@
 #include "cpu.h"
 #include "primitivas.h"
 
+t_stack_item* item;
 /*------FUNCIONES DE INICIALIZACION / FINALIZACION -------------*/
 void init(){
-	pcbActual = malloc(sizeof(t_PCB));
-
+	pcbActual = pcb_create();
 	stack =stack_create();
-	t_stack_item* item = malloc(sizeof(t_stack_item));
-	item->identificadores =  dictionary_create();
+	item = stack_item_create();
 	stack_push(stack,item);
-
-	pcbActual->indice_etiquetas = dictionary_create();
 }
 
 void fin(){
-
+	stack_item_destroy(item);
 	dictionary_clean(pcbActual->indice_etiquetas);
-	dictionary_destroy(pcbActual->indice_etiquetas);
-
+	pcb_destroy(pcbActual);
 	stack_destroy(stack);
-	free(pcbActual);
 }
 
+/*-------------TESTS CPU-------------*/
 void test_obtener_offset_relativo() {
 	int aux = tamanioPaginas;
 	t_sentencia fuente, destino;
@@ -98,22 +94,23 @@ void test_definir_variable(){
 	t_stack_item* otroItem = stack_pop(stack);
 	CU_ASSERT_EQUAL(pcbActual->PC,2);
 	CU_ASSERT(dictionary_has_key(otroItem->identificadores,"b"));
-
 }
 
-void test_ir_al_label(){ //TODO rompe la primitiva
+void test_ir_al_label(){
 	pcbActual->PC = 0;
 	irAlLabel("goku"); //JAJAJA el nombre
 	CU_ASSERT_EQUAL(pcbActual->PC,-1);
 
-	//	dictionary_put(pcbActual->indice_etiquetas,"double", (void *)3);
-	//
-	//irAlLabel("double");
-	//CU_ASSERT_EQUAL(pcbActual->PC,3);
+	pcbActual->PC = 0;
+	dictionary_put(pcbActual->indice_etiquetas,"double", (void *)3);
+	irAlLabel("double");
+
+	CU_ASSERT_EQUAL(pcbActual->PC,3);
+	dictionary_remove(pcbActual->indice_etiquetas,"double");
 
 }
 
-
+/*-------------TESTS CPU Y UMC-------------*/
 void asignar_y_dereferenciar(){
 	tamanioPaginas = 64;
 	//No pedir de la primera pagina x ahora xq ta en swap para el test.

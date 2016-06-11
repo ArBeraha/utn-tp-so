@@ -1,3 +1,12 @@
+# Estos van manualmene, con add -f, solo en casos de necesidad
+*.mk
+makefile
+/consola/Debug/code/subdir.mk
+/cpu/Debug/code/subdir.mk
+/umc/Debug/code/subdir.mk
+/swap/Debug/code/subdir.mk
+/nucleo/Debug/code/subdir.mk
+
 # Object files
 *.o
 *.ko
@@ -51,12 +60,3 @@
 dump
 *.*~
 *~
-
-# Estos van manualmene, con add -f, solo en casos de necesidad
-*.mk
-makefile
-/consola/Debug/code/subdir.mk
-/cpu/Debug/code/subdir.mk
-/umc/Debug/code/subdir.mk
-/swap/Debug/code/subdir.mk
-/nucleo/Debug/code/subdir.mk

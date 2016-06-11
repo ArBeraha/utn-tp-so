@@ -72,25 +72,19 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 	log_info(activeLogger, "Dereferenciar |%d|.", direccion);
 
 	enviarHeader(cliente_umc, HeaderPedirValorVariable);
-	enviar_direccion_umc(direccion);
+	enviar_direccion_umc(direccion); // esto chequea q no haya overflow
 
-	char* stackOverflowFlag = recv_waitall_ws(cliente_umc, sizeof(int));
-	int overflow = char4ToInt(stackOverflowFlag);
-
-	if (overflow) {
-		lanzar_excepcion_overflow();
-	} else {
-		char* resultado = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
-		valor = charToInt(resultado);
-		log_info(activeLogger, "La variable de la dirección fue |%d| dereferenciada! Su valor es |%d|.",
+	char* valorRecibido = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
+	valor = charToInt(valorRecibido);
+	log_info(activeLogger, "La variable de la dirección fue |%d| dereferenciada! Su valor es |%d|.",
 				direccion, valor);
 
-		free(resultado);
-		incrementarPC(pcbActual);
+	free(valorRecibido);
+	incrementarPC(pcbActual);
 
-		instruccionTerminada("Dereferenciar");
-	}
-	free(stackOverflowFlag);
+	instruccionTerminada("Dereferenciar");
+
+
 	instruccionTerminada("Dereferenciar");
 	return valor;
 }
@@ -100,22 +94,14 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
  * Directiva 4
  */
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
-	log_info(activeLogger, "Asignando en |%d| el valor |%d|",
-			direccion_variable, valor);
+	log_info(activeLogger, "Asignando en |%d| el valor |%d|", direccion_variable, valor);
 
 	enviarHeader(cliente_umc,HeaderAsignarValor);
-	enviar_direccion_umc(direccion_variable);
-
+	enviar_direccion_umc(direccion_variable); // esto chequea q no haya overflow
 	send_w(cliente_umc, intToChar4(valor), sizeof(t_valor_variable)); //envio el valor de la variable
 
-	char* stackOverflowFlag = recv_waitall_ws(cliente_umc, sizeof(int));
-	int overflow = char4ToInt(stackOverflowFlag);
-	if (overflow) { //Nunca deberia entrarse en este if! pero como hago recv, chequeo ya que estoy :p
-		lanzar_excepcion_overflow();
-	}
 	incrementarPC(pcbActual);
 	instruccionTerminada("Asignar.");
-	free(stackOverflowFlag);
 }
 
 

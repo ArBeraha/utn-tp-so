@@ -29,17 +29,16 @@ int tipoVaraible(t_nombre_variable variable, t_stack_item* head) {
 	return NOEXISTE;
 }
 
+/**
+ * Solo invocar desde las primitivas porque pide siempre size = 4.
+ */
 void enviar_direccion_umc(t_puntero direccion) {
 
-	t_stack_item* stackItem = stack_get(pcbActual->SP, direccion);
-	t_pedido pedido = stackItem->valorRetorno;
+	int pagina = (int)(direccion/tamanioPaginas);
+	int offset = direccion % tamanioPaginas;
+	int size=sizeof(int);
 
-	char* mensaje = string_new();
-	serializar_pedido(mensaje, &pedido);
-
-	send_w(cliente_umc, mensaje, sizeof(t_pedido)); // envio el pedido [pag,offset,size]
-
-	free(mensaje);
+	enviar_solicitud(pagina,offset,size);
 }
 
 bool existeLabel(t_nombre_etiqueta etiqueta) {

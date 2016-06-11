@@ -197,7 +197,6 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar)
 	//newHead->identificadores no tiene nada por ahora. Se va llenando en otras primitivas, a medida que se declaren variables locales.
 	newHead->posicionRetorno = dondeRetornar;
 	newHead->posicion = stack_size(stack); // Si el stack tiene pos 0, size=1, si tiene 0 y 1, size=2,... Da la posicion del lugar nuevo.
-	newHead->valorRetorno = *stack_max_pedido(stack, tamanioPaginas);
 	stack_push(stack, newHead);
 
 	setearPC(pcbActual, posicionFuncion);

@@ -43,7 +43,7 @@ t_valor_variable dereferenciar(t_puntero direccion);
 t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartida);
 t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartida,t_valor_variable valorVarCompartida);
 void asignar(t_puntero direccion_variable, t_valor_variable valor);
-void irAlLaber(t_nombre_etiqueta etiqueta);
+void irAlLabel(t_nombre_etiqueta etiqueta);
 void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar);
 void retornar(t_valor_variable variable);
 void imprimir_variable(t_valor_variable valor);

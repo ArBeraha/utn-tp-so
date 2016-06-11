@@ -6,6 +6,7 @@
  */
 #include <CUnit/Basic.h>
 #include "cpu.h"
+#include "primitivas.h"
 
 /*------FUNCIONES DE INICIALIZACION / FINALIZACION -------------*/
 void init(){
@@ -102,7 +103,7 @@ void test_definir_variable(){
 
 void test_ir_al_label(){ //TODO rompe la primitiva
 	pcbActual->PC = 0;
-	irAlLabel("goku");
+	irAlLabel("goku"); //JAJAJA el nombre
 	CU_ASSERT_EQUAL(pcbActual->PC,-1);
 
 	//	dictionary_put(pcbActual->indice_etiquetas,"double", (void *)3);
@@ -111,6 +112,28 @@ void test_ir_al_label(){ //TODO rompe la primitiva
 	//CU_ASSERT_EQUAL(pcbActual->PC,3);
 
 }
+
+
+void asignar_y_dereferenciar(){
+	tamanioPaginas = 64;
+	//No pedir de la primera pagina x ahora xq ta en swap para el test.
+
+	int direccion1 = 64;
+	asignar(direccion1, 25); //Asigno el valor 25 en la direccion 64: (nPag, offset, size) = (1, 0, 4)
+	int valor1 = dereferenciar(direccion1);
+	CU_ASSERT_EQUAL(valor1,25);
+
+	int direccion2 = 128;
+	asignar(direccion2, 99); //Asigno el valor 99 en la direccion 128: (nPag, offset, size) = (2, 0, 4)
+	int valor2 = dereferenciar(direccion2);
+	CU_ASSERT_EQUAL(valor2,99);
+
+	int direccion3 = 140;
+	asignar(direccion3, -6); //Asigno el valor -6 en la direccion 140: (nPag, offset, size) = (2, 12, 4)
+	int valor3 = dereferenciar(direccion3);
+	CU_ASSERT_EQUAL(valor3,-6);
+}
+
 
 int test_cpu() {
 	log_info(activeLogger, "INICIANDO TESTS DE CPU");
@@ -132,6 +155,25 @@ int test_cpu() {
 
 	CU_cleanup_registry();
 	log_info(activeLogger, "FINALIZADO TESTS DE CPU");
+	return CU_get_error();
+}
+
+int test_cpu_con_umc() {
+	log_info(activeLogger, "INICIANDO TESTS DE CPU CON UMC");
+	CU_initialize_registry();
+
+	CU_pSuite suite_cpu = CU_add_suite("Suite de CPU con UMC", NULL, NULL);
+	CU_add_test(suite_cpu, "Test primitivas #3 y #4: Dereferenciar y asignar.",	asignar_y_dereferenciar);
+
+	init();
+
+	CU_basic_set_mode(CU_BRM_VERBOSE);
+	CU_basic_run_tests();
+
+	fin();
+
+	CU_cleanup_registry();
+	log_info(activeLogger, "FINALIZADO TESTS DE CPU CON UMC");
 	return CU_get_error();
 }
 

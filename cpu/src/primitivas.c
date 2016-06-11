@@ -108,8 +108,14 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 
 	send_w(cliente_umc, intToChar4(valor), sizeof(t_valor_variable)); //envio el valor de la variable
 
+	char* stackOverflowFlag = recv_waitall_ws(cliente_umc, sizeof(int));
+	int overflow = char4ToInt(stackOverflowFlag);
+	if (overflow) { //Nunca deberia entrarse en este if! pero como hago recv, chequeo ya que estoy :p
+		lanzar_excepcion_overflow();
+	}
 	incrementarPC(pcbActual);
 	instruccionTerminada("Asignar.");
+	free(stackOverflowFlag);
 }
 
 

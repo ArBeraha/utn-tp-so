@@ -112,6 +112,6 @@ void finalizar();
 void correrTests();  //De cpu.c
 int testear(int (*suite)(void)); //De test.c
 int test_cpu(); //De test.c
-
+int test_cpu_con_umc(); //De test.c
 
 #endif /* CPU_H_ */

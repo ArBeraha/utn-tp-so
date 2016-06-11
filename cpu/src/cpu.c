@@ -138,6 +138,9 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
 
 /**
  * Envia a UMC: pag, offest y tamaño, es decir, un t_pedido.
+ * No usar esto en las primitivas xq pediria 2 veces el chequeo de si hay stack overflow!
+ * Aca lo pido, x mas q no pueda haber, porque UMC trata indistintamente cualquier pedido de lectura,
+ * sean variables o sentencias.
  */
 void enviar_solicitud(int pagina, int offset, int size) {
 	t_pedido pedido;
@@ -153,6 +156,13 @@ void enviar_solicitud(int pagina, int offset, int size) {
 
 	printf("Tamanio: %d, solicitud: %s \n", tamanio,solicitud);
 	log_info(activeLogger,"Solicitud enviada: (nroPag,offsetInicio,tamaño) = (%d,%d,%d)", pagina, offset, size);
+
+	char* stackOverflowFlag = recv_waitall_ws(cliente_umc, sizeof(int));
+	int overflow = char4ToInt(stackOverflowFlag);
+	if (overflow) { //NUnca deberia entrarse en este if! pero como hago recv, chequeo ya que estoy :p
+		log_error(activeLogger,"UMC dice que la pagina pedida no es del proceso en cuestión. No se pudo pedir la sentencia");
+	}
+	free(stackOverflowFlag);
 	free(solicitud);
 }
 
@@ -373,6 +383,14 @@ void correrTests(){
 	}
 }
 
+void correrTestsUMC(){
+	if(config.DEBUG_RUN_TEST && !config.DEBUG_IGNORE_UMC){
+		desactivarLogs();
+		testear(test_cpu_con_umc);
+		reactivarLogs();
+	}
+}
+
 void ejemploPedidoLecturaUmc(){ //COMENTAR: finalizar, establecerConexNucleo y esperarProgramas
 	enviarHeader(cliente_umc,HeaderSolicitudSentencia);
 	enviar_solicitud(1,0,4);
@@ -390,6 +408,9 @@ int main() {
 
 	//conectarse a umc
 	establecerConexionConUMC();
+
+	//test con UMC
+	correrTestsUMC();
 
 	//ejemploPedidoLecturaUmc();
 

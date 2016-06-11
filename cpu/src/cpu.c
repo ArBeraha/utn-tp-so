@@ -153,8 +153,7 @@ void enviar_solicitud(int pagina, int offset, int size) {
 
 	send_w(cliente_umc, solicitud, tamanio);
 
-	printf("Tamanio: %d, solicitud: %s \n", tamanio,solicitud);
-	log_info(activeLogger,"Solicitud enviada: (nroPag,offsetInicio,tamaño) = (%d,%d,%d)", pagina, offset, size);
+	log_info(activeLogger,"Solicitud enviada: (nPag,offset,size)=(%d,%d,%d)", pagina, offset, size);
 
 	char* stackOverflowFlag = recv_waitall_ws(cliente_umc, sizeof(int));
 	free(stackOverflowFlag);

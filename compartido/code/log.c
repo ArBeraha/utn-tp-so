@@ -54,9 +54,9 @@ void desactivarLogs(){
  * No usar esta función si en paralelo puede haber algo escribiendo en los logs!
  */
 void reactivarLogs(){
-	log_info(activeLogger, "Desactivando logs para testear...");
 	activeLogger->detail=LOG_LEVEL_INFO;
 	bgLogger->detail=LOG_LEVEL_INFO;
+	log_info(activeLogger, "Logs reactivados!");
 }
 
 void destruirLogs(){

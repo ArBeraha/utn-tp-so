@@ -118,20 +118,23 @@ void asignar_y_dereferenciar(){
 	tamanioPaginas = 64;
 	//No pedir de la primera pagina x ahora xq ta en swap para el test.
 
-	int direccion1 = 64;
-	asignar(direccion1, 25); //Asigno el valor 25 en la direccion 64: (nPag, offset, size) = (1, 0, 4)
-	int valor1 = dereferenciar(direccion1);
-	CU_ASSERT_EQUAL(valor1,25);
+	int direccion = 64;
+	t_valor_variable valorReal=25;
+	asignar(direccion, valorReal); //Asigno el valor 25 en la direccion 64: (nPag, offset, size) = (1, 0, 4)
+	int valorRecibido = dereferenciar(direccion);
+	CU_ASSERT_EQUAL(valorReal,valorRecibido);
 
-	int direccion2 = 128;
-	asignar(direccion2, 99); //Asigno el valor 99 en la direccion 128: (nPag, offset, size) = (2, 0, 4)
-	int valor2 = dereferenciar(direccion2);
-	CU_ASSERT_EQUAL(valor2,99);
+	direccion = 128;
+	valorReal=0;
+	asignar(direccion, valorReal);  //Asigno el valor 0 en la direccion 128: (nPag, offset, size) = (2, 0, 4)
+	valorRecibido = dereferenciar(direccion);
+	CU_ASSERT_EQUAL(valorReal,valorRecibido);
 
-	int direccion3 = 140;
-	asignar(direccion3, -6); //Asigno el valor -6 en la direccion 140: (nPag, offset, size) = (2, 12, 4)
-	int valor3 = dereferenciar(direccion3);
-	CU_ASSERT_EQUAL(valor3,-6);
+	direccion = 140;
+	valorReal=-6;
+	asignar(direccion, valorReal); //Asigno el valor -6 en la direccion 140: (nPag, offset, size) = (2, 12, 4)
+	valorRecibido = dereferenciar(direccion);
+	CU_ASSERT_EQUAL(valorReal,valorRecibido);
 }
 
 

@@ -335,7 +335,9 @@ void cargarConfig() {
 	config.DEBUG_IGNORE_PROGRAMS = config_get_int_value(configCPU, "DEBUG_IGNORE_PROGRAMS");
 	config.DEBUG_IGNORE_NUCLEO = config_get_int_value(configCPU, "DEBUG_IGNORE_NUCLEO");
 	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configCPU, "DEBUG_RAISE_LOG_LEVEL");
-	config.DEBUG_RUN_TEST = config_get_int_value(configCPU, "DEBUG_RUN_TEST");
+	config.DEBUG_RUN_UNITARY_TESTS = config_get_int_value(configCPU, "DEBUG_RUN_UNITARY_TESTS");
+	config.DEBUG_RUN_TESTS_WITH_UMC = config_get_int_value(configCPU, "DEBUG_RUN_TESTS_WITH_UMC");
+	config.DEBUG_LOG_ON_TESTS = config_get_int_value(configCPU, "DEBUG_LOG_ON_TESTS");
 }
 
 void inicializar() {
@@ -375,18 +377,26 @@ void handler(int sign) {
  * Inicializa los tests si estan habilitados (1) por configuracion.
  */
 void correrTests(){
-	if(config.DEBUG_RUN_TEST){
-		desactivarLogs();
+	if(config.DEBUG_RUN_UNITARY_TESTS){
+		if(!config.DEBUG_LOG_ON_TESTS){
+			desactivarLogs();
+		}
 		testear(test_cpu);
-		reactivarLogs();
+		if(!config.DEBUG_LOG_ON_TESTS){
+			reactivarLogs();
+		}
 	}
 }
 
 void correrTestsUMC(){
-	if(config.DEBUG_RUN_TEST && !config.DEBUG_IGNORE_UMC){
-		desactivarLogs();
+	if(config.DEBUG_RUN_TESTS_WITH_UMC && !config.DEBUG_IGNORE_UMC){
+		if(!config.DEBUG_LOG_ON_TESTS){
+			desactivarLogs();
+		}
 		testear(test_cpu_con_umc);
-		reactivarLogs();
+		if(!config.DEBUG_LOG_ON_TESTS){
+			reactivarLogs();
+		}
 	}
 }
 

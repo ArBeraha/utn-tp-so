@@ -44,7 +44,9 @@ typedef struct customConfig {
 	int DEBUG_IGNORE_PROGRAMS;
 	int DEBUG_IGNORE_NUCLEO;
 	int DEBUG_RAISE_LOG_LEVEL;
-	int DEBUG_RUN_TEST;
+	int DEBUG_RUN_TESTS_WITH_UMC;
+	int DEBUG_RUN_UNITARY_TESTS;
+	int DEBUG_LOG_ON_TESTS;
 } customConfig_t;
 
 typedef enum {

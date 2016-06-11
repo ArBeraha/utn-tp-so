@@ -25,7 +25,9 @@ t_puntero definir_variable(t_nombre_variable variable) {
 	char* cadena = string_new();
 
 	dictionary_put(head->identificadores, append(cadena,(char)variable), (void*) direccion); //agrego el caracter a una cadena
+
 	stack_push(stack, head);
+	head->posicion = stack_size(stack) - 1; // si size es 1 -> pos = 0
 
 	free(cadena);
 	instruccionTerminada("Definir_variable");

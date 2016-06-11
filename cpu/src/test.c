@@ -18,10 +18,15 @@ void init(){
 }
 
 void fin(){
+
 	stack_item_destroy(item);
 	dictionary_clean(pcbActual->indice_etiquetas);
+	list_clean(pcbActual->SP);
+	list_clean(pcbActual->indice_codigo);
+
 	pcb_destroy(pcbActual);
-	stack_destroy(stack);
+	list_clean(stack);
+	list_destroy(stack);
 }
 
 /*-------------TESTS CPU-------------*/
@@ -81,7 +86,8 @@ void test_definir_variable(){
 
 	pcbActual->PC = 0;
 	tamanioPaginas = 4;
-	definir_variable('a');
+	t_puntero puntero = definir_variable('a');
+	CU_ASSERT_EQUAL(puntero,0);
 
 	t_stack_item* item = stack_pop(stack);
 
@@ -94,7 +100,28 @@ void test_definir_variable(){
 	t_stack_item* otroItem = stack_pop(stack);
 	CU_ASSERT_EQUAL(pcbActual->PC,2);
 	CU_ASSERT(dictionary_has_key(otroItem->identificadores,"b"));
+
+	stack_push(stack,otroItem);
+
+
 }
+
+void test_obtener_posicion(){
+	pcbActual->PC = 0;
+
+	t_puntero puntero = obtener_posicion_de('h'); //supongo que 'h' no esta
+	CU_ASSERT_EQUAL(pcbActual->PC,1);
+	CU_ASSERT_EQUAL(puntero,-1);
+
+	puntero = obtener_posicion_de('a');
+	CU_ASSERT_EQUAL(pcbActual->PC,2);
+	CU_ASSERT_EQUAL(puntero,0);
+
+	puntero = obtener_posicion_de('b');
+	CU_ASSERT_EQUAL(pcbActual->PC,3);
+	CU_ASSERT_EQUAL(puntero,0);
+}
+
 
 void test_ir_al_label(){
 	pcbActual->PC = 0;
@@ -144,6 +171,7 @@ int test_cpu() {
 	CU_add_test(suite_cpu, "Test envio_solicitudes_una_pagina",test_envio_solicitudes_una_pagina);
 	CU_add_test(suite_cpu, "Test envio_solicitudes_varias_paginas",test_envio_solicitudes_varias_paginas);
 	CU_add_test(suite_cpu, "Test primitiva #1: definir_variables",test_definir_variable);
+	CU_add_test(suite_cpu, "Test primitiva #2: obtener_posicion",test_obtener_posicion);
 	CU_add_test(suite_cpu, "Test primitiva #7: ir_al_label",test_ir_al_label);
 
 	init();

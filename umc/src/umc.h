@@ -160,7 +160,7 @@ char* devolverPedidoPagina(pedidoLectura_t pedido,int cliente);   // todos estos
 
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer, int cliente);
 void finalizarPrograma(int idPrograma);
-int inicializarPrograma(int idPrograma, char* contenido);
+int inicializarPrograma(int idPrograma, char* contenido, int tamanio);
 int reservarPagina(int,int);
 
 void imprimirRegionMemoria(char* region, int size);

@@ -567,16 +567,16 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, int cliente){
 	return NULL;
 }
 
-int paginasQueOcupa(char* contenido){
-	return (strlen(contenido) + config.tamanio_marco - 1) / config.tamanio_marco;
+int paginasQueOcupa(int tamanio){
+	return (tamanio + config.tamanio_marco - 1) / config.tamanio_marco;
 }
 
 
 
-int inicializarPrograma(int idPrograma, char* contenido){
+int inicializarPrograma(int idPrograma, char* contenido,int tamanio){
 
 	char* serialPID = intToChar4(idPrograma);
-	int cantidadPags = paginasQueOcupa(contenido);
+	int cantidadPags = paginasQueOcupa(tamanio);
 	char* serialCantidadPaginas = intToChar4(cantidadPags);
 	int i;
 
@@ -615,17 +615,23 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer,i
 
 		printf("Accediendo a memoria... \n ");
 		usleep(retardoMemoria);
+		printf("offset: %d \n", pedido.offset);
+		printf("ALmacenando: %d \n",char4ToInt(buffer));
+		printf("Tlb[pos]marco = %d  y tamanioMarco: %d \n", tlb[pos].marcoUtilizado,config.tamanio_marco);
+		printf("mem: %d \n",memoria);
+		printf("mem sin offset: %d \n",memoria+(tlb[pos].marcoUtilizado*config.tamanio_marco));
+		printf("mem final: %d \n",memoria+(tlb[pos].marcoUtilizado*config.tamanio_marco)+pedido.offset);
 
 		pthread_mutex_lock(&lock_accesoMemoria);
-		memcpy(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, buffer, strlen(buffer)); //size??? PARA QUE??
+		memcpy(memoria+(tlb[pos].marcoUtilizado*config.tamanio_marco)+pedido.offset, buffer, pedido.cantBytes);
 		pthread_mutex_unlock(&lock_accesoMemoria);
 
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
 
 		printf("Lo que acabo de almacenar: %s .\n \n ",memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset);
 //		printf("Ahora llamo a la funcion devolverPedidoPagina (conecto las dos func) \n \n");
-//		return (devolverPedidoPagina(pedido,cliente)); //Provisorio para testear
-		return "";
+		return (devolverPedidoPagina(pedido,cliente)); //Provisorio para testear
+//		return "";
 	}
 	else{
 		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas \n",pedido.pid,pedido.paginaRequerida);
@@ -655,8 +661,12 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer,i
 					paginaBuscada->bitModificacion = 1;  //NEW
 					pthread_mutex_unlock(&lock_accesoTabla);
 
+					printf("offset: %d \n", pedido.offset);
+					printf("ALmacenando: %d \n",char4ToInt(buffer));
+
 					pthread_mutex_lock(&lock_accesoMemoria);
-					memcpy(memoria+paginaBuscada->marcoUtilizado*config.tamanio_marco+pedido.offset, buffer, strlen(buffer)); //size??? PARA QUE??
+					memcpy(memoria+(paginaBuscada->marcoUtilizado*config.tamanio_marco)+pedido.offset, buffer, pedido.cantBytes);
+//					memcpy(memoria+(paginaBuscada->marcoUtilizado*config.tamanio_marco)+pedido.offset, buffer, strlen(buffer));
 					pthread_mutex_unlock(&lock_accesoMemoria);
 
 					printf("Marco de la pagina: %d \n", paginaBuscada->marcoUtilizado);
@@ -816,6 +826,7 @@ void devolverTodaLaMemoria(){
 				contenido[config.tamanio_marco]='\0';
 				pthread_mutex_unlock(&lock_accesoMemoria);
 
+//				printf("%s \n",contenido);
 				imprimirRegionMemoria(contenido,config.tamanio_marco);
 			}
 
@@ -847,7 +858,6 @@ void devolverMemoriaDePid(int pid){ //OK
 		unaPagina = list_get((t_list*)unaTabla->listaPaginas,i);
 
 		if(unaPagina->bitPresencia==1){
-
 			printf("Accediendo a memoria... \n ");
 			usleep(retardoMemoria);
 
@@ -859,6 +869,7 @@ void devolverMemoriaDePid(int pid){ //OK
 			contenido[config.tamanio_marco]='\0';
 			pthread_mutex_unlock(&lock_accesoMemoria);
 
+			printf("%s \n",contenido);
 			imprimirRegionMemoria(contenido,config.tamanio_marco);
 			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, Contenido: %s ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,contenido);
 
@@ -1020,7 +1031,6 @@ void crearMemoriaYTlbYTablaPaginas(){
 	memset(memoria,'\0',tamanioMemoria);
 	log_info(activeLogger,"Creada la memoria.\n");
 
-	//Relleno TLB
 	tlb = malloc(config.entradas_tlb * sizeof(tlb_t));
 	inicializarTlb();
 	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).\n");
@@ -1154,10 +1164,11 @@ void headerEscribirPagina(int cliente){
 	t_pedido* pedidoCpuEscritura = malloc(sizeof(t_pedido));
 	char* pedidoSerializadoEscritura = malloc(sizeof(t_pedido));
 	int id = clientes[cliente].pid;
-	char* buffer = malloc(sizeof(int));
 
 	read(clientes[cliente].socket, pedidoSerializadoEscritura, sizeof(t_pedido));
 	deserializar_pedido(pedidoCpuEscritura,pedidoSerializadoEscritura);
+
+	char* buffer = malloc(pedidoCpuEscritura->size);
 
 	if(!existePaginaBuscadaEnTabla(pedidoCpuEscritura->pagina,buscarTabla(id))){
 		send_w(clientes[cliente].socket, intToChar4(0),sizeof(int));
@@ -1167,7 +1178,7 @@ void headerEscribirPagina(int cliente){
 	}
 
 	read(clientes[cliente].socket, buffer, sizeof(int));
-	printf("Lo que me mando a escribir: %s \n",buffer);
+	printf("Lo que me mando a escribir: %d \n",char4ToInt(buffer));
 
 	pedidoLectura_t pedido;
 	pedido.pid = id;
@@ -1177,7 +1188,7 @@ void headerEscribirPagina(int cliente){
 	printf("------****************-Pagina:%d Offset:%d CantBytes:%d \n",pedidoCpuEscritura->pagina,pedidoCpuEscritura->offset,pedidoCpuEscritura->size);
 
 
-	almacenarBytesEnUnaPagina(pedido,strlen(buffer),buffer,cliente);
+	almacenarBytesEnUnaPagina(pedido,pedido.cantBytes,buffer,cliente);
 	send_w(clientes[cliente].socket, intToChar4(1),sizeof(int));
 }
 
@@ -1244,12 +1255,12 @@ void procesarHeader(int cliente, char *header){
 			break;
 
 		case HeaderScript: //Inicializar programa  // OK
-			read(clientes[cliente].socket , cantidadDePaginasScript, 4);
+//			read(clientes[cliente].socket , cantidadDePaginasScript, 4);
 			read(clientes[cliente].socket , tamanioCodigoScript, 4);
 			read(clientes[cliente].socket , pidScript, 4);
 			read(clientes[cliente].socket , codigoScript, atoi(tamanioCodigoScript));
 
-			if(inicializarPrograma(atoi(pidScript),codigoScript)){
+			if(inicializarPrograma(atoi(pidScript),codigoScript,char4ToInt(tamanioCodigoScript))){
 				reservarPagina(atoi(cantidadDePaginasScript),atoi(pidScript));
 				send_w(clientes[cliente].socket,"1",sizeof(int));
 			}else{
@@ -1261,6 +1272,7 @@ void procesarHeader(int cliente, char *header){
 		case HeaderAsignarValor: // CPU
 			log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
 			crearHiloConParametro(&hiloParaCpu,(void*)headerEscribirPagina,(void*)cliente);
+			devolverMemoriaDePid(0);
 			clientes[cliente].atentido=false;
 			break;
 
@@ -1321,7 +1333,7 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 
 //	recibirComandos();
 
-	pthread_create(&hiloRecibirComandos,&detachedAttr,(void*)recibirComandos,NULL);
+//	pthread_create(&hiloRecibirComandos,&detachedAttr,(void*)recibirComandos,NULL);
 	servidorCPUyNucleoExtendido();
 
 //
@@ -1380,49 +1392,50 @@ void mostrarTlb(){
 
 void test2(){
 
-	reservarPagina(3,-3);
+//	reservarPagina(3,-3);
+//
+//	pedidoLectura_t pedido1;
+//		pedido1.pid=-3;
+//		pedido1.paginaRequerida=1;
+//		pedido1.offset=1;
+//		pedido1.cantBytes=5;
+//
+//	devolverPedidoPagina(pedido1,0);
+//
+//	pedidoLectura_t pedido2;
+//		pedido2.pid=-3;
+//		pedido2.paginaRequerida=2;
+//		pedido2.offset=2;
+//		pedido2.cantBytes=4;
+//
+//	devolverPedidoPagina(pedido2,0);
 
-	pedidoLectura_t pedido1;
-		pedido1.pid=-3;
-		pedido1.paginaRequerida=1;
-		pedido1.offset=0;
-		pedido1.cantBytes=5;
+//	mostrarTlb();
 
-	devolverPedidoPagina(pedido1,0);
 
-	pedidoLectura_t pedido2;
-		pedido2.pid=-3;
-		pedido2.paginaRequerida=2;
-		pedido2.offset=0;
-		pedido2.cantBytes=5;
-
-	devolverPedidoPagina(pedido2,0);
-
-	mostrarTlb();
-
-	almacenarBytesEnUnaPagina(pedido2,2,"XX",0);
-
-	printf("CANT PAGS PID 0 EN MEM: %d \n", cantPaginasEnMemoriaDePid(-3));
+//	printf("CANT PAGS PID 0 EN MEM: %d \n", cantPaginasEnMemoriaDePid(-3));
 
 	reservarPagina(3,0);
 
 		pedidoLectura_t pedido3;
 			pedido3.pid=0;
 			pedido3.paginaRequerida=1;
-			pedido3.offset=0;
-			pedido3.cantBytes=5;
+			pedido3.offset=2;
+			pedido3.cantBytes=1;
 
 		devolverPedidoPagina(pedido3,0);
 
 		pedidoLectura_t pedido4;
 			pedido4.pid=0;
 			pedido4.paginaRequerida=2;
-			pedido4.offset=0;
-			pedido4.cantBytes=5;
+			pedido4.offset=1;
+			pedido4.cantBytes=4;
 
 		devolverPedidoPagina(pedido4,0);
 
-	reservarPagina(3,-3);
+	almacenarBytesEnUnaPagina(pedido3,4,"1",0);
+
+	devolverTodaLaMemoria();
 
 //	recibirComandos();
 }

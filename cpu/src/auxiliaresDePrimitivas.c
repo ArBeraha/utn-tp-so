@@ -7,6 +7,13 @@
 
 #include "auxiliaresDePrimitivas.h"
 
+/**
+ * Como retorna un string, hacer un free!
+ */
+char* charToString(char variable){
+    return string_from_format("%c",variable);
+}
+
 bool esVariableDeclarada(t_stack_item* item, t_nombre_variable* variable) {
 	return dictionary_has_key(item->identificadores, variable);
 }
@@ -19,8 +26,8 @@ bool esParametro(t_nombre_variable variable) {
  * Retorna un valor segun si fue declarada localmente, recibida por parametro o no existe.
  */
 int tipoVaraible(t_nombre_variable variable, t_stack_item* head) {
-	char* cadena = string_new();
-	if (esVariableDeclarada(head, char_append(cadena,variable))) {
+	char* cadena = charToString((char)variable);
+	if (esVariableDeclarada(head, cadena)) {
 		free(cadena);
 		return DECLARADA;
 	} else {
@@ -49,12 +56,4 @@ bool existeLabel(t_nombre_etiqueta etiqueta) {
 	return dictionary_has_key(pcbActual->indice_etiquetas, etiqueta);
 }
 
-char *char_append(const char *s, char c)
-{
-    int len = strlen(s);
-    char buf[len+2];
-    strcpy(buf, s);
-    buf[len] = c;
-    buf[len + 1] = 0;
-    return strdup(buf);
-}
+

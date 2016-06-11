@@ -20,7 +20,7 @@ bool esParametro(t_nombre_variable variable) {
  */
 int tipoVaraible(t_nombre_variable variable, t_stack_item* head) {
 	char* cadena = string_new();
-	if (esVariableDeclarada(head, append(cadena,variable))) {
+	if (esVariableDeclarada(head, char_append(cadena,variable))) {
 		free(cadena);
 		return DECLARADA;
 	} else {
@@ -49,7 +49,7 @@ bool existeLabel(t_nombre_etiqueta etiqueta) {
 	return dictionary_has_key(pcbActual->indice_etiquetas, etiqueta);
 }
 
-char *append(const char *s, char c)
+char *char_append(const char *s, char c)
 {
     int len = strlen(s);
     char buf[len+2];

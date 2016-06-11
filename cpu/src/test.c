@@ -102,8 +102,6 @@ void test_definir_variable(){
 	CU_ASSERT(dictionary_has_key(otroItem->identificadores,"b"));
 
 	stack_push(stack,otroItem);
-
-
 }
 
 void test_obtener_posicion(){

@@ -19,13 +19,17 @@ bool esParametro(t_nombre_variable variable) {
  * Retorna un valor segun si fue declarada localmente, recibida por parametro o no existe.
  */
 int tipoVaraible(t_nombre_variable variable, t_stack_item* head) {
-	if (esVariableDeclarada(head, &variable)) {
+	char* cadena = string_new();
+	if (esVariableDeclarada(head, append(cadena,variable))) {
+		free(cadena);
 		return DECLARADA;
 	} else {
 		if (esParametro(variable)) {
+			free(cadena);
 			return PARAMETRO;
 		}
 	}
+	free(cadena);
 	return NOEXISTE;
 }
 

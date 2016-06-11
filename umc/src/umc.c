@@ -300,21 +300,22 @@ int sacarConClock(int pid){
 	return -1;
 }
 
-int sacarConModificado(int pid){ //DESPUES TRATO DE NO REPETIR LOGICA, PRIMERO QUE ANDE!
+int sacarConModificado(int pid){
 
 	pthread_mutex_lock(&lock_accesoTabla);
 	pthread_mutex_lock(&lock_accesoUltimaPos);
 
 	tabla_t* tabla = malloc(sizeof(tabla_t));
 	tabla = buscarTabla(pid);
-
 	int cantidadPaginas = list_size((t_list*)tabla->listaPaginas);
 	int posAReemplazar;
 	tablaPagina_t* puntero;
 
 	//Primera vuelta, me fijo si hay alguno (0,0) sin modificar nada
 	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar<cantidadPaginas;posAReemplazar++){
+		printf("Pos puntero: %d \n",posAReemplazar%cantidadPaginas);
 		puntero = list_get((t_list*)tabla->listaPaginas,posAReemplazar%cantidadPaginas);
+		printf("punterito puto: pag: %d pres: %d , modif %d, uso %d \n",puntero->nroPagina,puntero->bitPresencia,puntero->bitModificacion,puntero->bitUso);
 		if(puntero->bitUso==0 && puntero->bitModificacion==0 && puntero->bitPresencia==1){
 			cambiarUltimaPosicion(pid,posAReemplazar);
 			pthread_mutex_unlock(&lock_accesoUltimaPos);
@@ -1386,10 +1387,10 @@ void test2(){
 
 	printf("CANT PAGS PID 0 EN MEM: %d \n", cantPaginasEnMemoriaDePid(-3));
 
-	reservarPagina(3,1);
+	reservarPagina(3,0);
 
 		pedidoLectura_t pedido3;
-			pedido3.pid=1;
+			pedido3.pid=0;
 			pedido3.paginaRequerida=1;
 			pedido3.offset=0;
 			pedido3.cantBytes=5;
@@ -1397,7 +1398,7 @@ void test2(){
 		devolverPedidoPagina(pedido3,0);
 
 		pedidoLectura_t pedido4;
-			pedido4.pid=1;
+			pedido4.pid=0;
 			pedido4.paginaRequerida=2;
 			pedido4.offset=0;
 			pedido4.cantBytes=5;

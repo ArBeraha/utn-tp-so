@@ -60,6 +60,7 @@ void hacer_handshake_umc() {
 void establecerConexionConUMC() {
 	if (!config.DEBUG_IGNORE_UMC) {
 		conectar_umc();
+		log_info(activeLogger,"Estoy handshakeando");
 		hacer_handshake_umc();
 	} else {
 		warnDebug();

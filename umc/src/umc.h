@@ -195,10 +195,14 @@ void test();
 pthread_mutex_t mutexClientes;
 #define MUTEXCLIENTES(CONTENIDO) \
 	MUTEX(CONTENIDO,mutexClientes);
+pthread_mutex_t mutexSwap;
+#define MUTEXSWAP(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexSwap);
 #define HILO void*
 HILO main2();
 HILO cpu(int indice);
-void procesarHeaderCPU(t_cliente* cliente, char* header);
+HILO nucleo(int indice);
+void procesarHeader2(t_cliente* cliente, char* header);
 void cargarCFG();
 void atenderHandshake(t_cliente* cliente);
 

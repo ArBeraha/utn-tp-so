@@ -192,6 +192,14 @@ void crearMemoriaYTlbYTablaPaginas();
 void test();
 
 //Fin prototipos
-
+pthread_mutex_t mutexClientes;
+#define MUTEXCLIENTES(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexClientes);
+#define HILO void*
+HILO main2();
+HILO cpu(int indice);
+void procesarHeaderCPU(t_cliente* cliente, char* header);
+void cargarCFG();
+void atenderHandshake(t_cliente* cliente);
 
 #endif /* UMC_H_ */

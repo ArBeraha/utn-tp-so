@@ -30,7 +30,6 @@ void cargarCFG() {
 	config.puerto_cpu = config_get_int_value(configUmc, "PUERTO_UMC_CPU");
 	config.algoritmo_paginas= config_get_string_value(configUmc, "ALGORITMO_REEMPLAZO");
 	config.marcos_x_proceso = config_get_int_value(configUmc, "MARCOS_X_PROCESO");
-
 }
 
 //0. Funciones auxiliares a las funciones Principales
@@ -1309,49 +1308,21 @@ void finalizar() {
 
 
 int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursivo
-
-	cargarCFG();
-
-	crearLogs("Umc","Proceso",0);
-
-	dump = log_create("dump","UMC",false,LOG_LEVEL_INFO);
-
-	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
-
-	listaTablasPaginas = list_create();
-
-//	int k;
-//	for(k=0;k<config.cantidad_marcos;k++){  //COMO MAXIMO ES LA CANTIDAD DE MARCOS, considerando q como minimo una tabla tiene 1 pag
-//		tabla_t* tablaPaginas;
-//		tablaPaginas->listaPaginas = list_create();
-//		list_add(listaTablasPaginas,tablaPaginas);
-//	}
-
-	crearMemoriaYTlbYTablaPaginas();
-
-	test2();
-
-//	recibirComandos();
-
-//	pthread_create(&hiloRecibirComandos,&detachedAttr,(void*)recibirComandos,NULL);
-	servidorCPUyNucleoExtendido();
-
-//
-//	conexionASwap();
-//
-//	pedidoLectura_t pedido1;
-//			pedido1.pid=2;
-//			pedido1.paginaRequerida=1;
-//			pedido1.offset=0;
-//			pedido1.cantBytes=5;
-//
-//	buscarEnSwap(pedido1);
+	main2();
+//	cargarCFG();
+//	crearLogs("Umc","Proceso",0);
+//	dump = log_create("dump","UMC",false,LOG_LEVEL_INFO);
+//	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
+//	listaTablasPaginas = list_create();
+//	crearMemoriaYTlbYTablaPaginas();
+//	test2();
+////	recibirComandos();
+////	pthread_create(&hiloRecibirComandos,&detachedAttr,(void*)recibirComandos,NULL);
+//	servidorCPUyNucleoExtendido();
+////	conexionASwap();
+//	finalizar();
 
 
-
-
-
-	finalizar();
 
 	return 0;
 }

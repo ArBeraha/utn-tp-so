@@ -37,15 +37,15 @@ HILO crearProceso(int consola) {
 		char* codigo = getScript(consola);
 		proceso->PCB->cantidad_paginas = ceil(
 				((double) strlen(codigo)) / ((double) tamanio_pagina));
-		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
-			rechazarProceso(proceso->PCB->PID);
-		} else {
+//		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
+//			rechazarProceso(proceso->PCB->PID);
+//		} else {
 			asignarMetadataProceso(proceso, codigo);
 			MUTEXCLIENTES(clientes[consola].pid = (int) proceso);
 			proceso->cpu = SIN_ASIGNAR;
 			cambiarEstado(proceso, READY);
 			MUTEXPROCESOS(list_add(listaProcesos, proceso));
-		}
+//		}
 		free(codigo);
 	}
 	return proceso;
@@ -86,18 +86,25 @@ void ingresarCPU(int cliente){
 	queue_push(colaCPU,(void*)cliente);
 }
 void bloquearProcesoIO(int PID, char* IO) {
-	bloquearProceso(PID);
-	if (dictionary_has_key(tablaIO, IO))
+	if (dictionary_has_key(tablaIO, IO)) {
+		log_info(activeLogger, "Añadiendo el Proceso a la cola del IO");
+		bloquearProceso(PID);
 		queue_push(((t_IO*) dictionary_get(tablaIO, IO))->cola,
 				(t_proceso*) PID);
+	} else
+		log_info(activeLogger, "El IO solicitado no existe");
 }
 void bloquearProcesoSem(int PID, char* semid) {
-	bloquearProceso(PID);
-	if (dictionary_has_key(tablaSEM, semid))
+	if (dictionary_has_key(tablaSEM, semid)) {
+		log_info(activeLogger, "Añadiendo el Proceso a la cola del Semaforo");
+		bloquearProceso(PID);
 		queue_push(((t_semaforo*) dictionary_get(tablaSEM, semid))->cola,
 				(t_proceso*) PID);
+	} else
+		log_info(activeLogger, "El Semaforo solicitado no existe");
 }
 void bloquearProceso(int PID) {
+	log_info(activeLogger,"Bloqueando Proceso");
 	t_proceso* proceso = (t_proceso*) PID;
 	cambiarEstado(proceso,BLOCK);
 }

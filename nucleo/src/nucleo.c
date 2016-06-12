@@ -317,6 +317,10 @@ void procesarHeader(int cliente, char *header) {
 		rafagaProceso(cliente);
 		break;
 
+	case HeaderEntradaSalida:
+		entradaSalida(cliente);
+		break;
+
 	default:
 		log_error(activeLogger,
 				"Llego el header numero %d y no hay una acción definida para él.\nSe quitará al cliente %d.",

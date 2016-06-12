@@ -4,10 +4,6 @@
  *  Created on: 10/4/2016
  *      Author: utnso
  */
-
-
-
-
 #ifndef CLIENTE_SERVIDOR_H_
 #define CLIENTE_SERVIDOR_H_
 
@@ -23,19 +19,21 @@
 #include <commons/string.h>
 #include <string.h>
 
-#define MAXCLIENTS 30
+#define MAXCLIENTS 300
 
 struct sockaddr_in direccion;
 int socketNuevasConexiones, tamanioDireccion, activado, mayorDescriptor;
 fd_set socketsParaLectura;
 
 typedef struct {
+	int indice;
 	struct sockaddr_in addr;
 	socklen_t addrlen;
 	int socket;
 	int identidad;
 	bool atentido;
 	int pid;
+	pthread_t hilo;
 } t_cliente;
 
 t_cliente clientes[MAXCLIENTS];
@@ -65,7 +63,7 @@ char* recv_con_criterio_ws(int cliente, int msgSize, int msgCriterio);
 //xAriel
 void configurarServidor(unsigned short PORT);
 void inicializarClientes();
-void agregarCliente(t_cliente cliente);
+int agregarCliente(t_cliente cliente);
 void quitarCliente(int i);
 void procesarNuevasConexiones();
 int tieneLectura(int socket);
@@ -74,7 +72,7 @@ int charToInt(char *c);
 char* intToChar(int i);
 // Funciones extendidas para mayor control
 int incorporarClientes();
-void procesarNuevasConexionesExtendido(int* socket);
+int procesarNuevasConexionesExtendido(int* socket);
 void configurarServidorExtendido(int* socket, struct sockaddr_in* dire, unsigned short PORT, unsigned int* tamanio, int* activado);
 char* intToChar4(int num); // RECORDAR: liberar el puntero con free()
 int char4ToInt(char* chars);

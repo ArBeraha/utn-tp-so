@@ -84,6 +84,7 @@ void recibirTamanioPagina(){
 	char* serialTamanio = malloc(sizeof(int));
 	serialTamanio = recv_waitall_ws(umc,sizeof(int));
 	tamanio_pagina = char4ToInt(serialTamanio);
+	log_info(activeLogger,"Recibido el tamaño de pagina: %d",tamanio_pagina);
 	free(serialTamanio);
 }
 /*  ----------INICIO CONSOLA ---------- */

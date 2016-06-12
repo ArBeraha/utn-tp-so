@@ -21,6 +21,7 @@ HILO main2() {
 
 	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puerto_cpu,
 			&tamanioDireccionCPU, &activadoCPU);
+
 	inicializarClientes();
 	log_info(activeLogger, "Esperando conexiones ...");
 
@@ -34,7 +35,7 @@ HILO main2() {
 		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, NULL);
 
 		int cliente;
-		if (tieneLectura(socketCPU)) {
+		if (tieneLectura(socketCPU))  {
 			log_info(activeLogger, "Se conecto una nueva CPU");
 			cliente = procesarNuevasConexionesExtendido(&socketCPU);
 			crearHiloConParametro(&clientes[cliente].hilo,(HILO)cpu,(void*)cliente);
@@ -154,8 +155,8 @@ void procesarHeader2(t_cliente* cliente, char* header) {
 
 	case HeaderHandshake:
 		atenderHandshake(cliente);
-		MUTEXSWAP(llamarSwap(cliente);)
-		quitarCliente(cliente->indice);
+//		MUTEXSWAP(llamarSwap(cliente);)
+//		quitarCliente(cliente->indice);
 		break;
 
 	default:
@@ -178,6 +179,12 @@ void atenderHandshake(t_cliente* cliente){
 				"Es un cliente apropiado! Respondiendo handshake");
 		MUTEXCLIENTES(
 				cliente->identidad = charToInt(handshake); send(cliente->socket, intToChar(SOYUMC), 1, 0);)
+		if (charToInt(handshake) == SOYNUCLEO){
+			char* serialTamanio = intToChar4(config.tamanio_marco);
+			send_w(cliente->socket,serialTamanio,sizeof(int));
+			free(serialTamanio);
+		}
+
 	} else {
 		log_error(activeLogger,
 				"No es un cliente apropiado! rechazada la conexion");

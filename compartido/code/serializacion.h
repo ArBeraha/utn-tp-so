@@ -14,7 +14,10 @@
 #include "commonTypes.h"
 #include <commons/collections/list.h>
 #include "CUnit/Basic.h"
+#include <parser/parser.h>
 
+int serializar_t_puntero(char* destino, t_puntero* fuente);
+int deserializar_t_puntero(t_puntero* destino, char* fuente);
 int serializar_int(char* destino,int* fuente);
 int deserializar_int(int* destino, char* fuente);
 int serializar_pedido(char* destino,t_pedido* fuente);

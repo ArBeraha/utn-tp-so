@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <commons/collections/list.h>
 #include <commons/collections/dictionary.h>
-
+#include <parser/parser.h>
 
 typedef int ansisop_var_t;
 
@@ -34,7 +34,7 @@ typedef struct {
 	int posicion;
 	t_list* argumentos; // lista de t_pedido
 	t_dictionary* identificadores;  // dictionary de ["Identificador",t_pedido]
-	int posicionRetorno;
+	t_puntero posicionRetorno;
 	t_pedido valorRetorno;
 } t_stack_item;
 

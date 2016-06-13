@@ -23,6 +23,14 @@ int deserializar_int(int* destino, char* fuente) {
 	memcpy(destino, fuente, sizeof(int));
 	return sizeof(int);
 }
+int serializar_t_puntero(char* destino, t_puntero* fuente) {
+	memcpy(destino, fuente, sizeof(t_puntero));
+	return sizeof(t_puntero);
+}
+int deserializar_t_puntero(t_puntero* destino, char* fuente) {
+	memcpy(destino, fuente, sizeof(t_puntero));
+	return sizeof(t_puntero);
+}
 int serializar_pint(char* destino, int fuente) {
 	memcpy(destino, &fuente, sizeof(int));
 	return sizeof(int);
@@ -89,7 +97,7 @@ int serializar_stack_item(char* destino, t_stack_item* fuente) {
 	offset += serializar_list(destino + offset, fuente->argumentos,	sizeof(t_pedido));
 	//offset += serializar_list(destino + offset, fuente->identificadores, sizeof(t_identificador));
 	offset += serializar_dictionary(destino + offset, fuente->identificadores, sizeof(t_pedido));
-	offset += serializar_int(destino + offset, &(fuente->posicionRetorno));
+	offset += serializar_t_puntero(destino + offset, &(fuente->posicionRetorno));
 	offset += serializar_pedido(destino + offset, &(fuente->valorRetorno));
 	return offset; // Retorna el offset
 }
@@ -108,7 +116,7 @@ int deserializar_stack_item(t_stack_item* destino, char* fuente) {
 	offset += deserializar_int(&destino->posicion, fuente + offset);
 	offset += deserializar_list(destino->argumentos, fuente + offset, sizeof(t_pedido));
 	offset += deserializar_dictionary(destino->identificadores, fuente + offset, sizeof(t_pedido));
-	offset += deserializar_int(&destino->posicionRetorno, fuente + offset);
+	offset += deserializar_t_puntero(&destino->posicionRetorno, fuente + offset);
 	offset += deserializar_pedido(&(destino->valorRetorno), fuente + offset);
 	return offset;
 }

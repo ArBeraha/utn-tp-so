@@ -350,7 +350,6 @@ void inicializar() {
 
 void finalizar() {
 	log_info(activeLogger,"Finalizando proceso cpu");
-	liberar_primitivas();
 
 	close(cliente_nucleo);
 	close(cliente_umc);

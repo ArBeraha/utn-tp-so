@@ -73,7 +73,6 @@ void setearPC(t_PCB* pcb, int pc);
 void incrementarPC(t_PCB* pcb) ;
 void instruccionTerminada(char* instr);
 void desalojarProceso();
-t_pedido maximo(t_pedido pedido1, t_pedido pedido2);
 
 /*--------FUNCIONES----------*/
 void parsear(char* const sentencia);

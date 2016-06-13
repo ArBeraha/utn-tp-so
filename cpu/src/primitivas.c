@@ -106,7 +106,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 
 	enviarHeader(cliente_umc,HeaderAsignarValor);
 	enviar_direccion_umc(direccion_variable); // esto chequea q no haya overflow
-	int valorSerializado = intToChar4(valor);
+	char* valorSerializado = intToChar4(valor);
 	send_w(cliente_umc, valorSerializado, sizeof(t_valor_variable)); //envio el valor de la variable
 
 	incrementarPC(pcbActual);
@@ -125,7 +125,7 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 
 	enviarHeader(cliente_umc,HeaderPedirValorVariableCompartida);
 
-	int sizeSerializado = intToChar4(nameSize);
+	char* sizeSerializado = intToChar4(nameSize);
 	send_w(cliente_nucleo, sizeSerializado, sizeof(int));
 	send_w(cliente_nucleo, nombreVarCompartida, nameSize);
 
@@ -329,23 +329,4 @@ void inicializar_primitivas() {
 	funcionesKernel.AnSISOP_wait = &wait_semaforo;
 	funcionesKernel.AnSISOP_signal = &signal_semaforo;
 	log_info(activeLogger, "Primitivas Inicializadas.");
-}
-
-void liberar_primitivas() { //FIXME: comento estas lineas porque tiran segment fault.
-	log_debug(bgLogger, "Liberando primitivas...");
-//	free(funciones.AnSISOP_definirVariable);
-//	free(funciones.AnSISOP_obtenerPosicionVariable);
-//	free(funciones.AnSISOP_dereferenciar);
-//	free(funciones.AnSISOP_asignar);
-//	free(funciones.AnSISOP_obtenerValorCompartida);
-//	free(funciones.AnSISOP_asignarValorCompartida);
-//	free(funciones.AnSISOP_irAlLabel);
-//	free(funciones.AnSISOP_imprimir);
-//	free(funciones.AnSISOP_imprimirTexto);
-//	free(funciones.AnSISOP_llamarSinRetorno);
-//	free(funciones.AnSISOP_retornar);
-//	free(funciones.AnSISOP_entradaSalida);
-//	free(funcionesKernel.AnSISOP_wait);
-//	free(funcionesKernel.AnSISOP_signal);
-	log_debug(bgLogger, "Primitivas liberadas...");
 }

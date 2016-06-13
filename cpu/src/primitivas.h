@@ -55,6 +55,5 @@ void signal_semaforo(t_nombre_semaforo identificador_semaforo);
 
 /* ------ Funciones para usar con el parser ----- */
 void inicializar_primitivas();
-void liberar_primitivas();
 
 #endif /* PRIMITIVAS_H_ */

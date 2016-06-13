@@ -126,6 +126,9 @@ int agregarCliente(t_cliente cliente){
 			return i;
 		}
 	}
+	printf("Se superó el numero maximo de clientes");
+	close(cliente.socket);
+	return -1;
 }
 
 void quitarCliente(int i){
@@ -195,11 +198,10 @@ int procesarNuevasConexionesExtendido(int* socket){
 	// Aceptamos nueva conexion
 	t_cliente cliente;
 	cliente.addrlen=sizeof(cliente.addr);
-	int socketNuevoCliente;
-	socketNuevoCliente = accept((*socket), (struct sockaddr *)&cliente.addr, (socklen_t*)&cliente.addrlen);
-	cliente.socket=socketNuevoCliente;
-	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , socketNuevoCliente , inet_ntoa(cliente.addr.sin_addr) , ntohs(cliente.addr.sin_port));
-	return agregarCliente(cliente);
+	cliente.socket = accept((*socket), (struct sockaddr *)&cliente.addr, (socklen_t*)&cliente.addrlen);
+	if ((cliente.indice = agregarCliente(cliente))>=0)
+	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , cliente.socket , inet_ntoa(cliente.addr.sin_addr) , ntohs(cliente.addr.sin_port));
+	return cliente.indice;
 }
 
 char* intToChar4(int num){

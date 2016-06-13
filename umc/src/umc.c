@@ -432,7 +432,9 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, int cliente){
 		tablaPagina_t* paginaASacarDeMemoria = list_get((t_list*)tablaPaginaAReemplazar->listaPaginas, posicionPaginaSacada);
 		pthread_mutex_unlock(&lock_accesoTabla);
 
-		enviarASwap(pedido.pid,paginaASacarDeMemoria);
+		if(paginaASacarDeMemoria->bitModificacion){
+			enviarASwap(pedido.pid,paginaASacarDeMemoria);
+		}
 		sacarDeMemoria(paginaASacarDeMemoria);
 
 		paginaASacarDeMemoria->bitPresencia=0;
@@ -623,7 +625,9 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,int cliente
 
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
 
-		printf("Lo que acabo de almacenar: %s .\n \n ",memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset);
+		printf("Lo que acabo de almacenar: ");
+		imprimirRegionMemoria(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
+		printf("\n");
 
 		return "1";
 	}
@@ -782,8 +786,8 @@ void devolverPaginasDePid(int pid){ //OK
 void imprimirRegionMemoria(char* region, int size){
 	int i;
 	for(i=0;i<size;i++){
-			putchar(region[i]);
-//			printf("%c",region[i]);
+//			putchar(region[i]);
+			printf("%c",region[i]);
 	}
 }
 
@@ -1141,7 +1145,9 @@ void pedidoLectura(int cliente){
 	}
 
 	char* contenidoAEnviar =  devolverPedidoPagina(pedidoLectura,cliente);
-	printf("Contenido enviado a Cpu: %s \n", contenidoAEnviar);
+	printf("Contenido enviado a Cpu: ");
+	imprimirRegionMemoria(contenidoAEnviar,pedidoLectura.cantBytes);
+	printf("\n ");
 	send_w(clientes[cliente].socket, contenidoAEnviar,pedidoCpu->size);
 }
 

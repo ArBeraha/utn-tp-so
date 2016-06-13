@@ -158,7 +158,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, int cliente);
 
 char* devolverPedidoPagina(pedidoLectura_t pedido,int cliente);   // todos estos volver a devolver void, devuelven cosas para testear
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, int size, char* buffer, int cliente);
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer, int cliente);
 void finalizarPrograma(int idPrograma);
 int inicializarPrograma(int idPrograma, char* contenido, int tamanio);
 int reservarPagina(int,int);
@@ -189,7 +189,7 @@ void procesarHeader(int cliente, char *header);
 
 void crearMemoriaYTlbYTablaPaginas();
 
-void test();
+void test2();
 
 //Fin prototipos
 

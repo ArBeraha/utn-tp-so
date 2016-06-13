@@ -106,9 +106,11 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 
 	enviarHeader(cliente_umc,HeaderAsignarValor);
 	enviar_direccion_umc(direccion_variable); // esto chequea q no haya overflow
-	send_w(cliente_umc, intToChar4(valor), sizeof(t_valor_variable)); //envio el valor de la variable
+	int valorSerializado = intToChar4(valor);
+	send_w(cliente_umc, valorSerializado, sizeof(t_valor_variable)); //envio el valor de la variable
 
 	incrementarPC(pcbActual);
+	free(valorSerializado);
 	instruccionTerminada("Asignar.");
 }
 
@@ -123,7 +125,8 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 
 	enviarHeader(cliente_umc,HeaderPedirValorVariableCompartida);
 
-	send_w(cliente_nucleo, intToChar4(nameSize), sizeof(int));
+	int sizeSerializado = intToChar4(nameSize);
+	send_w(cliente_nucleo, sizeSerializado, sizeof(int));
 	send_w(cliente_nucleo, nombreVarCompartida, nameSize);
 
 	char* value = recv_waitall_ws(cliente_nucleo, sizeof(int));
@@ -131,6 +134,7 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 
 	log_info(activeLogger, "Valor obtenido: |%s| vale |%d|.",nombreVarCompartida, valorVarCompartida);
 	free(value);
+	free(sizeSerializado);
 	incrementarPC(pcbActual);
 	instruccionTerminada("Obtener_valor_compartida");
 	return valorVarCompartida;
@@ -171,10 +175,8 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
 	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
 	if (existeLabel(etiqueta)) {
-		// Casteo el puntero a void como puntero a int y despunterizo eso: void*->t_puntero_instruccion*, y t_puntero_instruccion*->t_puntero_instruccion.
-		posicionPrimeraInstrUtil = dictionary_get(pcbActual->indice_etiquetas, etiqueta);  //al parecer esto anda
 
-		//*(t_puntero_instruccion*) dictionary_get(pcbActual->indice_etiquetas, etiqueta);
+		posicionPrimeraInstrUtil = dictionary_get(pcbActual->indice_etiquetas, etiqueta);  //al parecer esto anda. Posta que viendolo no me cierra como, pero anda :D
 
 		log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
 				etiqueta, posicionPrimeraInstrUtil);
@@ -199,9 +201,9 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar)
 	t_stack_item* newHead = stack_item_create();
 	//newHead->argumentos El parser llama a definir variable y se ocupa de esto
 	//newHead->identificadores no tiene nada por ahora. Se va llenando en otras primitivas, a medida que se declaren variables locales.
-	newHead->posicionRetorno = dondeRetornar; // fixme: ver issue #30
+	newHead->posicionRetorno = dondeRetornar;
 	newHead->posicion = stack_size(stack); // Si el stack tiene pos 0, size=1, si tiene 0 y 1, size=2,... Da la posicion del lugar nuevo.
-	//newHead->valorDeRetorno se completa en otro lado.
+	//newHead->valorDeRetorno es el parser quien en retornar le pasa en que variable guardar el resultado.
 	stack_push(stack, newHead);
 
 	setearPC(pcbActual, posicionFuncion);
@@ -228,12 +230,14 @@ void retornar(t_valor_variable variable) {
 /**
  * Directiva 10
  */
-void imprimir_variable(t_valor_variable valor) { //fixme, no era distinto esto?
+void imprimir_variable(t_valor_variable valor) { //la nueva version del enunciado solo pasa el valor, no el nombre
 	log_info(activeLogger, "Imprimir |%d|", valor);
 
 	enviarHeader(cliente_nucleo,HeaderImprimirVariableNucleo);
-	send_w(cliente_nucleo, intToChar4(valor), sizeof(t_valor_variable));
+	char* valorSerializado = intToChar4(valor);
+	send_w(cliente_nucleo, valorSerializado, sizeof(t_valor_variable));
 	incrementarPC(pcbActual);
+	free(valorSerializado); //hacer intToChar4 en el send produce memory leaks, porque al terminar al funcion queda memoria desreferenciada que nunca se libera.
 	instruccionTerminada("Imprimir");
 }
 

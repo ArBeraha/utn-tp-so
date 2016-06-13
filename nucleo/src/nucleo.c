@@ -75,7 +75,6 @@ void conectarAUMC() {
 		handshakearUMC();
 		log_info(activeLogger, "Handshake con UMC finalizado exitosamente.");
 		recibirTamanioPagina();
-		log_info(activeLogger, "Recibido el tamaño de pagina:%d",tamanio_pagina);
 	} else {
 		warnDebug();
 	}

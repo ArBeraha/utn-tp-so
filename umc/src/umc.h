@@ -200,10 +200,9 @@ pthread_mutex_t mutexSwap;
 	MUTEX(CONTENIDO,mutexSwap);
 #define HILO void*
 HILO main2();
-HILO cpu(int indice);
-HILO nucleo(int indice);
-void procesarHeader2(t_cliente* cliente, char* header);
+HILO hiloDedicado(int indice);
+void procesarHeader2(t_cliente cliente, char* header);
 void cargarCFG();
-void atenderHandshake(t_cliente* cliente);
+void atenderHandshake(t_cliente cliente);
 
 #endif /* UMC_H_ */

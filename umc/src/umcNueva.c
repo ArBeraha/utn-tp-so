@@ -27,8 +27,8 @@ HILO main2() {
 
 	while (1) {
 		FD_ZERO(&socketsParaLectura);
-		FD_SET(socketCPU, &socketsParaLectura);
 		FD_SET(socketNucleo, &socketsParaLectura);
+		FD_SET(socketCPU, &socketsParaLectura);
 
 		mayorDescriptor = (socketNucleo > socketCPU) ? socketNucleo : socketCPU;
 
@@ -37,20 +37,20 @@ HILO main2() {
 		int cliente;
 		if (tieneLectura(socketCPU))  {
 			log_info(activeLogger, "Se conecto una nueva CPU");
-			cliente = procesarNuevasConexionesExtendido(&socketCPU);
-			crearHiloConParametro(&clientes[cliente].hilo,(HILO)cpu,(void*)cliente);
+			if ((cliente = procesarNuevasConexionesExtendido(&socketCPU))>=0)
+			crearHiloConParametro(&clientes[cliente].hilo,(HILO)hiloDedicado,(void*)cliente);
 		}
 		if (tieneLectura(socketNucleo)) {
 			log_info(activeLogger, "Se conecto Nucleo");
-			cliente = procesarNuevasConexionesExtendido(&socketNucleo);
-			crearHiloConParametro(&clientes[cliente].hilo,(HILO)nucleo,(void*)cliente);
+			if ((cliente = procesarNuevasConexionesExtendido(&socketNucleo))>=0)
+			crearHiloConParametro(&clientes[cliente].hilo,(HILO)hiloDedicado,(void*)cliente);
 		}
 	}
 }
 
 
-void llamarSwap(t_cliente* cliente){
-	char* serialPID = intToChar4(cliente->indice);
+void llamarSwap(t_cliente cliente){
+	char* serialPID = intToChar4(cliente.indice);
 	char* serialCantidadPaginas = intToChar4(5);
 	char* serialPagina = intToChar4(2);
 	char* contenidoPagina = malloc(config.tamanio_marco);
@@ -102,15 +102,15 @@ void llamarSwap(t_cliente* cliente){
 //	log_info(activeLogger,"Llego el contenido y es igual:%d\n",strcmp(contenidoPagina,contenidoPagina2)==0);
 
 	// FINALIZAR PROCESO
-//	enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
-//	send_w(swapServer,serialPID,sizeof(int));
-//
-//	header = recv_waitall_ws(swapServer,1);
-//	if (charToInt(header)==HeaderProcesoEliminado)
-//		log_info(activeLogger,"Se elimino bien");
-//	else if (charToInt(header)==HeaderProcesoNoEncontrado)
-//		log_warning(activeLogger,"Se elimino mal");
-//	else log_error(activeLogger,"Llego mierda al leer");
+	enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
+	send_w(swapServer,serialPID,sizeof(int));
+
+	header = recv_waitall_ws(swapServer,1);
+	if (charToInt(header)==HeaderProcesoEliminado)
+		log_info(activeLogger,"Se elimino bien");
+	else if (charToInt(header)==HeaderProcesoNoEncontrado)
+		log_warning(activeLogger,"Se elimino mal");
+	else log_error(activeLogger,"Llego mierda al leer");
 
 	free(serialPID);
 	free(header);
@@ -123,24 +123,21 @@ void llamarSwap(t_cliente* cliente){
 
 // HILO HIJO: cpu()
 // FUNCION: Atender los headers de las cpus
-HILO cpu(int indice) {
-	log_info(activeLogger, "Se creó un hilo dedicado para la CPU");
-	t_cliente* cliente;
-	MUTEXCLIENTES(cliente = &clientes[indice]);
-	printf("SOCKET:%d\n",cliente->socket);
-	printf("INDICE:%d\n",cliente->indice);
+HILO hiloDedicado(int indice) {
+	log_info(activeLogger, "Se creó un hilo dedicado");
+	t_cliente clienteLocal; // Generamos una copia del cliente, no sirve para datos actualizables como el pid, solo para permanentes como socket e indice, para los demas campos consultar con mutex el vector de clientes
+	MUTEXCLIENTES(clienteLocal = clientes[indice]);
+	printf("SOCKET:%d\n",clienteLocal.socket);
+	printf("INDICE:%d\n",clienteLocal.indice);
 	char* header = malloc(1);
-	int bytes;
-	MUTEXCLIENTES(bytes = recv(cliente->socket, header, 1, MSG_WAITALL));
-	do {
-		procesarHeader2(cliente, header);
-		MUTEXCLIENTES(bytes = recv(cliente->socket, header, 1, MSG_WAITALL))
-	} while (bytes>0);
+	while (recv(clienteLocal.socket, header, 1, MSG_WAITALL)>=0){
+		procesarHeader2(clienteLocal, header);
+	}
 	free(header);
-	log_info(activeLogger, "Hasta aqui llego el hilo de cpu");
+	log_info(activeLogger, "Hasta aqui llego el hilo");
 	return 0;
 }
-void procesarHeader2(t_cliente* cliente, char* header) {
+void procesarHeader2(t_cliente cliente, char* header) {
 	// Segun el protocolo procesamos el header del mensaje recibido
 	// TRATAR cliente CON MUTEX SIEMPRE ya que es un puntero al vector compartido
 	log_info(activeLogger, "Llego un mensaje con header %d",
@@ -150,65 +147,50 @@ void procesarHeader2(t_cliente* cliente, char* header) {
 
 	case HeaderError:
 		log_error(activeLogger, "Header de Error");
-		MUTEXCLIENTES(cliente->atentido=false; quitarCliente(cliente->indice);)
 		break;
 
 	case HeaderHandshake:
 		atenderHandshake(cliente);
-//		MUTEXSWAP(llamarSwap(cliente);)
-//		quitarCliente(cliente->indice);
 		break;
 
 	default:
 		log_error(activeLogger,
 				"Llego el header numero %d y no hay una acción definida para él.",
 				charToInt(header));
-		MUTEXCLIENTES(
-				log_warning(activeLogger,"Se quitará al cliente %d.",cliente->indice); quitarCliente(cliente->indice);)
+		log_warning(activeLogger,"Se quitará al cliente %d.",cliente.indice);
+		quitarCliente(cliente.indice);
 		break;
 	}
 }
 
-void atenderHandshake(t_cliente* cliente){
+void atenderHandshake(t_cliente cliente){
 	log_info(activeLogger, "Llego un handshake");
 	char* handshake = malloc(1);
-	MUTEXCLIENTES(read(cliente->socket,handshake,1);)
+	read(cliente.socket,handshake,1);
 
 	if ((charToInt(handshake) == SOYCPU) || (charToInt(handshake) == SOYNUCLEO)) {
 		log_info(activeLogger,
 				"Es un cliente apropiado! Respondiendo handshake");
-		MUTEXCLIENTES(
-				cliente->identidad = charToInt(handshake); send(cliente->socket, intToChar(SOYUMC), 1, 0);)
+		send(cliente.socket, intToChar(SOYUMC), 1, 0);
 		if (charToInt(handshake) == SOYNUCLEO){
+			// Acciones especificas de nucleo despues del handshake
+			log_info(activeLogger,
+					"Enviando tamaño de pagina a Nucleo");
 			char* serialTamanio = intToChar4(config.tamanio_marco);
-			send_w(cliente->socket,serialTamanio,sizeof(int));
+			send_w(cliente.socket,serialTamanio,sizeof(int));
 			free(serialTamanio);
+		}
+		else if (charToInt(handshake) == SOYCPU){
+			// Acciones especificas de cpu despues del handshake
+			MUTEXSWAP(llamarSwap(cliente));
+			MUTEXCLIENTES(quitarCliente(cliente.indice))
 		}
 
 	} else {
 		log_error(activeLogger,
 				"No es un cliente apropiado! rechazada la conexion");
-		MUTEXCLIENTES(
-				log_warning(activeLogger,"Se quitará al cliente %d.",cliente->indice); quitarCliente(cliente->indice);)
+		log_warning(activeLogger,"Se quitará al cliente %d.",cliente.indice);
+		MUTEXCLIENTES(quitarCliente(cliente.indice))
 	}
 	free(handshake);
-}
-
-
-HILO nucleo(int indice){
-	log_info(activeLogger, "Se creó un hilo dedicado para nucleo");
-	t_cliente* cliente;
-	MUTEXCLIENTES(cliente = &clientes[indice]);
-	printf("SOCKET:%d\n",cliente->socket);
-	printf("INDICE:%d\n",cliente->indice);
-	char* header = malloc(1);
-	int bytes;
-	MUTEXCLIENTES(bytes = recv(cliente->socket, header, 1, MSG_WAITALL));
-	do {
-		procesarHeader2(cliente, header);
-		MUTEXCLIENTES(bytes = recv(cliente->socket, header, 1, MSG_WAITALL))
-	} while (bytes>0);
-	free(header);
-	log_info(activeLogger, "Hasta aqui llego el hilo de nucleo");
-	return 0;
 }

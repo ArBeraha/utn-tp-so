@@ -140,6 +140,8 @@ int tiempo;
 //int vectorUltimaPosicionSacada[MAXCLIENTS];
 t_list* listaUltimaPosicionSacada;
 
+int paginas_stack;
+
 
 //Prototipos
 
@@ -163,7 +165,9 @@ void finalizarPrograma(int idPrograma);
 int inicializarPrograma(int idPrograma, char* contenido, int tamanio);
 int reservarPagina(int,int);
 
-void imprimirRegionMemoria(char* region, int size);
+void imprimirRegionMemoriaStack(char* region, int size);
+void imprimirRegionMemoriaCodigo(char* region, int size);
+
 void devolverTodasLasPaginas();
 void devolverPaginasDePid(int pid);
 void devolverTodaLaMemoria();

@@ -390,6 +390,11 @@ void enviarASwap(int pid, tablaPagina_t* pagina){
 	send_w(swapServer,contenidoPagina,config.tamanio_marco);
 }
 
+int cantPaginasDePid(int pid){
+	tabla_t* tablaPaginaAReemplazar = buscarTabla(pid);
+	return list_size((t_list*)tablaPaginaAReemplazar->listaPaginas);
+}
+
 int cantPaginasEnMemoriaDePid(int pid){
 	pthread_mutex_lock(&lock_accesoTabla);
 	tabla_t* tablaPaginaAReemplazar = buscarTabla(pid);
@@ -437,6 +442,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, int cliente){
 		}
 		sacarDeMemoria(paginaASacarDeMemoria);
 
+		int marcoSacado = paginaASacarDeMemoria->marcoUtilizado;
 		paginaASacarDeMemoria->bitPresencia=0;
 		paginaASacarDeMemoria->marcoUtilizado=-1;
 
@@ -444,12 +450,12 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, int cliente){
 		tablaPagina_t* paginaACargar = list_get((t_list*)tablaPaginaAReemplazar->listaPaginas, pedido.paginaRequerida);
 		pthread_mutex_unlock(&lock_accesoTabla);
 
-		int unMarcoNuevo = buscarPrimerMarcoLibre();
+//		int unMarcoNuevo = buscarPrimerMarcoLibre();
 		pthread_mutex_lock(&lock_accesoMarcosOcupados);
-		vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
+		vectorMarcosOcupados[marcoSacado]=1; //Lo marco como ocupado porque va a ir el nuevo proceso ahi
 		pthread_mutex_unlock(&lock_accesoMarcosOcupados);
 
-		paginaACargar->marcoUtilizado = unMarcoNuevo;
+		paginaACargar->marcoUtilizado = marcoSacado;
 		paginaACargar->bitPresencia = 1;
 		paginaACargar->bitModificacion = 0;
 		paginaACargar->bitUso=1;
@@ -604,6 +610,14 @@ int inicializarPrograma(int idPrograma, char* contenido,int tamanio){
 	}
 }
 
+void ponerBitModif1(int pid,int pag){
+	pthread_mutex_lock(&lock_accesoTabla);
+	tabla_t* tabla = buscarTabla(pid);
+	tablaPagina_t* pagina = list_get((t_list*)tabla->listaPaginas,pag);
+	pagina->bitModificacion=1;
+	pthread_mutex_unlock(&lock_accesoTabla);
+}
+
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,int cliente){
 
 	log_info(activeLogger,"ESCRITURA DE pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
@@ -623,10 +637,20 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,int cliente
 		memcpy(memoria+(tlb[pos].marcoUtilizado*config.tamanio_marco)+pedido.offset, buffer, pedido.cantBytes);
 		pthread_mutex_unlock(&lock_accesoMemoria);
 
+		ponerBitModif1(pedido.pid,pedido.paginaRequerida);
+
 		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
 
 		printf("Lo que acabo de almacenar: ");
-		imprimirRegionMemoria(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
+
+		if(pedido.paginaRequerida<=cantPaginasDePid(pedido.pid)- paginas_stack){
+			imprimirRegionMemoriaCodigo(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
+//			imprimirRegionMemoriaStack(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
+
+		}else{
+			imprimirRegionMemoriaStack(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
+		}
+
 		printf("\n");
 
 		return "1";
@@ -665,6 +689,8 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,int cliente
 					pthread_mutex_lock(&lock_accesoMemoria);
 					memcpy(memoria+(paginaBuscada->marcoUtilizado*config.tamanio_marco)+pedido.offset, buffer, pedido.cantBytes);
 					pthread_mutex_unlock(&lock_accesoMemoria);
+
+					ponerBitModif1(pedido.pid,pedido.paginaRequerida);
 
 					printf("Marco de la pagina: %d \n", paginaBuscada->marcoUtilizado);
 
@@ -783,7 +809,19 @@ void devolverPaginasDePid(int pid){ //OK
 	pthread_mutex_unlock(&lock_accesoTabla);
 }
 
-void imprimirRegionMemoria(char* region, int size){
+void imprimirRegionMemoriaStack(char* region, int size){
+	int i=0;
+	printf("(REGION STACK):");
+	int valor;
+	while(i<size){
+		valor = char4ToInt(region+i);
+		printf("%d",valor);
+		i=i+4;
+	}
+	printf("\n");
+}
+
+void imprimirRegionMemoriaCodigo(char* region, int size){
 	int i;
 	for(i=0;i<size;i++){
 //			putchar(region[i]);
@@ -821,7 +859,11 @@ void devolverTodaLaMemoria(){
 				contenido[config.tamanio_marco]='\0';
 				pthread_mutex_unlock(&lock_accesoMemoria);
 
-				imprimirRegionMemoria(contenido,config.tamanio_marco);
+				if(j<=cantidadPaginasDeTabla-paginas_stack){
+					imprimirRegionMemoriaCodigo(contenido, config.tamanio_marco);
+				}else{
+					imprimirRegionMemoriaStack(contenido, config.tamanio_marco);
+				}
 			}
 
 			pthread_mutex_lock(&lock_accesoMemoria);
@@ -864,8 +906,11 @@ void devolverMemoriaDePid(int pid){
 			pthread_mutex_unlock(&lock_accesoMemoria);
 
 			printf("%s \n",contenido);
-			imprimirRegionMemoria(contenido,config.tamanio_marco);
-			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, Contenido: %s ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,contenido);
+			if(i<=cantidadPaginasDeTabla-paginas_stack){
+				imprimirRegionMemoriaCodigo(contenido, config.tamanio_marco);
+			}else{
+				imprimirRegionMemoriaStack(contenido, config.tamanio_marco);
+			}
 
 			printf("\n");
 		}
@@ -1043,6 +1088,8 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 	listaUltimaPosicionSacada = list_create();
 
+	paginas_stack = 2;
+
 	pthread_attr_init(&detachedAttr);
 	pthread_attr_setdetachstate(&detachedAttr, PTHREAD_CREATE_DETACHED);
 	pthread_mutex_init(&lock_accesoMarcosOcupados, NULL);
@@ -1146,7 +1193,13 @@ void pedidoLectura(int cliente){
 
 	char* contenidoAEnviar =  devolverPedidoPagina(pedidoLectura,cliente);
 	printf("Contenido enviado a Cpu: ");
-	imprimirRegionMemoria(contenidoAEnviar,pedidoLectura.cantBytes);
+
+	if(pedidoLectura.paginaRequerida<=cantPaginasDePid(pedidoLectura.pid)-paginas_stack){
+		imprimirRegionMemoriaCodigo(contenidoAEnviar, pedidoLectura.cantBytes);
+	}else{
+		imprimirRegionMemoriaStack(contenidoAEnviar, pedidoLectura.cantBytes);
+	}
+
 	printf("\n ");
 	send_w(clientes[cliente].socket, contenidoAEnviar,pedidoCpu->size);
 }
@@ -1253,6 +1306,7 @@ void procesarHeader(int cliente, char *header){
 
 			if(inicializarPrograma(atoi(pidScript),codigoScript,char4ToInt(tamanioCodigoScript))){
 				reservarPagina(atoi(cantidadDePaginasScript),atoi(pidScript));
+				reservarPagina(paginas_stack,atoi(pidScript));
 				send_w(clientes[cliente].socket,"1",sizeof(int));
 			}else{
 				send_w(clientes[cliente].socket,"0",sizeof(int));
@@ -1383,28 +1437,28 @@ void mostrarTlb(){
 
 void test2(){
 
-//	reservarPagina(3,-3);
-//
-//	pedidoLectura_t pedido1;
-//		pedido1.pid=-3;
-//		pedido1.paginaRequerida=1;
-//		pedido1.offset=1;
-//		pedido1.cantBytes=5;
-//
-//	devolverPedidoPagina(pedido1,0);
-//
-//	pedidoLectura_t pedido2;
-//		pedido2.pid=-3;
-//		pedido2.paginaRequerida=2;
-//		pedido2.offset=2;
-//		pedido2.cantBytes=4;
-//
-//	devolverPedidoPagina(pedido2,0);
+	reservarPagina(3,-3);
 
-//	mostrarTlb();
+	pedidoLectura_t pedido1;
+		pedido1.pid=-3;
+		pedido1.paginaRequerida=1;
+		pedido1.offset=1;
+		pedido1.cantBytes=5;
+
+	devolverPedidoPagina(pedido1,0);
+
+	pedidoLectura_t pedido2;
+		pedido2.pid=-3;
+		pedido2.paginaRequerida=2;
+		pedido2.offset=2;
+		pedido2.cantBytes=4;
+
+	devolverPedidoPagina(pedido2,0);
+
+	mostrarTlb();
 
 
-//	printf("CANT PAGS PID 0 EN MEM: %d \n", cantPaginasEnMemoriaDePid(-3));
+	printf("CANT PAGS PID 0 EN MEM: %d \n", cantPaginasEnMemoriaDePid(-3));
 
 	reservarPagina(3,0);
 
@@ -1428,14 +1482,9 @@ void test2(){
 
 	printf("ACA LO Q ESDCRIBI: \n");
 
-	imprimirRegionMemoria(devolverPedidoPagina(pedido3,0),2);
-	printf("====: \n");
-	devolverTodaLaMemoria();
+	imprimirRegionMemoriaCodigo(devolverPedidoPagina(pedido3,0),2);
 
-	printf("size of 1: %d \n", sizeof(1));
-	printf("size of 'ab': %d \n", sizeof("ab"));
-	printf("size of intToChar4(1): %d \n", sizeof(intToChar(1)));
-//	recibirComandos();
+	devolverTodaLaMemoria();
 }
 
 // 5.Server de los cpu y de nucleo

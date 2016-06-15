@@ -100,7 +100,7 @@ char* getScript(int consola) {
 /*  ----------INICIO NUCLEO ---------- */
 void inicializar() {
 	system("rm -rf *.log");
-	crearLogs("Nucleo", "Nucleo",0);
+	crearLogs("Nucleo", "Nucleo",1);
 	//testear(test_serializacion);
 	log_info(activeLogger, "INICIALIZANDO");
 	espera.tv_sec = 2;
@@ -126,7 +126,7 @@ void inicializar() {
 			&tamanioDireccionCPU, &activadoCPU);
 	inicializarClientes();
 	conectarAUMC();
-	//testear(test_nucleo);
+	testear(test_nucleo);
 	crearHilo(&hiloPlanificacion, planificar);
 }
 void cargarConfiguracion() {

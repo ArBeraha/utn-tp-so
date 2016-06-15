@@ -26,7 +26,7 @@
 #define SIN_ASIGNAR -1
 /* ---------- INICIO DEBUG ---------- */
 // Es util para debugear sin tener una consola extra con UMC abierto.
-#define DEBUG_IGNORE_UMC false
+#define DEBUG_IGNORE_UMC true
 #define DEBUG_IGNORE_UMC_PAGES true
 /* ---------- INICIO DEBUG ---------- */
 int socketConsola, socketCPU, activadoCPU, activadoConsola, umc, cambiosConfiguracion;
@@ -79,6 +79,7 @@ typedef struct t_semaforo {
 typedef struct t_bloqueo {
 	t_IO* IO;
 	int PID;
+	int tiempo;
 } t_bloqueo;
 typedef struct customConfig {
 	int puertoConsola;
@@ -140,7 +141,7 @@ void ingresarCPU(int cliente);
 HILO crearProceso(int consola);
 void rechazarProceso(int PID);
 void bloquearProceso(int PID);
-void bloquearProcesoIO(int PID, char* IO);
+void bloquearProcesoIO(int PID, char* IO, int tiempo);
 void bloquearProcesoSem(int PID, char* semid);
 void desbloquearProceso(int PID);
 void finalizarProceso(int PID);

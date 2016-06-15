@@ -85,12 +85,15 @@ void actualizarPCB(t_PCB PCB) { //
 void ingresarCPU(int cliente){
 	queue_push(colaCPU,(void*)cliente);
 }
-void bloquearProcesoIO(int PID, char* IO) {
+void bloquearProcesoIO(int PID, char* IO, int tiempo) {
 	if (dictionary_has_key(tablaIO, IO)) {
 		log_info(activeLogger, "Añadiendo el Proceso a la cola del IO");
 		bloquearProceso(PID);
-		queue_push(((t_IO*) dictionary_get(tablaIO, IO))->cola,
-				(t_proceso*) PID);
+		t_bloqueo* info = malloc(sizeof(t_bloqueo));
+		info->IO = (t_IO*) dictionary_get(tablaIO, IO);
+		info->PID = PID;
+		info->tiempo = tiempo;
+		queue_push((info->IO)->cola,(t_bloqueo*) info);
 	} else
 		log_info(activeLogger, "El IO solicitado no existe");
 }

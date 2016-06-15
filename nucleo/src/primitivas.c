@@ -57,7 +57,9 @@ void imprimirTexto(int cliente) {
 void entradaSalida(int cliente) {
 	log_info(activeLogger,"Proceso pidio IO");
 	char* serialIO = leerLargoYMensaje(clientes[cliente].socket);
-	bloquearProcesoIO(clientes[cliente].pid,serialIO);
-	// TODO Leer un int extra que es el tiempo de uso
+	char* serialTiempo = malloc(sizeof(int));
+	read(clientes[cliente].socket,serialTiempo,sizeof(int));
+	bloquearProcesoIO(clientes[cliente].pid,serialIO,char4ToInt(serialTiempo));
 	free(serialIO);
+	free(serialTiempo);
 }

@@ -24,17 +24,14 @@ void test_cicloDeVidaProcesos() {
 	io->estado = INACTIVE;
 	dictionary_put(tablaIO, "ScannerTest1", io);
 
-	bloquearProcesoIO(proceso->PCB->PID, "ScannerTest1");
+	bloquearProcesoIO(proceso->PCB->PID, "ScannerTest1",2);
 
 	CU_ASSERT_FALSE(queue_is_empty(colaCPU));
 	CU_ASSERT_EQUAL(proceso->estado, BLOCK);
 
 	//queue_pop(io->cola);
 	io->estado = ACTIVE;
-	t_bloqueo* info = malloc(sizeof(t_bloqueo));
-	info->IO = io;
-	info->PID = proceso->PCB->PID;
-	bloqueo(info);
+	bloqueo(queue_pop(io->cola));
 
 	//desbloquearProceso(proceso->PCB->PID);
 	CU_ASSERT_EQUAL(proceso->estado, READY);
@@ -94,10 +91,10 @@ void test_bloqueosIO() {
 	proceso->estado = READY;
 
 	ejecutarProceso(proceso->PCB->PID,(int)queue_pop(colaCPU));
-	bloquearProcesoIO(proceso->PCB->PID,"ScannerTest2");
+	bloquearProcesoIO(proceso->PCB->PID,"ScannerTest2",2);
 	dictionary_iterator(tablaIO,(void*)planificarIO);
 	CU_ASSERT_EQUAL(io->estado,ACTIVE);
-	sleep(io->retardo*2);
+	sleep(io->retardo*2+1);
 	CU_ASSERT_EQUAL(proceso->estado,READY);
 	CU_ASSERT_EQUAL(io->estado,INACTIVE);
 	dictionary_remove(tablaIO,"ScannerTest2");

@@ -54,10 +54,7 @@ void planificacionFIFO() {
 void planificarIO(char* io_id, t_IO* io) {
 	if (io->estado == INACTIVE && (!queue_is_empty(io->cola))) {
 		io->estado = ACTIVE;
-		t_bloqueo* info = malloc(sizeof(t_bloqueo));
-		info->IO = io;
-		info->PID = (int) queue_pop(io->cola);
-		crearHiloConParametro(&hiloBloqueos, (HILO)bloqueo, info);
+		crearHiloConParametro(&hiloBloqueos, (HILO)bloqueo, queue_pop(io->cola));
 	}
 }
 bool terminoQuantum(t_proceso* proceso) {
@@ -111,7 +108,7 @@ void continuarProceso(t_proceso* proceso) {
 HILO bloqueo(t_bloqueo* info) {
 	log_debug(bgLogger, "Ejecutando IO pid:%d por:%dseg", info->PID,
 			info->IO->retardo);
-	sleep(info->IO->retardo);
+	sleep(info->IO->retardo*info->tiempo);
 	desbloquearProceso(info->PID);
 	info->IO->estado = INACTIVE;
 	free(info);

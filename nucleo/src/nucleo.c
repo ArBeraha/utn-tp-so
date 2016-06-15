@@ -75,7 +75,6 @@ void conectarAUMC() {
 		handshakearUMC();
 		log_info(activeLogger, "Handshake con UMC finalizado exitosamente.");
 		recibirTamanioPagina();
-		log_info(activeLogger, "Recibido el tamaño de pagina:%d",tamanio_pagina);
 	} else {
 		warnDebug();
 	}
@@ -84,6 +83,7 @@ void recibirTamanioPagina(){
 	char* serialTamanio = malloc(sizeof(int));
 	serialTamanio = recv_waitall_ws(umc,sizeof(int));
 	tamanio_pagina = char4ToInt(serialTamanio);
+	log_info(activeLogger,"Recibido el tamaño de pagina: %d",tamanio_pagina);
 	free(serialTamanio);
 }
 /*  ----------INICIO CONSOLA ---------- */
@@ -315,6 +315,10 @@ void procesarHeader(int cliente, char *header) {
 
 	case headerTermineInstruccion:
 		rafagaProceso(cliente);
+		break;
+
+	case HeaderEntradaSalida:
+		entradaSalida(cliente);
 		break;
 
 	default:

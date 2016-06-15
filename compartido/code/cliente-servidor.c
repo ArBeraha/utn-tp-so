@@ -108,21 +108,27 @@ void inicializarClientes(){
 	int i;
 	for (i = 0; i < MAXCLIENTS; i++){
 		clientes[i].socket=0;
+		clientes[i].indice=i;
 	}
 }
 
-void agregarCliente(t_cliente cliente){
+int agregarCliente(t_cliente cliente){
 	// Agregamos un cliente en la primera posicion libre del array de clientes
 	int i=0;
 	for (i = 0; i < MAXCLIENTS; i++) {
 		if( clientes[i].socket == 0 )	{
-			clientes[i] = cliente;
+			clientes[i].socket = cliente.socket;
 			clientes[i].atentido=false;
 			clientes[i].pid = (int)NULL;
+			clientes[i].addr = cliente.addr;
+			clientes[i].addrlen = cliente.addrlen;
 			printf("Añadido a la lista de sockets como %d\n" , i);
-			break;
+			return i;
 		}
 	}
+	printf("Se superó el numero maximo de clientes");
+	close(cliente.socket);
+	return -1;
 }
 
 void quitarCliente(int i){
@@ -188,15 +194,14 @@ int incorporarClientes(){
 	return mayorDescriptor;
 }
 
-void procesarNuevasConexionesExtendido(int* socket){
+int procesarNuevasConexionesExtendido(int* socket){
 	// Aceptamos nueva conexion
 	t_cliente cliente;
 	cliente.addrlen=sizeof(cliente.addr);
-	int socketNuevoCliente;
-	socketNuevoCliente = accept((*socket), (struct sockaddr *)&cliente.addr, (socklen_t*)&cliente.addrlen);
-	cliente.socket=socketNuevoCliente;
-	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , socketNuevoCliente , inet_ntoa(cliente.addr.sin_addr) , ntohs(cliente.addr.sin_port));
-	agregarCliente(cliente);
+	cliente.socket = accept((*socket), (struct sockaddr *)&cliente.addr, (socklen_t*)&cliente.addrlen);
+	if ((cliente.indice = agregarCliente(cliente))>=0)
+	printf("Nueva conexión , socket %d , ip is : %s , puerto : %d \n" , cliente.socket , inet_ntoa(cliente.addr.sin_addr) , ntohs(cliente.addr.sin_port));
+	return cliente.indice;
 }
 
 char* intToChar4(int num){
@@ -243,3 +248,5 @@ void enviarHeader(int cliente, int header){
 	send_w(cliente,serialHeader,1);
 	free(serialHeader);
 }
+
+

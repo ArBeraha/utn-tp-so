@@ -30,7 +30,6 @@ void cargarCFG() {
 	config.puerto_cpu = config_get_int_value(configUmc, "PUERTO_UMC_CPU");
 	config.algoritmo_paginas= config_get_string_value(configUmc, "ALGORITMO_REEMPLAZO");
 	config.marcos_x_proceso = config_get_int_value(configUmc, "MARCOS_X_PROCESO");
-
 }
 
 //0. Funciones auxiliares a las funciones Principales
@@ -1354,49 +1353,21 @@ void finalizar() {
 
 
 int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursivo
-
-	cargarCFG();
-
-	crearLogs("Umc","Proceso",0);
-
-	dump = log_create("dump","UMC",false,LOG_LEVEL_INFO);
-
-	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
-
-	listaTablasPaginas = list_create();
-
-//	int k;
-//	for(k=0;k<config.cantidad_marcos;k++){  //COMO MAXIMO ES LA CANTIDAD DE MARCOS, considerando q como minimo una tabla tiene 1 pag
-//		tabla_t* tablaPaginas;
-//		tablaPaginas->listaPaginas = list_create();
-//		list_add(listaTablasPaginas,tablaPaginas);
-//	}
-
-	crearMemoriaYTlbYTablaPaginas();
-
-	test2();
-
-//	recibirComandos();
-
-//	pthread_create(&hiloRecibirComandos,&detachedAttr,(void*)recibirComandos,NULL);
-	servidorCPUyNucleoExtendido();
-
-//
-//	conexionASwap();
-//
-//	pedidoLectura_t pedido1;
-//			pedido1.pid=2;
-//			pedido1.paginaRequerida=1;
-//			pedido1.offset=0;
-//			pedido1.cantBytes=5;
-//
-//	buscarEnSwap(pedido1);
+	main2();
+//	cargarCFG();
+//	crearLogs("Umc","Proceso",0);
+//	dump = log_create("dump","UMC",false,LOG_LEVEL_INFO);
+//	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
+//	listaTablasPaginas = list_create();
+//	crearMemoriaYTlbYTablaPaginas();
+//	test2();
+////	recibirComandos();
+////	pthread_create(&hiloRecibirComandos,&detachedAttr,(void*)recibirComandos,NULL);
+//	servidorCPUyNucleoExtendido();
+////	conexionASwap();
+//	finalizar();
 
 
-
-
-
-	finalizar();
 
 	return 0;
 }
@@ -1579,7 +1550,7 @@ void handshakearASwap(){
 		perror("Se esperaba que la umc se conecte con el swap.");
 	}
 	else
-		log_debug(bgLogger,"Umc recibio handshake de Swap.");
+		log_info(activeLogger,"Umc recibio handshake de Swap.");
 }
 
 void conectarASwap(){
@@ -1649,15 +1620,14 @@ void ejemploSWAP(){
 		header = recv_waitall_ws(swapServer,1);
 		if (charToInt(header)==HeaderOperacionLectura)
 			printf("Contesto con la pagina\n");
-		contenidoPagina2[config.tamanio_marco]='\0';
+
 		printf("Llego el msg:%s",contenidoPagina2);
 		contenidoPagina2 = recv_waitall_ws(swapServer,config.tamanio_marco);
 		printf("Llego el contenido y es igual:%d\n",strcmp(contenidoPagina,contenidoPagina2)==0);
-
+		contenidoPagina2[config.tamanio_marco]='\0';
 		// FINALIZAR PROCESO
 		enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
 		send_w(swapServer,serialPID,sizeof(int));
-
 }
 
 void conexionASwap(){ //Creada para unir las dos funciones y crear un hilo

@@ -196,6 +196,17 @@ void crearMemoriaYTlbYTablaPaginas();
 void test2();
 
 //Fin prototipos
-
+pthread_mutex_t mutexClientes;
+#define MUTEXCLIENTES(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexClientes);
+pthread_mutex_t mutexSwap;
+#define MUTEXSWAP(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexSwap);
+#define HILO void*
+HILO main2();
+HILO hiloDedicado(int indice);
+void procesarHeader2(t_cliente cliente, char* header);
+void cargarCFG();
+void atenderHandshake(t_cliente cliente);
 
 #endif /* UMC_H_ */

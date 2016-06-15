@@ -26,7 +26,7 @@
 #define SIN_ASIGNAR -1
 /* ---------- INICIO DEBUG ---------- */
 // Es util para debugear sin tener una consola extra con UMC abierto.
-#define DEBUG_IGNORE_UMC true
+#define DEBUG_IGNORE_UMC false
 #define DEBUG_IGNORE_UMC_PAGES true
 /* ---------- INICIO DEBUG ---------- */
 int socketConsola, socketCPU, activadoCPU, activadoConsola, umc, cambiosConfiguracion;

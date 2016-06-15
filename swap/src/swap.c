@@ -186,7 +186,7 @@ void operacionLectura(){
 	   char* contenido = leerPagina(
 		  	  buscarProcesoSegunPID(pid)->posPagina
 					+ pagina);
-	   //usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
+	   usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
 	   enviarHeader(cliente, HeaderOperacionLectura);
 	   send_w(cliente, contenido, config.tamanio_pagina);
 	   free(contenido);
@@ -265,6 +265,8 @@ void asignarEspacioANuevoProceso(int pid, int paginasAIniciar) {
 		//Me fijo si hay fragmentacion para asi ver si necesito compactar
 		if (hayQueCompactar(paginasAIniciar)) {
 			compactar();
+			if (hayQueCompactar(paginasAIniciar))
+				enviarHeader(cliente,HeaderNoHayEspacio);
 		}
 		agregarProceso(pid, paginasAIniciar);
 	} else {
@@ -376,6 +378,7 @@ void agregarProceso(int pid, int paginasAIniciar) {
 		//printf("Proceso agregado exitosamente\n");
 		enviarHeader(cliente,HeaderProcesoAgregado);
 	} else
+		enviarHeader(cliente,HeaderError);
 		printf("Error Nunca debio llegar acá al agregar Proceso\n");
 }
 void moverProceso(t_infoProceso* proceso, int nuevoInicio) {
@@ -456,7 +459,7 @@ int existeElPid(int unPid){
 //**************************************************MAIN SWAP*****************************************************************
 int main() {
 	inicializar();
-	testear(test_swap);
+	//testear(test_swap);
 	conectar_umc();
 	esperar_peticiones();
 	finalizar();

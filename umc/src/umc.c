@@ -246,10 +246,17 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 //	contenidoPagina[config.tamanio_marco]='\0';
 //	printf("Llego el contenido de swap:%s",contenidoPagina);
 
-	char* contenidoPagina = "012345678910111213";
 
-	agregarAMemoria(pedido,contenidoPagina,cliente);
+	if(pedido.paginaRequerida==1){
+		char* contenidoPagina = "abcdefghijklmnopqrstuvwxyz";
+		agregarAMemoria(pedido,contenidoPagina,cliente);
+	}
+	if(pedido.paginaRequerida==3){
 
+		char* str = malloc(sizeof(int));
+		memcpy(str,"4",4);
+		agregarAMemoria(pedido,str,cliente);
+	}
 
 	return 1;
 }
@@ -294,7 +301,7 @@ int sacarConClock(int pid){
 
 	pthread_mutex_unlock(&lock_accesoUltimaPos);
 	pthread_mutex_unlock(&lock_accesoTabla);
-	printf("Algo fallo en CLOCK \n");
+	log_error(activeLogger, "[%d] Algo fallo en CLOCK",pid);
 	return -1;
 }
 
@@ -362,7 +369,8 @@ int sacarConModificado(int pid){
 	pthread_mutex_unlock(&lock_accesoUltimaPos);
 	pthread_mutex_unlock(&lock_accesoTabla);
 
-	printf("Algo fallo en CLOCK MODIFICADO \n");
+	log_error(activeLogger, "[%d] Algo fallo en CLOCK MODIFICADO",pid);
+
 	return -1;
 }
 
@@ -414,6 +422,8 @@ int cantPaginasEnMemoriaDePid(int pid){
 }
 
 void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente){
+	int id=0;
+//	MUTEXCLIENTES(id=clientes[cliente.identidad].pid);
 	if(cantPaginasEnMemoriaDePid(pedido.pid)>=config.marcos_x_proceso){
 		int posicionPaginaSacada=0;
 
@@ -428,10 +438,9 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 			}
 
 		}
-		printf("PAGINA A SACAR DE MEMORIA: %d \n ", posicionPaginaSacada);
+		log_info(activeLogger, "[%d] No hay marcos disponibles. [Pag] Sacando [%d]. Agregando [%d]. Con: %s",id,posicionPaginaSacada,pedido.paginaRequerida, config.algoritmo_paginas);
 
 		pthread_mutex_lock(&lock_accesoTabla);
-
 		tabla_t* tablaPaginaAReemplazar = buscarTabla(pedido.pid);
 		tablaPagina_t* paginaASacarDeMemoria = list_get((t_list*)tablaPaginaAReemplazar->listaPaginas, posicionPaginaSacada);
 		pthread_mutex_unlock(&lock_accesoTabla);
@@ -439,9 +448,12 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		if(paginaASacarDeMemoria->bitModificacion){
 			enviarASwap(pedido.pid,paginaASacarDeMemoria);
 		}
-		sacarDeMemoria(paginaASacarDeMemoria);
 
 		int marcoSacado = paginaASacarDeMemoria->marcoUtilizado;
+		log_info(activeLogger, "[%d] Intercambiando contenido de Marco [%d]",id,marcoSacado);
+
+		sacarDeMemoria(paginaASacarDeMemoria);
+
 		paginaASacarDeMemoria->bitPresencia=0;
 		paginaASacarDeMemoria->marcoUtilizado=-1;
 
@@ -449,7 +461,6 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		tablaPagina_t* paginaACargar = list_get((t_list*)tablaPaginaAReemplazar->listaPaginas, pedido.paginaRequerida);
 		pthread_mutex_unlock(&lock_accesoTabla);
 
-//		int unMarcoNuevo = buscarPrimerMarcoLibre();
 		pthread_mutex_lock(&lock_accesoMarcosOcupados);
 		vectorMarcosOcupados[marcoSacado]=1; //Lo marco como ocupado porque va a ir el nuevo proceso ahi
 		pthread_mutex_unlock(&lock_accesoMarcosOcupados);
@@ -488,17 +499,18 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 
 char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
 
-	log_info(activeLogger,"LECTURA DE pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
-
 //SI ESTA EN TLB DEVUELVO
+	int id =0;
+//	MUTEXCLIENTES(id = clientes[cliente.identidad].pid);
+
+
 	if(estaEnTlb(pedido) && config.entradas_tlb){
 
-		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d PARA LECTURA \n",pedido.pid,pedido.paginaRequerida);
 		int pos = buscarEnTlb(pedido);
 
 		char* contenido = malloc(pedido.cantBytes);
 
-		printf("Accediendo a memoria... \n");
+		log_info(activeLogger, "[%d][L] Accediendo a MP",id);
 		usleep(retardoMemoria);
 
 		pthread_mutex_lock(&lock_accesoMemoria);
@@ -506,13 +518,13 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
 
 		pthread_mutex_unlock(&lock_accesoMemoria);
 
-		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
+		log_info(activeLogger, "[%d][L] Se encontro en TLB para LECTURA [Pag,Off,Bytes] = [%d,%d,%d] en MARCO: %d",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
+
 		return contenido;
 
 	}
 //SINO, ME FIJO QUE SEA VALIDA LA PETICION
 	else{
-		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas",pedido.pid,pedido.paginaRequerida);
 		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
 			pthread_mutex_lock(&lock_accesoTabla);
 			tabla_t* tablaPaginaBuscada = buscarTabla(pedido.pid);
@@ -522,25 +534,25 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
 				tablaPagina_t* paginaBuscada = list_get((t_list*)tablaPaginaBuscada->listaPaginas, pedido.paginaRequerida);
 //SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
 
-				printf("Accediendo a memoria... \n"); //Accedo a memoria para leer la tabla
+				log_info(activeLogger, "[%d][L] Accediendo a MP",id);
 				usleep(retardoMemoria);
 
 				if(paginaBuscada->bitPresencia){
 					pthread_mutex_unlock(&lock_accesoTabla);
-					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+					log_info(activeLogger, "[%d][L] Se encontro en Tabla de Paginas y esta en memoria",id);
+					log_info(activeLogger, "[%d][L] Realizando LECTURA [Pag,Off,Bytes] = [%d,%d,%d]",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes);
 
-					printf("Accediendo a memoria... \n");
+					log_info(activeLogger, "[%d][L] Accediendo a MP",id);
 					usleep(retardoMemoria);
 
 					char* contenido = malloc(pedido.cantBytes);
 					pthread_mutex_lock(&lock_accesoMemoria);
 					memcpy(contenido,memoria+paginaBuscada->marcoUtilizado * config.tamanio_marco+pedido.offset,pedido.cantBytes);
-
 					pthread_mutex_unlock(&lock_accesoMemoria);
 
-					printf("marco tlb: %d \n", paginaBuscada->marcoUtilizado);
-
 					agregarATlb(paginaBuscada,pedido.pid);
+
+					log_info(activeLogger, "[%d][L] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
 
 					return contenido;
 
@@ -548,16 +560,19 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
 // SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y LA CARGO EN MEMORIA Y TLB Y VUELVO A LLAMAR A FUNCION
 				else{
 					pthread_mutex_unlock(&lock_accesoTabla);
-					log_info(activeLogger,"Se encontro la pagina pero NO esta en memoria (LECTURA)! Buscando en swap: pag:%d de pid:%d \n",pedido.paginaRequerida,pedido.pid);
+					log_info(activeLogger, "[%d][L] Se encontro en Tabla de Paginas pero NO ESTA EN MEMORIA. Buscando en SWAP: [Pag]=[%d]",id,pedido.paginaRequerida);
+					log_info(activeLogger, "[%d][L]-------------SWAP-----------",id);
 
 					int pudo = buscarEnSwap(pedido, cliente);
 
 					if(pudo){
 						agregarATlb(paginaBuscada,pedido.pid);
-						log_info(activeLogger,"Cargada pagina en memoria, agregada a TLB, se vuelve a hacer el pedido de lectura! Devolviendo pag:%d de pid:%d \n",pedido.paginaRequerida,pedido.pid);
+						log_info(activeLogger, "[%d][L] Se encontro en SWAP [Pag]=[%d] y se agrego a memoria. Realizando pedido de LECTURA nuevamente",id,pedido.paginaRequerida);
+						log_info(activeLogger, "[%d][L]---------------------------",id);
 						devolverPedidoPagina(pedido, cliente);
 					}
 					else{
+						log_info(activeLogger, "[%d][L] NO se encontro en SWAP [Pag]=[%d]",id,pedido.paginaRequerida);
 						return "Error busqueda en swap";
 					}
 				}
@@ -619,17 +634,14 @@ void ponerBitModif1(int pid,int pag){
 
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
-	log_info(activeLogger,"ESCRITURA DE pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+	int id =0;
+//	MUTEXCLIENTES(id=clientes[cliente.identidad].pid);
 
 	if(estaEnTlb(pedido) && config.entradas_tlb){
 
-		log_info(activeLogger,"Se encontro en la Tlb el pid: %d, pagina: %d PARA ESCRITURA \n",pedido.pid,pedido.paginaRequerida);
-
 		int pos = buscarEnTlb(pedido);
 
-		printf("Posicion encontrada en la TLB: %d \n \n",pos);
-
-		printf("Accediendo a memoria... \n ");
+		log_info(activeLogger, "[%d][E] Accediendo a MP",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
 		usleep(retardoMemoria);
 
 		pthread_mutex_lock(&lock_accesoMemoria);
@@ -638,10 +650,8 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente c
 
 		ponerBitModif1(pedido.pid,pedido.paginaRequerida);
 
-		printf("marco tlb: %d \n", tlb[pos].marcoUtilizado);
-
-		printf("Lo que acabo de almacenar: ");
-
+		log_info(activeLogger, "[%d][E] Se encontro en TLB para ESCRITURA [Pag,Off,Bytes] = [%d,%d,%d] en MARCO: %d",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
+		log_info(activeLogger, "[%d][E] Se almaceno: ",id);
 		if(pedido.paginaRequerida<=cantPaginasDePid(pedido.pid)- paginas_stack){
 			imprimirRegionMemoriaCodigo(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
 //			imprimirRegionMemoriaStack(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
@@ -650,13 +660,9 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente c
 			imprimirRegionMemoriaStack(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
 		}
 
-		printf("\n");
-
 		return "1";
 	}
 	else{
-		log_info(activeLogger,"No se encontro en la Tlb el pid: %d, pagina: %d. Se buscara en la Lista de tablas de paginas \n",pedido.pid,pedido.paginaRequerida);
-		printf("PID: %d \n",pedido.pid);
 		if(existePidEnListadeTablas(pedido.pid)){
 			pthread_mutex_lock(&lock_accesoTabla);
 			tabla_t* tablaPaginaBuscada = buscarTabla(pedido.pid);
@@ -668,22 +674,20 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente c
 
 	//SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
 
-				printf("Accediendo a memoria... \n");
+				log_info(activeLogger, "[%d][E] Accediendo a MP",id);
 				usleep(retardoMemoria);
 
 				if(paginaBuscada->bitPresencia){
 					pthread_mutex_unlock(&lock_accesoTabla);
-					log_info(activeLogger,"Se encontro la pagina y esta en memoria! Escribiendo pag:%d de pid:%d \n",pedido.paginaRequerida,pedido.pid);
+					log_info(activeLogger, "[%d][E] Se encontro en Tabla de Paginas y esta en memoria",id);
+					log_info(activeLogger, "[%d][E] Realizando ESCRITURA en [Pag,Off,Bytes] = [%d,%d,%d]",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes);
 
-					printf("Accediendo a memoria... \n ");
+					log_info(activeLogger, "[%d][E] Accediendo a MP",id);
 					usleep(retardoMemoria);
 
 					pthread_mutex_lock(&lock_accesoTabla);
 					paginaBuscada->bitModificacion = 1;
 					pthread_mutex_unlock(&lock_accesoTabla);
-
-					printf("offset: %d \n", pedido.offset);
-					printf("ALmacenando: %d \n",char4ToInt(buffer));
 
 					pthread_mutex_lock(&lock_accesoMemoria);
 					memcpy(memoria+(paginaBuscada->marcoUtilizado*config.tamanio_marco)+pedido.offset, buffer, pedido.cantBytes);
@@ -691,27 +695,27 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente c
 
 					ponerBitModif1(pedido.pid,pedido.paginaRequerida);
 
-					printf("Marco de la pagina: %d \n", paginaBuscada->marcoUtilizado);
-
-					printf("Lo que acabo de almacenar: %s .\n \n ",memoria+paginaBuscada->marcoUtilizado*config.tamanio_marco+pedido.offset);
-
 					agregarATlb(paginaBuscada,pedido.pid);
+
+					log_info(activeLogger, "[%d][E] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
 
 					return "";
 				}
 	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
 				else{
 					pthread_mutex_unlock(&lock_accesoTabla);
-					log_info(activeLogger,"Se encontro la pagina pero NO esta en memoria (ESCRITURA)! Buscando en swap: pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+					log_info(activeLogger, "[%d][E] Se encontro en Tabla de Paginas pero NO ESTA EN MEMORIA. Buscando en SWAP: [Pag]=[%d]",id,pedido.paginaRequerida);
+					log_info(activeLogger, "[%d][E] -----------SWAP----------",id);
 
 					int pudo = buscarEnSwap(pedido,cliente);
 					if(pudo){
 						agregarATlb(paginaBuscada,pedido.pid);
-						log_info(activeLogger,"Cargada pagina en memoria, agregada a TLB, se vuelve a hacer el pedido de escritura! Devolviendo pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
+						log_info(activeLogger, "[%d][E] Se encontro en SWAP [Pag]=[%d] y se agrego a memoria. Realizando pedido de LECTURA nuevamente",id,pedido.paginaRequerida);
+						log_info(activeLogger, "[%d][E] -------------------------",id);
 						almacenarBytesEnUnaPagina(pedido,buffer,cliente);
 					}
 					else{
-						return "Error busqueda en swap";
+						log_info(activeLogger, "[%d][E] No se encontro en SWAP [Pag]=[%d]",id,pedido.paginaRequerida);
 					}
 				}
 			}// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
@@ -726,6 +730,7 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente c
 	}
 	return "Error ifs";
 }
+
 
 void sacarMarcosOcupados(int idPrograma){
 
@@ -1068,7 +1073,7 @@ void crearMemoriaYTlbYTablaPaginas(){
 	tamanioMemoria = config.cantidad_marcos * config.tamanio_marco;
 	memoria = malloc(tamanioMemoria);
 	memset(memoria,'\0',tamanioMemoria);
-	log_info(activeLogger,"Creada la memoria.\n");
+	log_info(activeLogger,"Creada la memoria\n");
 
 	tlb = malloc(config.entradas_tlb * sizeof(tlb_t));
 	inicializarTlb();
@@ -1169,10 +1174,8 @@ void pedidoLectura(t_cliente cliente){
 
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
 	char* pedidoSerializado = malloc(sizeof(t_pedido));
-	int id;
-	MUTEXCLIENTES(id = clientes[cliente.indice].pid)
-
-	log_info(activeLogger,"Se recibio pedido de lectura de id: %d \n",id);
+	int id=0;
+//	MUTEXCLIENTES(id = clientes[cliente.indice].pid)
 
 	read(cliente.socket, pedidoSerializado, sizeof(t_pedido));
 
@@ -1185,6 +1188,9 @@ void pedidoLectura(t_cliente cliente){
 	pedidoLectura.offset = pedidoCpu->offset;
 	pedidoLectura.cantBytes = pedidoCpu->size;
 
+
+	log_info(activeLogger, "[%d] Realizando lectura de [Pag,Off,Bytes] = [%d,%d,%d]",id,pedidoLectura.paginaRequerida,pedidoLectura.offset,pedidoLectura.cantBytes);
+
 	if(!existePaginaBuscadaEnTabla(pedidoCpu->pagina,buscarTabla(id))){
 		send_w(cliente.socket, intToChar4(0),sizeof(int));
 		return;
@@ -1193,7 +1199,6 @@ void pedidoLectura(t_cliente cliente){
 	}
 
 	char* contenidoAEnviar =  devolverPedidoPagina(pedidoLectura,cliente);
-	printf("Contenido enviado a Cpu: ");
 
 	if(pedidoLectura.paginaRequerida<=cantPaginasDePid(pedidoLectura.pid)-paginas_stack){
 		imprimirRegionMemoriaCodigo(contenidoAEnviar, pedidoLectura.cantBytes);
@@ -1201,15 +1206,14 @@ void pedidoLectura(t_cliente cliente){
 		imprimirRegionMemoriaStack(contenidoAEnviar, pedidoLectura.cantBytes);
 	}
 
-	printf("\n ");
 	send_w(cliente.socket, contenidoAEnviar,pedidoCpu->size);
 }
 
 void headerEscribirPagina(t_cliente cliente){
 	t_pedido* pedidoCpuEscritura = malloc(sizeof(t_pedido));
 	char* pedidoSerializadoEscritura = malloc(sizeof(t_pedido));
-	int id;
-	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
+	int id =0;
+//	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
 
 	read(cliente.socket, pedidoSerializadoEscritura, sizeof(t_pedido));
 	deserializar_pedido(pedidoCpuEscritura,pedidoSerializadoEscritura);
@@ -1224,14 +1228,14 @@ void headerEscribirPagina(t_cliente cliente){
 	}
 
 	read(cliente.socket, buffer, sizeof(int));
-	printf("Lo que me mando a escribir: %d \n",char4ToInt(buffer));
 
 	pedidoLectura_t pedido;
 	pedido.pid = id;
 	pedido.paginaRequerida = pedidoCpuEscritura->pagina;
 	pedido.offset = pedidoCpuEscritura->offset;
 	pedido.cantBytes = pedidoCpuEscritura->size;
-	printf("------****************-Pagina:%d Offset:%d CantBytes:%d \n",pedidoCpuEscritura->pagina,pedidoCpuEscritura->offset,pedidoCpuEscritura->size);
+
+	log_info(activeLogger, "[%d] Realizando escritura de: [%d]  en [Pag,Off,Bytes] = [%d,%d,%d]",id,buffer,pedido.paginaRequerida,pedido.offset,pedido.cantBytes);
 
 
 	almacenarBytesEnUnaPagina(pedido,buffer,cliente);
@@ -1245,11 +1249,13 @@ void procesarHeader(t_cliente cliente, char* header) {
 	// tales como el socket, el indice en el vector. Para otras cosas consultar clientes[cliente.indice] con mutex!
 	log_info(activeLogger, "Llego un mensaje con header %d",
 			charToInt(header));
+	int idLog=0;
+//	MUTEXCLIENTES(idLog = clientes[cliente.identidad].pid;)
 
 	switch (charToInt(header)) {
 
 	case HeaderError:
-		log_error(activeLogger, "Header de Error");
+		log_error(activeLogger, "[%d] Header de Error",idLog);
 		break;
 
 	case HeaderHandshake:
@@ -1257,32 +1263,32 @@ void procesarHeader(t_cliente cliente, char* header) {
 		break;
 
 	case HeaderTamanioPagina:
-		printf("Pedido tamanio de paginas \n");
+		log_info(activeLogger, "[%d] Pedido tamanio paginas",idLog);
 		send_w(cliente.socket,intToChar4(config.tamanio_marco),sizeof(int));
 		break;
 
 	case HeaderPedirValorVariable:  //PARA NUCLEO
+		log_info(activeLogger, "[%d] Pedido de lectura de Nucleo",idLog);
 		pedidoLectura(cliente);
 		break;
 
 	case HeaderSolicitudSentencia: //PARA CPU
-		//crearHiloConParametro(&hiloParaCpu,(void*)pedidoLectura,(void*)cliente); Esto ya no necesita un hilo
+		log_info(activeLogger, "[%d] Pedido lectura de CPU",idLog);
 		pedidoLectura(cliente);
 		break;
 
 	case HeaderScript: //Inicializar programa  // OK
+		log_info(activeLogger, "[%d] Pedido Inicializar un programa de Nucleo",idLog);
 		operacionScript(cliente);
 		break;
 
 	case HeaderAsignarValor: // CPU
-		log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
-		//crearHiloConParametro(&hiloParaCpu,(void*)headerEscribirPagina,(void*)cliente); Esto ya no necesita un hilo
+		log_info(activeLogger, "[%d] Pedido escritura de CPU",idLog);
 		headerEscribirPagina(cliente);
-		devolverMemoriaDePid(0);
 		break;
 
 	case HeaderLiberarRecursosPagina:
-		log_info(activeLogger,"Se recibio pedido de liberar una pagina, por CPU");
+		log_info(activeLogger, "[%d] Pedido de liberar recursos",idLog);
 		char* pidALiberar = malloc(sizeof(int));
 		read(cliente.socket , pidALiberar, sizeof(int));
 		finalizarPrograma(atoi(pidALiberar));
@@ -1340,53 +1346,76 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
 	cargarCFG();
 	iniciarAtrrYMutexs(1, &mutexClientes);
-	log_info(activeLogger, "Conectando a SWAP ...");
-	conectarASwap();
 
 	listaTablasPaginas = list_create();
+	log_info(activeLogger,"Creada la tabla de paginas");
 	crearMemoriaYTlbYTablaPaginas();
 
-	crearHilo(&hiloRecibirComandos,(HILO)recibirComandos);
+//	log_info(activeLogger, "Conectando a SWAP ...");
+//	conectarASwap();
+//
+//	crearHilo(&hiloRecibirComandos,(HILO)recibirComandos);
+//
+//	configurarServidorExtendido(&socketNucleo, &direccionNucleo,
+//			config.puerto_umc_nucleo, &tamanioDireccionNucleo, &activadoNucleo);
+//
+//	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puerto_cpu,
+//			&tamanioDireccionCPU, &activadoCPU);
+//
+//	inicializarClientes();
+//	log_info(activeLogger, "Esperando conexiones CPU/NUCLEO...");
+//
+//	while (1) {
+//		FD_ZERO(&socketsParaLectura);
+//		FD_SET(socketNucleo, &socketsParaLectura);
+//		FD_SET(socketCPU, &socketsParaLectura);
+//
+//		mayorDescriptor = (socketNucleo > socketCPU) ? socketNucleo : socketCPU;
+//
+//		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, NULL);
+//
+//		int cliente;
+//		if (tieneLectura(socketCPU)) {
+//			log_info(activeLogger, "Se conecto una nueva CPU");
+//			if ((cliente = procesarNuevasConexionesExtendido(&socketCPU)) >= 0)
+//				crearHiloConParametro(&clientes[cliente].hilo,
+//						(HILO) hiloDedicado, (void*) cliente);
+//		}
+//		if (tieneLectura(socketNucleo)) {
+//			log_info(activeLogger, "Se conecto Nucleo");
+//			if ((cliente = procesarNuevasConexionesExtendido(&socketNucleo))
+//					>= 0)
+//				crearHiloConParametro(&clientes[cliente].hilo,
+//						(HILO) hiloDedicado, (void*) cliente);
+//		}
+//	}
 
-	configurarServidorExtendido(&socketNucleo, &direccionNucleo,
-			config.puerto_umc_nucleo, &tamanioDireccionNucleo, &activadoNucleo);
-
-	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puerto_cpu,
-			&tamanioDireccionCPU, &activadoCPU);
-
-	inicializarClientes();
-	log_info(activeLogger, "Esperando conexiones CPU/NUCLEO...");
-
-	while (1) {
-		FD_ZERO(&socketsParaLectura);
-		FD_SET(socketNucleo, &socketsParaLectura);
-		FD_SET(socketCPU, &socketsParaLectura);
-
-		mayorDescriptor = (socketNucleo > socketCPU) ? socketNucleo : socketCPU;
-
-		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, NULL);
-
-		int cliente;
-		if (tieneLectura(socketCPU)) {
-			log_info(activeLogger, "Se conecto una nueva CPU");
-			if ((cliente = procesarNuevasConexionesExtendido(&socketCPU)) >= 0)
-				crearHiloConParametro(&clientes[cliente].hilo,
-						(HILO) hiloDedicado, (void*) cliente);
-		}
-		if (tieneLectura(socketNucleo)) {
-			log_info(activeLogger, "Se conecto Nucleo");
-			if ((cliente = procesarNuevasConexionesExtendido(&socketNucleo))
-					>= 0)
-				crearHiloConParametro(&clientes[cliente].hilo,
-						(HILO) hiloDedicado, (void*) cliente);
-		}
-	}
-
-//	test2();
+	test2();
 
 	finalizar();
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // HILO HIJO: cpu()
 // FUNCION: Atender los headers de las cpus
@@ -1438,85 +1467,47 @@ void atenderHandshake(t_cliente cliente){
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void mostrarTlb(){
-	int i;
-	printf("\n -- TLB -- \n");
-	for(i=0;i<config.entradas_tlb;i++){
-		tlb_t unaEntrada;
-		unaEntrada = tlb[i];
+	if(config.entradas_tlb){
+		int i;
+		printf("\n -- TLB -- \n");
+		for(i=0;i<config.entradas_tlb;i++){
+			tlb_t unaEntrada;
+			unaEntrada = tlb[i];
 
-		printf("Pos: %d Pid: %d Pag: %d Marco: %d Contador: %d \n",i,unaEntrada.pid,unaEntrada.pagina,unaEntrada.marcoUtilizado,unaEntrada.contadorTiempo);
+			printf("Pos: %d Pid: %d Pag: %d Marco: %d Contador: %d \n",i,unaEntrada.pid,unaEntrada.pagina,unaEntrada.marcoUtilizado,unaEntrada.contadorTiempo);
 
+		}
 	}
 }
 
 void test2(){
 	t_cliente clienteTest;
-	reservarPagina(3,-3);
 
-	pedidoLectura_t pedido1;
-		pedido1.pid=-3;
-		pedido1.paginaRequerida=1;
-		pedido1.offset=1;
-		pedido1.cantBytes=5;
-
-	devolverPedidoPagina(pedido1,clienteTest);
-
-	pedidoLectura_t pedido2;
-		pedido2.pid=-3;
-		pedido2.paginaRequerida=2;
-		pedido2.offset=2;
-		pedido2.cantBytes=4;
-
-	devolverPedidoPagina(pedido2,clienteTest);
-
-	mostrarTlb();
-
-
-	printf("CANT PAGS PID 0 EN MEM: %d \n", cantPaginasEnMemoriaDePid(-3));
-
-	reservarPagina(3,0);
+	reservarPagina(3,0); // 3 para el codigo
+	reservarPagina(paginas_stack,0); //Para datos
 
 		pedidoLectura_t pedido3;
 			pedido3.pid=0;
-			pedido3.paginaRequerida=1;
+			pedido3.paginaRequerida=1; //Pagina de codigo. Char*
 			pedido3.offset=5;
 			pedido3.cantBytes=2;
 
 		devolverPedidoPagina(pedido3,clienteTest);
 
+		mostrarTlb();
+
 		pedidoLectura_t pedido4;
 			pedido4.pid=0;
-			pedido4.paginaRequerida=2;
+			pedido4.paginaRequerida=3; //Pagina de datos. Int, leo de a 4 bytes
 			pedido4.offset=3;
 			pedido4.cantBytes=4;
 
 		devolverPedidoPagina(pedido4,clienteTest);
 
-	almacenarBytesEnUnaPagina(pedido3,"ab",clienteTest);
-
-	printf("ACA LO Q ESDCRIBI: \n");
-
-	imprimirRegionMemoriaCodigo(devolverPedidoPagina(pedido3,clienteTest),2);
-
 	devolverTodaLaMemoria();
+
+	mostrarTlb();
 }
 
 // 5.Server de los cpu y de nucleo

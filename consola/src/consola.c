@@ -29,7 +29,7 @@ void imprimirVariable() {
 	// uso printf y logger de background solo porque es un mensaje impreso normalmente
 	// y no algo del log.
 	printf("Consola> %d\n", value);
-	log_debug(bgLogger, "Mensaje impreso: |Consola> %d|", value);
+	log_debug(debugLogger, "Mensaje impreso: |Consola> %d|", value);
 	free(msgValue);
 }
 
@@ -39,7 +39,7 @@ void imprimirTexto() {
 	printf("Consola> %s\n", texto);
 	// uso printf y logger de background solo porque es un mensaje impreso normalmente
 	// y no algo del log.
-	log_debug(bgLogger, "Mensaje impreso: |Consola> %s|", texto);
+	log_debug(debugLogger, "Mensaje impreso: |Consola> %s|", texto);
 	free(texto);
 }
 
@@ -59,16 +59,16 @@ void finalizar() {
 
 void procesarHeader(char *header) {
 	// Segun el protocolo procesamos el header del mensaje recibido
-	log_debug(bgLogger, "Llego un mensaje con header %d.", charToInt(header));
+	log_debug(debugLogger, "Llego un mensaje con header %d.", charToInt(header));
 
 	switch (charToInt(header)) {
 
 	case HeaderError:
-		log_error(activeLogger, "Header de Error.");
+		log_error(errorLogger, "Header de Error.");
 		break;
 
 	case HeaderHandshake:
-		log_error(activeLogger,
+		log_error(errorLogger,
 				"Segunda vez que se recibe un headerHandshake acá.");
 		exit(EXIT_FAILURE);
 		break;
@@ -92,8 +92,8 @@ void procesarHeader(char *header) {
 		break;
 
 	default:
-		log_error(activeLogger, "Llego cualquier cosa.");
-		log_error(activeLogger,
+		log_error(errorLogger, "Llego cualquier cosa.");
+		log_error(errorLogger,
 				"Llego el header numero %d y no hay una acción definida para él.",
 				charToInt(header));
 		exit(EXIT_FAILURE);
@@ -110,11 +110,11 @@ void handshakear() {
 	char *hand = string_from_format("%c%c", HeaderHandshake, SOYCONSOLA);
 	send_w(cliente, hand, 2);
 
-	log_debug(bgLogger, "Consola handshakeo.");
+	log_debug(debugLogger, "Consola handshakeo.");
 	if (getHandshake() != SOYNUCLEO) {
 		perror("Se esperaba que la consola se conecte con el nucleo.");
 	} else
-		log_debug(bgLogger, "Consola recibio handshake de Nucleo.");
+		log_debug(debugLogger, "Consola recibio handshake de Nucleo.");
 }
 
 void escucharPedidos() {
@@ -131,18 +131,18 @@ void realizarConexion() {
 	log_info(activeLogger, "Conexion al nucleo correcta :).");
 	handshakear();
 	log_info(activeLogger, "Handshake finalizado exitosamente.");
-	log_debug(bgLogger, "Esperando algo para imprimir en pantalla.");
+	log_debug(debugLogger, "Esperando algo para imprimir en pantalla.");
 }
 
 void warnDebug() {
-	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
+	log_warning(warningLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 	log_info(activeLogger,
 			"Para ingresar manualmente un archivo: Cambiar la configuracion de consola.");
-	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
+	log_warning(warningLogger, "--- CORRIENDO EN MODO DEBUG!!! ---", getpid());
 }
 
 void cargarYEnviarArchivo() {
-	log_debug(bgLogger, "Empezando la lectura del script.");
+	log_debug(debugLogger, "Empezando la lectura del script.");
 	size_t length = 0;
 	int size = 0;
 	char* line = NULL;
@@ -171,7 +171,7 @@ void cargarYEnviarArchivo() {
 	string_append(&contenido, "\0");
 	size += 1;
 	log_info(bgLogger, contenido);
-	log_debug(bgLogger, "Fin de archivo alcanzado. Tamaño almacenado: |%d|",
+	log_debug(debugLogger, "Fin de archivo alcanzado. Tamaño almacenado: |%d|",
 			size);
 
 	send_w(cliente, headerToMSG(HeaderScript), 1);
@@ -179,7 +179,7 @@ void cargarYEnviarArchivo() {
 	send_w(cliente, contenido, size);
 
 	free(contenido);
-	log_debug(bgLogger, "Archivo enviado");
+	log_debug(debugLogger, "Archivo enviado");
 	fclose(programa); //Lo cierro aca asi se puede volver a ejecutar el mismo programa por mas que la consola este activa.
 }
 
@@ -187,8 +187,8 @@ int main(int argc, char* argv[]) {
 	system("clear");
 	cargarConfig();
 	if (config.DEBUG_LOG_OLD_REMOVE) {
-		log_warning(activeLogger, "DEBUG_LOG_OLD_REMOVE esta en true!");
-		log_debug(activeLogger, "Borrando logs antiguos...");
+		log_warning(warningLogger, "DEBUG_LOG_OLD_REMOVE esta en true!");
+		log_debug(debugLogger, "Borrando logs antiguos...");
 		system("rm -rfv *.log");
 	}
 	crearLogs(string_from_format("consola_%d", getpid()), "Consola", config.DEBUG_RAISE_LOG_LEVEL);
@@ -199,12 +199,12 @@ int main(int argc, char* argv[]) {
 	} else {
 		if (argc == 1) {
 			printf("Ingresar archivo ansisop: ");
-			log_debug(bgLogger, "Se silicito ingresar un archivo ansisop.");
+			log_debug(debugLogger, "Se silicito ingresar un archivo ansisop.");
 			scanf("%s", path);
 		} else if (argc == 2) {
 			path = argv[1];
 		} else {
-			log_error(activeLogger, "Muchos parametros.");
+			log_error(errorLogger, "Muchos parametros.");
 			log_info(activeLogger,
 					"No poner parametros o poner solo el nombre del archivo a abrir");
 			exit(EXIT_FAILURE);
@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (config.DEBUG) {
-		log_debug(activeLogger, "Se va a abrir: %s", "facil.ansisop");
+		log_debug(debugLogger, "Se va a abrir: %s", "facil.ansisop");
 		programa = fopen("facil.ansisop", "r");
 	} else {
 		programa = fopen(path, "r");

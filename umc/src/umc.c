@@ -217,7 +217,7 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 	}
 }
 
-int buscarEnSwap(pedidoLectura_t pedido, int cliente){
+int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 //	char* serialPID = intToChar4(pedido.pid);
 //	char* serialPagina = intToChar4(pedido.paginaRequerida);
 //	char* contenidoPagina = malloc(config.tamanio_marco+1);
@@ -413,7 +413,7 @@ int cantPaginasEnMemoriaDePid(int pid){
 	return contador;
 }
 
-void agregarAMemoria(pedidoLectura_t pedido, char* contenido, int cliente){
+void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente){
 	if(cantPaginasEnMemoriaDePid(pedido.pid)>=config.marcos_x_proceso){
 		int posicionPaginaSacada=0;
 
@@ -486,7 +486,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, int cliente){
 
 }
 
-char* devolverPedidoPagina(pedidoLectura_t pedido, int cliente){
+char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
 
 	log_info(activeLogger,"LECTURA DE pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
@@ -564,12 +564,12 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, int cliente){
 			}
 // SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
 			else{
-				send_w(clientes[cliente].socket, intToChar(HeaderNoExistePagina), 4);
+				enviarHeader(cliente.socket,HeaderNoExistePagina);
 			}
 		}
 // SI NO EXISTE LA TABLA DE PAGINAS EN LA LISTA TOTAL DE PAGS
 		else{
-			send_w(clientes[cliente].socket,intToChar(HeaderNoExisteTablaDePag), 4);
+			enviarHeader(cliente.socket,HeaderNoExisteTablaDePag);
 		}
 	}
 	return NULL;
@@ -617,7 +617,7 @@ void ponerBitModif1(int pid,int pag){
 	pthread_mutex_unlock(&lock_accesoTabla);
 }
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,int cliente){
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 	log_info(activeLogger,"ESCRITURA DE pag:%d de pid:%d",pedido.paginaRequerida,pedido.pid);
 
@@ -716,12 +716,12 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,int cliente
 				}
 			}// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
 			else{
-					send_w(cliente, intToChar(HeaderNoExistePagina), 4);
+					enviarHeader(cliente.socket,HeaderNoExistePagina);
 			}
 			// SI NO EXISTE LA TABLA DE PAGINAS EN LA LISTA TOTAL DE PAGS
 		}
 		else{
-				send_w(cliente,intToChar(HeaderNoExisteTablaDePag), 4);
+				enviarHeader(cliente.socket,HeaderNoExisteTablaDePag);
 		}
 	}
 	return "Error ifs";
@@ -1034,7 +1034,7 @@ void flushMemory(){ //Pone a todas las paginas bit de modificacion en 1
 	pthread_mutex_unlock(&lock_accesoTabla);
 }
 
-void recibirComandos(){
+HILO recibirComandos(){
 	int funcion;
 	do {
 		char* selecc = NULL;
@@ -1057,6 +1057,7 @@ void recibirComandos(){
 		}
 	}
 	while(funcion!=0);
+	return 0;
 }
 // FIN 2
 
@@ -1148,31 +1149,32 @@ int reservarPagina(int cantPaginasPedidas, int pid) {
 	return 1;
 }
 
-char* getScript(int clienteNucleo) {
+char* getScript(t_cliente clienteNucleo) {
 	log_debug(bgLogger, "Recibiendo archivo de nucleo %d...");
 	char scriptSize;
 	char* script;
 	int size;
-	read(clientes[clienteNucleo].socket, &scriptSize, sizeof(int));
+	read(clienteNucleo.socket, &scriptSize, sizeof(int));
 	size = char4ToInt(&scriptSize);
 	printf("%d",size);
 	log_debug(bgLogger, "Nucleo envió un archivo de tamaño: %d", size);
 	printf("Size:%d\n", size);
 	script = malloc(sizeof(char) * size);
-	read(clientes[clienteNucleo].socket, script, size);
-	log_info(activeLogger, "Script de nucleo %d recibido:\n%s", clienteNucleo, script);
+	read(clienteNucleo.socket, script, size);
+	log_info(activeLogger, "Script de nucleo %d recibido:\n%s", clienteNucleo.indice, script);
 	return script;
 }
 
-void pedidoLectura(int cliente){
+void pedidoLectura(t_cliente cliente){
 
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
 	char* pedidoSerializado = malloc(sizeof(t_pedido));
-	int id = clientes[cliente].pid;
+	int id;
+	MUTEXCLIENTES(id = clientes[cliente.indice].pid)
 
 	log_info(activeLogger,"Se recibio pedido de lectura de id: %d \n",id);
 
-	read(clientes[cliente].socket, pedidoSerializado, sizeof(t_pedido));
+	read(cliente.socket, pedidoSerializado, sizeof(t_pedido));
 
 	imprimir_serializacion(pedidoSerializado,12);
 	deserializar_pedido(pedidoCpu, pedidoSerializado);
@@ -1184,10 +1186,10 @@ void pedidoLectura(int cliente){
 	pedidoLectura.cantBytes = pedidoCpu->size;
 
 	if(!existePaginaBuscadaEnTabla(pedidoCpu->pagina,buscarTabla(id))){
-		send_w(clientes[cliente].socket, intToChar4(0),sizeof(int));
+		send_w(cliente.socket, intToChar4(0),sizeof(int));
 		return;
 	}else{
-		send_w(clientes[cliente].socket, intToChar4(1),sizeof(int));
+		send_w(cliente.socket, intToChar4(1),sizeof(int));
 	}
 
 	char* contenidoAEnviar =  devolverPedidoPagina(pedidoLectura,cliente);
@@ -1200,27 +1202,28 @@ void pedidoLectura(int cliente){
 	}
 
 	printf("\n ");
-	send_w(clientes[cliente].socket, contenidoAEnviar,pedidoCpu->size);
+	send_w(cliente.socket, contenidoAEnviar,pedidoCpu->size);
 }
 
-void headerEscribirPagina(int cliente){
+void headerEscribirPagina(t_cliente cliente){
 	t_pedido* pedidoCpuEscritura = malloc(sizeof(t_pedido));
 	char* pedidoSerializadoEscritura = malloc(sizeof(t_pedido));
-	int id = clientes[cliente].pid;
+	int id;
+	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
 
-	read(clientes[cliente].socket, pedidoSerializadoEscritura, sizeof(t_pedido));
+	read(cliente.socket, pedidoSerializadoEscritura, sizeof(t_pedido));
 	deserializar_pedido(pedidoCpuEscritura,pedidoSerializadoEscritura);
 
 	char* buffer = malloc(pedidoCpuEscritura->size);
 
 	if(!existePaginaBuscadaEnTabla(pedidoCpuEscritura->pagina,buscarTabla(id))){
-		send_w(clientes[cliente].socket, intToChar4(0),sizeof(int));
+		send_w(cliente.socket, intToChar4(0),sizeof(int));
 		return;
 	}else{
-		send_w(clientes[cliente].socket, intToChar4(1),sizeof(int));
+		send_w(cliente.socket, intToChar4(1),sizeof(int));
 	}
 
-	read(clientes[cliente].socket, buffer, sizeof(int));
+	read(cliente.socket, buffer, sizeof(int));
 	printf("Lo que me mando a escribir: %d \n",char4ToInt(buffer));
 
 	pedidoLectura_t pedido;
@@ -1232,112 +1235,88 @@ void headerEscribirPagina(int cliente){
 
 
 	almacenarBytesEnUnaPagina(pedido,buffer,cliente);
-	send_w(clientes[cliente].socket, intToChar4(1),sizeof(int));
-}
-
-void procesarHeader(int cliente, char *header){
-	// Segun el protocolo procesamos el header del mensaje recibido
-	char* payload;
-	int payload_size;
-	log_debug(bgLogger,"Llego un mensaje con header %d\n",charToInt(header));
-	clientes[cliente].atentido=true;
-
-	char* pidScript = NULL;
-	char* cantidadDePaginasScript = NULL;
-	char* tamanioCodigoScript = NULL;
-	char* codigoScript = NULL;
-
-	switch(charToInt(header)) {
-
-	case HeaderError:
-		log_error(activeLogger,"Header de Error\n");
-		clientes[cliente].atentido=false;
-		quitarCliente(cliente);
-		break;
-
-	case HeaderHandshake:
-		log_debug(bgLogger,"Llego un handshake\n");
-		payload_size=1;
-		payload = malloc(payload_size);
-		read(clientes[cliente].socket , payload, payload_size);
-		log_debug(bgLogger,"Llego un mensaje con payload %d\n",charToInt(payload));
-		if (charToInt(payload)==SOYCPU){
-			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
-			clientes[cliente].identidad = charToInt(payload);
-			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
-//			pthread_create(&(vectorHilosCpu[clientes[cliente].pid]),&detachedAttr,(void*)esperar_header,(void*)cliente);
-//			crearHiloConParametro(&hiloParaCpu,(void*)esperar_header ,(void*)cliente);
-		}else if(charToInt(payload)==SOYNUCLEO){
-			log_debug(bgLogger,"Es un cliente apropiado! Respondiendo handshake\n");
-			clientes[cliente].identidad = charToInt(payload);
-			send(clientes[cliente].socket, intToChar(SOYUMC), 1, 0);
-		}
-		else {
-			log_error(activeLogger,"No es un cliente apropiado! rechazada la conexion\n");
-			log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
-			quitarCliente(cliente);
-		}
-		free(payload);
-		clientes[cliente].atentido=false;
-		break;
-
-		case HeaderTamanioPagina:
-			printf("Pedido tamanio de paginas \n");
-			send_w(clientes[cliente].socket,intToChar4(config.tamanio_marco),sizeof(int));
-			clientes[cliente].atentido=false;
-			break;
-
-		case HeaderPedirValorVariable:  //PARA NUCLEO
-			pedidoLectura(cliente);
-			clientes[cliente].atentido=false;
-			break;
-
-		case HeaderSolicitudSentencia: //PARA CPU
-			crearHiloConParametro(&hiloParaCpu,(void*)pedidoLectura,(void*)cliente);
-			clientes[cliente].atentido=false;
-			break;
-
-		case HeaderScript: //Inicializar programa  // OK
-//			read(clientes[cliente].socket , cantidadDePaginasScript, 4);
-			read(clientes[cliente].socket , tamanioCodigoScript, 4);
-			read(clientes[cliente].socket , pidScript, 4);
-			read(clientes[cliente].socket , codigoScript, atoi(tamanioCodigoScript));
-
-			if(inicializarPrograma(atoi(pidScript),codigoScript,char4ToInt(tamanioCodigoScript))){
-				reservarPagina(atoi(cantidadDePaginasScript),atoi(pidScript));
-				reservarPagina(paginas_stack,atoi(pidScript));
-				send_w(clientes[cliente].socket,"1",sizeof(int));
-			}else{
-				send_w(clientes[cliente].socket,"0",sizeof(int));
-			}
-			clientes[cliente].atentido=false;
-			break;
-
-		case HeaderAsignarValor: // CPU
-			log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
-			crearHiloConParametro(&hiloParaCpu,(void*)headerEscribirPagina,(void*)cliente);
-			devolverMemoriaDePid(0);
-			clientes[cliente].atentido=false;
-			break;
-
-		case HeaderLiberarRecursosPagina:
-			log_info(activeLogger,"Se recibio pedido de liberar una pagina, por CPU");
-			char* pidALiberar = malloc(sizeof(int));
-			read(clientes[cliente].socket , pidALiberar, sizeof(int));
-			finalizarPrograma(atoi(pidALiberar));
-			clientes[cliente].atentido=false;
-			break;
-
-		default:
-			log_error(activeLogger,"Llego el header numero %d y no hay una acción definida para él.",charToInt(header));
-			log_warning(activeLogger,"Se quitará al cliente %d.",cliente);
-			quitarCliente(cliente);
-			break;
-	}
+	send_w(cliente.socket, intToChar4(1),sizeof(int));
 }
 
 // FIN 4
+void procesarHeader(t_cliente cliente, char* header) {
+	// Segun el protocolo procesamos el header del mensaje recibido
+	// Ahora procesarHeader recibe un t_cliente!!!!! pero solo sirve para consultar los datos que no van a cambiar del cliente
+	// tales como el socket, el indice en el vector. Para otras cosas consultar clientes[cliente.indice] con mutex!
+	log_info(activeLogger, "Llego un mensaje con header %d",
+			charToInt(header));
 
+	switch (charToInt(header)) {
+
+	case HeaderError:
+		log_error(activeLogger, "Header de Error");
+		break;
+
+	case HeaderHandshake:
+		atenderHandshake(cliente);
+		break;
+
+	case HeaderTamanioPagina:
+		printf("Pedido tamanio de paginas \n");
+		send_w(cliente.socket,intToChar4(config.tamanio_marco),sizeof(int));
+		break;
+
+	case HeaderPedirValorVariable:  //PARA NUCLEO
+		pedidoLectura(cliente);
+		break;
+
+	case HeaderSolicitudSentencia: //PARA CPU
+		//crearHiloConParametro(&hiloParaCpu,(void*)pedidoLectura,(void*)cliente); Esto ya no necesita un hilo
+		pedidoLectura(cliente);
+		break;
+
+	case HeaderScript: //Inicializar programa  // OK
+		operacionScript(cliente);
+		break;
+
+	case HeaderAsignarValor: // CPU
+		log_info(activeLogger,"Se recibio pedido de grabar una pagina, por CPU");
+		//crearHiloConParametro(&hiloParaCpu,(void*)headerEscribirPagina,(void*)cliente); Esto ya no necesita un hilo
+		headerEscribirPagina(cliente);
+		devolverMemoriaDePid(0);
+		break;
+
+	case HeaderLiberarRecursosPagina:
+		log_info(activeLogger,"Se recibio pedido de liberar una pagina, por CPU");
+		char* pidALiberar = malloc(sizeof(int));
+		read(cliente.socket , pidALiberar, sizeof(int));
+		finalizarPrograma(atoi(pidALiberar));
+		break;
+
+	default:
+		log_error(activeLogger,
+				"Llego el header numero %d y no hay una acción definida para él.",
+				charToInt(header));
+		log_warning(activeLogger,"Se quitará al cliente %d.",cliente.indice);
+		quitarCliente(cliente.indice);
+		break;
+	}
+}
+
+void operacionScript(t_cliente cliente) {
+	char* pidScript = NULL; // FALTAN MALLOCS ACA
+	char* cantidadDePaginasScript = NULL;
+	char* tamanioCodigoScript = NULL;
+	char* codigoScript = NULL;
+	//			read(cliente.socket , cantidadDePaginasScript, 4);
+	read(cliente.socket, tamanioCodigoScript, 4);
+	read(cliente.socket, pidScript, 4);
+	read(cliente.socket, codigoScript, atoi(tamanioCodigoScript));
+
+	if (inicializarPrograma(atoi(pidScript), codigoScript,
+			char4ToInt(tamanioCodigoScript))) {
+		reservarPagina(atoi(cantidadDePaginasScript), atoi(pidScript));
+		reservarPagina(paginas_stack, atoi(pidScript));
+		send_w(cliente.socket, "1", sizeof(int));
+	} else {
+		send_w(cliente.socket, "0", sizeof(int));
+	}
+}
 
 void finalizar() {
 	destruirLogs();
@@ -1351,30 +1330,112 @@ void finalizar() {
 	pthread_mutex_destroy(&lock_accesoUltimaPos);
 }
 
-
+// HILO PRINCIPAL: main()
+// FUNCIONES: procesar las nuevas conexiones y crearles un hilo propio
 int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursivo
-	main2();
-//	cargarCFG();
-//	crearLogs("Umc","Proceso",0);
-//	dump = log_create("dump","UMC",false,LOG_LEVEL_INFO);
-//	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
-//	listaTablasPaginas = list_create();
-//	crearMemoriaYTlbYTablaPaginas();
+
+
+	crearLogs("Umc", "Proceso", 0);
+	dump = log_create("dump", "UMC", false, LOG_LEVEL_INFO);
+	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
+	cargarCFG();
+	iniciarAtrrYMutexs(1, &mutexClientes);
+	log_info(activeLogger, "Conectando a SWAP ...");
+	conectarASwap();
+
+	listaTablasPaginas = list_create();
+	crearMemoriaYTlbYTablaPaginas();
+
+	crearHilo(&hiloRecibirComandos,(HILO)recibirComandos);
+
+	configurarServidorExtendido(&socketNucleo, &direccionNucleo,
+			config.puerto_umc_nucleo, &tamanioDireccionNucleo, &activadoNucleo);
+
+	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puerto_cpu,
+			&tamanioDireccionCPU, &activadoCPU);
+
+	inicializarClientes();
+	log_info(activeLogger, "Esperando conexiones CPU/NUCLEO...");
+
+	while (1) {
+		FD_ZERO(&socketsParaLectura);
+		FD_SET(socketNucleo, &socketsParaLectura);
+		FD_SET(socketCPU, &socketsParaLectura);
+
+		mayorDescriptor = (socketNucleo > socketCPU) ? socketNucleo : socketCPU;
+
+		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, NULL);
+
+		int cliente;
+		if (tieneLectura(socketCPU)) {
+			log_info(activeLogger, "Se conecto una nueva CPU");
+			if ((cliente = procesarNuevasConexionesExtendido(&socketCPU)) >= 0)
+				crearHiloConParametro(&clientes[cliente].hilo,
+						(HILO) hiloDedicado, (void*) cliente);
+		}
+		if (tieneLectura(socketNucleo)) {
+			log_info(activeLogger, "Se conecto Nucleo");
+			if ((cliente = procesarNuevasConexionesExtendido(&socketNucleo))
+					>= 0)
+				crearHiloConParametro(&clientes[cliente].hilo,
+						(HILO) hiloDedicado, (void*) cliente);
+		}
+	}
+
 //	test2();
-////	recibirComandos();
-////	pthread_create(&hiloRecibirComandos,&detachedAttr,(void*)recibirComandos,NULL);
-//	servidorCPUyNucleoExtendido();
-////	conexionASwap();
-//	finalizar();
 
-
-
+	finalizar();
 	return 0;
 }
 
+// HILO HIJO: cpu()
+// FUNCION: Atender los headers de las cpus
+HILO hiloDedicado(int indice) {
+	log_info(activeLogger, "Se creó un hilo dedicado");
+	t_cliente clienteLocal; // Generamos una copia del cliente, no sirve para datos actualizables como el pid, solo para permanentes como socket e indice, para los demas campos consultar con mutex el vector de clientes
+	MUTEXCLIENTES(clienteLocal = clientes[indice]);
+	printf("SOCKET:%d\n",clienteLocal.socket);
+	printf("INDICE:%d\n",clienteLocal.indice);
+	char* header = malloc(1);
+	while (recv(clienteLocal.socket, header, 1, MSG_WAITALL)>=0){
+		procesarHeader(clienteLocal, header);
+	}
+	free(header);
+	log_info(activeLogger, "Hasta aqui llego el hilo");
+	return 0;
+}
 
+void atenderHandshake(t_cliente cliente){
+	log_info(activeLogger, "Llego un handshake");
+	char* handshake = malloc(1);
+	read(cliente.socket,handshake,1);
 
+	if ((charToInt(handshake) == SOYCPU) || (charToInt(handshake) == SOYNUCLEO)) {
+		log_info(activeLogger,
+				"Es un cliente apropiado! Respondiendo handshake");
+		send(cliente.socket, intToChar(SOYUMC), 1, 0);
+		if (charToInt(handshake) == SOYNUCLEO){
+			// Acciones especificas de nucleo despues del handshake
+			log_info(activeLogger,
+					"Enviando tamaño de pagina a Nucleo");
+			char* serialTamanio = intToChar4(config.tamanio_marco);
+			send_w(cliente.socket,serialTamanio,sizeof(int));
+			free(serialTamanio);
+		}
+		else if (charToInt(handshake) == SOYCPU){
+			// Acciones especificas de cpu despues del handshake
+			MUTEXSWAP(ejemploSWAP(cliente));
+			MUTEXCLIENTES(quitarCliente(cliente.indice))
+		}
 
+	} else {
+		log_error(activeLogger,
+				"No es un cliente apropiado! rechazada la conexion");
+		log_warning(activeLogger,"Se quitará al cliente %d.",cliente.indice);
+		MUTEXCLIENTES(quitarCliente(cliente.indice))
+	}
+	free(handshake);
+}
 
 
 
@@ -1407,7 +1468,7 @@ void mostrarTlb(){
 }
 
 void test2(){
-
+	t_cliente clienteTest;
 	reservarPagina(3,-3);
 
 	pedidoLectura_t pedido1;
@@ -1416,7 +1477,7 @@ void test2(){
 		pedido1.offset=1;
 		pedido1.cantBytes=5;
 
-	devolverPedidoPagina(pedido1,0);
+	devolverPedidoPagina(pedido1,clienteTest);
 
 	pedidoLectura_t pedido2;
 		pedido2.pid=-3;
@@ -1424,7 +1485,7 @@ void test2(){
 		pedido2.offset=2;
 		pedido2.cantBytes=4;
 
-	devolverPedidoPagina(pedido2,0);
+	devolverPedidoPagina(pedido2,clienteTest);
 
 	mostrarTlb();
 
@@ -1439,7 +1500,7 @@ void test2(){
 			pedido3.offset=5;
 			pedido3.cantBytes=2;
 
-		devolverPedidoPagina(pedido3,0);
+		devolverPedidoPagina(pedido3,clienteTest);
 
 		pedidoLectura_t pedido4;
 			pedido4.pid=0;
@@ -1447,13 +1508,13 @@ void test2(){
 			pedido4.offset=3;
 			pedido4.cantBytes=4;
 
-		devolverPedidoPagina(pedido4,0);
+		devolverPedidoPagina(pedido4,clienteTest);
 
-	almacenarBytesEnUnaPagina(pedido3,"ab",0);
+	almacenarBytesEnUnaPagina(pedido3,"ab",clienteTest);
 
 	printf("ACA LO Q ESDCRIBI: \n");
 
-	imprimirRegionMemoriaCodigo(devolverPedidoPagina(pedido3,0),2);
+	imprimirRegionMemoriaCodigo(devolverPedidoPagina(pedido3,clienteTest),2);
 
 	devolverTodaLaMemoria();
 }
@@ -1462,72 +1523,6 @@ void test2(){
 
 void servidorCPUyNucleoExtendido(){
 
-	struct timeval espera = newEspera();
-	int i;
-	char header[1];
-
-	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puerto_cpu,
-				&tamanioDireccionCPU, &activadoCPU);
-	configurarServidorExtendido(&socketNucleo, &direccionNucleo, config.puerto_umc_nucleo,
-					&tamanioDireccionNucleo, &activadoNucleo);
-
-	inicializarClientes();
-	log_info(activeLogger, "Esperando conexiones ...");
-
-	while (1) {
-		FD_ZERO(&socketsParaLectura);
-		FD_SET(socketCPU, &socketsParaLectura);
-		FD_SET(socketNucleo, &socketsParaLectura);
-
-		mayorDescriptor = (socketNucleo>socketCPU) ? socketNucleo : socketCPU;
-		incorporarClientes();
-
-		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, &espera);
-
-		if (tieneLectura(socketNucleo))
-			procesarNuevasConexionesExtendido(&socketNucleo);
-
-		if (tieneLectura(socketCPU))
-			procesarNuevasConexionesExtendido(&socketCPU);
-
-		for (i = 0; i < getMaxClients(); i++) {
-			if (tieneLectura(clientes[i].socket)) {
-				if (read(clientes[i].socket, header, 1) == 0) {
-					log_error(activeLogger,
-					"Un cliente se desconectó.");
-					quitarCliente(i);
-				} else
-					procesarHeader(i, header);
-				}
-			}
-
-			//Hacer algo?
-	}
-}
-
-
-void servidorCPUyNucleo(){
-
-//	int mayorDescriptor, i;
-	struct timeval espera = newEspera(); 		// Periodo maximo de espera del select
-//	char header[1];
-
-//	char* umcLog = "UMC";
-//	char* procLog = "Proceso";
-//	crearLogs(umcLog,procLog,NULL);
-//	crearLog("Umc","Uasmc");
-
-	configurarServidor(config.puerto_umc_nucleo);
-	inicializarClientes();
-	log_info(activeLogger,"Esperando conexiones ...");
-
-	while(1){
-		mayorDescriptor = incorporarSockets();
-		select( mayorDescriptor + 1 , &socketsParaLectura , NULL , NULL , &espera);
-
-		if (tieneLectura(socketNuevasConexiones))
-			procesarNuevasConexiones();
-	}
 }
 
 int getHandshake()
@@ -1557,46 +1552,18 @@ void conectarASwap(){
 	direccion = crearDireccionParaCliente(config.puerto_swap,config.ip_swap);  //CAMBIAR ESTO DE IP
 	swapServer = socket_w();
 	connect_w(swapServer, &direccion);
-
-	handshakearASwap();
-}
-
-void realizarConexionASwap()
-{
-	conectarASwap();
 	log_info(activeLogger,"Conexion a swap correcta :).");
 	handshakearASwap();
 	log_info(activeLogger,"Handshake finalizado exitosamente.");
-	log_debug(bgLogger,"Esperando algo para imprimir en pantalla.");
 }
 
-void escucharPedidosDeSwap(){
-	char* header;
-	while(true){
-		if (swapServer!=0){ // Solo si esta conextado
-//			header = recv_waitall_ws(swapServer,sizeof(char)); //ESTO NO ME PERMITE CHEQUEAR SI SE DESCONECTO!!
-			header = malloc(1);
-			int bytesRecibidos = recv(swapServer, header, 1, MSG_WAITALL);
-			if (bytesRecibidos <= 0){
-				 printf("SWAP se desconecto\n");
-				 close(swapServer);
-				 swapServer=0;
-				 return;
-			}
-			else
-				procesarHeader(swapServer,header);
-			free(header);
-		}
-	}
-}
-
-void ejemploSWAP(){
-	// DATOS EL PROCESO
-		char* serialPID = intToChar4(1);
+void ejemploSWAP(t_cliente cliente){
+	char* serialPID = intToChar4(cliente.indice);
 		char* serialCantidadPaginas = intToChar4(5);
-		char* serialPagina = intToChar4(2);;
+		char* serialPagina = intToChar4(2);
 		char* contenidoPagina = malloc(config.tamanio_marco);
-		contenidoPagina = "123456789";
+		memcpy(contenidoPagina,"abcdefg",7);
+		bzero(contenidoPagina+7,config.tamanio_marco-7);
 
 		// INICIAR PROCESO
 		enviarHeader(swapServer,HeaderOperacionIniciarProceso);
@@ -1605,36 +1572,61 @@ void ejemploSWAP(){
 		char* header = recv_waitall_ws(swapServer,1);
 		if (charToInt(header)==HeaderProcesoAgregado)
 			printf("Contesto el proceso Agregado\n");
+		else
+		if (charToInt(header)==HeaderNoHayEspacio){
+			printf("No hay espacio\n");
+			return;}
+		else{
+			printf("Llego mierda %d\n",(int)header);return;}
 
 		// ESCRIBIR PAGINA
 		enviarHeader(swapServer,HeaderOperacionEscritura);
 		send_w(swapServer,serialPID,sizeof(int));
 		send_w(swapServer,serialPagina,sizeof(int));
 		send_w(swapServer,contenidoPagina,config.tamanio_marco);
+		header = recv_waitall_ws(swapServer,1);
+			if (charToInt(header)==HeaderEscrituraCorrecta)
+				log_info(activeLogger,"Escritura correcta");
+			else if (charToInt(header)==HeaderEscrituraErronea)
+				log_warning(activeLogger,"Escritura erronea");
+			else log_error(activeLogger,"Llego mierda al escribir");
+
 
 		// LEER PAGINA
 		enviarHeader(swapServer,HeaderOperacionLectura);
 		char* contenidoPagina2 = malloc(config.tamanio_marco+1);
 		send_w(swapServer,serialPID,sizeof(int));
 		send_w(swapServer,serialPagina,sizeof(int));
+
 		header = recv_waitall_ws(swapServer,1);
 		if (charToInt(header)==HeaderOperacionLectura)
-			printf("Contesto con la pagina\n");
+			log_info(activeLogger,"Contesto con la pagina");
+		else if (charToInt(header)==HeaderProcesoNoEncontrado)
+			log_warning(activeLogger,"No la encontró");
+		else log_error(activeLogger,"Llego mierda al leer");
 
-		printf("Llego el msg:%s",contenidoPagina2);
 		contenidoPagina2 = recv_waitall_ws(swapServer,config.tamanio_marco);
-		printf("Llego el contenido y es igual:%d\n",strcmp(contenidoPagina,contenidoPagina2)==0);
 		contenidoPagina2[config.tamanio_marco]='\0';
+		log_info(activeLogger,"Llego el msg:%s",contenidoPagina2);
+	//	log_info(activeLogger,"Llego el contenido y es igual:%d\n",strcmp(contenidoPagina,contenidoPagina2)==0);
+
 		// FINALIZAR PROCESO
 		enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
 		send_w(swapServer,serialPID,sizeof(int));
-}
 
-void conexionASwap(){ //Creada para unir las dos funciones y crear un hilo
-	realizarConexionASwap();
-//	ejemploSWAP();
-	escucharPedidosDeSwap();
+		header = recv_waitall_ws(swapServer,1);
+		if (charToInt(header)==HeaderProcesoEliminado)
+			log_info(activeLogger,"Se elimino bien");
+		else if (charToInt(header)==HeaderProcesoNoEncontrado)
+			log_warning(activeLogger,"Se elimino mal");
+		else log_error(activeLogger,"Llego mierda al leer");
 
+		free(serialPID);
+		free(header);
+		free(serialCantidadPaginas);
+		free(serialPagina);
+		free(contenidoPagina);
+		free(contenidoPagina2);
 }
 
 // FIN 6

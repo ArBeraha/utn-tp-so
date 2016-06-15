@@ -38,6 +38,14 @@
 #include "serializacion.h"
 #include "hilos.h"
 
+pthread_mutex_t mutexClientes;
+#define MUTEXCLIENTES(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexClientes);
+pthread_mutex_t mutexSwap;
+#define MUTEXSWAP(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexSwap);
+#define HILO void*
+
 typedef struct customConfig {
 	int puerto_umc_nucleo;
 	int puerto_swap;
@@ -155,12 +163,12 @@ char* buscarMarco(int marcoBuscado, pedidoLectura_t pedido);
 int buscarPrimerMarcoLibre();
 int cantidadMarcosLibres();
 
-int buscarEnSwap(pedidoLectura_t pedido, int cliente);
-void agregarAMemoria(pedidoLectura_t pedido, char* contenido, int cliente);
+int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente);
+void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente);
 
-char* devolverPedidoPagina(pedidoLectura_t pedido,int cliente);   // todos estos volver a devolver void, devuelven cosas para testear
+char* devolverPedidoPagina(pedidoLectura_t pedido,t_cliente cliente);   // todos estos volver a devolver void, devuelven cosas para testear
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer, int cliente);
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer, t_cliente cliente);
 void finalizarPrograma(int idPrograma);
 int inicializarPrograma(int idPrograma, char* contenido, int tamanio);
 int reservarPagina(int,int);
@@ -178,35 +186,28 @@ void dumpEstructuraMemoria();
 void dumpContenidoMemoria();
 void flushTlb();
 void flushMemory();
-void recibirComandos();
+HILO recibirComandos();
 
 void servidorCPUyNucleoExtendido();
 void servidorCPUyNucleo();
 int  getHandshake();
 void handshakearASwap();
 void conectarASwap(); //MOTHER OF EXPRESIVIDAD... ver si puedo mejorar estos nombres
-void realizarConexionASwap();
-void escucharPedidosDeSwap();
-void conexionASwap();
 
-void procesarHeader(int cliente, char *header);
+void procesarHeader(t_cliente cliente, char *header);
 
 void crearMemoriaYTlbYTablaPaginas();
 
 void test2();
 
 //Fin prototipos
-pthread_mutex_t mutexClientes;
-#define MUTEXCLIENTES(CONTENIDO) \
-	MUTEX(CONTENIDO,mutexClientes);
-pthread_mutex_t mutexSwap;
-#define MUTEXSWAP(CONTENIDO) \
-	MUTEX(CONTENIDO,mutexSwap);
-#define HILO void*
+
+
 HILO main2();
 HILO hiloDedicado(int indice);
-void procesarHeader2(t_cliente cliente, char* header);
 void cargarCFG();
 void atenderHandshake(t_cliente cliente);
+void ejemploSWAP(t_cliente cliente);
+void operacionScript(t_cliente cliente);
 
 #endif /* UMC_H_ */

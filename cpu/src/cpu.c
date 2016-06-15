@@ -7,15 +7,15 @@
 #include "cpu.h"
 
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
-void setearPC(t_PCB* pcb, int pc) {
+void setearPC(t_PCB* pcb, t_puntero_instruccion pc) {
 	if(!CU_is_test_running()){
-		log_info(activeLogger, "Actualizando PC de |%d| a |%d|.", pcb->PC, pc);
+		log_info(activeLogger, "Actualizando PC de |%d| a |%d|.", pcb->PC, (int)pc);
 	}
-	pcb->PC = pc;
+	pcb->PC = (int)pc;
 }
 
 void incrementarPC(t_PCB* pcb) {
-	setearPC(pcb, (pcb->PC) + 1);
+	setearPC(pcb, (t_puntero_instruccion)((pcb->PC) + 1));
 }
 
 void informarInstruccionTerminada() {

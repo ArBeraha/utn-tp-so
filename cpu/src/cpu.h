@@ -69,7 +69,7 @@ bool terminar;						//flag para que el proceso sepa cuando terminar
 
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
 void informarInstruccionTerminada();
-void setearPC(t_PCB* pcb, int pc);
+void setearPC(t_PCB* pcb, t_puntero_instruccion pc);
 void incrementarPC(t_PCB* pcb) ;
 void instruccionTerminada(char* instr);
 void desalojarProceso();

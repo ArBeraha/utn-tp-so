@@ -56,4 +56,6 @@ bool existeLabel(t_nombre_etiqueta etiqueta) {
 	return dictionary_has_key(pcbActual->indice_etiquetas, etiqueta);
 }
 
-
+t_puntero_instruccion obtenerPosicionLabel(t_nombre_etiqueta etiqueta){
+	return (t_puntero_instruccion)dictionary_get(pcbActual->indice_etiquetas, etiqueta);   //al parecer esto anda. Posta que viendolo no me cierra como, pero anda :D
+}

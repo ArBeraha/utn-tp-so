@@ -176,7 +176,7 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
 	if (existeLabel(etiqueta)) {
 
-		posicionPrimeraInstrUtil = dictionary_get(pcbActual->indice_etiquetas, etiqueta);  //al parecer esto anda. Posta que viendolo no me cierra como, pero anda :D
+		posicionPrimeraInstrUtil = obtenerPosicionLabel(etiqueta);
 
 		log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
 				etiqueta, posicionPrimeraInstrUtil);
@@ -196,7 +196,7 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
  */
 void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar) {
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
-	int posicionFuncion = 0; //TODO DE DONDE SACO ESTO?
+	t_puntero_instruccion posicionFuncion =  obtenerPosicionLabel(nombreFuncion);
 
 	t_stack_item* newHead = stack_item_create();
 	//newHead->argumentos El parser llama a definir variable y se ocupa de esto

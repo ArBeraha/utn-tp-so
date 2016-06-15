@@ -54,7 +54,8 @@ void llamarSwap(t_cliente cliente){
 	char* serialCantidadPaginas = intToChar4(5);
 	char* serialPagina = intToChar4(2);
 	char* contenidoPagina = malloc(config.tamanio_marco);
-	contenidoPagina = "abcdefg";
+	memcpy(contenidoPagina,"abcdefg",7);
+	bzero(contenidoPagina+7,config.tamanio_marco-7);
 
 	// INICIAR PROCESO
 	enviarHeader(swapServer,HeaderOperacionIniciarProceso);
@@ -116,7 +117,7 @@ void llamarSwap(t_cliente cliente){
 	free(header);
 	free(serialCantidadPaginas);
 	free(serialPagina);
-	//free(contenidoPagina); ROMPE
+	free(contenidoPagina);
 	free(contenidoPagina2);
 }
 

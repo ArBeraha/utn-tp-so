@@ -247,13 +247,13 @@ void imprimir_variable(t_valor_variable valor) { //la nueva version del enunciad
  */
 void imprimir_texto(char* texto) {
 
-	log_debug(activeLogger, "Enviando a nucleo la cadena: |%s|...", texto);
+	log_debug(debugLogger, "Enviando a nucleo la cadena: |%s|...", texto);
 
 	enviarHeader(cliente_nucleo, HeaderImprimirTextoNucleo);
 
 	enviarLargoYString(cliente_nucleo, texto);
 
-	log_debug(activeLogger, "Se envio a nucleo la cadena: |%s|.", texto);
+	log_debug(debugLogger, "Se envio a nucleo la cadena: |%s|.", texto);
 
 	incrementarPC(pcbActual);
 	instruccionTerminada("Imprimir texto");

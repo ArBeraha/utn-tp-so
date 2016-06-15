@@ -15,7 +15,7 @@
 #define LOG_PRINT_ALL 1
 
 
-t_log *activeLogger, *bgLogger;
+t_log *activeLogger, *bgLogger, *errorLogger, *warningLogger, *debugLogger;
 
 
 void crearLogs(char* logname, char* procName, int logLevel);

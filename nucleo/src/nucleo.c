@@ -67,9 +67,9 @@ void warnDebug() {
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
 }
 void enviarStackSize(){
-	char* size = intToChar4(config.stack_size);
-	send(umc,config.stack_size,sizeof(int));
-	free(size);
+	char* serialStackSize = intToChar4(config.stack_size);
+	send_w(umc,serialStackSize,sizeof(int));
+	free(serialStackSize);
 }
 void conectarAUMC() {
 	if (!DEBUG_IGNORE_UMC) {

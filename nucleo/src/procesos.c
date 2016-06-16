@@ -58,6 +58,7 @@ HILO crearProceso(int consola) {
 			MUTEXCLIENTES(clientes[consola].pid = (int) proceso);
 			proceso->cpu = SIN_ASIGNAR;
 			cambiarEstado(proceso, READY);
+			MUTEXPROCESOS(list_add(listaProcesos, proceso));
 			log_info(bgLogger,"proceso PID:%d creado satisfactoriamente",consola);
 		}
 		free(codigo);

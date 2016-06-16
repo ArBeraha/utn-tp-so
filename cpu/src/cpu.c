@@ -129,10 +129,8 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
 	int offsetAbsoluto = fuente->offset_inicio;
 	int paginaInicio = (int) (offsetAbsoluto / tamanioPaginas); // Pagina donde inicia la sentencia
 	int offsetRelativo = offsetAbsoluto % tamanioPaginas; //obtengo el offset relativo
-
 	destino->offset_inicio = offsetRelativo;
 	destino->offset_fin = offsetRelativo + longitud_sentencia(fuente);
-
 	return paginaInicio;
 }
 
@@ -193,7 +191,6 @@ bool paginaCompleta(int longitud_restante) {
  */
 void pedirPaginaCompleta(int pagina) {
 	enviar_solicitud(pagina, 0, tamanioPaginas);
-
 }
 
 void pedirPrimeraSentencia(t_sentencia* sentenciaRelativa, int pagina, int* longitud_restante) {
@@ -217,9 +214,10 @@ void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecu
 	log_info(activeLogger, "Iniciando pedido de sentencia...");
 	int paginaAPedir; // Lo inicializa obtener_sentencia_relativa
 	t_sentencia* sentenciaRelativa = obtener_sentencia_relativa(&paginaAPedir);
+	printf("pase por aca 32332232332323\n");
 	int longitud_restante = longitud_sentencia(sentenciaRelativa); //longitud de la sentencia que aun no pido
 	(*tamanio) = longitud_restante;
-
+	printf("pase por aca 2s\n");
 	enviarHeader(cliente_umc, HeaderSolicitudSentencia); //envio el header
 
 	// Pido la primera pagina, empezando donde corresponde y terminando donde corresponda.
@@ -415,6 +413,8 @@ int main() {
 
 	//conectarse a umc
 	establecerConexionConUMC();
+
+	pedir_tamanio_paginas();
 
 	//test con UMC
 	correrTestsUMC();

@@ -1087,7 +1087,7 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 	listaUltimaPosicionSacada = list_create();
 
-	paginas_stack = 2;
+	paginas_stack;
 
 	pthread_attr_init(&detachedAttr);
 	pthread_attr_setdetachstate(&detachedAttr, PTHREAD_CREATE_DETACHED);
@@ -1244,7 +1244,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 	log_info(activeLogger, "Llego un mensaje con header %d",
 			charToInt(header));
 	int idLog=0;
-//	MUTEXCLIENTES(idLog = clientes[cliente.identidad].pid;)
+	MUTEXCLIENTES(idLog = clientes[cliente.identidad].pid;)
 
 	switch (charToInt(header)) {
 
@@ -1259,6 +1259,10 @@ void procesarHeader(t_cliente cliente, char* header) {
 	case HeaderTamanioPagina:
 		log_info(activeLogger, "[%d] Pedido tamanio paginas",idLog);
 		send_w(cliente.socket,intToChar4(config.tamanio_marco),sizeof(int));
+		char* tamanioStack = malloc(sizeof(int));
+		read(cliente.socket , tamanioStack, sizeof(int));
+		paginas_stack = char4ToInt(tamanioStack);
+		log_info(activeLogger, "[%d] Se recibio el tamanio del Stack: %d",idLog,paginas_stack);
 		break;
 
 	case HeaderPedirValorVariable:  //PARA NUCLEO

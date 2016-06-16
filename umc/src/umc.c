@@ -220,7 +220,7 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 	char* serialPID = intToChar4(pedido.pid);
 	char* serialPagina = intToChar4(pedido.paginaRequerida);
-	char* contenidoPagina = malloc(config.tamanio_marco+1);
+	char* contenidoPagina;
 
 	enviarHeader(swapServer,HeaderOperacionLectura);
 
@@ -238,7 +238,9 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 
 	contenidoPagina = recv_waitall_ws(swapServer,config.tamanio_marco);
 
-	contenidoPagina[config.tamanio_marco]='\0';
+	agregarAMemoria(pedido,contenidoPagina,cliente);
+
+//	contenidoPagina[config.tamanio_marco]='\0';
 
 
 //	if(pedido.paginaRequerida==1){

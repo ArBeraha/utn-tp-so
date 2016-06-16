@@ -12,7 +12,7 @@ bool pedirPaginas(int PID, char* codigo) {
 	char* serialPaginas = intToChar4(proceso->PCB->cantidad_paginas);
 	char* serialPid = intToChar4(PID);
 	bool hayMemDisponible = false;
-	char respuesta;
+	char* respuesta = malloc(1);
 	if (DEBUG_IGNORE_UMC || DEBUG_IGNORE_UMC_PAGES) { // Para DEBUG
 		log_warning(activeLogger,
 				"DEBUG_IGNORE_UMC_PAGES está en true! Se supone que no hay paginas");
@@ -24,14 +24,15 @@ bool pedirPaginas(int PID, char* codigo) {
 		send_w(umc, serialPid, sizeof(int));
 		send_w(umc, serialPaginas, sizeof(int));
 		enviarLargoYString(umc, codigo);
-		read(umc, &respuesta, 1);
+		read(umc, respuesta, 1);
+		printf("Rta: %d\n",charToInt(respuesta));
 		pthread_mutex_unlock(&mutexUMC);
 		hayMemDisponible = (bool) ((int) respuesta);
 		if (hayMemDisponible == true)
-			log_info(bgLogger, "Hay memoria disponible para el proceso %d.",
+			log_info(activeLogger, "Hay memoria disponible para el proceso %d.",
 					PID);
 		else if (hayMemDisponible == false)
-			log_info(bgLogger, "No hay memoria disponible para el proceso %d.",
+			log_info(activeLogger, "No hay memoria disponible para el proceso %d.",
 					PID);
 		else
 			log_warning(activeLogger, "Umc debería enviar (0 o 1) y envió %d",

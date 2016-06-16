@@ -1285,7 +1285,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 		log_info(activeLogger, "[%d] Pedido de liberar recursos",idLog);
 		char* pidALiberar = malloc(sizeof(int));
 		read(cliente.socket , pidALiberar, sizeof(int));
-		finalizarPrograma(atoi(pidALiberar));
+		finalizarPrograma(char4ToInt(pidALiberar));
 		break;
 
 	default:
@@ -1308,16 +1308,18 @@ void operacionScript(t_cliente cliente) {
 	read(cliente.socket, tamanioCodigoScript, 4);
 	char* codigoScript = malloc(char4ToInt(tamanioCodigoScript));
 
-	read(cliente.socket, codigoScript, atoi(tamanioCodigoScript));
+	read(cliente.socket, codigoScript, char4ToInt(tamanioCodigoScript));
 
 	if (inicializarPrograma(char4ToInt(pidScript), codigoScript,char4ToInt(cantidadDePaginasScript))) {
 
-		reservarPagina(atoi(cantidadDePaginasScript), atoi(pidScript));
-		reservarPagina(paginas_stack, atoi(pidScript));
-
-		send_w(cliente.socket, intToChar4(1), sizeof(int));
+		reservarPagina(char4ToInt(cantidadDePaginasScript), char4ToInt(pidScript));
+		reservarPagina(paginas_stack, char4ToInt(pidScript));
+		send_w(cliente.socket, intToChar(1), 1);
+		printf("Envie OK escritura de codigo\n");
 	} else {
-		send_w(cliente.socket, intToChar4(0), sizeof(int));
+		send_w(cliente.socket, intToChar(0), 1);
+		printf("Envie NO OK escritura de codigo\n");
+
 	}
 }
 
@@ -1450,8 +1452,8 @@ void atenderHandshake(t_cliente cliente){
 		}
 		else if (charToInt(handshake) == SOYCPU){
 			// Acciones especificas de cpu despues del handshake
-			MUTEXSWAP(ejemploSWAP(cliente));
-			MUTEXCLIENTES(quitarCliente(cliente.indice))
+//			MUTEXSWAP(ejemploSWAP(cliente));
+//			MUTEXCLIENTES(quitarCliente(cliente.indice))
 		}
 
 	} else {
@@ -1545,76 +1547,76 @@ void conectarASwap(){
 	log_info(activeLogger,"Handshake finalizado exitosamente.");
 }
 
-void ejemploSWAP(t_cliente cliente){
-	char* serialPID = intToChar4(cliente.indice);
-		char* serialCantidadPaginas = intToChar4(5);
-		char* serialPagina = intToChar4(2);
-		char* contenidoPagina = malloc(config.tamanio_marco);
-		memcpy(contenidoPagina,"abcdefg",7);
-		bzero(contenidoPagina+7,config.tamanio_marco-7);
-
-		// INICIAR PROCESO
-		enviarHeader(swapServer,HeaderOperacionIniciarProceso);
-		send_w(swapServer,serialPID,sizeof(int));
-		send_w(swapServer,serialCantidadPaginas,sizeof(int));
-		char* header = recv_waitall_ws(swapServer,1);
-		if (charToInt(header)==HeaderProcesoAgregado)
-			printf("Contesto el proceso Agregado\n");
-		else
-		if (charToInt(header)==HeaderNoHayEspacio){
-			printf("No hay espacio\n");
-			return;}
-		else{
-			printf("Llego mierda %d\n",(int)header);return;}
-
-		// ESCRIBIR PAGINA
-		enviarHeader(swapServer,HeaderOperacionEscritura);
-		send_w(swapServer,serialPID,sizeof(int));
-		send_w(swapServer,serialPagina,sizeof(int));
-		send_w(swapServer,contenidoPagina,config.tamanio_marco);
-		header = recv_waitall_ws(swapServer,1);
-			if (charToInt(header)==HeaderEscrituraCorrecta)
-				log_info(activeLogger,"Escritura correcta");
-			else if (charToInt(header)==HeaderEscrituraErronea)
-				log_warning(activeLogger,"Escritura erronea");
-			else log_error(activeLogger,"Llego mierda al escribir");
-
-
-		// LEER PAGINA
-		enviarHeader(swapServer,HeaderOperacionLectura);
-		char* contenidoPagina2 = malloc(config.tamanio_marco+1);
-		send_w(swapServer,serialPID,sizeof(int));
-		send_w(swapServer,serialPagina,sizeof(int));
-
-		header = recv_waitall_ws(swapServer,1);
-		if (charToInt(header)==HeaderOperacionLectura)
-			log_info(activeLogger,"Contesto con la pagina");
-		else if (charToInt(header)==HeaderProcesoNoEncontrado)
-			log_warning(activeLogger,"No la encontró");
-		else log_error(activeLogger,"Llego mierda al leer");
-
-		contenidoPagina2 = recv_waitall_ws(swapServer,config.tamanio_marco);
-		contenidoPagina2[config.tamanio_marco]='\0';
-		log_info(activeLogger,"Llego el msg:%s",contenidoPagina2);
-	//	log_info(activeLogger,"Llego el contenido y es igual:%d\n",strcmp(contenidoPagina,contenidoPagina2)==0);
-
-		// FINALIZAR PROCESO
-		enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
-		send_w(swapServer,serialPID,sizeof(int));
-
-		header = recv_waitall_ws(swapServer,1);
-		if (charToInt(header)==HeaderProcesoEliminado)
-			log_info(activeLogger,"Se elimino bien");
-		else if (charToInt(header)==HeaderProcesoNoEncontrado)
-			log_warning(activeLogger,"Se elimino mal");
-		else log_error(activeLogger,"Llego mierda al leer");
-
-		free(serialPID);
-		free(header);
-		free(serialCantidadPaginas);
-		free(serialPagina);
-		free(contenidoPagina);
-		free(contenidoPagina2);
-}
+//void ejemploSWAP(t_cliente cliente){
+//	char* serialPID = intToChar4(cliente.indice);
+//		char* serialCantidadPaginas = intToChar4(5);
+//		char* serialPagina = intToChar4(2);
+//		char* contenidoPagina = malloc(config.tamanio_marco);
+//		memcpy(contenidoPagina,"abcdefg",7);
+//		bzero(contenidoPagina+7,config.tamanio_marco-7);
+//
+//		// INICIAR PROCESO
+//		enviarHeader(swapServer,HeaderOperacionIniciarProceso);
+//		send_w(swapServer,serialPID,sizeof(int));
+//		send_w(swapServer,serialCantidadPaginas,sizeof(int));
+//		char* header = recv_waitall_ws(swapServer,1);
+//		if (charToInt(header)==HeaderProcesoAgregado)
+//			printf("Contesto el proceso Agregado\n");
+//		else
+//		if (charToInt(header)==HeaderNoHayEspacio){
+//			printf("No hay espacio\n");
+//			return;}
+//		else{
+//			printf("Llego mierda %d\n",(int)header);return;}
+//
+//		// ESCRIBIR PAGINA
+//		enviarHeader(swapServer,HeaderOperacionEscritura);
+//		send_w(swapServer,serialPID,sizeof(int));
+//		send_w(swapServer,serialPagina,sizeof(int));
+//		send_w(swapServer,contenidoPagina,config.tamanio_marco);
+//		header = recv_waitall_ws(swapServer,1);
+//			if (charToInt(header)==HeaderEscrituraCorrecta)
+//				log_info(activeLogger,"Escritura correcta");
+//			else if (charToInt(header)==HeaderEscrituraErronea)
+//				log_warning(activeLogger,"Escritura erronea");
+//			else log_error(activeLogger,"Llego mierda al escribir");
+//
+//
+//		// LEER PAGINA
+//		enviarHeader(swapServer,HeaderOperacionLectura);
+//		char* contenidoPagina2 = malloc(config.tamanio_marco+1);
+//		send_w(swapServer,serialPID,sizeof(int));
+//		send_w(swapServer,serialPagina,sizeof(int));
+//
+//		header = recv_waitall_ws(swapServer,1);
+//		if (charToInt(header)==HeaderOperacionLectura)
+//			log_info(activeLogger,"Contesto con la pagina");
+//		else if (charToInt(header)==HeaderProcesoNoEncontrado)
+//			log_warning(activeLogger,"No la encontró");
+//		else log_error(activeLogger,"Llego mierda al leer");
+//
+//		contenidoPagina2 = recv_waitall_ws(swapServer,config.tamanio_marco);
+//		contenidoPagina2[config.tamanio_marco]='\0';
+//		log_info(activeLogger,"Llego el msg:%s",contenidoPagina2);
+//	//	log_info(activeLogger,"Llego el contenido y es igual:%d\n",strcmp(contenidoPagina,contenidoPagina2)==0);
+//
+//		// FINALIZAR PROCESO
+//		enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
+//		send_w(swapServer,serialPID,sizeof(int));
+//
+//		header = recv_waitall_ws(swapServer,1);
+//		if (charToInt(header)==HeaderProcesoEliminado)
+//			log_info(activeLogger,"Se elimino bien");
+//		else if (charToInt(header)==HeaderProcesoNoEncontrado)
+//			log_warning(activeLogger,"Se elimino mal");
+//		else log_error(activeLogger,"Llego mierda al leer");
+//
+//		free(serialPID);
+//		free(header);
+//		free(serialCantidadPaginas);
+//		free(serialPagina);
+//		free(contenidoPagina);
+//		free(contenidoPagina2);
+//}
 
 // FIN 6

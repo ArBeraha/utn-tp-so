@@ -7,15 +7,15 @@
 #include "cpu.h"
 
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
-void setearPC(t_PCB* pcb, int pc) {
+void setearPC(t_PCB* pcb, t_puntero_instruccion pc) {
 	if(!CU_is_test_running()){
-		log_info(activeLogger, "Actualizando PC de |%d| a |%d|.", pcb->PC, pc);
+		log_info(activeLogger, "Actualizando PC de |%d| a |%d|.", pcb->PC, (int)pc);
 	}
-	pcb->PC = pc;
+	pcb->PC = (int)pc;
 }
 
 void incrementarPC(t_PCB* pcb) {
-	setearPC(pcb, (pcb->PC) + 1);
+	setearPC(pcb, (t_puntero_instruccion)((pcb->PC) + 1));
 }
 
 void informarInstruccionTerminada() {
@@ -27,7 +27,7 @@ void informarInstruccionTerminada() {
 }
 
 void instruccionTerminada(char* instr) {
-	log_debug(activeLogger, "La instruccion |%s| finalizó OK.", instr);
+	log_debug(debugLogger, "La instruccion |%s| finalizó OK.", instr);
 	informarInstruccionTerminada();
 }
 
@@ -42,7 +42,7 @@ void desalojarProceso() {
 
 /*--------FUNCIONES----------*/
 void esperar_programas() {
-	log_debug(bgLogger, "Esperando programas de nucleo.");
+	log_debug(debugLogger, "Esperando programas de nucleo.");
 	char* header;
 	if (config.DEBUG_IGNORE_PROGRAMS) {
 		 warnDebug();
@@ -53,21 +53,21 @@ void esperar_programas() {
 			free(header);
 		}
 	}
-	log_debug(bgLogger, "Ya no se esperan programas de nucleo.");
+	log_debug(debugLogger, "Ya no se esperan programas de nucleo.");
 }
 
 void procesarHeader(char *header) {
 
-	log_debug(bgLogger, "Llego un mensaje con header %d.", charToInt(header));
+	log_debug(debugLogger, "Llego un mensaje con header %d.", charToInt(header));
 
 	switch (charToInt(header)) {
 
 	case HeaderError:
-		log_error(activeLogger, "Header de Error.");
+		log_error(errorLogger, "Header de Error.");
 		break;
 
 	case HeaderHandshake:
-		log_error(activeLogger,
+		log_error(errorLogger,
 				"Segunda vez que se recibe un headerHandshake acá!.");
 		exit(EXIT_FAILURE);
 		break;
@@ -89,8 +89,8 @@ void procesarHeader(char *header) {
 		break;
 
 	default:
-		log_error(activeLogger, "Llego cualquier cosa.");
-		log_error(activeLogger,
+		log_error(errorLogger, "Llego cualquier cosa.");
+		log_error(errorLogger,
 				"Llego el header numero |%d| y no hay una accion definida para el.",
 				charToInt(header));
 		exit(EXIT_FAILURE);
@@ -107,12 +107,12 @@ void pedir_tamanio_paginas() {
 		enviarHeader(cliente_umc,HeaderTamanioPagina); //le pido a umc el tamanio de las paginas
 		char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
 		tamanioPaginas = char4ToInt(tamanio);
-		log_debug(activeLogger, "El tamaño de paginas es: |%d|",tamanioPaginas);
+		log_debug(debugLogger, "El tamaño de paginas es: |%d|",tamanioPaginas);
 		free(tamanio);
 	} else {
 		tamanioPaginas = -99999;
 		warnDebug();
-		log_debug(activeLogger, "UMC DEBUG ACTIVADO! tamanioPaginas va a valer -99999.");
+		log_debug(debugLogger, "UMC DEBUG ACTIVADO! tamanioPaginas va a valer -99999.");
 	}
 }
 
@@ -254,9 +254,9 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	}else{
 		pcbActual=malloc(sizeof(t_PCB));
 	}
-	log_debug(bgLogger, "Recibiendo PCB...");
+	log_debug(debugLogger, "Recibiendo PCB...");
 	char* pcb = leerLargoYMensaje(cliente_nucleo);
-	log_debug(bgLogger, "PCB recibido!");
+	log_debug(debugLogger, "PCB recibido!");
 	deserializar_PCB(pcbActual, pcb);//reemplazo en el pcb actual de cpu que tiene como variable global
 
 	stack = pcbActual->SP;
@@ -265,12 +265,12 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 }
 
 void enviarPCB() {
-	log_debug(bgLogger, "Enviando PCB...");
+	log_debug(debugLogger, "Enviando PCB...");
 	char* pcb = string_new();
 	serializar_PCB(pcb, pcbActual);
 
 	send_w(cliente_nucleo, pcb, sizeof(t_PCB));
-	log_debug(bgLogger, "PCB Enviado!");
+	log_debug(debugLogger, "PCB Enviado!");
 	free(pcb);
 }
 
@@ -286,9 +286,9 @@ void parsear(char* const sentencia) {
  * Recibo la sentencia previamente pedida.
  */
 char* recibir_sentencia(int tamanio){
-	log_debug(bgLogger, "Recibiendo sentencia de tamaño |%d|...", tamanio);
+	log_debug(debugLogger, "Recibiendo sentencia de tamaño |%d|...", tamanio);
 	char* sentencia = recv_waitall_ws(cliente_umc, tamanio);
-	log_debug(bgLogger, "Recibida la sentencia: |%s|", sentencia);
+	log_debug(debugLogger, "Recibida la sentencia: |%s|", sentencia);
 	return sentencia;
 }
 

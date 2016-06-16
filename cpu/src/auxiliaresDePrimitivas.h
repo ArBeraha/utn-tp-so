@@ -40,5 +40,6 @@ int tipoVaraible(t_nombre_variable variable, t_stack_item* head);
 void enviar_direccion_umc(t_puntero direccion);
 bool existeLabel(t_nombre_etiqueta etiqueta);
 char *charToString(char variable);
+t_puntero_instruccion obtenerPosicionLabel(t_nombre_etiqueta etiqueta);
 
 #endif /* AUXILIARES_DE_PRIMITIVAS_H_ */

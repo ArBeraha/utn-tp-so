@@ -128,8 +128,12 @@ int existePidEnListadeTablas(int pid){
 
 int existePaginaBuscadaEnTabla(int pag, tabla_t* tablaPaginaBuscada){
 	tablaPagina_t* tabla = malloc(sizeof(tablaPagina_t));
+	devolverTodaLaMemoria();
+	devolverTodasLasPaginas();
 	pthread_mutex_lock(&lock_accesoTabla);
+	printf("ACA 1 \n");
 	tabla=list_get((t_list*)tablaPaginaBuscada->listaPaginas, pag);
+	printf("ACA 2 \n");
 	if(tabla){
 		pthread_mutex_unlock(&lock_accesoTabla);
 		return 1;
@@ -220,7 +224,7 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 	char* serialPID = intToChar4(pedido.pid);
 	char* serialPagina = intToChar4(pedido.paginaRequerida);
-	char* contenidoPagina;
+	char* contenidoPagina = malloc(config.tamanio_marco);
 
 	enviarHeader(swapServer,HeaderOperacionLectura);
 
@@ -419,7 +423,7 @@ int cantPaginasEnMemoriaDePid(int pid){
 
 void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente){
 	int id=0;
-//	MUTEXCLIENTES(id=clientes[cliente.identidad].pid);
+	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
 	if(cantPaginasEnMemoriaDePid(pedido.pid)>=config.marcos_x_proceso){
 		int posicionPaginaSacada=0;
 
@@ -497,7 +501,7 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
 
 //SI ESTA EN TLB DEVUELVO
 	int id =0;
-//	MUTEXCLIENTES(id = clientes[cliente.identidad].pid);
+	MUTEXCLIENTES(id = clientes[cliente.indice].pid);
 
 
 	if(estaEnTlb(pedido) && config.entradas_tlb){
@@ -632,7 +636,7 @@ void ponerBitModif1(int pid,int pag){
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 	int id =0;
-//	MUTEXCLIENTES(id=clientes[cliente.identidad].pid);
+	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
 
 	if(estaEnTlb(pedido) && config.entradas_tlb){
 
@@ -862,6 +866,8 @@ void devolverTodaLaMemoria(){
 
 				if(j<=cantidadPaginasDeTabla-paginas_stack){
 					imprimirRegionMemoriaCodigo(contenido, config.tamanio_marco);
+//					imprimirRegionMemoriaStack(contenido, config.tamanio_marco);
+
 				}else{
 					imprimirRegionMemoriaStack(contenido, config.tamanio_marco);
 				}
@@ -1172,7 +1178,7 @@ void pedidoLectura(t_cliente cliente){
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
 	char* pedidoSerializado = malloc(sizeof(t_pedido));
 	int id=0;
-//	MUTEXCLIENTES(id = clientes[cliente.indice].pid)
+	MUTEXCLIENTES(id = clientes[cliente.indice].pid)
 
 	read(cliente.socket, pedidoSerializado, sizeof(t_pedido));
 
@@ -1184,7 +1190,6 @@ void pedidoLectura(t_cliente cliente){
 	pedidoLectura.paginaRequerida = pedidoCpu->pagina;
 	pedidoLectura.offset = pedidoCpu->offset;
 	pedidoLectura.cantBytes = pedidoCpu->size;
-
 
 	log_info(activeLogger, "[%d] Realizando lectura de [Pag,Off,Bytes] = [%d,%d,%d]",id,pedidoLectura.paginaRequerida,pedidoLectura.offset,pedidoLectura.cantBytes);
 
@@ -1210,7 +1215,7 @@ void headerEscribirPagina(t_cliente cliente){
 	t_pedido* pedidoCpuEscritura = malloc(sizeof(t_pedido));
 	char* pedidoSerializadoEscritura = malloc(sizeof(t_pedido));
 	int id =0;
-//	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
+	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
 
 	read(cliente.socket, pedidoSerializadoEscritura, sizeof(t_pedido));
 	deserializar_pedido(pedidoCpuEscritura,pedidoSerializadoEscritura);
@@ -1246,8 +1251,9 @@ void procesarHeader(t_cliente cliente, char* header) {
 	// tales como el socket, el indice en el vector. Para otras cosas consultar clientes[cliente.indice] con mutex!
 	log_info(activeLogger, "Llego un mensaje con header %d",
 			charToInt(header));
+	char* nuevoPid;
 	int idLog=0;
-	MUTEXCLIENTES(idLog = clientes[cliente.identidad].pid;)
+	MUTEXCLIENTES(idLog = clientes[cliente.indice].pid;)
 
 	switch (charToInt(header)) {
 
@@ -1291,6 +1297,12 @@ void procesarHeader(t_cliente cliente, char* header) {
 		finalizarPrograma(char4ToInt(pidALiberar));
 		break;
 
+	case HeaderPID:
+		nuevoPid = malloc(sizeof(int));
+		read(cliente.socket, nuevoPid, sizeof(int));
+		MUTEXCLIENTES(clientes[cliente.indice].pid=char4ToInt(nuevoPid));
+		break;
+
 	default:
 		log_error(activeLogger,
 				"Llego el header numero %d y no hay una acción definida para él.",
@@ -1313,7 +1325,7 @@ void operacionScript(t_cliente cliente) {
 
 	read(cliente.socket, codigoScript, char4ToInt(tamanioCodigoScript));
 
-	if (inicializarPrograma(char4ToInt(pidScript), codigoScript,char4ToInt(cantidadDePaginasScript)+paginas_stack)) {
+	if (inicializarPrograma(char4ToInt(pidScript), codigoScript,char4ToInt(cantidadDePaginasScript))) {
 
 		reservarPagina(char4ToInt(cantidadDePaginasScript), char4ToInt(pidScript));
 		reservarPagina(paginas_stack, char4ToInt(pidScript));

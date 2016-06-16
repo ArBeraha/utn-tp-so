@@ -154,7 +154,7 @@ void operacionIniciarProceso(){
 	// Hacer que asignarEspacioANuevoProceso devuelva el proceso asi evito buscarlo
 	int posInicial = buscarProcesoSegunPID(pid)->posPagina;
 	int i;
-	log_info(activeLogger,"Se van a recibir %d paginas del pid",paginas,pid);
+	log_info(activeLogger,"Se van a recibir %d paginas del pid %d",paginas,pid);
 	for (i=0;i<paginas;i++){
 		log_info(activeLogger,"Recibiendo pagina:%d",i);
 		char* pagina = recv_waitall_ws(cliente,config.tamanio_pagina);
@@ -179,15 +179,9 @@ void operacionEscritura(){
 	int pid = char4ToInt(serialPID);
 	int pagina = char4ToInt(serialPagina);
 	contenido = recv_waitall_ws(cliente,config.tamanio_pagina);
-	if(existeElPid(pid)){
-		escribirPagina(buscarProcesoSegunPID(pid)->posPagina+pagina,contenido);
-		enviarHeader(cliente,HeaderEscrituraCorrecta);
-		//usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
-	}
-	else {
-		enviarHeader(cliente,HeaderProcesoNoEncontrado);
-		printf("Proceso %d no encontrado\n",pid);
-	}
+	escribirPagina(buscarProcesoSegunPID(pid)->posPagina+pagina,contenido);
+	enviarHeader(cliente,HeaderEscrituraCorrecta);
+	//usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
 	free(serialPID);
 	free(serialPagina);
 	free(contenido);
@@ -201,19 +195,15 @@ void operacionLectura(){
 	serialPagina = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
 	int pagina = char4ToInt(serialPagina);
-	if(existeElPid(pid)){
-	   char* contenido = leerPagina(
-		  	  buscarProcesoSegunPID(pid)->posPagina
-					+ pagina);
-	   usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
-	   enviarHeader(cliente, HeaderOperacionLectura);
-	   send_w(cliente, contenido, config.tamanio_pagina);
-	   free(contenido);
-	}
-	else{
-		enviarHeader(cliente,HeaderProcesoNoEncontrado);
-		printf("Proceso %d no encontrado\n",pid);
-	}
+	char* contenido = leerPagina(
+		buscarProcesoSegunPID(pid)->posPagina
+			+ pagina);
+	usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
+	enviarHeader(cliente, HeaderOperacionLectura);
+	send_w(cliente, contenido, config.tamanio_pagina);
+	free(contenido);
+
+
 	free(serialPID);
 	free(serialPagina);
 	free(datosPedido);
@@ -223,14 +213,9 @@ void operacionFinalizar(){
 	char* serialPID = malloc(sizeof(int));
 	serialPID = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
-	if(existeElPid(pid)){
-		finalizarProceso(pid);
-		enviarHeader(cliente,HeaderProcesoEliminado);
-	}
-	else{
-		enviarHeader(cliente,HeaderProcesoNoEncontrado);
-		printf("Proceso %d no encontrado\n",pid);
-	}
+    finalizarProceso(pid);
+	enviarHeader(cliente,HeaderProcesoEliminado);
+
 	free(serialPID);
 }
 // Funciones para el manejo del Espacio
@@ -478,7 +463,7 @@ int existeElPid(int unPid){
 //**************************************************MAIN SWAP*****************************************************************
 int main() {
 	inicializar();
-	//testear(test_swap);
+	testear(test_swap);
 	conectar_umc();
 	esperar_peticiones();
 	finalizar();

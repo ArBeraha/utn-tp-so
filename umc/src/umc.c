@@ -595,12 +595,15 @@ int paginasQueOcupa(int tamanio){
 int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 
 	char* serialPID = intToChar4(idPrograma);
+	char* serialCantidadPaginasTotales = intToChar4(cantPaginas+paginas_stack);
 	char* serialCantidadPaginas = intToChar4(cantPaginas);
 	int i=0;
 
 	enviarHeader(swapServer,HeaderOperacionIniciarProceso);
 	send_w(swapServer,serialPID,sizeof(int));
+	send_w(swapServer,serialCantidadPaginasTotales,sizeof(int));
 	send_w(swapServer,serialCantidadPaginas,sizeof(int));
+
 
 	char* fraccionCodigo = malloc(config.tamanio_marco);
 	for(i=0;i<cantPaginas;i++){

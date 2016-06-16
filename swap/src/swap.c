@@ -146,27 +146,29 @@ void operacionIniciarProceso(){
 	log_info(activeLogger, "Se recibio inicializacion");
 	char* serialPID = malloc(sizeof(int));
 	char* serialPagina = malloc(sizeof(int));
+	char* serialPaginasCodigo = malloc(sizeof(int));
 	serialPID = recv_waitall_ws(cliente,sizeof(int));
 	serialPagina = recv_waitall_ws(cliente,sizeof(int));
+	serialPaginasCodigo = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
 	int paginas = char4ToInt(serialPagina);
+	int paginasCodigo = char4ToInt(serialPaginasCodigo);
 	asignarEspacioANuevoProceso(pid, paginas);
 	// Hacer que asignarEspacioANuevoProceso devuelva el proceso asi evito buscarlo
 	int posInicial = buscarProcesoSegunPID(pid)->posPagina;
 	int i;
 	log_info(activeLogger,"Se van a recibir %d paginas del pid %d",paginas,pid);
-	for (i=0;i<paginas;i++){
+	for (i=0;i<paginasCodigo;i++){
 		log_info(activeLogger,"Recibiendo pagina:%d",i);
 		char* pagina = recv_waitall_ws(cliente,config.tamanio_pagina);
 		escribirPagina(posInicial+i,pagina);
 		free(pagina);
 	}
-
-	log_info(activeLogger,"Recibidas todas las paginas");
-
+	log_info(activeLogger,"Recibidas todas las paginas de codigo");
 	enviarHeader(cliente,HeaderProcesoAgregado);
 	free(serialPID);
 	free(serialPagina);
+	free(serialPaginasCodigo);
 	imprimirBitarray();
 }
 void operacionEscritura(){

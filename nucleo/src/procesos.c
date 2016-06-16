@@ -8,9 +8,19 @@
 #include <math.h>
 #include "nucleo.h"
 
+t_proceso* obtenerProceso(int PID){
+	t_proceso* proceso;
+	MUTEXPROCESOS(proceso = procesos[PID]);
+	if (proceso == (t_proceso*)-1){
+		log_error(activeLogger,"Se solicita el proceso PID:%d inexistente", PID);
+		return NULL;}
+	else
+	return proceso;
+}
+
 /*  ----------INICIO PROCESOS---------- */
 void rechazarProceso(int PID) {
-	t_proceso* proceso = (t_proceso*) PID;
+	t_proceso* proceso = obtenerProceso(PID);
 	if (proceso->estado != NEW)
 		log_warning(activeLogger,
 				"Se esta rechazando el proceso %d ya aceptado!", PID);
@@ -23,29 +33,33 @@ void rechazarProceso(int PID) {
 //	pthread_mutex_lock(&mutexClientes);
 //	quitarCliente(proceso->consola);
 //	pthread_mutex_unlock(&mutexClientes);
+	MUTEXPROCESOS(procesos[PID] = (t_proceso*)-1);
 	pcb_destroy(proceso->PCB);
+
 	free(proceso);
 }
 HILO crearProceso(int consola) {
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	proceso->PCB = pcb_create();
-	proceso->PCB->PID = (int) proceso;
+	MUTEXPROCESOS(procesos[consola] = proceso);
+	proceso->PCB->PID = consola;
 	proceso->estado = NEW;
 	proceso->consola = consola;
+	log_info(bgLogger,"Se esta intentando iniciar el proceso PID:%d",proceso->PCB->PID);
 	MUTEXCLIENTES(proceso->socketConsola = clientes[consola].socket);
 	if (!CU_is_test_running()) {
 		char* codigo = getScript(consola);
 		proceso->PCB->cantidad_paginas = ceil(
 				((double) strlen(codigo)) / ((double) tamanio_pagina));
-//		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
-//			rechazarProceso(proceso->PCB->PID);
-//		} else {
+		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
+			rechazarProceso(proceso->PCB->PID);
+		} else {
 			asignarMetadataProceso(proceso, codigo);
 			MUTEXCLIENTES(clientes[consola].pid = (int) proceso);
 			proceso->cpu = SIN_ASIGNAR;
 			cambiarEstado(proceso, READY);
-			MUTEXPROCESOS(list_add(listaProcesos, proceso));
-//		}
+			log_info(bgLogger,"proceso PID:%d creado satisfactoriamente",consola);
+		}
 		free(codigo);
 	}
 	return proceso;
@@ -53,14 +67,14 @@ HILO crearProceso(int consola) {
 
 
 void finalizarProceso(int PID) {
-	t_proceso* proceso = (t_proceso*) PID;
+	t_proceso* proceso = obtenerProceso(PID);
 	cambiarEstado(proceso,EXIT);
 	MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
 }
 void destruirProceso(int PID) {
 	// mutexProcesos SAFE
-	log_debug(bgLogger,	"Destruyendo proceso:%d",PID);
-	t_proceso* proceso = (t_proceso*) PID;
+	log_info(bgLogger,	"Destruyendo proceso:%d",PID);
+	t_proceso* proceso = obtenerProceso(PID);
 	if (proceso->estado != EXIT)
 		log_warning(activeLogger,
 				"Se esta destruyendo el proceso %d que no libero sus recursos! y esta en estado:%d",
@@ -71,6 +85,7 @@ void destruirProceso(int PID) {
 		MUTEXCLIENTES(quitarCliente(proceso->consola));
 	}
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
+	MUTEXPROCESOS(procesos[PID] = (t_proceso*)-1);
 	pcb_destroy(proceso->PCB);
 	free(proceso); // Destruir Proceso y PCB
 
@@ -83,7 +98,7 @@ void actualizarPCB(t_PCB PCB) { //
 	//proceso->PCB=PCB;
 }
 void ingresarCPU(int cliente){
-	queue_push(colaCPU,(void*)cliente);
+	MUTEXCPU(queue_push(colaCPU,(void*)cliente));
 }
 void bloquearProcesoIO(int PID, char* IO, int tiempo) {
 	if (dictionary_has_key(tablaIO, IO)) {
@@ -108,11 +123,11 @@ void bloquearProcesoSem(int PID, char* semid) {
 }
 void bloquearProceso(int PID) {
 	log_info(activeLogger,"Bloqueando Proceso");
-	t_proceso* proceso = (t_proceso*) PID;
+	t_proceso* proceso = obtenerProceso(PID);
 	cambiarEstado(proceso,BLOCK);
 }
 void desbloquearProceso(int PID) {
-	t_proceso* proceso = (t_proceso*) PID;
+	t_proceso* proceso = obtenerProceso(PID);
 	cambiarEstado(proceso,READY);
 }
 void asignarMetadataProceso(t_proceso* p, char* codigo) {
@@ -134,7 +149,7 @@ void asignarMetadataProceso(t_proceso* p, char* codigo) {
 			int* salto = malloc(sizeof(int));
 			memcpy(salto, metadata->etiquetas + i + 1, sizeof(int));
 			//imprimir_serializacion(etiqueta,longitud);
-			//printf("Etiqueta:%s Salto: %d\n",etiqueta,*salto);
+			printf("Etiqueta:%s Salto: %d\n",etiqueta,*salto);
 			dictionary_put(p->PCB->indice_etiquetas, etiqueta, salto);
 			i += sizeof(int);
 			longitud = 0;

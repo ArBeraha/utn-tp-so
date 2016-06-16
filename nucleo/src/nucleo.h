@@ -33,11 +33,17 @@ int socketConsola, socketCPU, activadoCPU, activadoConsola, umc, cambiosConfigur
 struct sockaddr_in direccionConsola, direccionCPU, direccionUMC;
 unsigned int tamanioDireccionConsola, tamanioDireccionCPU, tamanio_pagina;
 // Hilos
-pthread_t hiloCrearProcesos, hiloBloqueos, hiloPlanificacion;
-pthread_mutex_t mutexProcesos, mutexUMC, mutexClientes, mutexEstados;
+pthread_t hiloPlanificacion;
+pthread_mutex_t mutexListos, mutexSalida, mutexCPU, mutexProcesos, mutexUMC, mutexClientes, mutexEstados;
 // defino la palabra clave THREAD para reconocer las funciones que son main de un hilo
 #define HILO void*
 // MACROS DE MUTEXS
+#define MUTEXLISTOS(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexListos);
+#define MUTEXSALIDA(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexSalida);
+#define MUTEXCPU(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexCPU);
 #define MUTEXCLIENTES(CONTENIDO) \
 	MUTEX(CONTENIDO,mutexClientes);
 #define MUTEXPROCESOS(CONTENIDO) \
@@ -67,10 +73,15 @@ typedef struct t_proceso {
 	int socketCPU;
 	int rafagas;
 } t_proceso;
+
+//            Cliente     puntero al programa
+t_proceso* procesos[MAXCLIENTS];
+
 typedef struct t_IO {
 	int retardo;
 	t_IO_estado estado;
 	t_queue* cola;
+	pthread_t hilo;
 } t_IO;
 typedef struct t_semaforo {
 	int valor;
@@ -148,6 +159,7 @@ void finalizarProceso(int PID);
 void destruirProceso(int PID);
 void actualizarPCB(t_PCB PCB);
 void asignarMetadataProceso(t_proceso* p, char* codigo);
+t_proceso* obtenerProceso(int PID);
 // Planificacion
 HILO planificar();
 void planificacionFIFO();

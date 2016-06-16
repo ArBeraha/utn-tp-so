@@ -38,23 +38,27 @@ void planificarExpulsion(t_proceso* proceso) {
 void rafagaProceso(cliente){
 	// mutexClientes SAFE
 	log_info(activeLogger,"EL PID TERMINO UNA INSTRUCCION");
-	t_proceso* proceso = (t_proceso*) clientes[cliente].pid;
+	t_proceso* proceso = obtenerProceso(clientes[cliente].pid);
 	proceso->rafagas++;
 	planificarExpulsion(proceso);
 }
 void planificacionFIFO() {
 	// mutexProcesos SAFE
+	MUTEXLISTOS(MUTEXCPU(
 	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
 		ejecutarProceso((int) queue_pop(colaListos), (int) queue_pop(colaCPU));
+	))
 
+	MUTEXSALIDA(
 	while (!queue_is_empty(colaSalida))
 		destruirProceso((int) queue_pop(colaSalida));
+	)
 }
 
 void planificarIO(char* io_id, t_IO* io) {
 	if (io->estado == INACTIVE && (!queue_is_empty(io->cola))) {
 		io->estado = ACTIVE;
-		crearHiloConParametro(&hiloBloqueos, (HILO)bloqueo, queue_pop(io->cola));
+		crearHiloConParametro(&io->hilo, (HILO)bloqueo, queue_pop(io->cola));
 	}
 }
 bool terminoQuantum(t_proceso* proceso) {
@@ -62,23 +66,25 @@ bool terminoQuantum(t_proceso* proceso) {
 	return (proceso->rafagas>=config.quantum);
 }
 void asignarCPU(t_proceso* proceso, int cpu) {
-	log_debug(bgLogger, "Asignando cpu:%d a pid:%d", cpu, proceso->PCB->PID);
+	log_info(bgLogger, "Asignando cpu:%d a pid:%d", cpu, proceso->PCB->PID);
 	cambiarEstado(proceso,EXEC);
 	proceso->cpu = cpu;
 	proceso->rafagas=0;
+	MUTEXPROCESOS(procesos[cpu] = proceso);
 	MUTEXCLIENTES(clientes[cpu].pid = proceso->PCB->PID);
 	MUTEXCLIENTES(proceso->socketCPU = clientes[cpu].socket);
 }
 void desasignarCPU(t_proceso* proceso) {
-	log_debug(bgLogger, "Desasignando cpu:%d a pid:%d", proceso->cpu,
+	log_info(bgLogger, "Desasignando cpu:%d a pid:%d", proceso->cpu,
 			proceso->PCB->PID);
-	queue_push(colaCPU, (void*) proceso->cpu);
+	MUTEXCPU(queue_push(colaCPU, (void*) proceso->cpu));
 	proceso->cpu = SIN_ASIGNAR;
+	MUTEXPROCESOS(procesos[proceso->cpu] = (t_proceso*)-1);
 	MUTEXCLIENTES(clientes[proceso->cpu].pid = (int) NULL);
 }
 void ejecutarProceso(int PID, int cpu) {
 	// mutexProcesos SAFE
-	t_proceso* proceso = (t_proceso*) PID;
+	t_proceso* proceso = obtenerProceso(PID);
 	asignarCPU(proceso,cpu);
 	if (!CU_is_test_running()) {
 		int bytes = bytes_PCB(proceso->PCB);
@@ -106,7 +112,7 @@ void continuarProceso(t_proceso* proceso) {
 	enviarHeader(proceso->socketCPU, HeaderContinuarProceso);
 }
 HILO bloqueo(t_bloqueo* info) {
-	log_debug(bgLogger, "Ejecutando IO pid:%d por:%dseg", info->PID,
+	log_info(bgLogger, "Ejecutando IO pid:%d por:%dseg", info->PID,
 			info->IO->retardo);
 	sleep(info->IO->retardo*info->tiempo);
 	desbloquearProceso(info->PID);
@@ -118,14 +124,14 @@ void cambiarEstado(t_proceso* proceso, int estado) {
 	bool legalidad;
 	MUTEXESTADOS(legalidad = matrizEstados[proceso->estado][estado]);
 	if (legalidad) {
-		log_debug(bgLogger, "Cambio de estado pid:%d de:%d a:%d",
+		log_info(bgLogger, "Cambio de estado pid:%d de:%d a:%d",
 				proceso->PCB->PID, proceso->estado, estado);
 		if (proceso->estado == EXEC)
 			desasignarCPU(proceso);
 		if (estado == READY)
-			queue_push(colaListos, proceso);
+			{MUTEXLISTOS(queue_push(colaListos, proceso))}
 		else if (estado == EXIT)
-			queue_push(colaSalida, proceso);
+			{MUTEXSALIDA(queue_push(colaSalida, proceso))}
 		proceso->estado = estado;
 	} else
 		log_error(activeLogger, "Cambio de estado ILEGAL pid:%d de:%d a:%d",

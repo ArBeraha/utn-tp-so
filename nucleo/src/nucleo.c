@@ -8,7 +8,7 @@
 
 /* ---------- INICIO PARA UMC ---------- */
 bool pedirPaginas(int PID, char* codigo) {
-	t_proceso* proceso = (t_proceso*) PID;
+	t_proceso* proceso = obtenerProceso(PID);
 	char* serialPaginas = intToChar4(proceso->PCB->cantidad_paginas);
 	char* serialPid = intToChar4(PID);
 	bool hayMemDisponible = false;
@@ -28,10 +28,10 @@ bool pedirPaginas(int PID, char* codigo) {
 		pthread_mutex_unlock(&mutexUMC);
 		hayMemDisponible = (bool) ((int) respuesta);
 		if (hayMemDisponible == true)
-			log_debug(bgLogger, "Hay memoria disponible para el proceso %d.",
+			log_info(bgLogger, "Hay memoria disponible para el proceso %d.",
 					PID);
 		else if (hayMemDisponible == false)
-			log_debug(bgLogger, "No hay memoria disponible para el proceso %d.",
+			log_info(bgLogger, "No hay memoria disponible para el proceso %d.",
 					PID);
 		else
 			log_warning(activeLogger, "Umc debería enviar (0 o 1) y envió %d",
@@ -49,11 +49,11 @@ void handshakearUMC() {
 	char *hand = string_from_format("%c%c", HeaderHandshake, SOYNUCLEO);
 	send_w(umc, hand, 2);
 
-	log_debug(bgLogger, "UMC handshakeo.");
+	log_info(bgLogger, "UMC handshakeo.");
 	if (getHandshake() != SOYUMC) {
 		perror("Se esperaba conectarse a la UMC.");
 	} else
-		log_debug(bgLogger, "Núcleo recibió handshake de UMC.");
+		log_info(bgLogger, "Núcleo recibió handshake de UMC.");
 }
 void establecerConexionConUMC() {
 	direccionUMC = crearDireccionParaCliente(config.puertoUMC, config.ipUMC);
@@ -69,7 +69,7 @@ void warnDebug() {
 }
 void conectarAUMC() {
 	if (!DEBUG_IGNORE_UMC) {
-		log_debug(bgLogger, "Iniciando conexion con UMC...");
+		log_info(bgLogger, "Iniciando conexion con UMC...");
 		establecerConexionConUMC();
 		log_info(activeLogger, "Conexion a la UMC correcta :).");
 		handshakearUMC();
@@ -88,7 +88,7 @@ void recibirTamanioPagina(){
 }
 /*  ----------INICIO CONSOLA ---------- */
 char* getScript(int consola) {
-	log_debug(bgLogger, "Recibiendo archivo de consola %d...", consola);
+	log_info(bgLogger, "Recibiendo archivo de consola %d...", consola);
 	pthread_mutex_lock(&mutexClientes);
 	char* script = leerLargoYMensaje(clientes[consola].socket);
 	clientes[consola].atentido = false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
@@ -100,7 +100,7 @@ char* getScript(int consola) {
 /*  ----------INICIO NUCLEO ---------- */
 void inicializar() {
 	system("rm -rf *.log");
-	crearLogs("Nucleo", "Nucleo",1);
+	crearLogs("Nucleo", "Nucleo",0);
 	//testear(test_serializacion);
 	log_info(activeLogger, "INICIALIZANDO");
 	espera.tv_sec = 2;
@@ -113,9 +113,15 @@ void inicializar() {
 	tablaIO = dictionary_create();
 	tablaSEM = dictionary_create();
 	tablaGlobales = dictionary_create();
+
+	int i;
+	for (i=0;i<getMaxClients();i++){
+		procesos[i]=-1;
+	}
+
 	cargarConfiguracion();
 	iniciarVigilanciaConfiguracion();
-	iniciarAtrrYMutexs(3,&mutexProcesos,&mutexUMC,&mutexClientes,&mutexEstados);
+	iniciarAtrrYMutexs(7,&mutexProcesos,&mutexUMC,&mutexClientes,&mutexEstados,&mutexListos, &mutexSalida, &mutexCPU);
 	crearSemaforos();
 	crearIOs();
 	crearCompartidas();
@@ -130,7 +136,7 @@ void inicializar() {
 	crearHilo(&hiloPlanificacion, planificar);
 }
 void cargarConfiguracion() {
-	log_debug(bgLogger, "Cargando archivo de configuracion");
+	log_info(bgLogger, "Cargando archivo de configuracion");
 	t_config* configNucleo;
 	configNucleo = config_create("nucleo.cfg");
 	config.puertoConsola = config_get_int_value(configNucleo, "PUERTO_PROG");
@@ -148,7 +154,7 @@ void cargarConfiguracion() {
 	config_destroy(configNucleo);
 }
 void recargarConfiguracion() {
-	log_debug(bgLogger, "Cargando archivo de configuracion");
+	log_info(bgLogger, "Recargando archivo de configuracion");
 	t_config* configNucleo;
 	configNucleo = config_create("nucleo.cfg");
 	config.quantum = config_get_int_value(configNucleo, "QUANTUM");
@@ -199,7 +205,7 @@ void crearIOs() {
 		io->cola = queue_create();
 		io->estado = INACTIVE;
 		dictionary_put(tablaIO, config.io_ids[i], io);
-		log_debug(bgLogger, "Creando IO id:%s sleep:%d", config.io_ids[i],
+		log_info(bgLogger, "Creando IO id:%s sleep:%d", config.io_ids[i],
 				io->retardo);
 		i++;
 	}
@@ -211,7 +217,7 @@ void crearSemaforos() {
 		sem->valor = atoi(config.semInit[i]);
 		sem->cola = queue_create();
 		dictionary_put(tablaSEM, config.sem_ids[i], sem);
-		log_debug(bgLogger, "Creando Semaforo:%s valor:%d", config.sem_ids[i],
+		log_info(bgLogger, "Creando Semaforo:%s valor:%d", config.sem_ids[i],
 				sem->valor);
 		i++;
 	}
@@ -222,7 +228,7 @@ void crearCompartidas() {
 		int* init = malloc(sizeof(int));
 		*init = 0;
 		dictionary_put(tablaSEM, config.sharedVars[i], init);
-		log_debug(bgLogger, "Creando Compartida:%s valor:%d",
+		log_info(bgLogger, "Creando Compartida:%s valor:%d",
 				config.sharedVars[i], *init);
 		i++;
 	}
@@ -249,11 +255,11 @@ void destruirCompartidas() {
 			(void*) destruirSemaforo);
 }
 void atenderHandshake(int cliente){
-	log_debug(bgLogger, "Llego un handshake");
+	log_info(bgLogger, "Llego un handshake");
 	char* header = malloc(sizeof(char));
 	read(clientes[cliente].socket, header, sizeof(char));
 	if ((charToInt(header) == SOYCONSOLA) || (charToInt(header) == SOYCPU)) {
-		log_debug(bgLogger, "Es un cliente apropiado! Respondiendo handshake");
+		log_info(bgLogger, "Es un cliente apropiado! Respondiendo handshake");
 		clientes[cliente].identidad = charToInt(header);
 		enviarHeader(clientes[cliente].socket, SOYNUCLEO);
 		if (charToInt(header) == SOYCPU)
@@ -270,7 +276,7 @@ void atenderHandshake(int cliente){
 
 void procesarHeader(int cliente, char *header) {
 	// mutexClientes SAFE
-	log_debug(bgLogger, "Llego un mensaje con header %d", charToInt(header));
+	log_info(bgLogger, "Llego un mensaje con header %d", charToInt(header));
 	clientes[cliente].atentido = true;
 
 	switch (charToInt(header)) {
@@ -294,7 +300,7 @@ void procesarHeader(int cliente, char *header) {
 
 	case HeaderScript:
 		// Thread mutexClientes UNSAFE
-		crearHiloConParametro(&hiloCrearProcesos, (HILO)crearProceso ,(void*) cliente);
+		crearHiloConParametro(&clientes[cliente].hilo, (HILO)crearProceso ,(void*) cliente);
 		break;
 
 	case HeaderPedirValorVariableCompartida:

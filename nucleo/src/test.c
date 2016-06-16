@@ -8,7 +8,7 @@
 #include "nucleo.h"
 
 void test_cicloDeVidaProcesos() {
-	log_debug(bgLogger, "INICIO test_cicloDeVidaProcesos");
+	log_info(bgLogger, "INICIO test_cicloDeVidaProcesos");
 	int consola = 1, cpu = 2;
 	queue_push(colaCPU, (void*) cpu);
 	t_proceso* proceso = (t_proceso*) crearProceso(consola);
@@ -55,10 +55,10 @@ void test_cicloDeVidaProcesos() {
 	dictionary_remove(tablaIO, "ScannerTest1");
 	queue_destroy(io->cola);
 	free(io);
-	log_debug(bgLogger, "FIN test_cicloDeVidaProcesos");
+	log_info(bgLogger, "FIN test_cicloDeVidaProcesos");
 }
 void test_obtenerMetadata() {
-	log_debug(bgLogger, "INICIO test_obtenerMetadata()");
+	log_info(bgLogger, "INICIO test_obtenerMetadata()");
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	t_sentencia* sentencia;
 	proceso->PCB = pcb_create();
@@ -74,10 +74,10 @@ void test_obtenerMetadata() {
 	free(sentencia);
 	pcb_destroy(proceso->PCB);
 	free(proceso);
-	log_debug(bgLogger, "FIN test_obtenerMetadata()");
+	log_info(bgLogger, "FIN test_obtenerMetadata()");
 }
 void test_bloqueosIO() {
-	log_debug(bgLogger, "INICIO test_bloqueosIO()");
+	log_info(bgLogger, "INICIO test_bloqueosIO()");
 	int consola = 11, cpu = 22;
 	queue_push(colaCPU, (void*) cpu);
 
@@ -107,7 +107,7 @@ void test_bloqueosIO() {
 	queue_clean(colaListos);
 	queue_clean(colaCPU);
 	list_clean(listaProcesos);
-	log_debug(bgLogger, "FIN test_bloqueosIO()");
+	log_info(bgLogger, "FIN test_bloqueosIO()");
 }
 int test_nucleo() {
 	log_info(activeLogger, "INICIANDO TESTS DE NUCLEO");

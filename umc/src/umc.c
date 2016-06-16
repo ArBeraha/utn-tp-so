@@ -590,26 +590,27 @@ int paginasQueOcupa(int tamanio){
 
 
 
-int inicializarPrograma(int idPrograma, char* contenido,int tamanio){
+int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 
 	char* serialPID = intToChar4(idPrograma);
-	int cantidadPags = paginasQueOcupa(tamanio);
-	char* serialCantidadPaginas = intToChar4(cantidadPags);
-	int i;
-
+	char* serialCantidadPaginas = intToChar4(cantPaginas);
+	int i=0;
+	printf("PASE POR ACA PASE A \n");
 	enviarHeader(swapServer,HeaderOperacionIniciarProceso);
 	send_w(swapServer,serialPID,sizeof(int));
 	send_w(swapServer,serialCantidadPaginas,sizeof(int));
-
-	for(i=0;i<cantidadPags;i++){
-		char* fraccionCodigo = malloc(config.tamanio_marco);
-		memcpy(&fraccionCodigo,contenido+(i*config.tamanio_marco),config.tamanio_marco);
+	printf("PASE POR ACA PASE B \n");
+	printf("PASE POR ACA PASE: CANT PAGS: %d \n",cantPaginas);
+	char* fraccionCodigo = malloc(config.tamanio_marco);
+	for(i=0;i<cantPaginas;i++){
+		printf("PASE POR ACA PASE C: %d \n",i);
+		memcpy(fraccionCodigo,contenido+(i*config.tamanio_marco),config.tamanio_marco);
 		send_w(swapServer,intToChar4(strlen(fraccionCodigo)),sizeof(int)); //Le mando el tamanio de la fraccion porque la ultima no esta completa
 		send_w(swapServer,fraccionCodigo,strlen(fraccionCodigo));
 	}
 
 	char* header = recv_waitall_ws(swapServer,1);
-
+	printf("PASE POR ACA PASE D \n");
 	if (charToInt(header)==HeaderProcesoAgregado){
 		printf("Contesto el proceso Agregado\n");
 		return 1;
@@ -1299,19 +1300,22 @@ void procesarHeader(t_cliente cliente, char* header) {
 }
 
 void operacionScript(t_cliente cliente) {
-	char* pidScript = NULL; // FALTAN MALLOCS ACA
-	char* cantidadDePaginasScript = NULL;
-	char* tamanioCodigoScript = NULL;
-	char* codigoScript = NULL;
-	//			read(cliente.socket , cantidadDePaginasScript, 4);
-	read(cliente.socket, tamanioCodigoScript, 4);
+	char* pidScript = malloc(sizeof(int));
+	char* cantidadDePaginasScript = malloc(sizeof(int));
+	char* tamanioCodigoScript = malloc(sizeof(int));
+	printf("PASE POR ACA 1 \n");
 	read(cliente.socket, pidScript, 4);
+	read(cliente.socket, cantidadDePaginasScript, 4);
+	read(cliente.socket, tamanioCodigoScript, 4);
+	char* codigoScript = malloc(char4ToInt(tamanioCodigoScript));
+	printf("PASE POR ACA 2 \n");
 	read(cliente.socket, codigoScript, atoi(tamanioCodigoScript));
-
-	if (inicializarPrograma(atoi(pidScript), codigoScript,
-			char4ToInt(tamanioCodigoScript))) {
+	printf("PASE POR ACA 3 \n");
+	if (inicializarPrograma(char4ToInt(pidScript), codigoScript,char4ToInt(cantidadDePaginasScript))) {
+		printf("PASE POR ACA PASE INICIALIZAR \n");
 		reservarPagina(atoi(cantidadDePaginasScript), atoi(pidScript));
 		reservarPagina(paginas_stack, atoi(pidScript));
+		printf("PASE RESERVAR PAGS \n");
 		send_w(cliente.socket, "1", sizeof(int));
 	} else {
 		send_w(cliente.socket, "0", sizeof(int));

@@ -218,45 +218,39 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 }
 
 int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
-//	char* serialPID = intToChar4(pedido.pid);
-//	char* serialPagina = intToChar4(pedido.paginaRequerida);
-//	char* contenidoPagina = malloc(config.tamanio_marco+1);
-//
-//	printf("Pase por aca 1  \n");
-//	enviarHeader(swapServer,HeaderOperacionLectura);
-//
-//	send_w(swapServer,serialPID,sizeof(int));
-//	send_w(swapServer,serialPagina,sizeof(int));
-//
-//	printf("Pase por aca 2  \n");
-//	char* header = recv_waitall_ws(swapServer,1);
-//
-//	printf("Pase por aca 3  \n");
-//	if (charToInt(header)==HeaderOperacionLectura){
-//		printf("Contesto con la pagina\n");
-//	}
-//	else{
-//		return 0;
-//	}
-//
-//	printf("Pase por aca 4  \n");
-//	contenidoPagina = recv_waitall_ws(swapServer,config.tamanio_marco);
-//
-//	printf("Pase por aca 5  \n");
-//	contenidoPagina[config.tamanio_marco]='\0';
-//	printf("Llego el contenido de swap:%s",contenidoPagina);
+	char* serialPID = intToChar4(pedido.pid);
+	char* serialPagina = intToChar4(pedido.paginaRequerida);
+	char* contenidoPagina = malloc(config.tamanio_marco+1);
 
+	enviarHeader(swapServer,HeaderOperacionLectura);
 
-	if(pedido.paginaRequerida==1){
-		char* contenidoPagina = "abcdefghijklmnopqrstuvwxyz";
-		agregarAMemoria(pedido,contenidoPagina,cliente);
+	send_w(swapServer,serialPID,sizeof(int));
+	send_w(swapServer,serialPagina,sizeof(int));
+
+	char* header = recv_waitall_ws(swapServer,1);
+
+	if (charToInt(header)==HeaderOperacionLectura){
+		printf("Contesto con la pagina\n");
 	}
-	if(pedido.paginaRequerida==3){
-
-		char* str = malloc(sizeof(int));
-		memcpy(str,"4",4);
-		agregarAMemoria(pedido,str,cliente);
+	else{
+		return 0;
 	}
+
+	contenidoPagina = recv_waitall_ws(swapServer,config.tamanio_marco);
+
+	contenidoPagina[config.tamanio_marco]='\0';
+
+
+//	if(pedido.paginaRequerida==1){
+//		char* contenidoPagina = "abcdefghijklmnopqrstuvwxyz";
+//		agregarAMemoria(pedido,contenidoPagina,cliente);
+//	}
+//	if(pedido.paginaRequerida==3){
+//
+//		char* str = malloc(sizeof(int));
+//		memcpy(str,"4",4);
+//		agregarAMemoria(pedido,str,cliente);
+//	}
 
 	return 1;
 }
@@ -1351,46 +1345,46 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 	log_info(activeLogger,"Creada la tabla de paginas");
 	crearMemoriaYTlbYTablaPaginas();
 
-//	log_info(activeLogger, "Conectando a SWAP ...");
-//	conectarASwap();
-//
-//	crearHilo(&hiloRecibirComandos,(HILO)recibirComandos);
-//
-//	configurarServidorExtendido(&socketNucleo, &direccionNucleo,
-//			config.puerto_umc_nucleo, &tamanioDireccionNucleo, &activadoNucleo);
-//
-//	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puerto_cpu,
-//			&tamanioDireccionCPU, &activadoCPU);
-//
-//	inicializarClientes();
-//	log_info(activeLogger, "Esperando conexiones CPU/NUCLEO...");
-//
-//	while (1) {
-//		FD_ZERO(&socketsParaLectura);
-//		FD_SET(socketNucleo, &socketsParaLectura);
-//		FD_SET(socketCPU, &socketsParaLectura);
-//
-//		mayorDescriptor = (socketNucleo > socketCPU) ? socketNucleo : socketCPU;
-//
-//		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, NULL);
-//
-//		int cliente;
-//		if (tieneLectura(socketCPU)) {
-//			log_info(activeLogger, "Se conecto una nueva CPU");
-//			if ((cliente = procesarNuevasConexionesExtendido(&socketCPU)) >= 0)
-//				crearHiloConParametro(&clientes[cliente].hilo,
-//						(HILO) hiloDedicado, (void*) cliente);
-//		}
-//		if (tieneLectura(socketNucleo)) {
-//			log_info(activeLogger, "Se conecto Nucleo");
-//			if ((cliente = procesarNuevasConexionesExtendido(&socketNucleo))
-//					>= 0)
-//				crearHiloConParametro(&clientes[cliente].hilo,
-//						(HILO) hiloDedicado, (void*) cliente);
-//		}
-//	}
+	log_info(activeLogger, "Conectando a SWAP ...");
+	conectarASwap();
 
-	test2();
+	crearHilo(&hiloRecibirComandos,(HILO)recibirComandos);
+
+	configurarServidorExtendido(&socketNucleo, &direccionNucleo,
+			config.puerto_umc_nucleo, &tamanioDireccionNucleo, &activadoNucleo);
+
+	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puerto_cpu,
+			&tamanioDireccionCPU, &activadoCPU);
+
+	inicializarClientes();
+	log_info(activeLogger, "Esperando conexiones CPU/NUCLEO...");
+
+	while (1) {
+		FD_ZERO(&socketsParaLectura);
+		FD_SET(socketNucleo, &socketsParaLectura);
+		FD_SET(socketCPU, &socketsParaLectura);
+
+		mayorDescriptor = (socketNucleo > socketCPU) ? socketNucleo : socketCPU;
+
+		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, NULL);
+
+		int cliente;
+		if (tieneLectura(socketCPU)) {
+			log_info(activeLogger, "Se conecto una nueva CPU");
+			if ((cliente = procesarNuevasConexionesExtendido(&socketCPU)) >= 0)
+				crearHiloConParametro(&clientes[cliente].hilo,
+						(HILO) hiloDedicado, (void*) cliente);
+		}
+		if (tieneLectura(socketNucleo)) {
+			log_info(activeLogger, "Se conecto Nucleo");
+			if ((cliente = procesarNuevasConexionesExtendido(&socketNucleo))
+					>= 0)
+				crearHiloConParametro(&clientes[cliente].hilo,
+						(HILO) hiloDedicado, (void*) cliente);
+		}
+	}
+
+//	test2();
 
 	finalizar();
 	return 0;

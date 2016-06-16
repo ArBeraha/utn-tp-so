@@ -132,7 +132,7 @@ void inicializar() {
 	inicializarClientes();
 	conectarAUMC();
 //	testear(test_nucleo);
-//	crearHilo(&hiloPlanificacion, planificar);
+	crearHilo(&hiloPlanificacion, planificar);
 }
 void cargarConfiguracion() {
 	log_info(bgLogger, "Cargando archivo de configuracion");

@@ -84,7 +84,8 @@ void desasignarCPU(t_proceso* proceso) {
 }
 void ejecutarProceso(int PID, int cpu) {
 	// mutexProcesos SAFE
-	t_proceso* proceso = obtenerProceso(PID);
+	t_proceso* proceso = (t_proceso*) PID;//obtenerProceso(PID);
+	log_info(activeLogger,"Iniciando ejecucion de proceso pid %d con la cpu %d", proceso->PCB->PID, cpu);
 	asignarCPU(proceso,cpu);
 	if (!CU_is_test_running()) {
 		int bytes = bytes_PCB(proceso->PCB);

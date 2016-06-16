@@ -605,8 +605,7 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 	char* fraccionCodigo = malloc(config.tamanio_marco);
 	for(i=0;i<cantPaginas;i++){
 		memcpy(fraccionCodigo,contenido+(i*config.tamanio_marco),config.tamanio_marco);
-		send_w(swapServer,intToChar4(config.tamanio_marco),sizeof(int)); //Le mando el tamanio de la fraccion porque la ultima no esta completa
-		send_w(swapServer,fraccionCodigo,strlen(fraccionCodigo));
+		send_w(swapServer,fraccionCodigo,config.tamanio_marco);
 	}
 
 	char* header = recv_waitall_ws(swapServer,1);

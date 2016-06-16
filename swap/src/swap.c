@@ -154,15 +154,15 @@ void operacionIniciarProceso(){
 	// Hacer que asignarEspacioANuevoProceso devuelva el proceso asi evito buscarlo
 	int posInicial = buscarProcesoSegunPID(pid)->posPagina;
 	int i;
-	log_info(activeLogger,"Se van a recibir %d paginas del pid",paginas,pid);
+	log_info(activeLogger,"Se van a recibir %d paginas del pid %d",paginas,pid);
 	for (i=0;i<paginas;i++){
 		log_info(activeLogger,"Recibiendo pagina:%d",i);
 		char* pagina = recv_waitall_ws(cliente,config.tamanio_pagina);
 		escribirPagina(posInicial+i,pagina);
 		free(pagina);
 	}
-	log_info(activeLogger,"Recibidas todas las paginas");
 
+	log_info(activeLogger,"Recibidas todas las paginas");
 
 
 	free(serialPID);
@@ -284,12 +284,12 @@ void asignarEspacioANuevoProceso(int pid, int paginasAIniciar) {
 		//Me fijo si hay fragmentacion para asi ver si necesito compactar
 		if (hayQueCompactar(paginasAIniciar)) {
 			compactar();
-			if (hayQueCompactar(paginasAIniciar))
-				enviarHeader(cliente,HeaderNoHayEspacio);
+//			if (hayQueCompactar(paginasAIniciar))
+//				enviarHeader(cliente,HeaderNoHayEspacio);
 		}
 		agregarProceso(pid, paginasAIniciar);
 	} else {
-		enviarHeader(cliente,HeaderNoHayEspacio);
+//		enviarHeader(cliente,HeaderNoHayEspacio);
 		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
 		log_error(activeLogger, "Fallo la iniciacion del programa %d ", pid);
 	}
@@ -395,10 +395,11 @@ void agregarProceso(int pid, int paginasAIniciar) {
 		list_add(espacioUtilizado, (void*) proceso);
 		log_info(activeLogger, "Se inicializo el proceso pid:%d",pid);
 		//printf("Proceso agregado exitosamente\n");
-		enviarHeader(cliente,HeaderProcesoAgregado);
-	} else
-		enviarHeader(cliente,HeaderError);
+//		enviarHeader(cliente,HeaderProcesoAgregado);
+	} else {
+//		enviarHeader(cliente, HeaderError);
 		printf("Error Nunca debio llegar acá al agregar Proceso\n");
+	}
 }
 void moverProceso(t_infoProceso* proceso, int nuevoInicio) {
 	limpiarPosiciones(espacio, proceso->posPagina, proceso->cantidadDePaginas);

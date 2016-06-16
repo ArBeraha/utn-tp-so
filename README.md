@@ -1,6 +1,14 @@
 # tp-2016-1c-Con-16-bits-me-hago-alto-kernel
 
 # Bash
+## Colorizar salidas por pantalla
+
+    En C: system(echo textoAImprimir);
+
+#### Colores para echo:
+[![Link](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel)](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel)
+
+
 ## Mandar archivos ansisop a rolete :D
 [![Link](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/Mandar-archivos-a-lo-loco)](https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/Mandar-archivos-a-lo-loco)
 

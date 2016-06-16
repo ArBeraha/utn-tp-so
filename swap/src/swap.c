@@ -61,6 +61,11 @@ void conectar_umc() {
 	cliente = clienteData.socket;
 	log_info(activeLogger, "Conexion a UMC correcta :)\n.");
 }
+
+void operacionCodigo(){
+
+}
+
 void procesarHeader(int cliente, char* header) {
 	log_debug(bgLogger, "Llego un mensaje con header %d", charToInt(header));
 
@@ -144,8 +149,21 @@ void operacionIniciarProceso(){
 	serialPID = recv_waitall_ws(cliente,sizeof(int));
 	serialPagina = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
-	int pagina = char4ToInt(serialPagina);
-	asignarEspacioANuevoProceso(pid, pagina);
+	int paginas = char4ToInt(serialPagina);
+	asignarEspacioANuevoProceso(pid, paginas);
+	// Hacer que asignarEspacioANuevoProceso devuelva el proceso asi evito buscarlo
+	int posInicial = buscarProcesoSegunPID(pid)->posPagina;
+	int i;
+	for (i=0;i<paginas;i++){
+		log_info(activeLogger,"Recibiendo pagina:%d",i);
+		char* pagina = recv_waitall_ws(cliente,config.tamanio_pagina);
+		escribirPagina(posInicial+i,pagina);
+		free(pagina);
+	}
+	log_info(activeLogger,"Recibidas todas las paginas");
+
+
+
 	free(serialPID);
 	free(serialPagina);
 	imprimirBitarray();

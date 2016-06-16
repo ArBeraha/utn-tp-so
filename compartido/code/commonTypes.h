@@ -61,5 +61,6 @@ int stack_memory_size(t_stack* fuente);
 t_pedido* stack_next_pedido(t_stack* fuente, int pagsize);
 t_stack_item* stack_item_create();
 void list_remove_by_value(t_list* list,void* value);
+void color_print(char* texto);
 
 #endif /* OTROS_COMMONTYPES_H_ */

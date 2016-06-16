@@ -131,7 +131,26 @@ void test_ir_al_label(){
 	irAlLabel("double");
 
 	CU_ASSERT_EQUAL(pcbActual->PC,3);
-	dictionary_remove(pcbActual->indice_etiquetas,"double");
+	//dictionary_remove(pcbActual->indice_etiquetas,"double");
+}
+
+void test_llamar_con_retorno(){
+	pcbActual->PC = 0;
+	llamar_con_retorno("double",0);
+
+	t_stack_item* item = stack_pop(stack);
+	CU_ASSERT_EQUAL(item->posicion,1);
+	CU_ASSERT_EQUAL(item->posicionRetorno,0);
+	CU_ASSERT_EQUAL(pcbActual->PC,3);
+
+	stack_push(stack,item);
+
+	/*----------------------*/
+	definir_variable('f');
+	t_stack_item* otroItem = stack_pop(stack);
+	CU_ASSERT_EQUAL(pcbActual->PC,4);
+	CU_ASSERT(dictionary_has_key(otroItem->identificadores, "f"));
+	stack_push(stack,otroItem);
 
 }
 
@@ -171,6 +190,7 @@ int test_cpu() {
 	CU_add_test(suite_cpu, "Test primitiva #1: definir_variables",test_definir_variable);
 	CU_add_test(suite_cpu, "Test primitiva #2: obtener_posicion",test_obtener_posicion);
 	CU_add_test(suite_cpu, "Test primitiva #7: ir_al_label",test_ir_al_label);
+	CU_add_test(suite_cpu, "Test primitiva #8: llamar_con_retorno",test_llamar_con_retorno);
 
 	init();
 

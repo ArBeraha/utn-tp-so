@@ -1310,7 +1310,7 @@ void operacionScript(t_cliente cliente) {
 
 	read(cliente.socket, codigoScript, char4ToInt(tamanioCodigoScript));
 
-	if (inicializarPrograma(char4ToInt(pidScript), codigoScript,char4ToInt(cantidadDePaginasScript))) {
+	if (inicializarPrograma(char4ToInt(pidScript), codigoScript,char4ToInt(cantidadDePaginasScript)+paginas_stack)) {
 
 		reservarPagina(char4ToInt(cantidadDePaginasScript), char4ToInt(pidScript));
 		reservarPagina(paginas_stack, char4ToInt(pidScript));

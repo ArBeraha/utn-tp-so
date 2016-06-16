@@ -154,6 +154,7 @@ void operacionIniciarProceso(){
 	// Hacer que asignarEspacioANuevoProceso devuelva el proceso asi evito buscarlo
 	int posInicial = buscarProcesoSegunPID(pid)->posPagina;
 	int i;
+	log_info(activeLogger,"Se van a recibir %d paginas del pid",paginas,pid);
 	for (i=0;i<paginas;i++){
 		log_info(activeLogger,"Recibiendo pagina:%d",i);
 		char* pagina = recv_waitall_ws(cliente,config.tamanio_pagina);

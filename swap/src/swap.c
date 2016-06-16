@@ -164,7 +164,7 @@ void operacionIniciarProceso(){
 
 	log_info(activeLogger,"Recibidas todas las paginas");
 
-
+	enviarHeader(cliente,HeaderProcesoAgregado);
 	free(serialPID);
 	free(serialPagina);
 	imprimirBitarray();

@@ -66,6 +66,11 @@ void warnDebug() {
 			"Para correr nucleo en modo normal, settear en false el define DEBUG_IGNORE_UMC.");
 	log_warning(activeLogger, "--- CORRIENDO EN MODO DEBUG!!! ---");
 }
+void enviarStackSize(){
+	char* size = intToChar4(config.stack_size);
+	send(umc,config.stack_size,sizeof(int));
+	free(size);
+}
 void conectarAUMC() {
 	if (!DEBUG_IGNORE_UMC) {
 		log_info(bgLogger, "Iniciando conexion con UMC...");
@@ -74,10 +79,13 @@ void conectarAUMC() {
 		handshakearUMC();
 		log_info(activeLogger, "Handshake con UMC finalizado exitosamente.");
 		recibirTamanioPagina();
+		enviarStackSize();
+		log_info(activeLogger, "Enviado stack size %d.",config.stack_size);
 	} else {
 		warnDebug();
 	}
 }
+
 void recibirTamanioPagina(){
 	char* serialTamanio = malloc(sizeof(int));
 	serialTamanio = recv_waitall_ws(umc,sizeof(int));
@@ -150,6 +158,8 @@ void cargarConfiguracion() {
 	config.io_ids = config_get_array_value(configNucleo, "IO_ID");
 	config.ioSleep = config_get_array_value(configNucleo, "IO_SLEEP");
 	config.sharedVars = config_get_array_value(configNucleo, "SHARED_VARS");
+	config.stack_size = config_get_int_value(configNucleo, "STACK_SIZE");
+
 	config_destroy(configNucleo);
 }
 void recargarConfiguracion() {

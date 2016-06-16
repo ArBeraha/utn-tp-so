@@ -105,6 +105,7 @@ typedef struct customConfig {
 	// Agrego cosas que no esta en la consigna pero necesitamos
 	int puertoUMC;
 	char* ipUMC;
+	int stack_size;
 } customConfig_t;
 // Estructuras Administrativas
 t_queue* colaListos;
@@ -143,6 +144,7 @@ void establecerConexionConUMC();
 void conectarAUMC();
 void handshakearUMC();
 void recibirTamanioPagina();
+void enviarStackSize();
 // Consola
 char* getScript(int consola);
 // CPU

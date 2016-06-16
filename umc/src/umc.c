@@ -1314,9 +1314,9 @@ void operacionScript(t_cliente cliente) {
 		reservarPagina(atoi(cantidadDePaginasScript), atoi(pidScript));
 		reservarPagina(paginas_stack, atoi(pidScript));
 
-		send_w(cliente.socket, "1", sizeof(int));
+		send_w(cliente.socket, intToChar4(1), sizeof(int));
 	} else {
-		send_w(cliente.socket, "0", sizeof(int));
+		send_w(cliente.socket, intToChar4(0), sizeof(int));
 	}
 }
 

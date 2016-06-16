@@ -101,3 +101,7 @@ void list_remove_by_value(t_list* list, void* value) {
 		}
 	}
 }
+
+void color_print(char* texto){
+	system(string_from_format("echo \"\e[1m\e[5m\e[31m%s\e[0m\"", texto));
+}

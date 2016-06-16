@@ -11,7 +11,6 @@ bool pedirPaginas(int PID, char* codigo) {
 	t_proceso* proceso = obtenerProceso(PID);
 	char* serialPaginas = intToChar4(proceso->PCB->cantidad_paginas);
 	char* serialPid = intToChar4(PID);
-	bool hayMemDisponible = false;
 	char* respuesta = malloc(1);
 	if (DEBUG_IGNORE_UMC || DEBUG_IGNORE_UMC_PAGES) { // Para DEBUG
 		log_warning(activeLogger,
@@ -27,20 +26,19 @@ bool pedirPaginas(int PID, char* codigo) {
 		read(umc, respuesta, 1);
 		printf("Rta: %d\n",charToInt(respuesta));
 		pthread_mutex_unlock(&mutexUMC);
-		hayMemDisponible = (bool) ((int) respuesta);
-		if (hayMemDisponible == true)
+		if (charToInt(respuesta) == 1)
 			log_info(activeLogger, "Hay memoria disponible para el proceso %d.",
 					PID);
-		else if (hayMemDisponible == false)
+		else if (charToInt(respuesta) == 0)
 			log_info(activeLogger, "No hay memoria disponible para el proceso %d.",
 					PID);
 		else
-			log_warning(activeLogger, "Umc debería enviar (0 o 1) y envió %d",
-					hayMemDisponible);
+			log_warning(activeLogger, "Umc debería enviar (0 o 1) y envió %s",
+					charToInt(respuesta));
 	}
 	free(serialPid);
 	free(serialPaginas);
-	return hayMemDisponible;
+	return charToInt(respuesta);
 }
 int getHandshake() {
 	char* handshake = recv_nowait_ws(umc, 1);
@@ -134,7 +132,7 @@ void inicializar() {
 	inicializarClientes();
 	conectarAUMC();
 //	testear(test_nucleo);
-	crearHilo(&hiloPlanificacion, planificar);
+//	crearHilo(&hiloPlanificacion, planificar);
 }
 void cargarConfiguracion() {
 	log_info(bgLogger, "Cargando archivo de configuracion");

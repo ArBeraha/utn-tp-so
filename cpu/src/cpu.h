@@ -86,6 +86,7 @@ int queda_espacio_en_pagina(t_sentencia* sentencia);
 void enviar_solicitud(int pagina, int offset, int size);
 void pedir_sentencia();
 void esperar_sentencia();
+void enviarPID();
 void obtenerPCB();
 void enviarPCB();
 void obtener_y_parsear();

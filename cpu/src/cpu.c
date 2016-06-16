@@ -246,6 +246,13 @@ void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecu
 	//return tamanio;
 }
 
+void enviarPID(){
+	enviarHeader(cliente_umc,HeaderPID);
+	char* pid = intToChar4(pcbActual->PID);
+	send_w(cliente_umc,pid,sizeof(int));
+	free(pid);
+}
+
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	if(pcbActual!=NULL){ //Al principio esta en null, asi no se inicializa.
 		pcb_destroy(pcbActual);
@@ -257,7 +264,10 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	log_debug(debugLogger, "PCB recibido!");
 	deserializar_PCB(pcbActual, pcb);//reemplazo en el pcb actual de cpu que tiene como variable global
 
+	enviarPID();
+
 	stack = pcbActual->SP;
+
 
 	free(pcb);
 }

@@ -1259,10 +1259,6 @@ void procesarHeader(t_cliente cliente, char* header) {
 	case HeaderTamanioPagina:
 		log_info(activeLogger, "[%d] Pedido tamanio paginas",idLog);
 		send_w(cliente.socket,intToChar4(config.tamanio_marco),sizeof(int));
-		char* tamanioStack = malloc(sizeof(int));
-		read(cliente.socket , tamanioStack, sizeof(int));
-		paginas_stack = char4ToInt(tamanioStack);
-		log_info(activeLogger, "[%d] Se recibio el tamanio del Stack: %d",idLog,paginas_stack);
 		break;
 
 	case HeaderPedirValorVariable:  //PARA NUCLEO
@@ -1453,6 +1449,10 @@ void atenderHandshake(t_cliente cliente){
 			char* serialTamanio = intToChar4(config.tamanio_marco);
 			send_w(cliente.socket,serialTamanio,sizeof(int));
 			free(serialTamanio);
+			char* tamanioStack = malloc(sizeof(int));
+			read(cliente.socket , tamanioStack, sizeof(int));
+			paginas_stack = char4ToInt(tamanioStack);
+			log_info(activeLogger, "Se recibio el tamanio del Stack: %d",paginas_stack);
 		}
 		else if (charToInt(handshake) == SOYCPU){
 			// Acciones especificas de cpu despues del handshake

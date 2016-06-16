@@ -6,23 +6,36 @@
  */
 #include "nucleo.h"
 
-void waitSemaforo(int cliente) {
+void recibirWait(int cliente){
 	char* semid = leerLargoYMensaje(clientes[cliente].socket);
+	primitivaWait(cliente,semid);
+	free(semid);
+}
+
+void recibirSignal(int cliente){
+	char* semid = leerLargoYMensaje(clientes[cliente].socket);
+	primitivaSignal(cliente,semid);
+	free(semid);
+}
+
+
+void primitivaWait(int cliente, char* semid) {
+	//char* semid = leerLargoYMensaje(clientes[cliente].socket);
+	log_info(activeLogger,"Llego un wait para el semaforo %s",semid);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
 	if (sem->valor > 0)
 		sem->valor--;
 	else
 		bloquearProcesoSem(clientes[cliente].pid, semid);
-	free(semid);
 }
-void signalSemaforo(int cliente) {
-	char* semid = leerLargoYMensaje(clientes[cliente].socket);
+void primitivaSignal(int cliente, char* semid) {
+	//char* semid = leerLargoYMensaje(clientes[cliente].socket);
+	log_info(activeLogger,"Llego un signal para el semaforo %s",semid);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
 	if (!queue_is_empty(sem->cola))
 		desbloquearProceso((int)queue_pop(sem->cola));
 	else
 	sem->valor++;
-	free(semid);
 }
 void asignarCompartida(int cliente) {
 	char* compartida = leerLargoYMensaje(clientes[cliente].socket);

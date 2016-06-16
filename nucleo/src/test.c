@@ -109,6 +109,21 @@ void test_bloqueosIO() {
 	list_clean(listaProcesos);
 	log_info(bgLogger, "FIN test_bloqueosIO()");
 }
+
+//void test_semaforos(){
+//	log_info(bgLogger, "INICIO test_semaforos()");
+//
+////	int consola = 11, cpu = 22;
+////	queue_push(colaCPU, (void*) cpu);
+//
+//	//t_proceso* proceso = (t_proceso*) crearProceso(0);
+//
+//	signalSemaforo(0,"SEM1");
+//
+//
+//	log_info(bgLogger, "FIN test_semaforos()");
+//}
+
 int test_nucleo() {
 	log_info(activeLogger, "INICIANDO TESTS DE NUCLEO");
 	CU_initialize_registry();
@@ -119,6 +134,8 @@ int test_nucleo() {
 			test_obtenerMetadata);
 	CU_add_test(suite_nucleo, "Test de bloqueos [Puede tardar un poco]",
 			test_bloqueosIO);
+//	CU_add_test(suite_nucleo, "Test de semaforos",
+//				test_semaforos);
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
 	CU_cleanup_registry();

@@ -26,8 +26,8 @@
 #define SIN_ASIGNAR -1
 /* ---------- INICIO DEBUG ---------- */
 // Es util para debugear sin tener una consola extra con UMC abierto.
-#define DEBUG_IGNORE_UMC true
-#define DEBUG_IGNORE_UMC_PAGES true
+#define DEBUG_IGNORE_UMC false
+#define DEBUG_IGNORE_UMC_PAGES false
 /* ---------- INICIO DEBUG ---------- */
 int socketConsola, socketCPU, activadoCPU, activadoConsola, umc, cambiosConfiguracion;
 struct sockaddr_in direccionConsola, direccionCPU, direccionUMC;
@@ -74,7 +74,6 @@ typedef struct t_proceso {
 	int rafagas;
 } t_proceso;
 
-//            Cliente     puntero al programa
 t_proceso* procesos[MAXCLIENTS];
 
 typedef struct t_IO {
@@ -177,8 +176,10 @@ void expulsarProceso(t_proceso* proceso);
 void ejecutarProceso(int PID, int cpu);
 void rafagaProceso(int cliente);
 // Primitivas
-void signalSemaforo(int cliente);
-void waitSemaforo(int cliente);
+void recibirSignal(int cliente);
+void recibirWait(int cliente);
+void primitivaSignal(int cliente, char* semid);
+void primitivaWait(int cliente, char* semid);
 void asignarCompartida(int cliente);
 void devolverCompartida(int cliente);
 void imprimirVariable(int cliente);

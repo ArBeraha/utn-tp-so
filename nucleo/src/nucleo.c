@@ -116,7 +116,7 @@ void inicializar() {
 
 	int i;
 	for (i=0;i<getMaxClients();i++){
-		procesos[i]=-1;
+		procesos[i]=NULL;
 	}
 
 	cargarConfiguracion();
@@ -132,7 +132,7 @@ void inicializar() {
 			&tamanioDireccionCPU, &activadoCPU);
 	inicializarClientes();
 	conectarAUMC();
-	testear(test_nucleo);
+//	testear(test_nucleo);
 	crearHilo(&hiloPlanificacion, planificar);
 }
 void cargarConfiguracion() {
@@ -312,11 +312,11 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderSignal:
-		signalSemaforo(cliente);
+		recibirSignal(cliente);
 		break;
 
 	case HeaderWait:
-		waitSemaforo(cliente);
+		recibirWait(cliente);
 		break;
 
 	case headerTermineInstruccion:

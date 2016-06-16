@@ -79,8 +79,8 @@ void desasignarCPU(t_proceso* proceso) {
 			proceso->PCB->PID);
 	MUTEXCPU(queue_push(colaCPU, (void*) proceso->cpu));
 	proceso->cpu = SIN_ASIGNAR;
-	MUTEXPROCESOS(procesos[proceso->cpu] = (t_proceso*)-1);
-	MUTEXCLIENTES(clientes[proceso->cpu].pid = (int) NULL);
+	MUTEXPROCESOS(procesos[proceso->cpu] = NULL);
+	MUTEXCLIENTES(clientes[proceso->cpu].pid = -1);
 }
 void ejecutarProceso(int PID, int cpu) {
 	// mutexProcesos SAFE

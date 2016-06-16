@@ -11,7 +11,7 @@
 t_proceso* obtenerProceso(int PID){
 	t_proceso* proceso;
 	MUTEXPROCESOS(proceso = procesos[PID]);
-	if (proceso == (t_proceso*)-1){
+	if (proceso == NULL){
 		log_error(activeLogger,"Se solicita el proceso PID:%d inexistente", PID);
 		return NULL;}
 	else
@@ -33,7 +33,7 @@ void rechazarProceso(int PID) {
 //	pthread_mutex_lock(&mutexClientes);
 //	quitarCliente(proceso->consola);
 //	pthread_mutex_unlock(&mutexClientes);
-	MUTEXPROCESOS(procesos[PID] = (t_proceso*)-1);
+	MUTEXPROCESOS(procesos[PID] = NULL);
 	pcb_destroy(proceso->PCB);
 
 	free(proceso);
@@ -86,7 +86,7 @@ void destruirProceso(int PID) {
 		MUTEXCLIENTES(quitarCliente(proceso->consola));
 	}
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
-	MUTEXPROCESOS(procesos[PID] = (t_proceso*)-1);
+	MUTEXPROCESOS(procesos[PID] = NULL);
 	pcb_destroy(proceso->PCB);
 	free(proceso); // Destruir Proceso y PCB
 

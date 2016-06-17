@@ -11,14 +11,11 @@ void recibirWait(int cliente){
 	primitivaWait(cliente,semid);
 	free(semid);
 }
-
 void recibirSignal(int cliente){
 	char* semid = leerLargoYMensaje(clientes[cliente].socket);
 	primitivaSignal(cliente,semid);
 	free(semid);
 }
-
-
 void primitivaWait(int cliente, char* semid) {
 	//char* semid = leerLargoYMensaje(clientes[cliente].socket);
 	log_info(activeLogger,"Llego un wait para el semaforo %s",semid);
@@ -37,20 +34,30 @@ void primitivaSignal(int cliente, char* semid) {
 	else
 	sem->valor++;
 }
-void asignarCompartida(int cliente) {
+void recibirAsignarCompartida(int cliente){
 	char* compartida = leerLargoYMensaje(clientes[cliente].socket);
 	char* valor = malloc(sizeof(int));
 	read(clientes[cliente].socket, valor, sizeof(int));
-	*(int*) dictionary_get(tablaGlobales, compartida) = char4ToInt(valor);
+	primitivaAsignarCompartida(compartida,char4ToInt(valor));
 	free(compartida);
 	free(valor);
 }
-void devolverCompartida(int cliente) {
+void recibirDevolverCompartida(int cliente){
 	char* compartida = leerLargoYMensaje(clientes[cliente].socket);
-	char* valor = intToChar4(*(int*) dictionary_get(tablaGlobales, compartida));
+	char* valor = intToChar4(primitivaDevolverCompartida(compartida));
 	send_w(clientes[cliente].socket, valor, sizeof(int));
-	free(compartida);
 	free(valor);
+	free(compartida);
+}
+void primitivaAsignarCompartida(char* compartida, int valor) {
+	*(int*) dictionary_get(tablaGlobales, compartida) = valor;
+}
+int primitivaDevolverCompartida(char* compartida) {
+	if (dictionary_has_key(tablaGlobales,compartida))
+		return (*(int*) dictionary_get(tablaGlobales, compartida));
+	else
+		log_error(activeLogger,"Se pidio el valor de la global %s inexistente",compartida);
+	return 0;
 }
 void imprimirVariable(int cliente) {
 

@@ -139,7 +139,7 @@ void inicializar() {
 			&tamanioDireccionCPU, &activadoCPU);
 	inicializarClientes();
 	conectarAUMC();
-//	testear(test_nucleo);
+	//testear(test_nucleo);
 	crearHilo(&hiloPlanificacion, planificar);
 }
 void cargarConfiguracion() {
@@ -236,7 +236,7 @@ void crearCompartidas() {
 	while (config.sharedVars[i] != '\0') {
 		int* init = malloc(sizeof(int));
 		*init = 0;
-		dictionary_put(tablaSEM, config.sharedVars[i], init);
+		dictionary_put(tablaGlobales, config.sharedVars[i], init);
 		log_info(bgLogger, "Creando Compartida:%s valor:%d",
 				config.sharedVars[i], *init);
 		i++;
@@ -313,11 +313,11 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderPedirValorVariableCompartida:
-		devolverCompartida(cliente);
+		recibirDevolverCompartida(cliente);
 		break;
 
 	case HeaderAsignarValorVariableCompartida:
-		asignarCompartida(cliente);
+		recibirAsignarCompartida(cliente);
 		break;
 
 	case HeaderSignal:

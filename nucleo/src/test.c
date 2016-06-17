@@ -11,9 +11,9 @@ void test_cicloDeVidaProcesos() {
 	log_info(bgLogger, "INICIO test_cicloDeVidaProcesos");
 	int consola = 1, cpu = 2;
 	queue_push(colaCPU, (void*) cpu);
-	t_proceso* proceso = (t_proceso*) crearProceso(consola);
+	t_proceso* proceso = crearProceso(consola);
 	cambiarEstado(proceso,READY);
-	ejecutarProceso(proceso->PCB->PID, (int) queue_pop(colaCPU));
+	ejecutarProceso(proceso, (int) queue_pop(colaCPU));
 	CU_ASSERT_EQUAL(proceso->estado, EXEC);
 	CU_ASSERT_EQUAL(proceso->cpu, 2)
 	CU_ASSERT_TRUE(queue_is_empty(colaCPU));
@@ -23,24 +23,18 @@ void test_cicloDeVidaProcesos() {
 	io->cola = queue_create();
 	io->estado = INACTIVE;
 	dictionary_put(tablaIO, "ScannerTest1", io);
-
 	bloquearProcesoIO(proceso->PCB->PID, "ScannerTest1",2);
 
 	CU_ASSERT_FALSE(queue_is_empty(colaCPU));
 	CU_ASSERT_EQUAL(proceso->estado, BLOCK);
 
-	//queue_pop(io->cola);
 	io->estado = ACTIVE;
 	bloqueo(queue_pop(io->cola));
 
-	//desbloquearProceso(proceso->PCB->PID);
 	CU_ASSERT_EQUAL(proceso->estado, READY);
-
 	finalizarProceso(proceso->PCB->PID);
-
 	CU_ASSERT_EQUAL(proceso->estado, EXIT);
 	CU_ASSERT_FALSE(queue_is_empty(colaSalida));
-
 	destruirProceso(proceso->PCB->PID);
 	CU_ASSERT_TRUE(list_is_empty(listaProcesos));
 
@@ -87,10 +81,10 @@ void test_bloqueosIO() {
 	io->estado = INACTIVE;
 	dictionary_put(tablaIO, "ScannerTest2", io);
 
-	t_proceso* proceso = (t_proceso*)crearProceso(consola);
-	proceso->estado = READY;
+	t_proceso* proceso = crearProceso(consola);
+	cambiarEstado(proceso,READY);
 
-	ejecutarProceso(proceso->PCB->PID,(int)queue_pop(colaCPU));
+	ejecutarProceso(proceso,(int)queue_pop(colaCPU));
 	bloquearProcesoIO(proceso->PCB->PID,"ScannerTest2",2);
 	dictionary_iterator(tablaIO,(void*)planificarIO);
 	CU_ASSERT_EQUAL(io->estado,ACTIVE);
@@ -110,20 +104,43 @@ void test_bloqueosIO() {
 	log_info(bgLogger, "FIN test_bloqueosIO()");
 }
 
-//void test_semaforos(){
-//	log_info(bgLogger, "INICIO test_semaforos()");
-//
-////	int consola = 11, cpu = 22;
-////	queue_push(colaCPU, (void*) cpu);
-//
-//	//t_proceso* proceso = (t_proceso*) crearProceso(0);
-//
-//	signalSemaforo(0,"SEM1");
-//
-//
-//	log_info(bgLogger, "FIN test_semaforos()");
-//}
+void test_semaforos(){
+	log_info(bgLogger, "INICIO test_semaforos()");
 
+	t_proceso* proceso = crearProceso(0);
+	cambiarEstado(proceso,READY);
+	asignarCPU(proceso,5);
+
+	CU_ASSERT_EQUAL(queue_size(((t_semaforo*)dictionary_get(tablaSEM,"SEM1"))->cola),0);
+	primitivaWait(0,"SEM1");
+	CU_ASSERT_EQUAL(proceso->estado,BLOCK);
+	CU_ASSERT_EQUAL(queue_size(((t_semaforo*)dictionary_get(tablaSEM,"SEM1"))->cola),1);
+	CU_ASSERT_EQUAL(((t_semaforo*)dictionary_get(tablaSEM,"SEM1"))->valor,0);
+	primitivaSignal(0,"SEM1");
+	CU_ASSERT_EQUAL(((t_semaforo*)dictionary_get(tablaSEM,"SEM1"))->valor,0);
+	CU_ASSERT_TRUE(queue_is_empty(((t_semaforo*)dictionary_get(tablaSEM,"SEM1"))->cola));
+	CU_ASSERT_EQUAL(proceso->estado,READY)
+	primitivaSignal(0,"SEM1");
+	CU_ASSERT_EQUAL(((t_semaforo*)dictionary_get(tablaSEM,"SEM1"))->valor,1);
+
+	finalizarProceso(proceso->PCB->PID);
+	destruirProceso(proceso->PCB->PID);
+	queue_clean(colaSalida);
+	queue_clean(colaListos);
+	queue_clean(colaCPU);
+	list_clean(listaProcesos);
+	log_info(bgLogger, "FIN test_semaforos()");
+}
+void test_compartidas(){
+	log_info(bgLogger, "INICIO test_compartidas()");
+	char* compartida = "!tiempo3";
+	CU_ASSERT_EQUAL(primitivaDevolverCompartida(compartida),0);
+	primitivaAsignarCompartida(compartida,11);
+	CU_ASSERT_EQUAL(primitivaDevolverCompartida(compartida),11);
+	primitivaAsignarCompartida(compartida,0);
+	free(compartida);
+	log_info(bgLogger, "FIN test_compartidas()");
+}
 int test_nucleo() {
 	log_info(activeLogger, "INICIANDO TESTS DE NUCLEO");
 	CU_initialize_registry();
@@ -134,8 +151,10 @@ int test_nucleo() {
 			test_obtenerMetadata);
 	CU_add_test(suite_nucleo, "Test de bloqueos [Puede tardar un poco]",
 			test_bloqueosIO);
-//	CU_add_test(suite_nucleo, "Test de semaforos",
-//				test_semaforos);
+	CU_add_test(suite_nucleo, "Test de semaforos",
+				test_semaforos);
+	CU_add_test(suite_nucleo, "Test de compartidas",
+				test_compartidas);
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
 	CU_cleanup_registry();

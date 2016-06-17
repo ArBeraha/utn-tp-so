@@ -68,6 +68,7 @@ HILO crearProceso(int consola) {
 
 
 void finalizarProceso(int PID) {
+	log_info(activeLogger,"Finalizando el proceso pid:%d",PID);
 	t_proceso* proceso = obtenerProceso(PID);
 	cambiarEstado(proceso,EXIT);
 	MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
@@ -123,11 +124,12 @@ void bloquearProcesoSem(int PID, char* semid) {
 		log_info(activeLogger, "El Semaforo solicitado no existe");
 }
 void bloquearProceso(int PID) {
-	log_info(activeLogger,"Bloqueando Proceso");
+	log_info(activeLogger,"Bloqueando proceso pid:%d",PID);
 	t_proceso* proceso = obtenerProceso(PID);
 	cambiarEstado(proceso,BLOCK);
 }
 void desbloquearProceso(int PID) {
+	log_info(activeLogger,"Desbloqueando proceso pid:%d",PID);
 	t_proceso* proceso = obtenerProceso(PID);
 	cambiarEstado(proceso,READY);
 }

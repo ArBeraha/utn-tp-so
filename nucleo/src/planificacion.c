@@ -82,9 +82,9 @@ void desasignarCPU(t_proceso* proceso) {
 	MUTEXPROCESOS(procesos[proceso->cpu] = NULL);
 	MUTEXCLIENTES(clientes[proceso->cpu].pid = -1);
 }
-void ejecutarProceso(int PID, int cpu) {
+void ejecutarProceso(t_proceso* proceso, int cpu) {
 	// mutexProcesos SAFE
-	t_proceso* proceso = (t_proceso*) PID;//obtenerProceso(PID);
+	//t_proceso* proceso = (t_proceso*) PID;//obtenerProceso(PID);
 	log_info(activeLogger,"Iniciando ejecucion de proceso pid %d con la cpu %d", proceso->PCB->PID, cpu);
 	asignarCPU(proceso,cpu);
 	if (!CU_is_test_running()) {

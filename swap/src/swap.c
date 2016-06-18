@@ -143,7 +143,6 @@ void operacionHandshake(){
 	free(handshake);
 }
 void operacionIniciarProceso(){
-	log_info(activeLogger, "Se recibio inicializacion");
 	char* serialPID = malloc(sizeof(int));
 	char* serialPagina = malloc(sizeof(int));
 	char* serialPaginasCodigo = malloc(sizeof(int));
@@ -151,17 +150,16 @@ void operacionIniciarProceso(){
 	serialPagina = recv_waitall_ws(cliente,sizeof(int));
 	serialPaginasCodigo = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
+	log_info(activeLogger, "Se recibio inicializacion del pid:%d",pid);
 	int paginas = char4ToInt(serialPagina);
 	int paginasCodigo = char4ToInt(serialPaginasCodigo);
-	asignarEspacioANuevoProceso(pid, paginas);
-	// Hacer que asignarEspacioANuevoProceso devuelva el proceso asi evito buscarlo
-	int posInicial = buscarProcesoSegunPID(pid)->posPagina;
+	t_infoProceso* proceso = asignarEspacioANuevoProceso(pid, paginas);
 	int i;
-	log_info(activeLogger,"Se van a recibir %d paginas del pid %d",paginas,pid);
+	log_info(activeLogger,"Se van a recibir %d paginas del pid %d de las cuales %d son de codigo",paginas,pid,paginasCodigo);
 	for (i=0;i<paginasCodigo;i++){
 		log_info(activeLogger,"Recibiendo pagina:%d",i);
 		char* pagina = recv_waitall_ws(cliente,config.tamanio_pagina);
-		escribirPagina(posInicial+i,pagina);
+		escribirPagina(proceso->posPagina+i,pagina);
 		free(pagina);
 	}
 	log_info(activeLogger,"Recibidas todas las paginas de codigo");
@@ -172,7 +170,6 @@ void operacionIniciarProceso(){
 	imprimirBitarray();
 }
 void operacionEscritura(){
-	log_info(activeLogger, "Se recibio escritura");
 	char* serialPID = malloc(sizeof(int));
 	char* serialPagina = malloc(sizeof(int));
 	char* contenido= malloc(config.tamanio_pagina);
@@ -180,6 +177,7 @@ void operacionEscritura(){
 	serialPagina = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
 	int pagina = char4ToInt(serialPagina);
+	log_info(activeLogger, "Se recibio escritura del pid:%d pagina:%d",pid,pagina);
 	contenido = recv_waitall_ws(cliente,config.tamanio_pagina);
 	escribirPagina(buscarProcesoSegunPID(pid)->posPagina+pagina,contenido);
 	enviarHeader(cliente,HeaderEscrituraCorrecta);
@@ -190,13 +188,14 @@ void operacionEscritura(){
 }
 void operacionLectura(){
 	t_datosPedido* datosPedido = malloc(sizeof(t_datosPedido));
-	log_info(activeLogger, "Se recibio lectura");
+
 	char* serialPID = malloc(sizeof(int));
 	char* serialPagina = malloc(sizeof(int));
 	serialPID = recv_waitall_ws(cliente,sizeof(int));
 	serialPagina = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
 	int pagina = char4ToInt(serialPagina);
+	log_info(activeLogger, "Se recibio lectura del pid:%d pagina:%d",pid,pagina);
 	char* contenido = leerPagina(
 		buscarProcesoSegunPID(pid)->posPagina
 			+ pagina);
@@ -211,13 +210,12 @@ void operacionLectura(){
 	free(datosPedido);
 }
 void operacionFinalizar(){
-	log_info(activeLogger, "Se recibio finalizacion");
 	char* serialPID = malloc(sizeof(int));
 	serialPID = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
+	log_info(activeLogger, "Se recibio finalizacion del pid:%d",pid);
     finalizarProceso(pid);
 	enviarHeader(cliente,HeaderProcesoEliminado);
-
 	free(serialPID);
 }
 // Funciones para el manejo del Espacio
@@ -266,7 +264,7 @@ int primerEspacioLibre() {
 	}
 	return 0;
 }
-void asignarEspacioANuevoProceso(int pid, int paginasAIniciar) {
+t_infoProceso* asignarEspacioANuevoProceso(int pid, int paginasAIniciar) {
 	if (paginasAIniciar <= espacioDisponible) {
 		//Me fijo si hay fragmentacion para asi ver si necesito compactar
 		if (hayQueCompactar(paginasAIniciar)) {
@@ -274,12 +272,13 @@ void asignarEspacioANuevoProceso(int pid, int paginasAIniciar) {
 //			if (hayQueCompactar(paginasAIniciar))
 //				enviarHeader(cliente,HeaderNoHayEspacio);
 		}
-		agregarProceso(pid, paginasAIniciar);
+		return agregarProceso(pid, paginasAIniciar);
 	} else {
 //		enviarHeader(cliente,HeaderNoHayEspacio);
 		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
 		log_error(activeLogger, "Fallo la iniciacion del programa %d ", pid);
 	}
+	return NULL;
 }
 int buscarEspacio(int paginasAIniciar) {
 	int i, espacioTotal = 0;
@@ -343,14 +342,14 @@ void limpiarEstructuras() {
 }
 // Funciones para el manejo de Paginas
 void escribirPagina(int numeroPagina, char* contenidoPagina) {
-	log_info(activeLogger, "Se escribio la pagina:%d el contenido:%s",numeroPagina,contenidoPagina);
 	memcpy(archivo + numeroPagina * config.tamanio_pagina, contenidoPagina, config.tamanio_pagina);
+	log_info(activeLogger, "Se escribio el marco:%d el contenido:%s",numeroPagina,contenidoPagina);
 }
 char* leerPagina(int numeroPagina) {
-	log_info(activeLogger, "Se leyo la pagina:%d",numeroPagina);
 	char* str = malloc(config.tamanio_pagina);
 	memcpy(str, archivo + numeroPagina * config.tamanio_pagina,
 			config.tamanio_pagina);
+	log_info(activeLogger, "Se leyo el marco:%d el contenido:%s",numeroPagina,str);
 	return str;
 }
 void imprimirPagina(int numeroPagina) {
@@ -369,7 +368,7 @@ void moverPagina(int numeroPagina, int posicion) {
 			config.tamanio_pagina);
 }
 // Funciones para el manejo de Procesos
-void agregarProceso(int pid, int paginasAIniciar) {
+t_infoProceso* agregarProceso(int pid, int paginasAIniciar) {
 	//  en asignarEspacioANuevoProceso se chequeo que va a haber espacio si o si
 	int marcoInicial = buscarEspacio(paginasAIniciar);
 	if (marcoInicial >= 0) {
@@ -383,9 +382,11 @@ void agregarProceso(int pid, int paginasAIniciar) {
 		log_info(activeLogger, "Se inicializo el proceso pid:%d",pid);
 		//printf("Proceso agregado exitosamente\n");
 //		enviarHeader(cliente,HeaderProcesoAgregado);
+		return proceso;
 	} else {
 //		enviarHeader(cliente, HeaderError);
 		printf("Error Nunca debio llegar acá al agregar Proceso\n");
+		return NULL;
 	}
 }
 void moverProceso(t_infoProceso* proceso, int nuevoInicio) {

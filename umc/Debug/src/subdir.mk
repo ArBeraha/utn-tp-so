@@ -4,12 +4,24 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../src/algoritmosReemplazo.c \
+../src/auxiliaresUmc.c \
+../src/conexionesUmc.c \
+../src/consolaUmc.c \
 ../src/umc.c 
 
 OBJS += \
+./src/algoritmosReemplazo.o \
+./src/auxiliaresUmc.o \
+./src/conexionesUmc.o \
+./src/consolaUmc.o \
 ./src/umc.o 
 
 C_DEPS += \
+./src/algoritmosReemplazo.d \
+./src/auxiliaresUmc.d \
+./src/conexionesUmc.d \
+./src/consolaUmc.d \
 ./src/umc.d 
 
 

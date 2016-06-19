@@ -157,7 +157,7 @@ void bloquearProcesoIO(int PID, char* IO, int tiempo);
 void bloquearProcesoSem(int PID, char* semid);
 void desbloquearProceso(int PID);
 void finalizarProceso(int PID);
-void destruirProceso(int PID);
+void destruirProceso(t_proceso* proceso);
 void actualizarPCB(t_PCB PCB);
 void asignarMetadataProceso(t_proceso* p, char* codigo);
 t_proceso* obtenerProceso(int PID);
@@ -177,6 +177,8 @@ void continuarProceso(t_proceso* proceso);
 void expulsarProceso(t_proceso* proceso);
 void ejecutarProceso(t_proceso* proceso, int cpu);
 void rafagaProceso(int cliente);
+bool procesoExiste(t_proceso* proceso);
+bool clienteExiste(int cliente);
 // Primitivas
 void recibirSignal(int cliente);
 void recibirWait(int cliente);

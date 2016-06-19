@@ -42,17 +42,44 @@ void rafagaProceso(cliente){
 	proceso->rafagas++;
 	planificarExpulsion(proceso);
 }
+bool procesoExiste(t_proceso* proceso){
+	int i;
+	for (i=0;i<getMaxClients();i++){
+		if (procesos[i]==proceso)
+			return true;
+	}
+	return false;
+}
+bool clienteExiste(int cliente){
+	if (clientes[cliente].socket != 0)
+		return true;
+	else
+		return false;
+}
 void planificacionFIFO() {
 	// mutexProcesos SAFE
-	MUTEXLISTOS(MUTEXCPU(
-	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
-		ejecutarProceso((int) queue_pop(colaListos), (int) queue_pop(colaCPU));
-	))
-
 	MUTEXSALIDA(
 	while (!queue_is_empty(colaSalida))
-		destruirProceso((int) queue_pop(colaSalida));
+		destruirProceso(queue_pop(colaSalida));
 	)
+
+	MUTEXLISTOS(MUTEXCPU(
+	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU)) {
+		// Limpiamos las colas de procesos eliminados hasta encontrar uno que no lo este o se vacie
+		while (!queue_is_empty(colaListos)
+				&& !procesoExiste( (t_proceso*) queue_peek(colaListos)))
+			queue_pop(colaListos);
+		// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
+		while (!queue_is_empty(colaCPU) && !clienteExiste( (int) queue_peek(colaCPU)))
+			queue_pop(colaCPU);
+
+		// Si no se vaciaron las listas entonces los primeros de ambas listas son validos
+		if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
+			ejecutarProceso((t_proceso*) queue_pop(colaListos),
+					(int) queue_pop(colaCPU));
+		// Si por lo menos una lista no se vacio repetir el proceso
+	}
+	))
 }
 
 void planificarIO(char* io_id, t_IO* io) {

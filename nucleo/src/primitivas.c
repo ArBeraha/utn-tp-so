@@ -17,7 +17,6 @@ void recibirSignal(int cliente){
 	free(semid);
 }
 void primitivaWait(int cliente, char* semid) {
-	//char* semid = leerLargoYMensaje(clientes[cliente].socket);
 	log_info(activeLogger,"Llego un wait para el semaforo %s",semid);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
 	if (sem->valor > 0)
@@ -26,7 +25,6 @@ void primitivaWait(int cliente, char* semid) {
 		bloquearProcesoSem(clientes[cliente].pid, semid);
 }
 void primitivaSignal(int cliente, char* semid) {
-	//char* semid = leerLargoYMensaje(clientes[cliente].socket);
 	log_info(activeLogger,"Llego un signal para el semaforo %s",semid);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
 	if (!queue_is_empty(sem->cola))
@@ -60,7 +58,6 @@ int primitivaDevolverCompartida(char* compartida) {
 	return 0;
 }
 void imprimirVariable(int cliente) {
-
 	int socketConsola = clientes[(obtenerProceso(clientes[cliente].pid))->consola].socket;
 	char* serialValor = malloc( sizeof(ansisop_var_t));
 	read(cliente, serialValor, sizeof(ansisop_var_t));

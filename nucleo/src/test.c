@@ -35,7 +35,7 @@ void test_cicloDeVidaProcesos() {
 	finalizarProceso(proceso->PCB->PID);
 	CU_ASSERT_EQUAL(proceso->estado, EXIT);
 	CU_ASSERT_FALSE(queue_is_empty(colaSalida));
-	destruirProceso(proceso->PCB->PID);
+	destruirProceso(proceso);
 	CU_ASSERT_TRUE(list_is_empty(listaProcesos));
 
 	queue_clean(colaSalida);
@@ -95,7 +95,7 @@ void test_bloqueosIO() {
 	queue_destroy(io->cola);
 	free(io);
 	finalizarProceso(proceso->PCB->PID);
-	destruirProceso(proceso->PCB->PID);
+	destruirProceso(proceso);
 
 	queue_clean(colaSalida);
 	queue_clean(colaListos);
@@ -103,7 +103,6 @@ void test_bloqueosIO() {
 	list_clean(listaProcesos);
 	log_info(bgLogger, "FIN test_bloqueosIO()");
 }
-
 void test_semaforos(){
 	log_info(bgLogger, "INICIO test_semaforos()");
 
@@ -124,7 +123,7 @@ void test_semaforos(){
 	CU_ASSERT_EQUAL(((t_semaforo*)dictionary_get(tablaSEM,"SEM1"))->valor,1);
 
 	finalizarProceso(proceso->PCB->PID);
-	destruirProceso(proceso->PCB->PID);
+	destruirProceso(proceso);
 	queue_clean(colaSalida);
 	queue_clean(colaListos);
 	queue_clean(colaCPU);

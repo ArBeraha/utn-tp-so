@@ -73,21 +73,20 @@ void finalizarProceso(int PID) {
 	cambiarEstado(proceso,EXIT);
 	MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
 }
-void destruirProceso(int PID) {
+void destruirProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
-	log_info(bgLogger,	"Destruyendo proceso:%d",PID);
-	t_proceso* proceso = obtenerProceso(PID);
+	log_info(bgLogger,	"Destruyendo proceso:%d",proceso->PCB->PID);
 	if (proceso->estado != EXIT)
 		log_warning(activeLogger,
 				"Se esta destruyendo el proceso %d que no libero sus recursos! y esta en estado:%d",
-				PID, proceso->estado);
+				proceso->PCB->PID, proceso->estado);
 	if (!CU_is_test_running()) {
 		enviarHeader(proceso->socketConsola,
 				HeaderConsolaFinalizarNormalmente);
 		MUTEXCLIENTES(quitarCliente(proceso->consola));
 	}
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
-	MUTEXPROCESOS(procesos[PID] = NULL);
+	MUTEXPROCESOS(procesos[proceso->PCB->PID] = NULL);
 	pcb_destroy(proceso->PCB);
 	free(proceso); // Destruir Proceso y PCB
 

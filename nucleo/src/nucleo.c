@@ -139,7 +139,7 @@ void inicializar() {
 			&tamanioDireccionCPU, &activadoCPU);
 	inicializarClientes();
 	conectarAUMC();
-	//testear(test_nucleo);
+//	testear(test_nucleo);
 	crearHilo(&hiloPlanificacion, planificar);
 }
 void cargarConfiguracion() {

@@ -18,7 +18,6 @@
  * Directiva 1
  */
 t_puntero definir_variable(t_nombre_variable variable) {
-	incrementarPC(pcbActual);
 
 	t_pedido* direccion = stack_next_pedido(stack, tamanioPaginas);
 	t_stack_item* head = stack_pop(stack);
@@ -31,11 +30,11 @@ t_puntero definir_variable(t_nombre_variable variable) {
 		dictionary_put(head->identificadores, cadena, (void*) direccion); //agrego el caracter a una cadena
 	}
 
-
 	stack_push(stack, head);
 	head->posicion = stack_size(stack) - 1; // si size es 1 -> pos = 0. Se calcula con el elemento ya agregado!
 
 	free(cadena);
+	incrementarPC(pcbActual);
 	instruccionTerminada("Definir_variable");
 	return head->posicion;
 }

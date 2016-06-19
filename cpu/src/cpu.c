@@ -296,6 +296,7 @@ void parsear(char* const sentencia) {
 char* recibir_sentencia(int tamanio){
 	log_debug(debugLogger, "Recibiendo sentencia de tamaño |%d|...", tamanio);
 	char* sentencia = recv_waitall_ws(cliente_umc, tamanio);
+	sentencia[tamanio-1]='\0';
 	log_debug(debugLogger, "Recibida la sentencia: |%s|", sentencia);
 	return sentencia;
 }
@@ -413,7 +414,6 @@ void ejemploPedidoLecturaUmc(){ //COMENTAR: finalizar, establecerConexNucleo y e
 }
 
 int main() {
-
 	signal(SIGUSR1,handler); //el progama sabe que cuando se recibe SIGUSR1,se ejecuta handler
 
 	inicializar();

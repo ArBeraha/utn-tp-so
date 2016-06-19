@@ -24,6 +24,7 @@ void informarInstruccionTerminada() {
 	// Acá nucleo tiene que mandarme el header que corresponda, segun si tengo que seguir ejecutando instrucciones o tengo que desalojar.
 	// Eso se procesa en otro lado, porque la ejeución de instrucciones esta anidada en un while
 	// por lo que no tengo que recibir el header aca
+	log_debug(debugLogger,"Informé a nucleo del fin de una instrucción");
 }
 
 void instruccionTerminada(char* instr) {

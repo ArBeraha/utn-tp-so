@@ -33,6 +33,24 @@ void cargarCFG() {
 }
 
 char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
+	char* resultado = devolverBytes(pedido,cliente);
+	if(!strcmp(resultado,"RELLAMAR")){ //SIGNIFICA QUE SON IGUALES
+		return devolverBytes(pedido,cliente);
+	}else{
+		return resultado;
+	}
+}
+
+char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
+	char* resultado = almacenarBytes(pedido,buffer,cliente);
+	if(!strcmp(resultado,"RELLAMAR")){ //SIGNIFICA QUE SON IGUALES
+			return almacenarBytes(pedido,buffer,cliente);
+	}else{
+		return resultado;
+	}
+}
+
+char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 
 //SI ESTA EN TLB DEVUELVO
 	int id =0;
@@ -97,18 +115,19 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
 					log_info(activeLogger, "[%d][L] Se encontro en Tabla de Paginas pero NO ESTA EN MEMORIA. Buscando en SWAP: [Pag]=[%d]",id,pedido.paginaRequerida);
 					log_info(activeLogger, "[%d][L]-------------SWAP-----------",id);
 
-					int pudo = buscarEnSwap(pedido, cliente);
-
-					if(pudo){
-						agregarATlb(paginaBuscada,pedido.pid);
-						log_info(activeLogger, "[%d][L] Se encontro en SWAP [Pag]=[%d] y se agrego a memoria. Realizando pedido de LECTURA nuevamente",id,pedido.paginaRequerida);
-						log_info(activeLogger, "[%d][L]---------------------------",id);
-						devolverPedidoPagina(pedido, cliente);
-					}
-					else{
-						log_info(activeLogger, "[%d][L] NO se encontro en SWAP [Pag]=[%d]",id,pedido.paginaRequerida);
-						return "Error busqueda en swap";
-					}
+					buscarEnSwap(pedido, cliente);
+//					agregarATlb(paginaBuscada,pedido.pid);
+					return "RELLAMAR";
+//
+//					if(pudo){
+//						log_info(activeLogger, "[%d][L] Se encontro en SWAP [Pag]=[%d] y se agrego a memoria. Realizando pedido de LECTURA nuevamente",id,pedido.paginaRequerida);
+//						log_info(activeLogger, "[%d][L]---------------------------",id);
+//						devolverPedidoPagina(pedido, cliente);
+//					}
+//					else{
+//						log_info(activeLogger, "[%d][L] NO se encontro en SWAP [Pag]=[%d]",id,pedido.paginaRequerida);
+//						return "Error busqueda en swap";
+//					}
 				}
 			}
 // SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
@@ -124,8 +143,8 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
 	return NULL;
 }
 
-char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
-
+char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
+	printf(" ENTRO A ALMACENAR P{AGINAAAAAASASASSAS \n");
 	int id =0;
 	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
 
@@ -191,7 +210,7 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente c
 
 					log_info(activeLogger, "[%d][E] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
 
-					return "";
+					return "1";
 				}
 	// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y LA CARGO EN MEMORIA Y TLB Y RECIEN AHI LA DEVUELVOl, SI NO HAY PAGINAS DISPONIBLES: ALGORITMO DE SUSTITUCION DE PAGINAS
 				else{
@@ -199,16 +218,17 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente c
 					log_info(activeLogger, "[%d][E] Se encontro en Tabla de Paginas pero NO ESTA EN MEMORIA. Buscando en SWAP: [Pag]=[%d]",id,pedido.paginaRequerida);
 					log_info(activeLogger, "[%d][E] -----------SWAP----------",id);
 
-					int pudo = buscarEnSwap(pedido,cliente);
-					if(pudo){
-						agregarATlb(paginaBuscada,pedido.pid);
-						log_info(activeLogger, "[%d][E] Se encontro en SWAP [Pag]=[%d] y se agrego a memoria. Realizando pedido de LECTURA nuevamente",id,pedido.paginaRequerida);
-						log_info(activeLogger, "[%d][E] -------------------------",id);
-						almacenarBytesEnUnaPagina(pedido,buffer,cliente);
-					}
-					else{
-						log_info(activeLogger, "[%d][E] No se encontro en SWAP [Pag]=[%d]",id,pedido.paginaRequerida);
-					}
+//					agregarATlb(paginaBuscada,pedido.pid);
+					buscarEnSwap(pedido,cliente);
+					return "RELLAMAR";
+//					if(pudo){
+//						log_info(activeLogger, "[%d][E] Se encontro en SWAP [Pag]=[%d] y se agrego a memoria. Realizando pedido de ESCRITURA nuevamente",id,pedido.paginaRequerida);
+//						log_info(activeLogger, "[%d][E] -------------------------",id);
+//						almacenarBytesEnUnaPagina(pedido,buffer,cliente);
+//					}
+//					else{
+//						log_info(activeLogger, "[%d][E] No se encontro en SWAP [Pag]=[%d]",id,pedido.paginaRequerida);
+//					}
 				}
 			}// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
 			else{
@@ -225,6 +245,7 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente c
 
 int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 	char* serialPID = intToChar4(pedido.pid);
+	printf("PEDIDO PID: %d \n",pedido.pid);
 	char* serialPagina = intToChar4(pedido.paginaRequerida);
 	char* contenidoPagina = malloc(config.tamanio_marco);
 
@@ -266,6 +287,7 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente){
 	int id=0;
 	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
+
 	if(cantPaginasEnMemoriaDePid(pedido.pid)>=config.marcos_x_proceso){
 		int posicionPaginaSacada=0;
 
@@ -315,14 +337,17 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		flushTlb();
 		pedido.cantBytes=config.tamanio_marco;
 		pedido.offset=0;
+
 		almacenarBytesEnUnaPagina(pedido,contenido,cliente);
 	}
 	else{
 		pthread_mutex_lock(&lock_accesoTabla);
-		tabla_t* tablaPaginaAReemplazar = buscarTabla(pedido.pid);
-		tablaPagina_t* paginaACargar = list_get((t_list*)tablaPaginaAReemplazar->listaPaginas,pedido.paginaRequerida);
+		tabla_t* tablaPaginaAAgregar = buscarTabla(pedido.pid);
+		tablaPagina_t* paginaACargar = list_get((t_list*)tablaPaginaAAgregar->listaPaginas,pedido.paginaRequerida);
+
 		pthread_mutex_unlock(&lock_accesoTabla);
 		int unMarcoNuevo = buscarPrimerMarcoLibre();
+
 		pthread_mutex_lock(&lock_accesoMarcosOcupados);
 		vectorMarcosOcupados[unMarcoNuevo]=1; //Lo marco como ocupado
 		pthread_mutex_unlock(&lock_accesoMarcosOcupados);
@@ -334,6 +359,11 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 
 		pedido.cantBytes=config.tamanio_marco;
 		pedido.offset=0;
+
+		char* contenido2 = malloc(config.tamanio_marco+1);
+		memcpy(contenido2,contenido,config.tamanio_marco);
+		contenido[config.tamanio_marco]='\0';
+
 		almacenarBytesEnUnaPagina(pedido, contenido, cliente);
 	}
 
@@ -447,21 +477,9 @@ void pedidoLectura(t_cliente cliente){
 		send_w(cliente.socket, intToChar4(1),sizeof(int));
 	}
 
-	char* contenidoAEnviar = malloc(pedidoLectura.cantBytes);
+	char* contenido = devolverPedidoPagina(pedidoLectura,cliente);
 
-	contenidoAEnviar =  devolverPedidoPagina(pedidoLectura,cliente);
-
-	printf("LLEGUE ACA WACHIN! \n");
-
-	if(pedidoLectura.paginaRequerida<=cantPaginasDePid(pedidoLectura.pid)-paginas_stack){
-		imprimirRegionMemoriaCodigo(contenidoAEnviar, pedidoLectura.cantBytes);
-	}else{
-		imprimirRegionMemoriaStack(contenidoAEnviar, pedidoLectura.cantBytes);
-	}
-
-	printf("ACA NO LLEGUE :( \n");
-
-	send_w(cliente.socket, contenidoAEnviar,pedidoCpu->size);
+	send_w(cliente.socket,contenido,pedidoLectura.cantBytes);
 }
 
 void headerEscribirPagina(t_cliente cliente){

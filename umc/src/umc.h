@@ -215,7 +215,17 @@ void finalizar();
 void mostrarTlb();
 int buscarPosicionTabla(int idPrograma);
 int buscarUltimaPosSacada(int pid);
-int cambiarUltimaPosicion(int pid, int posAReemplazar);
+void cambiarUltimaPosicion(int pidParam, int ultima);
+
+int buscarPosicionTabla(int idPrograma);
+void sacarMarcosOcupados(int idPrograma);
+
+
+
+char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente);
+char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente);
+
+
 
 //Fin prototipos
 

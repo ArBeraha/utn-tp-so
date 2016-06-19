@@ -286,9 +286,12 @@ void imprimirRegionMemoriaStack(char* region, int size){
 
 void imprimirRegionMemoriaCodigo(char* region, int size){
 	int i;
+	printf("ACA 1 : SIZE : %d \n",size);
+	printf(" REGION: %s \n",region);
+
 	for(i=0;i<size;i++){
-//			putchar(region[i]);
-			printf("%c",region[i]);
+			putchar(region[i]);
+//			printf("%c",region[i]);
 	}
 }
 

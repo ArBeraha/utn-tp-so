@@ -208,9 +208,14 @@ void enviarASwap(int pid,tablaPagina_t* pagina);
 void sacarDeMemoria(tablaPagina_t* pagina);
 void ponerBitModif1(int pid,int nroPagina);
 int cantPaginasDePid(int pid);
-
-
-
+void agregarATlb(tablaPagina_t* pagina ,int pid);
+void sacarMarcosOcupados(int idPrograma);
+int primerNumeroPaginaLibre(int pid);
+void finalizar();
+void mostrarTlb();
+int buscarPosicionTabla(int idPrograma);
+int buscarUltimaPosSacada(int pid);
+int cambiarUltimaPosicion(int pid, int posAReemplazar);
 
 //Fin prototipos
 

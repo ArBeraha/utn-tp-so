@@ -32,6 +32,98 @@ void cargarCFG() {
 	config.marcos_x_proceso = config_get_int_value(configUmc, "MARCOS_X_PROCESO");
 }
 
+char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
+
+//SI ESTA EN TLB DEVUELVO
+	int id =0;
+	MUTEXCLIENTES(id = clientes[cliente.indice].pid);
+
+	if(estaEnTlb(pedido) && config.entradas_tlb){
+
+		int pos = buscarEnTlb(pedido);
+
+		char* contenido = malloc(pedido.cantBytes);
+
+		log_info(activeLogger, "[%d][L] Accediendo a MP",id);
+		usleep(retardoMemoria);
+
+		pthread_mutex_lock(&lock_accesoMemoria);
+		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
+
+		pthread_mutex_unlock(&lock_accesoMemoria);
+
+		log_info(activeLogger, "[%d][L] Se encontro en TLB para LECTURA [Pag,Off,Bytes] = [%d,%d,%d] en MARCO: %d",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
+
+		return contenido;
+
+	}
+//SINO, ME FIJO QUE SEA VALIDA LA PETICION
+	else{
+		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
+			pthread_mutex_lock(&lock_accesoTabla);
+			tabla_t* tablaPaginaBuscada = buscarTabla(pedido.pid);
+			pthread_mutex_unlock(&lock_accesoTabla);
+			if(existePaginaBuscadaEnTabla(pedido.paginaRequerida,tablaPaginaBuscada)){ //Si la pagina existe dentro de la tabla particular
+				pthread_mutex_lock(&lock_accesoTabla);
+				tablaPagina_t* paginaBuscada = list_get((t_list*)tablaPaginaBuscada->listaPaginas, pedido.paginaRequerida);
+//SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
+
+				log_info(activeLogger, "[%d][L] Accediendo a MP",id);
+				usleep(retardoMemoria);
+
+				if(paginaBuscada->bitPresencia){
+					pthread_mutex_unlock(&lock_accesoTabla);
+					log_info(activeLogger, "[%d][L] Se encontro en Tabla de Paginas y esta en memoria",id);
+					log_info(activeLogger, "[%d][L] Realizando LECTURA [Pag,Off,Bytes] = [%d,%d,%d]",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes);
+
+					log_info(activeLogger, "[%d][L] Accediendo a MP",id);
+					usleep(retardoMemoria);
+
+					char* contenido = malloc(pedido.cantBytes);
+					pthread_mutex_lock(&lock_accesoMemoria);
+					memcpy(contenido,memoria+paginaBuscada->marcoUtilizado * config.tamanio_marco+pedido.offset,pedido.cantBytes);
+					pthread_mutex_unlock(&lock_accesoMemoria);
+
+					agregarATlb(paginaBuscada,pedido.pid);
+
+					log_info(activeLogger, "[%d][L] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
+
+					return contenido;
+
+				}
+// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y LA CARGO EN MEMORIA Y TLB Y VUELVO A LLAMAR A FUNCION
+				else{
+					pthread_mutex_unlock(&lock_accesoTabla);
+					log_info(activeLogger, "[%d][L] Se encontro en Tabla de Paginas pero NO ESTA EN MEMORIA. Buscando en SWAP: [Pag]=[%d]",id,pedido.paginaRequerida);
+					log_info(activeLogger, "[%d][L]-------------SWAP-----------",id);
+
+					int pudo = buscarEnSwap(pedido, cliente);
+
+					if(pudo){
+						agregarATlb(paginaBuscada,pedido.pid);
+						log_info(activeLogger, "[%d][L] Se encontro en SWAP [Pag]=[%d] y se agrego a memoria. Realizando pedido de LECTURA nuevamente",id,pedido.paginaRequerida);
+						log_info(activeLogger, "[%d][L]---------------------------",id);
+						devolverPedidoPagina(pedido, cliente);
+					}
+					else{
+						log_info(activeLogger, "[%d][L] NO se encontro en SWAP [Pag]=[%d]",id,pedido.paginaRequerida);
+						return "Error busqueda en swap";
+					}
+				}
+			}
+// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
+			else{
+				enviarHeader(cliente.socket,HeaderNoExistePagina);
+			}
+		}
+// SI NO EXISTE LA TABLA DE PAGINAS EN LA LISTA TOTAL DE PAGS
+		else{
+			enviarHeader(cliente.socket,HeaderNoExisteTablaDePag);
+		}
+	}
+	return NULL;
+}
+
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 	int id =0;
@@ -131,7 +223,6 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente c
 	return "Error ifs";
 }
 
-
 int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 	char* serialPID = intToChar4(pedido.pid);
 	char* serialPagina = intToChar4(pedido.paginaRequerida);
@@ -170,99 +261,6 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 //	}
 
 	return 1;
-}
-
-char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
-
-//SI ESTA EN TLB DEVUELVO
-	int id =0;
-	MUTEXCLIENTES(id = clientes[cliente.indice].pid);
-
-
-	if(estaEnTlb(pedido) && config.entradas_tlb){
-
-		int pos = buscarEnTlb(pedido);
-
-		char* contenido = malloc(pedido.cantBytes);
-
-		log_info(activeLogger, "[%d][L] Accediendo a MP",id);
-		usleep(retardoMemoria);
-
-		pthread_mutex_lock(&lock_accesoMemoria);
-		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
-
-		pthread_mutex_unlock(&lock_accesoMemoria);
-
-		log_info(activeLogger, "[%d][L] Se encontro en TLB para LECTURA [Pag,Off,Bytes] = [%d,%d,%d] en MARCO: %d",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
-
-		return contenido;
-
-	}
-//SINO, ME FIJO QUE SEA VALIDA LA PETICION
-	else{
-		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
-			pthread_mutex_lock(&lock_accesoTabla);
-			tabla_t* tablaPaginaBuscada = buscarTabla(pedido.pid);
-			pthread_mutex_unlock(&lock_accesoTabla);
-			if(existePaginaBuscadaEnTabla(pedido.paginaRequerida,tablaPaginaBuscada)){ //Si la pagina existe dentro de la tabla particular
-				pthread_mutex_lock(&lock_accesoTabla);
-				tablaPagina_t* paginaBuscada = list_get((t_list*)tablaPaginaBuscada->listaPaginas, pedido.paginaRequerida);
-//SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
-
-				log_info(activeLogger, "[%d][L] Accediendo a MP",id);
-				usleep(retardoMemoria);
-
-				if(paginaBuscada->bitPresencia){
-					pthread_mutex_unlock(&lock_accesoTabla);
-					log_info(activeLogger, "[%d][L] Se encontro en Tabla de Paginas y esta en memoria",id);
-					log_info(activeLogger, "[%d][L] Realizando LECTURA [Pag,Off,Bytes] = [%d,%d,%d]",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes);
-
-					log_info(activeLogger, "[%d][L] Accediendo a MP",id);
-					usleep(retardoMemoria);
-
-					char* contenido = malloc(pedido.cantBytes);
-					pthread_mutex_lock(&lock_accesoMemoria);
-					memcpy(contenido,memoria+paginaBuscada->marcoUtilizado * config.tamanio_marco+pedido.offset,pedido.cantBytes);
-					pthread_mutex_unlock(&lock_accesoMemoria);
-
-					agregarATlb(paginaBuscada,pedido.pid);
-
-					log_info(activeLogger, "[%d][L] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
-
-					return contenido;
-
-				}
-// SI ES VALIDA PERO NO ESTA EN MEMORIA, LA BUSCA EN SWAP Y LA CARGO EN MEMORIA Y TLB Y VUELVO A LLAMAR A FUNCION
-				else{
-					pthread_mutex_unlock(&lock_accesoTabla);
-					log_info(activeLogger, "[%d][L] Se encontro en Tabla de Paginas pero NO ESTA EN MEMORIA. Buscando en SWAP: [Pag]=[%d]",id,pedido.paginaRequerida);
-					log_info(activeLogger, "[%d][L]-------------SWAP-----------",id);
-
-					int pudo = buscarEnSwap(pedido, cliente);
-
-					if(pudo){
-						agregarATlb(paginaBuscada,pedido.pid);
-						log_info(activeLogger, "[%d][L] Se encontro en SWAP [Pag]=[%d] y se agrego a memoria. Realizando pedido de LECTURA nuevamente",id,pedido.paginaRequerida);
-						log_info(activeLogger, "[%d][L]---------------------------",id);
-						devolverPedidoPagina(pedido, cliente);
-					}
-					else{
-						log_info(activeLogger, "[%d][L] NO se encontro en SWAP [Pag]=[%d]",id,pedido.paginaRequerida);
-						return "Error busqueda en swap";
-					}
-				}
-			}
-// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
-			else{
-				enviarHeader(cliente.socket,HeaderNoExistePagina);
-			}
-		}
-// SI NO EXISTE LA TABLA DE PAGINAS EN LA LISTA TOTAL DE PAGS
-		else{
-			enviarHeader(cliente.socket,HeaderNoExisteTablaDePag);
-		}
-	}
-	return NULL;
 }
 
 void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente){
@@ -449,13 +447,19 @@ void pedidoLectura(t_cliente cliente){
 		send_w(cliente.socket, intToChar4(1),sizeof(int));
 	}
 
-	char* contenidoAEnviar =  devolverPedidoPagina(pedidoLectura,cliente);
+	char* contenidoAEnviar = malloc(pedidoLectura.cantBytes);
+
+	contenidoAEnviar =  devolverPedidoPagina(pedidoLectura,cliente);
+
+	printf("LLEGUE ACA WACHIN! \n");
 
 	if(pedidoLectura.paginaRequerida<=cantPaginasDePid(pedidoLectura.pid)-paginas_stack){
 		imprimirRegionMemoriaCodigo(contenidoAEnviar, pedidoLectura.cantBytes);
 	}else{
 		imprimirRegionMemoriaStack(contenidoAEnviar, pedidoLectura.cantBytes);
 	}
+
+	printf("ACA NO LLEGUE :( \n");
 
 	send_w(cliente.socket, contenidoAEnviar,pedidoCpu->size);
 }

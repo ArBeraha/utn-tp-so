@@ -34,19 +34,19 @@ void cargarCFG() {
 
 char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
 	char* resultado = devolverBytes(pedido,cliente);
-	if(!strcmp(resultado,"RELLAMAR")){ //SIGNIFICA QUE SON IGUALES
-		return devolverBytes(pedido,cliente);
-	}else{
+	if(strcmp(resultado,"RELLAMAR")>0){
 		return resultado;
+	}else{
+		return devolverBytes(pedido,cliente);
 	}
 }
 
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 	char* resultado = almacenarBytes(pedido,buffer,cliente);
-	if(!strcmp(resultado,"RELLAMAR")){ //SIGNIFICA QUE SON IGUALES
-			return almacenarBytes(pedido,buffer,cliente);
-	}else{
+	if(strcmp(resultado,"RELLAMAR")>0){ //SIGNIFICA QUE SON IGUALES
 		return resultado;
+	}else{
+		return almacenarBytes(pedido,buffer,cliente);
 	}
 }
 
@@ -478,6 +478,8 @@ void pedidoLectura(t_cliente cliente){
 	}
 
 	char* contenido = devolverPedidoPagina(pedidoLectura,cliente);
+
+	devolverTodaLaMemoria();
 
 	send_w(cliente.socket,contenido,pedidoLectura.cantBytes);
 }

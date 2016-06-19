@@ -200,6 +200,18 @@ void crearMemoriaYTlbYTablaPaginas();
 
 void test2();
 
+tabla_t* buscarTabla(int pidBusca);
+int cantPaginasEnMemoriaDePid(int pid);
+int sacarConClock(int pid);
+int sacarConModificado(int pid);
+void enviarASwap(int pid,tablaPagina_t* pagina);
+void sacarDeMemoria(tablaPagina_t* pagina);
+void ponerBitModif1(int pid,int nroPagina);
+int cantPaginasDePid(int pid);
+
+
+
+
 //Fin prototipos
 
 

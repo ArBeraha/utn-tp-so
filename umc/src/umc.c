@@ -116,6 +116,8 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 					log_info(activeLogger, "[%d][L]-------------SWAP-----------",id);
 
 					buscarEnSwap(pedido, cliente);
+					log_info(activeLogger, "[%d][L] -------------------------",id);
+
 //					agregarATlb(paginaBuscada,pedido.pid);
 					return "RELLAMAR";
 //
@@ -144,7 +146,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 }
 
 char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
-	printf(" ENTRO A ALMACENAR P{AGINAAAAAASASASSAS \n");
+
 	int id =0;
 	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
 
@@ -219,10 +221,10 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 //					agregarATlb(paginaBuscada,pedido.pid);
 					buscarEnSwap(pedido,cliente);
+					log_info(activeLogger, "[%d][E] -------------------------",id);
 					return "RELLAMAR";
 //					if(pudo){
 //						log_info(activeLogger, "[%d][E] Se encontro en SWAP [Pag]=[%d] y se agrego a memoria. Realizando pedido de ESCRITURA nuevamente",id,pedido.paginaRequerida);
-//						log_info(activeLogger, "[%d][E] -------------------------",id);
 //						almacenarBytesEnUnaPagina(pedido,buffer,cliente);
 //					}
 //					else{
@@ -479,6 +481,9 @@ void pedidoLectura(t_cliente cliente){
 	char* contenido = devolverPedidoPagina(pedidoLectura,cliente);
 
 	send_w(cliente.socket,contenido,pedidoLectura.cantBytes);
+
+	log_info(activeLogger, "[%d] Finalizo pedido de lectura",id);
+
 }
 
 void headerEscribirPagina(t_cliente cliente){

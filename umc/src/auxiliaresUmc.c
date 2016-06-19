@@ -121,12 +121,11 @@ int existePidEnListadeTablas(int pid){
 
 int existePaginaBuscadaEnTabla(int pag, tabla_t* tablaPaginaBuscada){
 	tablaPagina_t* tabla = malloc(sizeof(tablaPagina_t));
-	devolverTodaLaMemoria();
-	devolverTodasLasPaginas();
+
 	pthread_mutex_lock(&lock_accesoTabla);
-	printf("ACA 1 \n");
+
 	tabla=list_get((t_list*)tablaPaginaBuscada->listaPaginas, pag);
-	printf("ACA 2 \n");
+
 	if(tabla){
 		pthread_mutex_unlock(&lock_accesoTabla);
 		return 1;
@@ -286,12 +285,10 @@ void imprimirRegionMemoriaStack(char* region, int size){
 
 void imprimirRegionMemoriaCodigo(char* region, int size){
 	int i;
-	printf("ACA 1 : SIZE : %d \n",size);
-	printf(" REGION: %s \n",region);
-
+	printf("(REGION CODIGO):");
 	for(i=0;i<size;i++){
-			putchar(region[i]);
-//			printf("%c",region[i]);
+//			putchar(region[i]);
+			printf("%c",region[i]);
 	}
 }
 

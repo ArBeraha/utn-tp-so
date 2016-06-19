@@ -8,7 +8,10 @@
 #include "commonTypes.h"
 
 t_stack* stack_create() {
-	return list_create();
+	t_list* stack = list_create();
+	t_stack_item* head = stack_item_create();
+	stack_push(stack,head);
+	return stack;
 }
 void stack_push(t_stack* stack, t_stack_item* item) {
 	list_add((t_list*)stack, (void*)item);

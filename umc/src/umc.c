@@ -163,10 +163,9 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 		log_info(activeLogger, "[%d][E] Se encontro en TLB para ESCRITURA [Pag,Off,Bytes] = [%d,%d,%d] en MARCO: %d",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
 		log_info(activeLogger, "[%d][E] Se almaceno: ",id);
+
 		if(pedido.paginaRequerida<=cantPaginasDePid(pedido.pid)- paginas_stack){
 			imprimirRegionMemoriaCodigo(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
-//			imprimirRegionMemoriaStack(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
-
 		}else{
 			imprimirRegionMemoriaStack(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
 		}
@@ -478,8 +477,6 @@ void pedidoLectura(t_cliente cliente){
 	}
 
 	char* contenido = devolverPedidoPagina(pedidoLectura,cliente);
-
-	devolverTodaLaMemoria();
 
 	send_w(cliente.socket,contenido,pedidoLectura.cantBytes);
 }

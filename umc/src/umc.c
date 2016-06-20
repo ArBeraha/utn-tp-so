@@ -7,6 +7,7 @@
 
 #include "umc.h"
 
+
 struct timeval newEspera()
 {
 	struct timeval espera;
@@ -246,7 +247,7 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 	char* serialPID = intToChar4(pedido.pid);
-	printf("PEDIDO PID: %d \n",pedido.pid);
+
 	char* serialPagina = intToChar4(pedido.paginaRequerida);
 	char* contenidoPagina = malloc(config.tamanio_marco);
 
@@ -482,7 +483,7 @@ void pedidoLectura(t_cliente cliente){
 
 	send_w(cliente.socket,contenido,pedidoLectura.cantBytes);
 
-	log_info(activeLogger, "[%d] Finalizo pedido de lectura",id);
+	log_info(activeLogger, ANSI_COLOR_RED "[%d] Finalizo pedido de lectura" ANSI_COLOR_RESET,id);
 
 }
 
@@ -506,17 +507,19 @@ void headerEscribirPagina(t_cliente cliente){
 
 	read(cliente.socket, buffer, sizeof(int));
 
+
 	pedidoLectura_t pedido;
 	pedido.pid = id;
 	pedido.paginaRequerida = pedidoCpuEscritura->pagina;
 	pedido.offset = pedidoCpuEscritura->offset;
 	pedido.cantBytes = pedidoCpuEscritura->size;
 
-	log_info(activeLogger, "[%d] Realizando escritura de: [%d]  en [Pag,Off,Bytes] = [%d,%d,%d]",id,buffer,pedido.paginaRequerida,pedido.offset,pedido.cantBytes);
-
+	log_info(activeLogger, "[%d] Realizando escritura de: [%d]  en [Pag,Off,Bytes] = [%d,%d,%d]",id,char4ToInt(buffer),pedido.paginaRequerida,pedido.offset,pedido.cantBytes);
 
 	almacenarBytesEnUnaPagina(pedido,buffer,cliente);
 	send_w(cliente.socket, intToChar4(1),sizeof(int));
+
+	log_info(activeLogger, ANSI_COLOR_RED "[%d] Finalizo pedido de escritura" ANSI_COLOR_RESET,id);
 }
 
 void operacionScript(t_cliente cliente) {
@@ -536,12 +539,10 @@ void operacionScript(t_cliente cliente) {
 		reservarPagina(char4ToInt(cantidadDePaginasScript), char4ToInt(pidScript));
 		reservarPagina(paginas_stack, char4ToInt(pidScript));
 		send_w(cliente.socket, intToChar(1), 1);
-		printf("Envie OK escritura de codigo\n");
 	} else {
 		send_w(cliente.socket, intToChar(0), 1);
-		printf("Envie NO OK escritura de codigo\n");
-
 	}
+	log_info(activeLogger, ANSI_COLOR_RED "Finalizo pedido de inicializacion de programa" ANSI_COLOR_RESET);
 }
 
 void procesarHeader(t_cliente cliente, char* header) {
@@ -565,32 +566,32 @@ void procesarHeader(t_cliente cliente, char* header) {
 		break;
 
 	case HeaderTamanioPagina:
-		log_info(activeLogger, "[%d] Pedido tamanio paginas",idLog);
+		log_info(activeLogger, ANSI_COLOR_GREEN "[%d] Pedido tamanio paginas" ANSI_COLOR_RESET ,idLog);
 		send_w(cliente.socket,intToChar4(config.tamanio_marco),sizeof(int));
 		break;
 
 	case HeaderPedirValorVariable:  //PARA NUCLEO
-		log_info(activeLogger, "[%d] Pedido de lectura de Nucleo",idLog);
+		log_info(activeLogger, ANSI_COLOR_GREEN "[%d] Pedido de lectura de Nucleo" ANSI_COLOR_RESET ,idLog);
 		pedidoLectura(cliente);
 		break;
 
 	case HeaderSolicitudSentencia: //PARA CPU
-		log_info(activeLogger, "[%d] Pedido lectura de CPU",idLog);
+		log_info(activeLogger,ANSI_COLOR_GREEN "[%d] Pedido lectura de CPU"ANSI_COLOR_RESET,idLog);
 		pedidoLectura(cliente);
 		break;
 
 	case HeaderScript: //Inicializar programa  // OK
-		log_info(activeLogger, "[%d] Pedido Inicializar un programa de Nucleo",idLog);
+		log_info(activeLogger, ANSI_COLOR_GREEN "[%d] Pedido Inicializar un programa de Nucleo" ANSI_COLOR_RESET ,idLog);
 		operacionScript(cliente);
 		break;
 
 	case HeaderAsignarValor: // CPU
-		log_info(activeLogger, "[%d] Pedido escritura de CPU",idLog);
+		log_info(activeLogger, ANSI_COLOR_GREEN "[%d] Pedido escritura de CPU" ANSI_COLOR_RESET ,idLog);
 		headerEscribirPagina(cliente);
 		break;
 
 	case HeaderLiberarRecursosPagina:
-		log_info(activeLogger, "[%d] Pedido de liberar recursos",idLog);
+		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Pedido de liberar recursos" ANSI_COLOR_RESET ,idLog);
 		char* pidALiberar = malloc(sizeof(int));
 		read(cliente.socket , pidALiberar, sizeof(int));
 		finalizarPrograma(char4ToInt(pidALiberar));
@@ -599,12 +600,16 @@ void procesarHeader(t_cliente cliente, char* header) {
 	case HeaderPID:
 		nuevoPid = malloc(sizeof(int));
 		read(cliente.socket, nuevoPid, sizeof(int));
+		int viejoPid=0;
+		MUTEXCLIENTES(viejoPid = clientes[cliente.indice].pid)
 		MUTEXCLIENTES(clientes[cliente.indice].pid=char4ToInt(nuevoPid));
+		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Cambio PID viejo: %d por nuevo: %d " ANSI_COLOR_RESET ,idLog,viejoPid,char4ToInt(nuevoPid));
+
 		break;
 
 	default:
-		log_error(activeLogger,
-				"Llego el header numero %d y no hay una acción definida para él.",
+		log_error(activeLogger,ANSI_COLOR_RED
+				"Llego el header numero %d y no hay una acción definida para él." ANSI_COLOR_RESET,
 				charToInt(header));
 		log_warning(activeLogger,"Se quitará al cliente %d.",cliente.indice);
 		quitarCliente(cliente.indice);

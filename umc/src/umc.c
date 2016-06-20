@@ -603,10 +603,12 @@ void procesarHeader(t_cliente cliente, char* header) {
 		int viejoPid=0;
 		MUTEXCLIENTES(viejoPid = clientes[cliente.indice].pid)
 		MUTEXCLIENTES(clientes[cliente.indice].pid=char4ToInt(nuevoPid));
+		int verifNuevo = clientes[cliente.indice].pid;
+		printf("VERIFICO NUEVO : %d \n",verifNuevo);
 		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Cambio PID viejo: %d por nuevo: %d " ANSI_COLOR_RESET ,idLog,viejoPid,char4ToInt(nuevoPid));
-
+		devolverTodaLaMemoria();
 		printf("\n\n\n\n ro, aca me tira segment faul \n\n\n\n");
-		char* paginasCodigo = intToChar4(cantPaginasDePid(cliente.pid) - paginas_stack);
+		char* paginasCodigo = intToChar4(cantPaginasDePid(verifNuevo) - paginas_stack);
 		send_w(cliente.socket,paginasCodigo,sizeof(int));
 		free(paginasCodigo);
 

@@ -254,6 +254,13 @@ void enviarPID(){
 	free(pid);
 }
 
+void recibirCantidadDePaginasDeCodigo(){
+	char* pags = recv_waitall_ws(cliente_umc,sizeof(int));
+	paginasCodigo = char4ToInt(pags);
+	log_debug(debugLogger,"Recibida la cantidad de paginas de codigo |%d|.", paginasCodigo);
+	free(pags);
+}
+
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	if(pcbActual!=NULL){ //Al principio esta en null, asi no se inicializa.
 		pcb_destroy(pcbActual);
@@ -266,6 +273,7 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	deserializar_PCB(pcbActual, pcb);//reemplazo en el pcb actual de cpu que tiene como variable global
 
 	enviarPID();
+	recibirCantidadDePaginasDeCodigo();
 
 	stack = pcbActual->SP;
 

@@ -45,7 +45,7 @@ int tipoVaraible(t_nombre_variable variable, t_stack_item* head) {
  */
 void enviar_direccion_umc(t_puntero direccion) {
 
-	int pagina = (int)(direccion/tamanioPaginas);
+	int pagina = (int)(direccion/tamanioPaginas) + paginasCodigo; //Agrego el desplazamiento por las paginas ya ocupadas por el codigo
 	int offset = direccion % tamanioPaginas;
 	int size=sizeof(int);
 

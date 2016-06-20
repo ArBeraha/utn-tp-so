@@ -605,6 +605,11 @@ void procesarHeader(t_cliente cliente, char* header) {
 		MUTEXCLIENTES(clientes[cliente.indice].pid=char4ToInt(nuevoPid));
 		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Cambio PID viejo: %d por nuevo: %d " ANSI_COLOR_RESET ,idLog,viejoPid,char4ToInt(nuevoPid));
 
+		printf("\n\n\n\n ro, aca me tira segment faul \n\n\n\n");
+		char* paginasCodigo = intToChar4(cantPaginasDePid(cliente.pid) - paginas_stack);
+		send_w(cliente.socket,paginasCodigo,sizeof(int));
+		free(paginasCodigo);
+
 		break;
 
 	default:

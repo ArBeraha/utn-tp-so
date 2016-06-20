@@ -94,15 +94,13 @@ typedef struct t_bloqueo {
 typedef struct customConfig {
 	int puertoConsola;
 	int puertoCPU;
-	int quantum; //TODO que sea modificable en tiempo de ejecucion si el archivo cambia
+	int quantum;
 	int queantum_sleep; //TODO que sea modificable en tiempo de ejecucion si el archivo cambia
-	// TODOS TIENEN QUE SER CHAR**, NO ES LO MISMO LEER 4 BYTES QUE 1
 	char** sem_ids;
 	char** semInit;
 	char** io_ids;
 	char** ioSleep;
 	char** sharedVars;
-	// Agrego cosas que no esta en la consigna pero necesitamos
 	int puertoUMC;
 	char* ipUMC;
 	int stack_size;

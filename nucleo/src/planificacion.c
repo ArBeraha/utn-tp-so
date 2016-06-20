@@ -6,8 +6,6 @@
  */
 #include "nucleo.h"
 
-
-
 static bool matrizEstados[5][5] = {
 //		     		NEW    READY  EXEC   BLOCK  EXIT
 		/* NEW 	 */{ false, true, false, false, true },
@@ -28,19 +26,24 @@ HILO planificar() {
 }
 void planificarExpulsion(t_proceso* proceso) {
 	// mutexProcesos SAFE
+	log_info(activeLogger,"PLANIFICANDO EXPULSION");
 	if (proceso->estado == EXEC) {
 		if (terminoQuantum(proceso))
 			expulsarProceso(proceso);
 		else
 			continuarProceso(proceso);
 	}
+	log_info(activeLogger,"TERMINO LA PLANIFICACION DE EXPULSION");
 }
 void rafagaProceso(cliente){
 	// mutexClientes SAFE
 	log_info(activeLogger,"EL PID TERMINO UNA INSTRUCCION");
-	t_proceso* proceso = obtenerProceso(clientes[cliente].pid);
+	t_proceso* proceso = procesos[clientes[cliente].pid];//obtenerProceso(clientes[cliente].pid);
+	log_info(activeLogger,"SE OBTUVO EL PID");
 	proceso->rafagas++;
+	log_info(activeLogger,"SE SUMO RAFAGA");
 	planificarExpulsion(proceso);
+	clientes[cliente].atentido=false;
 }
 bool procesoExiste(t_proceso* proceso){
 	int i;
@@ -66,22 +69,21 @@ void planificacionFIFO() {
 	MUTEXLISTOS(MUTEXCPU(
 	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU)) {
 		// Limpiamos las colas de procesos eliminados hasta encontrar uno que no lo este o se vacie
-		while (!queue_is_empty(colaListos)
-				&& !procesoExiste( (t_proceso*) queue_peek(colaListos)))
-			queue_pop(colaListos);
-		// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
-		while (!queue_is_empty(colaCPU) && !clienteExiste( (int) queue_peek(colaCPU)))
-			queue_pop(colaCPU);
-
-		// Si no se vaciaron las listas entonces los primeros de ambas listas son validos
-		if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
+//		while (!queue_is_empty(colaListos)
+//				&& !procesoExiste( (t_proceso*) queue_peek(colaListos)))
+//			queue_pop(colaListos);
+//		// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
+//		while (!queue_is_empty(colaCPU) && !clienteExiste( (int) queue_peek(colaCPU)))
+//			queue_pop(colaCPU);
+//
+//		// Si no se vaciaron las listas entonces los primeros de ambas listas son validos
+//		if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
 			ejecutarProceso((t_proceso*) queue_pop(colaListos),
 					(int) queue_pop(colaCPU));
 		// Si por lo menos una lista no se vacio repetir el proceso
 	}
 	))
 }
-
 void planificarIO(char* io_id, t_IO* io) {
 	if (io->estado == INACTIVE && (!queue_is_empty(io->cola))) {
 		io->estado = ACTIVE;
@@ -90,6 +92,7 @@ void planificarIO(char* io_id, t_IO* io) {
 }
 bool terminoQuantum(t_proceso* proceso) {
 	// mutexProcesos SAFE
+	log_info(activeLogger,"PREGUNTANDO POR QUANTUM");
 	return (proceso->rafagas>=config.quantum);
 }
 void asignarCPU(t_proceso* proceso, int cpu) {
@@ -126,17 +129,19 @@ void ejecutarProceso(t_proceso* proceso, int cpu) {
 }
 void expulsarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
+	log_info(activeLogger,"EXPULSANDO PROCESO");
 	enviarHeader(proceso->socketCPU, HeaderDesalojarProceso);
-	cambiarEstado(proceso, READY);
-	char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
-	pcb_destroy(proceso->PCB);
-	t_PCB* pcb = malloc(sizeof(t_PCB));
-	deserializar_PCB(pcb,serialPcb);
-	proceso->PCB = pcb;
+//	cambiarEstado(proceso, READY);
+//	char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
+//	pcb_destroy(proceso->PCB);
+//	t_PCB* pcb = malloc(sizeof(t_PCB));
+//	deserializar_PCB(pcb,serialPcb);
+//	proceso->PCB = pcb;
 	// TODO usar actualizarPCB
 }
 void continuarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
+	log_info(activeLogger,"CONTINUANDO PROCESO");
 	enviarHeader(proceso->socketCPU, HeaderContinuarProceso);
 }
 HILO bloqueo(t_bloqueo* info) {

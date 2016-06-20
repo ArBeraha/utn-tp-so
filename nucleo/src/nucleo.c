@@ -282,7 +282,6 @@ void atenderHandshake(int cliente){
 	free(header);
 	clientes[cliente].atentido = false;
 }
-
 void procesarHeader(int cliente, char *header) {
 	// mutexClientes SAFE
 	log_info(bgLogger, "Llego un mensaje con header %d", charToInt(header));

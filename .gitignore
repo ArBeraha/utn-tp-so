@@ -7,6 +7,9 @@ makefile
 /swap/Debug/code/subdir.mk
 /nucleo/Debug/code/subdir.mk
 
+dump
+swap.data
+
 # Object files
 *.o
 *.ko

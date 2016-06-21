@@ -41,5 +41,6 @@ void enviar_direccion_umc(t_puntero direccion);
 bool existeLabel(t_nombre_etiqueta etiqueta);
 char *charToString(char variable);
 t_puntero_instruccion obtenerPosicionLabel(t_nombre_etiqueta etiqueta);
+int nombreToInt(t_nombre_variable variable);
 
 #endif /* AUXILIARES_DE_PRIMITIVAS_H_ */

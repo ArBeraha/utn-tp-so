@@ -46,30 +46,36 @@ t_puntero definir_variable(t_nombre_variable variable) {
  */
 t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	log_info(activeLogger, "Obtener posicion de |%c|.", variable);
-	t_puntero pointer;
+	t_puntero posicionAbsoluta = 0; //no sacar esta inicializacion por el if de abajo
+	t_pedido* posicionRelativa;
+	char* cadena = charToString((char)variable);
 	t_stack_item* head = stack_head(stack);
 	printf("Posicion del stack de la variable es %d \n\n\n\n",head->posicion);
 	switch (tipoVaraible(variable, head)) {
 	case DECLARADA:
+		posicionRelativa = (t_pedido*)dictionary_get(head->identificadores,cadena);
+		break;
 	case PARAMETRO:
-		pointer = head->posicion;
+		posicionRelativa = (t_pedido*)list_get(head->argumentos,nombreToInt(variable)); //fixme: si rompe, sumarle 1 a la posicion.
 		break;
 	case NOEXISTE:
-		pointer = -1;
+		posicionAbsoluta = -1;
 		break;
 	}
 
-	if (pointer >= 0) {
+	if (posicionAbsoluta >= 0) {
+		posicionAbsoluta = posicionRelativa->pagina*tamanioPaginas + posicionRelativa->offset;
 		log_info(activeLogger,
-				"Se encontro la variable |%c| en la posicion |%d|.", variable,
-				pointer);
+				"Se encontro la variable |%c| en la posicion: absoluta |%d|.", variable,
+				posicionAbsoluta);
 	} else {
 		log_info(activeLogger, "No se encontro la variable |%c|.", variable);
 	}
 
 
+	free(cadena);
 	instruccionTerminada("obtener_posicion_de");
-	return pointer;
+	return posicionAbsoluta;
 }
 
 

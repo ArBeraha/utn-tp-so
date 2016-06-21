@@ -136,7 +136,7 @@ void devolverTodaLaMemoria(){
 				contenido[config.tamanio_marco]='\0';
 				pthread_mutex_unlock(&lock_accesoMemoria);
 
-				if(j<=cantidadPaginasDeTabla-paginas_stack){
+				if(j<cantidadPaginasDeTabla-paginas_stack){
 					imprimirRegionMemoriaCodigo(contenido, config.tamanio_marco);
 //					imprimirRegionMemoriaStack(contenido, config.tamanio_marco);
 

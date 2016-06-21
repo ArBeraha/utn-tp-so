@@ -393,7 +393,7 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 	char* header = recv_waitall_ws(swapServer,1);
 
 	if (charToInt(header)==HeaderProcesoAgregado){
-		printf("Contesto el proceso Agregado\n");
+		printf("Swap almaceno el script correctamente\n");
 		return 1;
 	}else{
 		return 0;
@@ -453,7 +453,7 @@ int reservarPagina(int cantPaginasPedidas, int pid) {
 }
 
 void pedidoLectura(t_cliente cliente){
-
+	devolverTodaLaMemoria();
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
 	char* pedidoSerializado = malloc(sizeof(t_pedido));
 	int id=0;
@@ -601,7 +601,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 		nuevoPid = malloc(sizeof(int));
 		read(cliente.socket, nuevoPid, sizeof(int));
 		int viejoPid=0;
-		MUTEXCLIENTES(viejoPid = clientes[cliente.indice].pid)
+		MUTEXCLIENTES(viejoPid = clientes[cliente.indice].pid);
 		MUTEXCLIENTES(clientes[cliente.indice].pid=char4ToInt(nuevoPid));
 		int verifNuevo = clientes[cliente.indice].pid;
 		printf("VERIFICO NUEVO : %d \n",verifNuevo);

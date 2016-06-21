@@ -34,7 +34,9 @@ HILO hiloDedicado(int indice) {
 		procesarHeader(clienteLocal, header);
 	}
 	free(header);
-	log_info(activeLogger, "Hasta aqui llego el hilo");
+	int pid;
+	MUTEXCLIENTES(pid = clientes[indice].pid);
+	log_info(activeLogger, "[%d]Hasta aqui llego el hilo",pid);
 	return 0;
 }
 

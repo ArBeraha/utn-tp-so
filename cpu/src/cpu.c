@@ -244,7 +244,6 @@ void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecu
 			"Se pidieron %d paginas (estando la primera y la ultima no necesariamente completas)",
 			paginaAPedir);
 	free(sentenciaRelativa);
-	//return tamanio;
 }
 
 void enviarPID(){
@@ -296,7 +295,10 @@ void enviarPCB() {
  */
 void parsear(char* const sentencia) {
 	log_info(activeLogger, "Ejecutando la sentencia |%s|...", sentencia);
+	pcbActual->PC++; //si desp el parser lo setea en otro lado mediante una primitiva, es tema suyo.
+					//lo incremento antes asi no se desfasa.
 	analizadorLinea(sentencia, &funciones, &funcionesKernel);
+	log_info(activeLogger, "PC actualizado a |%d|",pcbActual->PC);
 }
 
 /**

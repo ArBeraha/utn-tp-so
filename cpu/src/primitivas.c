@@ -34,7 +34,7 @@ t_puntero definir_variable(t_nombre_variable variable) {
 	head->posicion = stack_size(stack) - 1; // si size es 1 -> pos = 0. Se calcula con el elemento ya agregado!
 
 	free(cadena);
-	incrementarPC(pcbActual);
+
 	instruccionTerminada("Definir_variable");
 	return head->posicion;
 }
@@ -65,7 +65,7 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 		log_info(activeLogger, "No se encontro la variable |%c|.", variable);
 	}
 
-	incrementarPC(pcbActual);
+
 	instruccionTerminada("obtener_posicion_de");
 	return pointer;
 }
@@ -87,7 +87,7 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 				direccion, valor);
 
 	free(valorRecibido);
-	incrementarPC(pcbActual);
+
 
 	instruccionTerminada("Dereferenciar");
 
@@ -101,14 +101,14 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
  * Directiva 4
  */
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
-	log_info(activeLogger, "Asignando en |%d| el valor |%d|", direccion_variable, valor);
+	log_info(activeLogger, "Asignando en la posicion |%d| el valor |%d|", direccion_variable, valor);
 
 	enviarHeader(cliente_umc,HeaderAsignarValor);
 	enviar_direccion_umc(direccion_variable); // esto chequea q no haya overflow
 	char* valorSerializado = intToChar4(valor);
 	send_w(cliente_umc, valorSerializado, sizeof(t_valor_variable)); //envio el valor de la variable
 
-	incrementarPC(pcbActual);
+
 	free(valorSerializado);
 	instruccionTerminada("Asignar.");
 }
@@ -134,7 +134,7 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 	log_info(activeLogger, "Valor obtenido: |%s| vale |%d|.",nombreVarCompartida, valorVarCompartida);
 	free(value);
 	free(sizeSerializado);
-	incrementarPC(pcbActual);
+
 	instruccionTerminada("Obtener_valor_compartida");
 	return valorVarCompartida;
 }
@@ -160,7 +160,7 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 				"Asignado el valor |%d| a la variable compartida |%s|.",
 				valorVarCompartida, nombreVarCompartida);
 
-	incrementarPC(pcbActual);
+
 	instruccionTerminada("asignar_valor_compartida");
 	return valorVarCompartida;
 }
@@ -235,7 +235,7 @@ void imprimir_variable(t_valor_variable valor) { //la nueva version del enunciad
 	enviarHeader(cliente_nucleo,HeaderImprimirVariableNucleo);
 	char* valorSerializado = intToChar4(valor);
 	send_w(cliente_nucleo, valorSerializado, sizeof(t_valor_variable));
-	incrementarPC(pcbActual);
+
 	free(valorSerializado); //hacer intToChar4 en el send produce memory leaks, porque al terminar al funcion queda memoria desreferenciada que nunca se libera.
 	instruccionTerminada("Imprimir");
 }
@@ -254,7 +254,7 @@ void imprimir_texto(char* texto) {
 
 	log_debug(debugLogger, "Se envio a nucleo la cadena: |%s|.", texto);
 
-	incrementarPC(pcbActual);
+
 	instruccionTerminada("Imprimir texto");
 }
 
@@ -274,7 +274,7 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) 
 	send_w(cliente_nucleo,time,strlen(time));
 	free(time);
 
-	incrementarPC(pcbActual);
+
 	instruccionTerminada("Entrada-Salida");
 }
 
@@ -291,7 +291,7 @@ void wait_semaforo(t_nombre_semaforo identificador_semaforo) {
 	enviarLargoYString(cliente_nucleo,identificador_semaforo);
 	//Si el proceso no pudiese seguir, nucleo al bloquearlo lo para con un header enviado a procesarHeader.
 
-	incrementarPC(pcbActual);
+
 	instruccionTerminada("wait");
 }
 
@@ -306,7 +306,7 @@ void signal_semaforo(t_nombre_semaforo identificador_semaforo) {
 
 	enviarLargoYString(cliente_nucleo,identificador_semaforo);
 
-	incrementarPC(pcbActual);
+
 	instruccionTerminada("Signal");
 }
 

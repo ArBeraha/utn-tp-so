@@ -1414,3 +1414,53 @@
 [INFO] 17:08:26:317 UMC/(12149:12149): Pid: 5, Pag: 0, Marco: 4, Contenido:  
 [INFO] 17:08:26:317 UMC/(12149:12149): Pid: 5, Pag: 1, Marco: 5, Contenido: abcd 
 [INFO] 17:08:26:317 UMC/(12149:12149): Pid: 5, Pag: 2, Marco: 6, Contenido: abc 
+[INFO] 20:39:26:408 UMC/(17499:17510): Pid: 1, Pag: 0, Marco: -1, Contenido: ð¶ 
+[INFO] 20:39:26:413 UMC/(17499:17510): Pid: 1, Pag: 1, Marco: -1, Contenido: ð¶ 
+[INFO] 20:39:26:427 UMC/(17499:17510): Pid: 1, Pag: 2, Marco: -1, Contenido: ð¶ 
+[INFO] 20:39:26:427 UMC/(17499:17510): Pid: 1, Pag: 0, Marco: -1, bitPresencia: 0, bitModificacion: 0, bitUso: 0 
+
+[INFO] 20:39:26:427 UMC/(17499:17510): Pid: 1, Pag: 1, Marco: -1, bitPresencia: 0, bitModificacion: 0, bitUso: 0 
+
+[INFO] 20:39:26:427 UMC/(17499:17510): Pid: 1, Pag: 2, Marco: -1, bitPresencia: 0, bitModificacion: 0, bitUso: 0 
+
+[INFO] 20:39:26:433 UMC/(17499:17510): Pid: 1, Pag: 0, Marco: -1, Contenido: ð¶ 
+[INFO] 20:39:26:440 UMC/(17499:17510): Pid: 1, Pag: 1, Marco: -1, Contenido: ð¶ 
+[INFO] 20:39:26:448 UMC/(17499:17510): Pid: 1, Pag: 2, Marco: -1, Contenido: ð¶ 
+[INFO] 20:39:26:448 UMC/(17499:17510): Pid: 1, Pag: 0, Marco: -1, bitPresencia: 0, bitModificacion: 0, bitUso: 0 
+
+[INFO] 20:39:26:448 UMC/(17499:17510): Pid: 1, Pag: 1, Marco: -1, bitPresencia: 0, bitModificacion: 0, bitUso: 0 
+
+[INFO] 20:39:26:448 UMC/(17499:17510): Pid: 1, Pag: 2, Marco: -1, bitPresencia: 0, bitModificacion: 0, bitUso: 0 
+
+[INFO] 20:39:26:503 UMC/(17499:17510): Pid: 1, Pag: 0, Marco: 0, Contenido:  
+[INFO] 20:39:26:517 UMC/(17499:17510): Pid: 1, Pag: 1, Marco: -1, Contenido: ð¶ 
+[INFO] 20:39:26:523 UMC/(17499:17510): Pid: 1, Pag: 2, Marco: -1, Contenido: ð¶ 
+[INFO] 20:39:26:523 UMC/(17499:17510): Pid: 1, Pag: 0, Marco: 0, bitPresencia: 1, bitModificacion: 0, bitUso: 1 
+
+[INFO] 20:39:26:523 UMC/(17499:17510): Pid: 1, Pag: 1, Marco: -1, bitPresencia: 0, bitModificacion: 0, bitUso: 0 
+
+[INFO] 20:39:26:523 UMC/(17499:17510): Pid: 1, Pag: 2, Marco: -1, bitPresencia: 0, bitModificacion: 0, bitUso: 0 
+
+[INFO] 20:39:26:564 UMC/(17499:17510): Pid: 1, Pag: 0, Marco: 0, Contenido: begin
+	variables a, b
+	a = 3
+	b = 5
+	a = b + 12
+end
+
+
+ 
+[INFO] 20:39:26:577 UMC/(17499:17510): Pid: 1, Pag: 1, Marco: -1, Contenido: ð¶ 
+[INFO] 20:39:26:587 UMC/(17499:17510): Pid: 1, Pag: 2, Marco: -1, Contenido: ð¶ 
+[INFO] 11:44:36:689 UMC/(22859:22870): Pid: 1, Pag: 0, Marco: -1, Contenido: ð ¶ 
+[INFO] 11:44:36:696 UMC/(22859:22870): Pid: 1, Pag: 1, Marco: -1, Contenido: ð ¶ 
+[INFO] 11:44:36:704 UMC/(22859:22870): Pid: 1, Pag: 2, Marco: -1, Contenido: ð ¶ 
+[INFO] 11:46:57:701 UMC/(22887:22903): Pid: 1, Pag: 0, Marco: -1, Contenido: ð¶ 
+[INFO] 11:46:57:713 UMC/(22887:22903): Pid: 1, Pag: 1, Marco: -1, Contenido: ð¶ 
+[INFO] 11:46:57:723 UMC/(22887:22903): Pid: 1, Pag: 2, Marco: -1, Contenido: ð¶ 
+[INFO] 11:52:27:141 UMC/(22948:23067): Pid: 1, Pag: 0, Marco: -1, Contenido: ð ¶ 
+[INFO] 11:52:27:151 UMC/(22948:23067): Pid: 1, Pag: 1, Marco: -1, Contenido: ð ¶ 
+[INFO] 11:52:27:157 UMC/(22948:23067): Pid: 1, Pag: 2, Marco: -1, Contenido: ð ¶ 
+[INFO] 12:02:30:691 UMC/(23142:23261): Pid: 1, Pag: 0, Marco: -1, Contenido: ð ¶ 
+[INFO] 12:02:30:701 UMC/(23142:23261): Pid: 1, Pag: 1, Marco: -1, Contenido: ð ¶ 
+[INFO] 12:02:30:711 UMC/(23142:23261): Pid: 1, Pag: 2, Marco: -1, Contenido: ð ¶ 

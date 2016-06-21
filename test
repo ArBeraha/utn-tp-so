@@ -1,0 +1,9 @@
+#!/bin/bash
+#USO: sh esteScript binarioAEjecutar secuencias repeticionesPorSecuencia
+# Ej: sh este script cpu 3 100, es equivalente a correr en 3 consolas un comando para que c/u tire 100 cpus. Es decir, que puede haber hasta 3 consolas ejecutando en paralelo
+
+
+function repeat {
+	for n in {1..$2}; do "$1"; done
+
+for n in {1..$2}; do (repeat "$1" $3)&;

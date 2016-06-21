@@ -138,7 +138,6 @@ void devolverTodaLaMemoria(){
 
 				if(j<cantidadPaginasDeTabla-paginas_stack){
 					imprimirRegionMemoriaCodigo(contenido, config.tamanio_marco);
-//					imprimirRegionMemoriaStack(contenido, config.tamanio_marco);
 
 				}else{
 					imprimirRegionMemoriaStack(contenido, config.tamanio_marco);

@@ -481,6 +481,9 @@ void pedidoLectura(t_cliente cliente){
 
 	char* contenido = devolverPedidoPagina(pedidoLectura,cliente);
 
+	printf("ACAAAAAAAAAAAAAAAA: ");
+	imprimirRegionMemoriaCodigo(contenido,pedidoLectura.cantBytes);
+	imprimir_serializacion(contenido,7);
 	send_w(cliente.socket,contenido,pedidoLectura.cantBytes);
 
 	log_info(activeLogger, ANSI_COLOR_RED "[%d] Finalizo pedido de lectura" ANSI_COLOR_RESET,id);
@@ -517,7 +520,6 @@ void headerEscribirPagina(t_cliente cliente){
 	log_info(activeLogger, "[%d] Realizando escritura de: [%d]  en [Pag,Off,Bytes] = [%d,%d,%d]",id,char4ToInt(buffer),pedido.paginaRequerida,pedido.offset,pedido.cantBytes);
 
 	almacenarBytesEnUnaPagina(pedido,buffer,cliente);
-	send_w(cliente.socket, intToChar4(1),sizeof(int));
 
 	log_info(activeLogger, ANSI_COLOR_RED "[%d] Finalizo pedido de escritura" ANSI_COLOR_RESET,id);
 }

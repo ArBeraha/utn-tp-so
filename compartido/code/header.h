@@ -12,58 +12,58 @@
 // https://github.com/sisoputnfrba/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/wiki/protocolo
 
 typedef enum {
-	HeaderError,
-	HeaderScript,
-	HeaderHandshake,
-	HeaderImprimirVariableNucleo,
-	HeaderImprimirTextoNucleo,
-	HeaderImprimirVariableConsola,
-	HeaderImprimirTextoConsola,
-	HeaderConsolaFinalizarNormalmente,
-	HeaderTamanioPagina,
-	HeaderPCB,
-	HeaderSolicitudSentencia,
-	HeaderSentencia,
-	HeaderPedirValorVariable,
-	HeaderPedirValorVariableCompartida,
-	HeaderAsignarValor,
-	HeaderAsignarValorVariableCompartida,
-	HeaderAsigneValorVariableCompartida, // Nucleo -> CPU, tras asignar un valor a una var compartida.
-	HeaderConsolaFinalizarRechazado,
-	HeaderPedirPagina,
-	HeaderLiberarRecursosPagina,
-	HeaderGrabarPagina,
-	HeaderReservarEspacio,
-	HeaderPedirContenidoPagina,
-	HeaderErrorNoHayPaginas,
-	HeaderTeReservePagina,
-	HeaderNoExistePagina,
-	HeaderNoExisteTablaDePag,
-	HeaderEntradaSalida,
-	HeaderSignal,
-	HeaderWait,
-	HeaderExcepcion,
-	headerTermineInstruccion,
-	HeaderDesalojarProceso,
-	HeaderTerminoProceso,
-	HeaderContinuarProceso,
-	HeaderConsultaEspacioSwap,
+	HeaderError, //0
+	HeaderScript, //1
+	HeaderHandshake, //2
+	HeaderImprimirVariableNucleo, //3
+	HeaderImprimirTextoNucleo, //4
+	HeaderImprimirVariableConsola, //5
+	HeaderImprimirTextoConsola, //6
+	HeaderConsolaFinalizarNormalmente, //7
+	HeaderTamanioPagina, //8
+	HeaderPCB, //9
+	HeaderSolicitudSentencia, //10
+	HeaderSentencia, //11
+	HeaderPedirValorVariable, //12
+	HeaderPedirValorVariableCompartida, //13
+	HeaderAsignarValor, //14
+	HeaderAsignarValorVariableCompartida, //15
+	HeaderAsigneValorVariableCompartida, //16
+	HeaderConsolaFinalizarRechazado, //17
+	HeaderPedirPagina, //18
+	HeaderLiberarRecursosPagina, //19
+	HeaderGrabarPagina, //20
+	HeaderReservarEspacio, //21
+	HeaderPedirContenidoPagina, //22
+	HeaderErrorNoHayPaginas, //23
+	HeaderTeReservePagina, //24
+	HeaderNoExistePagina, //25
+	HeaderNoExisteTablaDePag, //26
+	HeaderEntradaSalida, //27
+	HeaderSignal, //28
+	HeaderWait, //29
+	HeaderExcepcion, //30
+	headerTermineInstruccion, //31
+	HeaderDesalojarProceso, //32
+	HeaderTerminoProceso, //33
+	HeaderContinuarProceso, //34
+	HeaderConsultaEspacioSwap, //35
 	//Para Swap
-	HeaderOperacionIniciarProceso,
-	HeaderOperacionLectura,
-	HeaderOperacionEscritura,
-	HeaderOperacionFinalizarProceso,
-	HeaderErrorParaIniciar,
-	HeaderProcesoAgregado,
-	HeaderNoHayEspacio,
-	HeaderHayQueCompactar,
-	HeaderLecturaCorrecta,
-	HeaderLecturaErronea,
-	HeaderProcesoEliminado,
-	HeaderProcesoNOEliminado,
-	HeaderEscrituraCorrecta,
-	HeaderEscrituraErronea,
-	HeaderProcesoNoEncontrado,
+	HeaderOperacionIniciarProceso, //36
+	HeaderOperacionLectura, //37
+	HeaderOperacionEscritura, //38
+	HeaderOperacionFinalizarProceso, //39
+	HeaderErrorParaIniciar, //40
+	HeaderProcesoAgregado, //41
+	HeaderNoHayEspacio, //42
+	HeaderHayQueCompactar, //43
+	HeaderLecturaCorrecta, //44
+	HeaderLecturaErronea, //45
+	HeaderProcesoEliminado, //46
+	HeaderProcesoNOEliminado, //47
+	HeaderEscrituraCorrecta, //48
+	HeaderEscrituraErronea, //49
+	HeaderProcesoNoEncontrado, //50
 	HeaderPID
 } header_t;
 

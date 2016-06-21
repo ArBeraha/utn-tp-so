@@ -10,6 +10,7 @@
 t_stack* stack_create() {
 	t_list* stack = list_create();
 	t_stack_item* head = stack_item_create();
+	head->posicion=0;
 	stack_push(stack,head);
 	return stack;
 }

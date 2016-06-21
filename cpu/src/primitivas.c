@@ -21,6 +21,7 @@ t_puntero definir_variable(t_nombre_variable variable) {
 
 	t_pedido* direccion = stack_next_pedido(stack, tamanioPaginas);
 	t_stack_item* head = stack_pop(stack);
+	printf("Posicion del stack de la variable es %d \n\n\n\n",head->posicion);
 	char* cadena = charToString((char)variable);
 
 	if(esParametro(variable))
@@ -31,7 +32,7 @@ t_puntero definir_variable(t_nombre_variable variable) {
 	}
 
 	stack_push(stack, head);
-	head->posicion = stack_size(stack) - 1; // si size es 1 -> pos = 0. Se calcula con el elemento ya agregado!
+//	head->posicion = stack_size(stack) - 1; // si size es 1 -> pos = 0. Se calcula con el elemento ya agregado!
 
 	free(cadena);
 
@@ -47,6 +48,7 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	log_info(activeLogger, "Obtener posicion de |%c|.", variable);
 	t_puntero pointer;
 	t_stack_item* head = stack_head(stack);
+	printf("Posicion del stack de la variable es %d \n\n\n\n",head->posicion);
 	switch (tipoVaraible(variable, head)) {
 	case DECLARADA:
 	case PARAMETRO:

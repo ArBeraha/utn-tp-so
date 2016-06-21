@@ -131,12 +131,14 @@ void expulsarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	log_info(activeLogger,"EXPULSANDO PROCESO");
 	enviarHeader(proceso->socketCPU, HeaderDesalojarProceso);
-//	cambiarEstado(proceso, READY);
-//	char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
-//	pcb_destroy(proceso->PCB);
-//	t_PCB* pcb = malloc(sizeof(t_PCB));
-//	deserializar_PCB(pcb,serialPcb);
-//	proceso->PCB = pcb;
+	pthread_mutex_unlock(&mutexClientes);
+	cambiarEstado(proceso, READY);
+	pthread_mutex_lock(&mutexClientes);
+	char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
+	pcb_destroy(proceso->PCB);
+	t_PCB* pcb = malloc(sizeof(t_PCB));
+	deserializar_PCB(pcb,serialPcb);
+	proceso->PCB = pcb;
 	// TODO usar actualizarPCB
 }
 void continuarProceso(t_proceso* proceso) {

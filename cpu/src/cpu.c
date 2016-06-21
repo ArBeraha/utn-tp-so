@@ -35,7 +35,8 @@ void instruccionTerminada(char* instr) {
 void desalojarProceso() {
 	char* pcb = malloc(sizeof(t_PCB));
 	int size = serializar_PCB(pcb, pcbActual);
-	send_w(cliente_nucleo, pcb, size); //Envio a nucleo el PCB con el PC actualizado.
+	enviarLargoYSerial(cliente_nucleo,size,pcb);
+	//Envio a nucleo el PCB con el PC actualizado.
 	// Nucleo no puede hacer pbc->pc+=quantum porque el quantum puede variar en tiempo de ejecución.
 
 	free(pcb);

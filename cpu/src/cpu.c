@@ -215,10 +215,8 @@ void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecu
 	log_info(activeLogger, "Iniciando pedido de sentencia...");
 	int paginaAPedir; // Lo inicializa obtener_sentencia_relativa
 	t_sentencia* sentenciaRelativa = obtener_sentencia_relativa(&paginaAPedir);
-	printf("pase por aca 32332232332323\n");
 	int longitud_restante = longitud_sentencia(sentenciaRelativa); //longitud de la sentencia que aun no pido
 	(*tamanio) = longitud_restante;
-	printf("pase por aca 2s\n");
 	enviarHeader(cliente_umc, HeaderSolicitudSentencia); //envio el header
 
 	// Pido la primera pagina, empezando donde corresponde y terminando donde corresponda.

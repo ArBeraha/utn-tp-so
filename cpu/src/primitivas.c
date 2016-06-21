@@ -21,7 +21,6 @@ t_puntero definir_variable(t_nombre_variable variable) {
 
 	t_pedido* direccion = stack_next_pedido(stack, tamanioPaginas);
 	t_stack_item* head = stack_pop(stack);
-	printf("Posicion del stack de la variable es %d \n\n\n\n",head->posicion);
 	char* cadena = charToString((char)variable);
 
 	if(esParametro(variable))
@@ -50,7 +49,6 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	t_pedido* posicionRelativa;
 	char* cadena = charToString((char)variable);
 	t_stack_item* head = stack_head(stack);
-	printf("Posicion del stack de la variable es %d \n\n\n\n",head->posicion);
 	switch (tipoVaraible(variable, head)) {
 	case DECLARADA:
 		posicionRelativa = (t_pedido*)dictionary_get(head->identificadores,cadena);
@@ -84,20 +82,17 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
  */
 t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de la variable de direccion
 	t_valor_variable valor;
-	log_info(activeLogger, "Dereferenciar |%d|.", direccion);
+	log_info(activeLogger, "Obtener valor de la posicion absoluta |%d|.", direccion);
 
 	enviarHeader(cliente_umc, HeaderPedirValorVariable);
 	enviar_direccion_umc(direccion); // esto chequea q no haya overflow
 
 	char* valorRecibido = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
-	valor = charToInt(valorRecibido);
+	valor = char4ToInt(valorRecibido);
 	log_info(activeLogger, "La variable de la dirección fue |%d| dereferenciada! Su valor es |%d|.",
 				direccion, valor);
 
 	free(valorRecibido);
-
-
-	instruccionTerminada("Dereferenciar");
 
 
 	instruccionTerminada("Dereferenciar");

@@ -34,15 +34,13 @@ void instruccionTerminada(char* instr) {
 
 void desalojarProceso() {
 	log_info(activeLogger, "Desalojando proceso...");
-	char* pcb = malloc(99999); //fixme
-	printf("PASE POR ACA1\n");
-	int size = serializar_PCB(pcb, pcbActual);
-	printf("PASE POR ACA2\n");
-	enviarLargoYSerial(cliente_nucleo, size, pcb);
-	printf("PASE POR ACA3\n");
-	//Envio a nucleo el PCB con el PC actualizado.
-	// Nucleo no puede hacer pbc->pc+=quantum porque el quantum puede variar en tiempo de ejecución.
-	free(pcb);
+
+	int bytes = bytes_PCB(pcbActual);
+	char* serialPCB = malloc(bytes);
+	serializar_PCB(serialPCB, pcbActual);
+	enviarLargoYSerial(cliente_nucleo, bytes, serialPCB);
+
+	free(serialPCB);
 	log_info(activeLogger, "Proceso desalojado.");
 }
 
@@ -257,6 +255,7 @@ void enviarPID(){
 }
 
 void recibirCantidadDePaginasDeCodigo(){
+	log_debug(debugLogger,"Recibiendo la cantidad de paginas de codigo de UMC.");
 	char* pags = recv_waitall_ws(cliente_umc,sizeof(int));
 	paginasCodigo = char4ToInt(pags);
 	log_debug(debugLogger,"Recibida la cantidad de paginas de codigo |%d|.", paginasCodigo);
@@ -266,20 +265,16 @@ void recibirCantidadDePaginasDeCodigo(){
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	if(pcbActual!=NULL){ //Al principio esta en null, asi no se inicializa.
 		pcb_destroy(pcbActual);
-	}else{
-		pcbActual=malloc(99999); //fixme
 	}
+	pcbActual=malloc(sizeof(t_PCB));
 	log_debug(debugLogger, "Recibiendo PCB...");
-	char* pcb = leerLargoYMensaje(cliente_nucleo);
+	char* serialPCB = leerLargoYMensaje(cliente_nucleo);
 	log_debug(debugLogger, "PCB recibido!");
-	deserializar_PCB(pcbActual, pcb);//reemplazo en el pcb actual de cpu que tiene como variable global
-
+	deserializar_PCB(pcbActual, serialPCB);//reemplazo en el pcb actual de cpu que tiene como variable global
 	enviarPID();
 	recibirCantidadDePaginasDeCodigo();
-
 	stack = pcbActual->SP;
-
-	free(pcb);
+	free(serialPCB);
 }
 
 void enviarPCB() {

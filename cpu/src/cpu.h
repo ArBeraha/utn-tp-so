@@ -72,7 +72,7 @@ bool terminar;						//flag para que el proceso sepa cuando terminar
 void informarInstruccionTerminada();
 void setearPC(t_PCB* pcb, t_puntero_instruccion pc);
 void incrementarPC(t_PCB* pcb) ;
-void instruccionTerminada(char* instr);
+void loggearFinDePrimitiva(char* instr);
 void desalojarProceso();
 
 /*--------FUNCIONES----------*/

@@ -27,9 +27,8 @@ void informarInstruccionTerminada() {
 	log_debug(debugLogger,"Informé a nucleo del fin de una instrucción");
 }
 
-void instruccionTerminada(char* instr) {
-	log_debug(debugLogger, "La instruccion |%s| finalizó OK.", instr);
-	informarInstruccionTerminada();
+void loggearFinDePrimitiva(char* primitiva) {
+	log_debug(debugLogger, "La primitiva |%s| finalizó OK.", primitiva);
 }
 
 void desalojarProceso() {
@@ -270,7 +269,9 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	log_debug(debugLogger, "Recibiendo PCB...");
 	char* serialPCB = leerLargoYMensaje(cliente_nucleo);
 	log_debug(debugLogger, "PCB recibido!");
+	printf("Pase por aca a. Aca rompe \n\n\n");
 	deserializar_PCB(pcbActual, serialPCB);//reemplazo en el pcb actual de cpu que tiene como variable global
+	printf("Pase por aca 2 \n\n\n");
 	enviarPID();
 	recibirCantidadDePaginasDeCodigo();
 	stack = pcbActual->SP;
@@ -295,6 +296,7 @@ void parsear(char* const sentencia) {
 	pcbActual->PC++; //si desp el parser lo setea en otro lado mediante una primitiva, es tema suyo.
 					//lo incremento antes asi no se desfasa.
 	analizadorLinea(sentencia, &funciones, &funcionesKernel);
+	informarInstruccionTerminada();
 	log_info(activeLogger, "PC actualizado a |%d|",pcbActual->PC);
 }
 

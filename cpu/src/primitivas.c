@@ -35,7 +35,7 @@ t_puntero definir_variable(t_nombre_variable variable) {
 
 	free(cadena);
 
-	instruccionTerminada("Definir_variable");
+	loggearFinDePrimitiva("Definir_variable");
 	return head->posicion;
 }
 
@@ -72,7 +72,7 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 
 
 	free(cadena);
-	instruccionTerminada("obtener_posicion_de");
+	loggearFinDePrimitiva("obtener_posicion_de");
 	return posicionAbsoluta;
 }
 
@@ -95,7 +95,7 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 	free(valorRecibido);
 
 
-	instruccionTerminada("Dereferenciar");
+	loggearFinDePrimitiva("Dereferenciar");
 	return valor;
 }
 
@@ -113,7 +113,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 
 
 	free(valorSerializado);
-	instruccionTerminada("Asignar.");
+	loggearFinDePrimitiva("Asignar.");
 }
 
 
@@ -138,7 +138,7 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 	free(value);
 	free(sizeSerializado);
 
-	instruccionTerminada("Obtener_valor_compartida");
+	loggearFinDePrimitiva("Obtener_valor_compartida");
 	return valorVarCompartida;
 }
 
@@ -164,7 +164,7 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 				valorVarCompartida, nombreVarCompartida);
 
 
-	instruccionTerminada("asignar_valor_compartida");
+	loggearFinDePrimitiva("asignar_valor_compartida");
 	return valorVarCompartida;
 }
 
@@ -190,7 +190,7 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 				etiqueta);
 	}
 	setearPC(pcbActual, posicionPrimeraInstrUtil);
-	instruccionTerminada("ir_al_label");
+	loggearFinDePrimitiva("ir_al_label");
 }
 
 /**
@@ -209,7 +209,7 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar)
 	stack_push(stack, newHead);
 
 	setearPC(pcbActual, posicionFuncion);
-	instruccionTerminada("llamar_con_retorno");
+	loggearFinDePrimitiva("llamar_con_retorno");
 }
 
 /**
@@ -225,7 +225,7 @@ void retornar(t_valor_variable variable) {
 	// Libero ese nivel del stack, porque termino de ejecutarse la funcion que lo creo y ya no es necesario
 	stack_item_destroy(head);
 	setearPC(pcbActual, retorno);
-	instruccionTerminada("Retornar");
+	loggearFinDePrimitiva("Retornar");
 }
 
 
@@ -240,7 +240,7 @@ void imprimir_variable(t_valor_variable valor) { //la nueva version del enunciad
 	send_w(cliente_nucleo, valorSerializado, sizeof(t_valor_variable));
 
 	free(valorSerializado); //hacer intToChar4 en el send produce memory leaks, porque al terminar al funcion queda memoria desreferenciada que nunca se libera.
-	instruccionTerminada("Imprimir");
+	loggearFinDePrimitiva("Imprimir");
 }
 
 
@@ -258,7 +258,7 @@ void imprimir_texto(char* texto) {
 	log_debug(debugLogger, "Se envio a nucleo la cadena: |%s|.", texto);
 
 
-	instruccionTerminada("Imprimir texto");
+	loggearFinDePrimitiva("Imprimir texto");
 }
 
 
@@ -278,7 +278,7 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) 
 	free(time);
 
 
-	instruccionTerminada("Entrada-Salida");
+	loggearFinDePrimitiva("Entrada-Salida");
 }
 
 
@@ -295,7 +295,7 @@ void wait_semaforo(t_nombre_semaforo identificador_semaforo) {
 	//Si el proceso no pudiese seguir, nucleo al bloquearlo lo para con un header enviado a procesarHeader.
 
 
-	instruccionTerminada("wait");
+	loggearFinDePrimitiva("wait");
 }
 
 
@@ -310,7 +310,7 @@ void signal_semaforo(t_nombre_semaforo identificador_semaforo) {
 	enviarLargoYString(cliente_nucleo,identificador_semaforo);
 
 
-	instruccionTerminada("Signal");
+	loggearFinDePrimitiva("Signal");
 }
 
 /* ------ Funciones para usar con el parser ----- */

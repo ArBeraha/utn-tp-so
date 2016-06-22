@@ -134,11 +134,22 @@ void expulsarProceso(t_proceso* proceso) {
 	pthread_mutex_unlock(&mutexClientes);
 	cambiarEstado(proceso, READY);
 	pthread_mutex_lock(&mutexClientes);
-	char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
+	//char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
+	// PARA DEBUGEAR EL LARGO USAR ESTO
+	char* serialLargo = malloc(sizeof(int));
+	read(proceso->socketCPU, serialLargo, sizeof(int));
+	int largo = char4ToInt(serialLargo);
+	log_info(activeLogger,"EL LARGO DEL SERIAL PCB ES:%d",largo);
+	char* serialPcb = malloc(largo);
+	read(proceso->socketCPU, serialPcb, largo);
+	free(serialLargo);
+	// DESPUES REEMPLAZAR POR leerLargoYMensaje
+	//imprimir_serializacion(serialPcb,largo);
 	pcb_destroy(proceso->PCB);
 	t_PCB* pcb = malloc(sizeof(t_PCB));
 	deserializar_PCB(pcb,serialPcb);
 	proceso->PCB = pcb;
+	log_info(activeLogger,"AHORA EL PID ES:%d",proceso->PCB->PID);
 	// TODO usar actualizarPCB
 }
 void continuarProceso(t_proceso* proceso) {

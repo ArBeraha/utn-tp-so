@@ -49,7 +49,7 @@ char* headerToString(header_t header) {
 		case HeaderSignal: return "HeaderSignal";
 		case HeaderWait: return "HeaderWait";
 		case HeaderExcepcion: return "HeaderExcepcion";
-		//case HeaderTermineInstruccion: return "HeaderTermineInstruccion";
+		case headerTermineInstruccion: return "HeaderTermineInstruccion";
 		case HeaderDesalojarProceso: return "HeaderDesalojarProceso";
 		case HeaderTerminoProceso: return "HeaderTerminoProceso";
 		case HeaderContinuarProceso: return "HeaderContinuarProceso";

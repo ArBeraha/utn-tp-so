@@ -33,13 +33,17 @@ void instruccionTerminada(char* instr) {
 }
 
 void desalojarProceso() {
-	char* pcb = malloc(sizeof(t_PCB));
+	log_info(activeLogger, "Desalojando proceso...");
+	char* pcb = malloc(99999); //fixme
+	printf("PASE POR ACA1\n");
 	int size = serializar_PCB(pcb, pcbActual);
-	enviarLargoYSerial(cliente_nucleo,size,pcb);
+	printf("PASE POR ACA2\n");
+	enviarLargoYSerial(cliente_nucleo, size, pcb);
+	printf("PASE POR ACA3\n");
 	//Envio a nucleo el PCB con el PC actualizado.
 	// Nucleo no puede hacer pbc->pc+=quantum porque el quantum puede variar en tiempo de ejecución.
-
 	free(pcb);
+	log_info(activeLogger, "Proceso desalojado.");
 }
 
 /*--------FUNCIONES----------*/
@@ -263,7 +267,7 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	if(pcbActual!=NULL){ //Al principio esta en null, asi no se inicializa.
 		pcb_destroy(pcbActual);
 	}else{
-		pcbActual=malloc(sizeof(t_PCB));
+		pcbActual=malloc(99999); //fixme
 	}
 	log_debug(debugLogger, "Recibiendo PCB...");
 	char* pcb = leerLargoYMensaje(cliente_nucleo);
@@ -274,7 +278,6 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	recibirCantidadDePaginasDeCodigo();
 
 	stack = pcbActual->SP;
-
 
 	free(pcb);
 }

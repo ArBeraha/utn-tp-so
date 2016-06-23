@@ -557,6 +557,8 @@ void procesarHeader(t_cliente cliente, char* header) {
 	int idLog=0;
 	MUTEXCLIENTES(idLog = clientes[cliente.indice].pid;)
 
+	mostrarTlb(); //TODO PARA DEBUGEAR, ESPERAR A QUE ANDE EL TEMA DE CPU Y EL CAMBIO DE PROCESO
+
 	switch (charToInt(header)) {
 
 	case HeaderError:
@@ -608,7 +610,10 @@ void procesarHeader(t_cliente cliente, char* header) {
 		int verifNuevo = clientes[cliente.indice].pid;
 		printf("VERIFICO NUEVO : %d \n",verifNuevo);
 
-		if(viejoPid!=char4ToInt(nuevoPid)) flushTlbDePid(viejoPid);
+		if(viejoPid!=char4ToInt(nuevoPid)){
+			flushTlbDePid(viejoPid);
+			log_info(activeLogger,"Se limpio la TLB del Pid: %d ",viejoPid);
+		}
 
 		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Cambio PID viejo: %d por nuevo: %d " ANSI_COLOR_RESET ,idLog,viejoPid,char4ToInt(nuevoPid));
 		devolverTodaLaMemoria();

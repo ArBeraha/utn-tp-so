@@ -557,7 +557,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 	int idLog=0;
 	MUTEXCLIENTES(idLog = clientes[cliente.indice].pid;)
 
-	mostrarTlb(); //TODO PARA DEBUGEAR, ESPERAR A QUE ANDE EL TEMA DE CPU Y EL CAMBIO DE PROCESO
+	//mostrarTlb(); //TODO PARA DEBUGEAR, ESPERAR A QUE ANDE EL TEMA DE CPU Y EL CAMBIO DE PROCESO
 
 	switch (charToInt(header)) {
 

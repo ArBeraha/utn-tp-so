@@ -189,6 +189,8 @@ void fRetardo();
 void dumpEstructuraMemoria();
 void dumpContenidoMemoria();
 void flushTlb();
+void flushTlbDePid(int pid);
+void sacarPosDeTlb(int pos);
 void flushMemory();
 HILO recibirComandos();
 
@@ -209,7 +211,7 @@ int cantPaginasEnMemoriaDePid(int pid);
 int sacarConClock(int pid);
 int sacarConModificado(int pid);
 void enviarASwap(int pid,tablaPagina_t* pagina);
-void sacarDeMemoria(tablaPagina_t* pagina);
+void sacarDeMemoria(tablaPagina_t* pagina, int pid);
 void ponerBitModif1(int pid,int nroPagina);
 int cantPaginasDePid(int pid);
 void agregarATlb(tablaPagina_t* pagina ,int pid);

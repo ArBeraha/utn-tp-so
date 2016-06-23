@@ -318,7 +318,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		int marcoSacado = paginaASacarDeMemoria->marcoUtilizado;
 		log_info(activeLogger, "[%d] Intercambiando contenido de Marco [%d]",id,marcoSacado);
 
-		sacarDeMemoria(paginaASacarDeMemoria);
+		sacarDeMemoria(paginaASacarDeMemoria,id);
 
 		paginaASacarDeMemoria->bitPresencia=0;
 		paginaASacarDeMemoria->marcoUtilizado=-1;
@@ -336,7 +336,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		paginaACargar->bitModificacion = 0;
 		paginaACargar->bitUso=1;
 
-		flushTlb();
+//		flushTlb();
 		pedido.cantBytes=config.tamanio_marco;
 		pedido.offset=0;
 
@@ -405,7 +405,7 @@ void finalizarPrograma(int idPrograma){
 	enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
 	send_w(swapServer,intToChar4(idPrograma),sizeof(int));
 	sacarMarcosOcupados(idPrograma);
-	flushTlb();
+	flushTlbDePid(idPrograma);
 	tabla_t* tabla = buscarTabla(idPrograma);
 	list_destroy((t_list*)tabla->listaPaginas);
 	list_remove(listaTablasPaginas,buscarPosicionTabla(idPrograma));
@@ -607,6 +607,9 @@ void procesarHeader(t_cliente cliente, char* header) {
 		MUTEXCLIENTES(clientes[cliente.indice].pid=char4ToInt(nuevoPid));
 		int verifNuevo = clientes[cliente.indice].pid;
 		printf("VERIFICO NUEVO : %d \n",verifNuevo);
+
+		if(viejoPid!=char4ToInt(nuevoPid)) flushTlbDePid(viejoPid);
+
 		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Cambio PID viejo: %d por nuevo: %d " ANSI_COLOR_RESET ,idLog,viejoPid,char4ToInt(nuevoPid));
 		devolverTodaLaMemoria();
 		printf("\n\n\n\n ro, aca me tira segment faul \n\n\n\n");

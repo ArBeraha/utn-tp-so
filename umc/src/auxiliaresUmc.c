@@ -27,6 +27,21 @@ void inicializarTlb(){
 	pthread_mutex_unlock(&lock_accesoTlb);
 }
 
+void flushTlbDePid(int pidViejo){
+	pthread_mutex_lock(&lock_accesoTlb);
+		int i;
+		for(i = 0; i<config.entradas_tlb; i++){
+			if(tlb[i].pid=pidViejo){
+				tlb[i].pid=-1;
+				tlb[i].pagina=-1;
+				tlb[i].marcoUtilizado=-1;
+				tlb[i].contadorTiempo=-1;
+			}
+		}
+	pthread_mutex_unlock(&lock_accesoTlb);
+}
+
+
 int buscarUltimaPosSacada(int pidParam){
 	int i;
 	int size = list_size(listaUltimaPosicionSacada);
@@ -207,14 +222,36 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 	}
 }
 
-void sacarDeMemoria(tablaPagina_t* pagina){
-		pthread_mutex_lock(&lock_accesoMemoria);
+void sacarPosDeTlb(int pos){
+	tlb[pos].pid=-1;
+	tlb[pos].pagina=-1;
+	tlb[pos].marcoUtilizado=-1;
+	tlb[pos].contadorTiempo=-1;
+}
+
+void sacarDeMemoria(tablaPagina_t* pagina, int pid){
+	pthread_mutex_lock(&lock_accesoMemoria);
+
 	memset(memoria+(pagina->marcoUtilizado * config.tamanio_marco),'\0',config.tamanio_marco);
-		pthread_mutex_lock(&lock_accesoMarcosOcupados);
+
+	pthread_mutex_lock(&lock_accesoMarcosOcupados);
+
 	vectorMarcosOcupados[pagina->marcoUtilizado]=0;
-		pthread_mutex_unlock(&lock_accesoMarcosOcupados);
+
+	pthread_mutex_unlock(&lock_accesoMarcosOcupados);
+
 	pagina->marcoUtilizado=-1;
-		pthread_mutex_unlock(&lock_accesoMemoria);
+
+	pthread_mutex_unlock(&lock_accesoMemoria);
+
+	pedidoLectura_t pedidoFalso;
+	pedidoFalso.pid = pid;
+	pedidoFalso.paginaRequerida = pagina->nroPagina;
+
+	if(estaEnTlb(pedidoFalso)){
+		int pos = buscarEnTlb(pedidoFalso);
+		sacarPosDeTlb(pos);
+	}
 }
 
 int cantPaginasDePid(int pid){

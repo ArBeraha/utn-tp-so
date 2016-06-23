@@ -33,15 +33,12 @@ void planificarExpulsion(t_proceso* proceso) {
 		else
 			continuarProceso(proceso);
 	}
-	log_info(activeLogger,"TERMINO LA PLANIFICACION DE EXPULSION");
 }
 void rafagaProceso(cliente){
 	// mutexClientes SAFE
 	log_info(activeLogger,"EL PID TERMINO UNA INSTRUCCION");
 	t_proceso* proceso = procesos[clientes[cliente].pid];//obtenerProceso(clientes[cliente].pid);
-	log_info(activeLogger,"SE OBTUVO EL PID");
 	proceso->rafagas++;
-	log_info(activeLogger,"SE SUMO RAFAGA");
 	planificarExpulsion(proceso);
 	clientes[cliente].atentido=false;
 }
@@ -150,9 +147,6 @@ void expulsarProceso(t_proceso* proceso) {
 	deserializar_PCB(pcb,serialPcb);
 	proceso->PCB = pcb;
 	imprimir_PCB(proceso->PCB);
-	log_info(activeLogger,"AHORA EL PID ES:%d",proceso->PCB->PID);
-	log_info(activeLogger,"AHORA EL PC ES:%d",proceso->PCB->PC);
-	log_info(activeLogger,"AHORA LA CANTIDAD DE PAGINAS ES:%d",proceso->PCB->cantidad_paginas);
 	// TODO usar actualizarPCB
 }
 void continuarProceso(t_proceso* proceso) {

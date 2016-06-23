@@ -104,7 +104,6 @@ int serializar_stack_item(char* destino, t_stack_item* fuente) {
 int serializar_stack(char* destino, t_stack* fuente) {
 	int i, offset = 1;
 	destino[0] = stack_size(fuente); // Cantidad de items
-	printf("STACKA SIZE:%d\n",stack_size(fuente));
 	for (i = 0; i < destino[0]; i++) {
 		offset += serializar_stack_item(destino + offset, list_get(fuente, i)); // Serial del item
 	}
@@ -362,7 +361,6 @@ void test_serializar_stack(){
 	itemA->argumentos = list_create();
 	itemA->identificadores = dictionary_create();
 	itemA->valorRetorno=var;
-	printf("STACKA SIZE:%d\n",stack_size(stackA));
 
 	stack_push(stackA,itemA);
 	t_stack_item* itemB = malloc(sizeof(t_stack_item));
@@ -378,11 +376,11 @@ void test_serializar_stack(){
 	itemB->valorRetorno=var;
 	dictionary_put(itemB->identificadores,"k",arg);
 
-	printf("STACKA SIZE:%d\n",stack_size(stackA));
+
 
 
 	stack_push(stackA,itemB);
-	printf("STACKA SIZE:%d\n",stack_size(stackA));
+
 
 	char* serial = malloc(bytes_stack(stackA));
 	serializar_stack(serial,stackA);

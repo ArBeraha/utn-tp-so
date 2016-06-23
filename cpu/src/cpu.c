@@ -34,12 +34,8 @@ void loggearFinDePrimitiva(char* primitiva) {
 void desalojarProceso() {
 	log_info(activeLogger, "Desalojando proceso...");
 
-	int bytes = bytes_PCB(pcbActual);
-	char* serialPCB = malloc(bytes);
-	serializar_PCB(serialPCB, pcbActual);
-	enviarLargoYSerial(cliente_nucleo, bytes, serialPCB);
+	enviarPCB();
 
-	free(serialPCB);
 	log_info(activeLogger, "Proceso desalojado.");
 }
 
@@ -61,7 +57,7 @@ void esperar_programas() {
 
 void procesarHeader(char *header) {
 
-	log_debug(debugLogger, "Llego un mensaje con header %d.", charToInt(header));
+	log_debug(debugLogger, "Llego el header: %s", headerToString(charToInt(header)));
 
 	switch (charToInt(header)) {
 
@@ -279,13 +275,14 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 }
 
 void enviarPCB() {
-	log_debug(debugLogger, "Enviando PCB...");
-	char* pcb = string_new();
-	serializar_PCB(pcb, pcbActual);
+	log_debug(debugLogger, "Enviando PCB a Nucleo...");
+	int bytes = bytes_PCB(pcbActual);
+	char* serialPCB = malloc(bytes);
+	serializar_PCB(serialPCB, pcbActual);
 
-	send_w(cliente_nucleo, pcb, sizeof(t_PCB));
+	enviarLargoYSerial(cliente_nucleo, bytes, serialPCB);
 	log_debug(debugLogger, "PCB Enviado!");
-	free(pcb);
+	free(serialPCB);
 }
 
 /**

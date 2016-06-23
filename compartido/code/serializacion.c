@@ -82,7 +82,7 @@ int bytes_list(t_list* fuente, int pesoElemento){
 int bytes_stack_item(t_stack_item* fuente) {
 	return sizeof(int) + bytes_list(fuente->argumentos, sizeof(t_pedido))
 			+ bytes_dictionary(fuente->identificadores, sizeof(t_pedido))//bytes_list(fuente->identificadores, sizeof(t_identificador))
-			+ sizeof(int) + sizeof(t_pedido);
+			+ sizeof(t_puntero) + sizeof(t_pedido);
 }
 int bytes_stack(t_stack* fuente) {
 	int i, bytes = 1;
@@ -104,6 +104,7 @@ int serializar_stack_item(char* destino, t_stack_item* fuente) {
 int serializar_stack(char* destino, t_stack* fuente) {
 	int i, offset = 1;
 	destino[0] = stack_size(fuente); // Cantidad de items
+	printf("STACKA SIZE:%d\n",stack_size(fuente));
 	for (i = 0; i < destino[0]; i++) {
 		offset += serializar_stack_item(destino + offset, list_get(fuente, i)); // Serial del item
 	}
@@ -329,8 +330,8 @@ void test_serializar_stack_item(){
 	itemA->argumentos = list_create();
 	itemA->identificadores = dictionary_create();
 	itemA->valorRetorno=var;
-	//itemB->argumentos=list_create();
-	//itemB->identificadores = dictionary_create();
+	itemB->argumentos=list_create();
+	itemB->identificadores = dictionary_create();
 	t_pedido* ident= malloc(sizeof(t_pedido));
 	ident->offset=7;
 	ident->pagina=8;
@@ -361,6 +362,8 @@ void test_serializar_stack(){
 	itemA->argumentos = list_create();
 	itemA->identificadores = dictionary_create();
 	itemA->valorRetorno=var;
+	printf("STACKA SIZE:%d\n",stack_size(stackA));
+
 	stack_push(stackA,itemA);
 	t_stack_item* itemB = malloc(sizeof(t_stack_item));
 	itemB->posicion=2;
@@ -374,7 +377,13 @@ void test_serializar_stack(){
 	list_add(itemB->argumentos,arg);
 	itemB->valorRetorno=var;
 	dictionary_put(itemB->identificadores,"k",arg);
+
+	printf("STACKA SIZE:%d\n",stack_size(stackA));
+
+
 	stack_push(stackA,itemB);
+	printf("STACKA SIZE:%d\n",stack_size(stackA));
+
 	char* serial = malloc(bytes_stack(stackA));
 	serializar_stack(serial,stackA);
 	imprimir_serializacion(serial,bytes_stack(stackA));
@@ -429,7 +438,7 @@ void test_serializar_PCB(){
 	list_add(pcb->indice_codigo,sen);
 	pcb->indice_etiquetas=dictionary_create();
 	int* a = malloc(sizeof(int));
-	*a = 267;
+	*a = 77;
 	dictionary_put(pcb->indice_etiquetas,"SALTO",a);
 	char* serial = malloc(bytes_PCB(pcb));
 	serializar_PCB(serial,pcb);
@@ -441,10 +450,17 @@ void test_serializar_PCB(){
 	CU_ASSERT_EQUAL(((t_stack_item*)stack_get(pcb2->SP,0))->posicion,1);
 	CU_ASSERT_EQUAL(((t_stack_item*)stack_get(pcb2->SP,1))->posicion,2);
 	CU_ASSERT_EQUAL(((t_sentencia*)list_get(pcb->indice_codigo,0))->offset_fin,99);
-	CU_ASSERT_EQUAL(((*(int*)dictionary_get(pcb2->indice_etiquetas,"SALTO"))),267)
+	CU_ASSERT_EQUAL(((*(int*)dictionary_get(pcb2->indice_etiquetas,"SALTO"))),77)
+
+
+	imprimir_PCB(pcb);
+	imprimir_PCB(pcb2);
+
 	/*Liberar las estructuras internas*/
 	pcb_destroy(pcb);
 	pcb_destroy(pcb2);
+
+
 	free(serial);
 }
 

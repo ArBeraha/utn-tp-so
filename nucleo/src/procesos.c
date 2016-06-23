@@ -56,6 +56,11 @@ HILO crearProceso(int consola) {
 		} else {
 			asignarMetadataProceso(proceso, codigo);
 			MUTEXCLIENTES(clientes[consola].pid = (int) proceso);
+			//
+			t_stack_item* head = stack_item_create();
+			head->posicion=0;
+			stack_push(proceso->PCB->SP,head);
+			//
 			proceso->cpu = SIN_ASIGNAR;
 			cambiarEstado(proceso, READY);
 			MUTEXPROCESOS(list_add(listaProcesos, proceso));

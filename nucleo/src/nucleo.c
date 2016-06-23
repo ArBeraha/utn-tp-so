@@ -108,7 +108,7 @@ char* getScript(int consola) {
 void inicializar() {
 	system("rm -rf *.log");
 	crearLogs("Nucleo", "Nucleo",0);
-	//testear(test_serializacion);
+//	testear(test_serializacion);
 	log_info(activeLogger, "INICIALIZANDO");
 	espera.tv_sec = 2;
 	espera.tv_usec = 500000;

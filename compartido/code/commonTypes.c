@@ -9,9 +9,9 @@
 
 t_stack* stack_create() {
 	t_list* stack = list_create();
-	t_stack_item* head = stack_item_create();
-	head->posicion=0;
-	stack_push(stack,head);
+//	t_stack_item* head = stack_item_create();
+//	head->posicion=0;
+//	stack_push(stack,head);
 	return stack;
 }
 void stack_push(t_stack* stack, t_stack_item* item) {
@@ -129,12 +129,17 @@ void imprimir_PCB(t_PCB* pcb){
 		}
 		printf("\t\t\t[Fin Argumentos]\n");
 		printf("\t\t\t[Inicio Identificadores]\n");
-		for (e = 0; e < dictionary_size(item->identificadores); e++) {
-			t_pedido* pedido =
-					((t_pedido*) item->identificadores->elements[e]->data);
-			printf("\t\t\t\tIDENTIFICADOR:%s PEDIDO:(%d,%d,%d)\n",
-					item->identificadores->elements[e]->key, pedido->pagina,
-					pedido->offset, pedido->size);
+
+		int table_index;
+		for (table_index = 0; table_index < item->identificadores->table_max_size; table_index++) {
+			t_hash_element *element = item->identificadores->elements[table_index];
+
+			while (element != NULL) {
+				t_pedido* pedido =	(t_pedido*) element->data;
+				printf("\t\t\t\tIDENTIFICADOR:%s PEDIDO:(%d,%d,%d)\n",element->key,pedido->pagina,pedido->offset, pedido->size);
+				//Siguiente elemento
+				element = element->next;
+			}
 		}
 	printf("\t\t\t[Fin Identificadores]\n");
 	printf("\t\t\tPosicion:%d\n",item->posicion);
@@ -151,10 +156,17 @@ void imprimir_PCB(t_PCB* pcb){
 	}
 	printf("\t[Fin Indice Codigo]\n");
 	printf("\t[Inicio Indice Etiquetas]\n");
-	for (e = 0; e < dictionary_size(pcb->indice_etiquetas); e++) {
-		printf("\t\t\tETIQUETA:%s SALTO:%d\n",
-				pcb->indice_etiquetas->elements[e]->key,*(int*)(pcb->indice_etiquetas->elements[e]->data));
+	int table_index;
+	for (table_index = 0; table_index < pcb->indice_etiquetas->table_max_size; table_index++) {
+		t_hash_element *element = pcb->indice_etiquetas->elements[table_index];
+
+		while (element != NULL) {
+			printf("\t\t\tETIQUETA:%s SALTO:%d\n",element->key,*(int*)element->data);
+			//Siguiente elemento
+			element = element->next;
+		}
 	}
+	printf("\t[Fin Indice Etiquetas]\n");
 	printf("[Fin PCB]\n");
 
 }

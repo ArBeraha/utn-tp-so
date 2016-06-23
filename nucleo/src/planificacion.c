@@ -130,7 +130,6 @@ void ejecutarProceso(t_proceso* proceso, int cpu) {
 void expulsarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	log_info(activeLogger,"EXPULSANDO PROCESO");
-	imprimir_PCB(proceso->PCB);
 	enviarHeader(proceso->socketCPU, HeaderDesalojarProceso);
 	pthread_mutex_unlock(&mutexClientes);
 	cambiarEstado(proceso, READY);

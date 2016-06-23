@@ -63,4 +63,6 @@ t_stack_item* stack_item_create();
 void list_remove_by_value(t_list* list,void* value);
 void color_print(char* texto);
 
+void imprimir_PCB(t_PCB* pcb);
+
 #endif /* OTROS_COMMONTYPES_H_ */

@@ -109,3 +109,52 @@ void list_remove_by_value(t_list* list, void* value) {
 void color_print(char* texto){
 	system(string_from_format("echo \"\e[1m\e[5m\e[31m%s\e[0m\"", texto));
 }
+
+void imprimir_PCB(t_PCB* pcb){
+	printf("[Inicio PCB]\n");
+	printf("\tPC:%d\n",pcb->PC);
+	printf("\tPID:%d\n",pcb->PID);
+	printf("\tCantidad_Paginas:%d\n",pcb->cantidad_paginas);
+	printf("\t[Inicio Stack]\n");
+	int i,e;
+	for (i = 0; i < stack_size(pcb->SP); i++) {
+		printf("\t\t[Inicio Stack Item]\n");
+		t_stack_item* item = stack_get(pcb->SP, i);
+		printf("\t\t\t[Inicio Argumentos]\n");
+
+		for (e = 0; e < list_size(item->argumentos); e++) {
+			t_pedido* pedido = (t_pedido*) list_get(item->argumentos, e);
+			printf("\t\t\t\tARGUMENTO:(%d,%d,%d)\n", pedido->pagina, pedido->offset,
+					pedido->size);
+		}
+		printf("\t\t\t[Fin Argumentos]\n");
+		printf("\t\t\t[Inicio Identificadores]\n");
+		for (e = 0; e < dictionary_size(item->identificadores); e++) {
+			t_pedido* pedido =
+					((t_pedido*) item->identificadores->elements[e]->data);
+			printf("\t\t\t\tIDENTIFICADOR:%s PEDIDO:(%d,%d,%d)\n",
+					item->identificadores->elements[e]->key, pedido->pagina,
+					pedido->offset, pedido->size);
+		}
+	printf("\t\t\t[Fin Identificadores]\n");
+	printf("\t\t\tPosicion:%d\n",item->posicion);
+	printf("\t\t\tPosicionRetorno:%d\n",item->posicionRetorno);
+	printf("\t\t\tvalorRetorno:(%d,%d,%d)\n",item->valorRetorno.pagina, item->valorRetorno.offset,item->valorRetorno.size);
+	printf("\t\t[Fin Stack Item]\n");
+	};
+	printf("\t[Fin Stack]\n");
+
+	printf("\t[Inicio Indice Codigo]\n");
+	for (e = 0; e < list_size(pcb->indice_codigo); e++) {
+		t_sentencia* sentencia = (t_sentencia*) list_get(pcb->indice_codigo, e);
+		printf("\t\t\tSENTENCIA:(%d,%d)\n",sentencia->offset_inicio,sentencia->offset_fin);
+	}
+	printf("\t[Fin Indice Codigo]\n");
+	printf("\t[Inicio Indice Etiquetas]\n");
+	for (e = 0; e < dictionary_size(pcb->indice_etiquetas); e++) {
+		printf("\t\t\tETIQUETA:%s SALTO:%d\n",
+				pcb->indice_etiquetas->elements[e]->key,*(int*)(pcb->indice_etiquetas->elements[e]->data));
+	}
+	printf("[Fin PCB]\n");
+
+}

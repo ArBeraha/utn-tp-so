@@ -68,5 +68,6 @@ typedef enum {
 } header_t;
 
 char* headerToMSG(header_t header);
+char* headerToString(header_t header);
 
 #endif /* OTROS_HEADER_H_ */

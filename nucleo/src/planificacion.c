@@ -130,6 +130,7 @@ void ejecutarProceso(t_proceso* proceso, int cpu) {
 void expulsarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	log_info(activeLogger,"EXPULSANDO PROCESO");
+	imprimir_PCB(proceso->PCB);
 	enviarHeader(proceso->socketCPU, HeaderDesalojarProceso);
 	pthread_mutex_unlock(&mutexClientes);
 	cambiarEstado(proceso, READY);
@@ -149,7 +150,10 @@ void expulsarProceso(t_proceso* proceso) {
 	t_PCB* pcb = malloc(sizeof(t_PCB));
 	deserializar_PCB(pcb,serialPcb);
 	proceso->PCB = pcb;
+	imprimir_PCB(proceso->PCB);
 	log_info(activeLogger,"AHORA EL PID ES:%d",proceso->PCB->PID);
+	log_info(activeLogger,"AHORA EL PC ES:%d",proceso->PCB->PC);
+	log_info(activeLogger,"AHORA LA CANTIDAD DE PAGINAS ES:%d",proceso->PCB->cantidad_paginas);
 	// TODO usar actualizarPCB
 }
 void continuarProceso(t_proceso* proceso) {

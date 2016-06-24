@@ -179,7 +179,7 @@ t_sentencia* obtener_sentencia_relativa(int* paginaInicioSentencia) {
 	t_sentencia* sentenciaAbsoluta = list_get(pcbActual->indice_codigo, pcbActual->PC);	//obtengo el offset de la sentencia
 	t_sentencia* sentenciaRelativa = malloc(sizeof(t_sentencia));
 	(*paginaInicioSentencia) = obtener_offset_relativo(sentenciaAbsoluta, sentenciaRelativa); //obtengo el offset relativo
-	free(sentenciaAbsoluta);
+	//free(sentenciaAbsoluta); USTEDES SON DIABOLICOS! QUE LE HACEN A MI POBRE PCB?
 	return sentenciaRelativa;
 }
 

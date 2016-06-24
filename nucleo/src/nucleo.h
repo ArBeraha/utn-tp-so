@@ -23,6 +23,10 @@
 #define EVENT_SIZE  ( sizeof (struct inotify_event) )
 #define EVENT_BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
 
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
 #define SIN_ASIGNAR -1
 /* ---------- INICIO DEBUG ---------- */
 // Es util para debugear sin tener una consola extra con UMC abierto.
@@ -156,7 +160,7 @@ void bloquearProcesoSem(int PID, char* semid);
 void desbloquearProceso(int PID);
 void finalizarProceso(int PID);
 void destruirProceso(t_proceso* proceso);
-void actualizarPCB(t_PCB PCB);
+void actualizarPCB(t_proceso* proceso, t_PCB* PCB);
 void asignarMetadataProceso(t_proceso* p, char* codigo);
 t_proceso* obtenerProceso(int PID);
 // Planificacion

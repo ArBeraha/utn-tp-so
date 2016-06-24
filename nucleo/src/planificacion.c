@@ -26,7 +26,6 @@ HILO planificar() {
 }
 void planificarExpulsion(t_proceso* proceso) {
 	// mutexProcesos SAFE
-	log_info(activeLogger,"PLANIFICANDO EXPULSION");
 	if (proceso->estado == EXEC) {
 		if (terminoQuantum(proceso))
 			expulsarProceso(proceso);
@@ -36,8 +35,8 @@ void planificarExpulsion(t_proceso* proceso) {
 }
 void rafagaProceso(cliente){
 	// mutexClientes SAFE
-	log_info(activeLogger,"EL PID TERMINO UNA INSTRUCCION");
 	t_proceso* proceso = procesos[clientes[cliente].pid];//obtenerProceso(clientes[cliente].pid);
+	log_info(debugLogger,"EL PID:%d TERMINO UNA INSTRUCCION",proceso->PCB->PID);
 	proceso->rafagas++;
 	planificarExpulsion(proceso);
 	clientes[cliente].atentido=false;
@@ -65,18 +64,20 @@ void planificacionFIFO() {
 
 	MUTEXLISTOS(MUTEXCPU(
 	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU)) {
-		// Limpiamos las colas de procesos eliminados hasta encontrar uno que no lo este o se vacie
-//		while (!queue_is_empty(colaListos)
-//				&& !procesoExiste( (t_proceso*) queue_peek(colaListos)))
-//			queue_pop(colaListos);
-//		// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
-//		while (!queue_is_empty(colaCPU) && !clienteExiste( (int) queue_peek(colaCPU)))
-//			queue_pop(colaCPU);
-//
-//		// Si no se vaciaron las listas entonces los primeros de ambas listas son validos
-//		if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU))
+		 //Limpiamos las colas de procesos eliminados hasta encontrar uno que no lo este o se vacie
+		while (!queue_is_empty(colaListos)
+				&& !procesoExiste( (t_proceso*) queue_peek(colaListos)))
+			queue_pop(colaListos);
+		// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
+		while (!queue_is_empty(colaCPU) && !clienteExiste( (int) queue_peek(colaCPU)))
+			queue_pop(colaCPU);
+
+		// Si no se vaciaron las listas entonces los primeros de ambas listas son validos
+		if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU)){
+			log_info(activeLogger,"[Planificando] Disponibles PID y CPU");
 			ejecutarProceso((t_proceso*) queue_pop(colaListos),
-					(int) queue_pop(colaCPU));
+					(int) queue_pop(colaCPU));}
+
 		// Si por lo menos una lista no se vacio repetir el proceso
 	}
 	))
@@ -89,7 +90,7 @@ void planificarIO(char* io_id, t_IO* io) {
 }
 bool terminoQuantum(t_proceso* proceso) {
 	// mutexProcesos SAFE
-	log_info(activeLogger,"PREGUNTANDO POR QUANTUM");
+	log_info(debugLogger,"PREGUNTANDO POR QUANTUM");
 	return (proceso->rafagas>=config.quantum);
 }
 void asignarCPU(t_proceso* proceso, int cpu) {
@@ -112,7 +113,7 @@ void desasignarCPU(t_proceso* proceso) {
 void ejecutarProceso(t_proceso* proceso, int cpu) {
 	// mutexProcesos SAFE
 	//t_proceso* proceso = (t_proceso*) PID;//obtenerProceso(PID);
-	log_info(activeLogger,"Iniciando ejecucion de proceso pid %d con la cpu %d", proceso->PCB->PID, cpu);
+	log_info(activeLogger,ANSI_COLOR_GREEN "Ejecutando PID:%d con CPU:%d" ANSI_COLOR_RESET, proceso->PCB->PID, cpu);
 	asignarCPU(proceso,cpu);
 	if (!CU_is_test_running()) {
 		int bytes = bytes_PCB(proceso->PCB);
@@ -126,33 +127,26 @@ void ejecutarProceso(t_proceso* proceso, int cpu) {
 }
 void expulsarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
-	log_info(activeLogger,"EXPULSANDO PROCESO");
+	log_info(activeLogger,ANSI_COLOR_RED "Expulsando PID:%d de CPU:%d" ANSI_COLOR_RESET,proceso->PCB->PID,proceso->cpu);
 	enviarHeader(proceso->socketCPU, HeaderDesalojarProceso);
 	pthread_mutex_unlock(&mutexClientes);
 	cambiarEstado(proceso, READY);
 	pthread_mutex_lock(&mutexClientes);
-	//char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
-	// PARA DEBUGEAR EL LARGO USAR ESTO
-	char* serialLargo = malloc(sizeof(int));
-	read(proceso->socketCPU, serialLargo, sizeof(int));
-	int largo = char4ToInt(serialLargo);
-	log_info(activeLogger,"EL LARGO DEL SERIAL PCB ES:%d",largo);
-	char* serialPcb = malloc(largo);
-	read(proceso->socketCPU, serialPcb, largo);
-	free(serialLargo);
-	// DESPUES REEMPLAZAR POR leerLargoYMensaje
-	//imprimir_serializacion(serialPcb,largo);
-	pcb_destroy(proceso->PCB);
+	char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
 	t_PCB* pcb = malloc(sizeof(t_PCB));
 	deserializar_PCB(pcb,serialPcb);
-	proceso->PCB = pcb;
-	imprimir_PCB(proceso->PCB);
-	// TODO usar actualizarPCB
+	actualizarPCB(proceso,pcb);
+	free(serialPcb);
 }
+
 void continuarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
-	log_info(activeLogger,"CONTINUANDO PROCESO");
+	log_info(activeLogger,"Continuando PID:%d",proceso->PCB->PID);
 	enviarHeader(proceso->socketCPU, HeaderContinuarProceso);
+	/*
+	char* serialSleep = intToChar4(config.queantum_sleep);
+	send_w(proceso->socketCPU,serialSleep,sizeof(int));
+	free(serialSleep);*/
 }
 HILO bloqueo(t_bloqueo* info) {
 	log_info(bgLogger, "Ejecutando IO pid:%d por:%dseg", info->PID,

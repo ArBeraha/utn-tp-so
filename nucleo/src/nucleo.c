@@ -291,7 +291,7 @@ void recibirFinalizacion(int cliente){
 
 void procesarHeader(int cliente, char *header) {
 	// mutexClientes SAFE
-	log_info(activeLogger, "Llego el header: %s", headerToString(charToInt(header)));
+	log_info(activeLogger, "Procesando:%s Cliente:%d", headerToString(charToInt(header)),cliente);
 	clientes[cliente].atentido = true;
 
 	switch (charToInt(header)) {

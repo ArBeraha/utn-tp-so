@@ -64,7 +64,7 @@ HILO crearProceso(int consola) {
 			proceso->cpu = SIN_ASIGNAR;
 			cambiarEstado(proceso, READY);
 			MUTEXPROCESOS(list_add(listaProcesos, proceso));
-			log_info(bgLogger,"proceso PID:%d creado satisfactoriamente",consola);
+			log_info(activeLogger,ANSI_COLOR_GREEN "Creado PID:%d" ANSI_COLOR_RESET,consola);
 		}
 		free(codigo);
 	}
@@ -73,7 +73,7 @@ HILO crearProceso(int consola) {
 
 
 void finalizarProceso(int PID) {
-	log_info(activeLogger,"Finalizando el proceso pid:%d",PID);
+	log_info(activeLogger,ANSI_COLOR_RED "Finalizando PID:%d" ANSI_COLOR_RESET,PID);
 	t_proceso* proceso = obtenerProceso(PID);
 	cambiarEstado(proceso,EXIT);
 	MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
@@ -96,12 +96,10 @@ void destruirProceso(t_proceso* proceso) {
 	free(proceso); // Destruir Proceso y PCB
 
 }
-void actualizarPCB(t_PCB PCB) { //
-	// Cuando CPU me actualice la PCB del proceso me manda una PCB (no un puntero)
-	pthread_mutex_lock(&mutexProcesos);
-	//t_proceso* proceso = list_get(listaProcesos, PCB->PID);
-	pthread_mutex_unlock(&mutexProcesos);
-	//proceso->PCB=PCB;
+void actualizarPCB(t_proceso* proceso, t_PCB* PCB) { //
+	pcb_destroy(proceso->PCB);
+	proceso->PCB = PCB;
+	imprimir_PCB(proceso->PCB);
 }
 void ingresarCPU(int cliente){
 	MUTEXCPU(queue_push(colaCPU,(void*)cliente));

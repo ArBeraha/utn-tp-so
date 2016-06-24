@@ -33,7 +33,7 @@ void informarInstruccionTerminada() {
 }
 
 void loggearFinDePrimitiva(char* primitiva) {
-	log_debug(debugLogger, "La primitiva |%s| finalizó OK.", primitiva);
+	log_debug(debugLogger, ANSI_COLOR_GREEN "La primitiva |%s| finalizó OK." ANSI_COLOR_RESET, primitiva);
 }
 
 void desalojarProceso() {
@@ -328,6 +328,7 @@ char* recibir_sentencia(int tamanio){
  */
 void obtener_y_parsear() {
 	int tamanio;
+	//sleep(10); //TODO . le dejo marca porque lo uso para testear el kill -s y el orden de segmentfaulteo de los procesos.
 	sentenciaPedida = string_new();
 	pedirYRecibirSentencia(&tamanio);
 	parsear(sentenciaPedida);
@@ -336,7 +337,7 @@ void obtener_y_parsear() {
 
 void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la ultima instruccion o hay una excepcion
 	if(normalmente){
-		log_info(activeLogger,"El proceso ansisop ejecutó su última instrucción.");
+		log_info(activeLogger,ANSI_COLOR_GREEN "El proceso ansisop ejecutó su última instrucción." ANSI_COLOR_RESET);
 	}
 	enviarHeader(cliente_nucleo, HeaderTerminoProceso);
 	enviarHeader(cliente_umc, HeaderTerminoProceso);
@@ -348,7 +349,7 @@ void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la
  * Lanza excepcion por stack overflow y termina el proceso.
  */
 void lanzar_excepcion_overflow(){
-	log_info(activeLogger,"Stack overflow! se intentó leer una dirección inválida.");
+	log_info(activeLogger,ANSI_COLOR_RED "Stack overflow! se intentó leer una dirección inválida." ANSI_COLOR_RESET);
 	log_info(activeLogger,"Terminando la ejecución del programa actual...");
 
 	finalizar_proceso(false);

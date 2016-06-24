@@ -20,11 +20,16 @@ void incrementarPC(t_PCB* pcb) {
 
 void informarInstruccionTerminada() {
 	// Le aviso a nucleo que termino una instruccion, para que calcule cuanto quantum le queda al proceso ansisop.
-	enviarHeader(cliente_nucleo,headerTermineInstruccion);
+	if(pcbActual->PC==list_size(pcbActual->indice_codigo)-1){
+		finalizar_proceso(true);
+	}else{
+		enviarHeader(cliente_nucleo,headerTermineInstruccion);
+		log_debug(debugLogger,"Informé a nucleo del fin de una instrucción");
+	}
+
 	// Acá nucleo tiene que mandarme el header que corresponda, segun si tengo que seguir ejecutando instrucciones o tengo que desalojar.
 	// Eso se procesa en otro lado, porque la ejeución de instrucciones esta anidada en un while
 	// por lo que no tengo que recibir el header aca
-	log_debug(debugLogger,"Informé a nucleo del fin de una instrucción");
 }
 
 void loggearFinDePrimitiva(char* primitiva) {
@@ -303,8 +308,8 @@ void parsear(char* const sentencia) {
 	pcbActual->PC++; //si desp el parser lo setea en otro lado mediante una primitiva, es tema suyo.
 					//lo incremento antes asi no se desfasa.
 	analizadorLinea(sentencia, &funciones, &funcionesKernel);
-	informarInstruccionTerminada();
 	log_info(activeLogger, "PC actualizado a |%d|",pcbActual->PC);
+	informarInstruccionTerminada();
 }
 
 /**
@@ -329,10 +334,12 @@ void obtener_y_parsear() {
 	free(sentenciaPedida);
 }
 
-void finalizar_proceso(){ //voy a esta funcion cuando ejecuto la ultima instruccion o hay una excepcion
-	log_info(activeLogger,"El proceso ansisop ejecutó su última instrucción.");
+void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la ultima instruccion o hay una excepcion
+	if(normalmente){
+		log_info(activeLogger,"El proceso ansisop ejecutó su última instrucción.");
+	}
 	enviarHeader(cliente_nucleo, HeaderTerminoProceso);
-	enviarPCB();		//nucleo deberia recibir el PCB para elminar las estructuras
+	enviarHeader(cliente_umc, HeaderTerminoProceso);
 	pcb_destroy(pcbActual);
 }
 
@@ -343,7 +350,7 @@ void lanzar_excepcion_overflow(){
 	log_info(activeLogger,"Stack overflow! se intentó leer una dirección inválida.");
 	log_info(activeLogger,"Terminando la ejecución del programa actual...");
 
-	finalizar_proceso();
+	finalizar_proceso(false);
 
 	log_info(activeLogger,"Proceso terminado!");
 }

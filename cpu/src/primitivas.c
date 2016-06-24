@@ -84,10 +84,10 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 	t_valor_variable valor;
 	log_info(activeLogger, "Obtener valor de la posicion absoluta |%d|.", direccion);
 
-	enviarHeader(cliente_umc, HeaderPedirValorVariable);
+	enviarHeader(umc, HeaderPedirValorVariable);
 	enviar_direccion_umc(direccion); // esto chequea q no haya overflow
 
-	char* valorRecibido = recv_waitall_ws(cliente_umc, sizeof(int)); //recibo el valor de UMC
+	char* valorRecibido = recv_waitall_ws(umc, sizeof(int)); //recibo el valor de UMC
 	valor = char4ToInt(valorRecibido);
 	log_info(activeLogger, "La variable de la dirección fue |%d| dereferenciada! Su valor es |%d|.",
 				direccion, valor);
@@ -106,10 +106,10 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	log_info(activeLogger, "Asignando en la posicion |%d| el valor |%d|", direccion_variable, valor);
 
-	enviarHeader(cliente_umc,HeaderAsignarValor);
+	enviarHeader(umc,HeaderAsignarValor);
 	enviar_direccion_umc(direccion_variable); // esto chequea q no haya overflow
 	char* valorSerializado = intToChar4(valor);
-	send_w(cliente_umc, valorSerializado, sizeof(t_valor_variable)); //envio el valor de la variable
+	send_w(umc, valorSerializado, sizeof(t_valor_variable)); //envio el valor de la variable
 
 
 	free(valorSerializado);
@@ -125,13 +125,13 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 	t_valor_variable valorVarCompartida;
 	int nameSize = strlen(nombreVarCompartida) + 1;
 
-	enviarHeader(cliente_umc,HeaderPedirValorVariableCompartida);
+	enviarHeader(umc,HeaderPedirValorVariableCompartida);
 
 	char* sizeSerializado = intToChar4(nameSize);
-	send_w(cliente_nucleo, sizeSerializado, sizeof(int));
-	send_w(cliente_nucleo, nombreVarCompartida, nameSize);
+	send_w(nucleo, sizeSerializado, sizeof(int));
+	send_w(nucleo, nombreVarCompartida, nameSize);
 
-	char* value = recv_waitall_ws(cliente_nucleo, sizeof(int));
+	char* value = recv_waitall_ws(nucleo, sizeof(int));
 	valorVarCompartida = char4ToInt(value);
 
 	log_info(activeLogger, "Valor obtenido: |%s| vale |%d|.",nombreVarCompartida, valorVarCompartida);
@@ -152,12 +152,12 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 			valorVarCompartida, nombreVarCompartida);
 
 	//envio el header, el tamaño del nombre y el nombre
-	enviarHeader(cliente_umc, HeaderAsignarValorVariableCompartida);
-	enviarLargoYString(cliente_nucleo,nombreVarCompartida);
+	enviarHeader(umc, HeaderAsignarValorVariableCompartida);
+	enviarLargoYString(nucleo,nombreVarCompartida);
 
 	//envio el valor
 	char* valor = intToChar4(valorVarCompartida);
-	send_w(cliente_nucleo, valor, sizeof(int));
+	send_w(nucleo, valor, sizeof(int));
 
 	log_info(activeLogger,
 				"Asignado el valor |%d| a la variable compartida |%s|.",
@@ -235,9 +235,9 @@ void retornar(t_valor_variable variable) {
 void imprimir_variable(t_valor_variable valor) { //la nueva version del enunciado solo pasa el valor, no el nombre
 	log_info(activeLogger, "Imprimir |%d|", valor);
 
-	enviarHeader(cliente_nucleo,HeaderImprimirVariableNucleo);
+	enviarHeader(nucleo,HeaderImprimirVariableNucleo);
 	char* valorSerializado = intToChar4(valor);
-	send_w(cliente_nucleo, valorSerializado, sizeof(t_valor_variable));
+	send_w(nucleo, valorSerializado, sizeof(t_valor_variable));
 
 	free(valorSerializado); //hacer intToChar4 en el send produce memory leaks, porque al terminar al funcion queda memoria desreferenciada que nunca se libera.
 	loggearFinDePrimitiva("Imprimir");
@@ -251,9 +251,9 @@ void imprimir_texto(char* texto) {
 
 	log_debug(debugLogger, "Enviando a nucleo la cadena: |%s|...", texto);
 
-	enviarHeader(cliente_nucleo, HeaderImprimirTextoNucleo);
+	enviarHeader(nucleo, HeaderImprimirTextoNucleo);
 
-	enviarLargoYString(cliente_nucleo, texto);
+	enviarLargoYString(nucleo, texto);
 
 	log_debug(debugLogger, "Se envio a nucleo la cadena: |%s|.", texto);
 
@@ -269,12 +269,12 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) 
 	log_info(activeLogger,"Informar a nucleo que el programa quiere usar |%s| durante |%d| unidades de tiempo",
 			dispositivo, tiempoUsoDispositivo);
 
-	enviarHeader(cliente_nucleo,HeaderEntradaSalida);
+	enviarHeader(nucleo,HeaderEntradaSalida);
 
-	enviarLargoYString(cliente_nucleo,dispositivo);				//envio la cadena
+	enviarLargoYString(nucleo,dispositivo);				//envio la cadena
 
 	char* time = intToChar(tiempoUsoDispositivo);							//envio el tiempo
-	send_w(cliente_nucleo,time,strlen(time));
+	send_w(nucleo,time,strlen(time));
 	free(time);
 
 
@@ -289,9 +289,9 @@ void wait_semaforo(t_nombre_semaforo identificador_semaforo) {
 	log_info(activeLogger, "Comunicar nucleo de hacer wait con semaforo: |%s|",
 			identificador_semaforo);
 
-	enviarHeader(cliente_nucleo,HeaderWait);
+	enviarHeader(nucleo,HeaderWait);
 
-	enviarLargoYString(cliente_nucleo,identificador_semaforo);
+	enviarLargoYString(nucleo,identificador_semaforo);
 	//Si el proceso no pudiese seguir, nucleo al bloquearlo lo para con un header enviado a procesarHeader.
 
 
@@ -305,9 +305,9 @@ void wait_semaforo(t_nombre_semaforo identificador_semaforo) {
 void signal_semaforo(t_nombre_semaforo identificador_semaforo) {
 	log_info(activeLogger,"Comunicar nucleo de hacer signal con semaforo: |%s|",identificador_semaforo);
 
-	enviarHeader(cliente_nucleo,HeaderSignal);
+	enviarHeader(nucleo,HeaderSignal);
 
-	enviarLargoYString(cliente_nucleo,identificador_semaforo);
+	enviarLargoYString(nucleo,identificador_semaforo);
 
 
 	loggearFinDePrimitiva("Signal");

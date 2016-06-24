@@ -35,8 +35,8 @@
 #include "cpu.h"
 
 /*------------Variables Globales--------------*/
-int cliente_nucleo; //cpu es cliente del nucleo
-int cliente_umc; //cpu es cliente de umc
+int nucleo; //cpu es cliente del nucleo
+int umc; //cpu es cliente de umc
 struct sockaddr_in direccionNucleo;   //direccion del nucleo
 struct sockaddr_in direccionUmc;	  //direccion umc
 

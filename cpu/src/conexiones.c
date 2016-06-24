@@ -23,16 +23,16 @@ void warnDebug() {
 void conectar_nucleo() {
 	direccionNucleo = crearDireccionParaCliente(config.puertoNucleo,
 			config.ipNucleo);
-	cliente_nucleo = socket_w();
-	connect_w(cliente_nucleo, &direccionNucleo); //conecto cpu a la direccion 'direccionNucleo'
+	nucleo = socket_w();
+	connect_w(nucleo, &direccionNucleo); //conecto cpu a la direccion 'direccionNucleo'
 	log_info(activeLogger, "Conectado a Nucleo!");
 }
 
 void hacer_handshake_nucleo() {
 	char* hand = string_from_format("%c%c", HeaderHandshake, SOYCPU);
-	send_w(cliente_nucleo, hand, 2);
+	send_w(nucleo, hand, 2);
 
-	if (getHandshake(cliente_nucleo) != SOYNUCLEO) {
+	if (getHandshake(nucleo) != SOYNUCLEO) {
 		perror("Se esperaba que CPU se conecte con Nucleo.");
 	} else {
 		log_info(bgLogger, "Exito al hacer handshake con Nucleo.");
@@ -41,16 +41,16 @@ void hacer_handshake_nucleo() {
 
 void conectar_umc() {
 	direccionUmc = crearDireccionParaCliente(config.puertoUMC, config.ipUMC);
-	cliente_umc = socket_w();
-	connect_w(cliente_umc, &direccionUmc); //conecto umc a la direccion 'direccionUmc'
+	umc = socket_w();
+	connect_w(umc, &direccionUmc); //conecto umc a la direccion 'direccionUmc'
 	log_info(activeLogger, "Conectado a UMC!");
 }
 
 void hacer_handshake_umc() {
 	char *hand = string_from_format("%c%c", HeaderHandshake, SOYCPU);
-	send_w(cliente_umc, hand, 2);
+	send_w(umc, hand, 2);
 
-	if (getHandshake(cliente_umc) != SOYUMC) {
+	if (getHandshake(umc) != SOYUMC) {
 		perror("Se esperaba que CPU se conecte con UMC.");
 	} else {
 		log_info(bgLogger, "Exito al hacer handshake con UMC.");

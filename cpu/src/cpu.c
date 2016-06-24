@@ -23,7 +23,7 @@ void informarInstruccionTerminada() {
 	if(pcbActual->PC==list_size(pcbActual->indice_codigo)-1){
 		finalizar_proceso(true);
 	}else{
-		enviarHeader(cliente_nucleo,headerTermineInstruccion);
+		enviarHeader(nucleo,headerTermineInstruccion);
 		log_debug(debugLogger,"Informé a nucleo del fin de una instrucción");
 	}
 
@@ -52,7 +52,7 @@ void esperar_programas() {
 		 warnDebug();
 	}else{
 		while (!terminar) {	//mientras no tenga que terminar porque hubo una excepcion
-			header = recv_waitall_ws(cliente_nucleo, 1);
+			header = recv_waitall_ws(nucleo, 1);
 			procesarHeader(header);
 			free(header);
 		}
@@ -108,8 +108,8 @@ void procesarHeader(char *header) {
  */
 void pedir_tamanio_paginas() {
 	if (!config.DEBUG_IGNORE_UMC) {
-		enviarHeader(cliente_umc,HeaderTamanioPagina); //le pido a umc el tamanio de las paginas
-		char* tamanio = recv_nowait_ws(cliente_umc, sizeof(int)); //recibo el tamanio de las paginas
+		enviarHeader(umc,HeaderTamanioPagina); //le pido a umc el tamanio de las paginas
+		char* tamanio = recv_nowait_ws(umc, sizeof(int)); //recibo el tamanio de las paginas
 		tamanioPaginas = char4ToInt(tamanio);
 		log_debug(debugLogger, "El tamaño de paginas es: |%d|",tamanioPaginas);
 		free(tamanio);
@@ -140,7 +140,7 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
 
 void recibirFragmentoDeSentencia(int size){
 	log_debug(debugLogger, "Recibiendo parte de una sentencia. Tamaño del fragmento: |%d|...", size);
-	char* sentencia = recv_waitall_ws(cliente_umc, size);
+	char* sentencia = recv_waitall_ws(umc, size);
 	sentencia[size-1]='\0';
 	log_debug(debugLogger, "Recibido el fragmento de sentencia |%s|", sentencia);
 	string_append(&sentenciaPedida, sentencia);
@@ -162,11 +162,11 @@ void enviar_solicitud(int pagina, int offset, int size) {
 
 	int tamanio = serializar_pedido(solicitud, &pedido);
 
-	send_w(cliente_umc, solicitud, tamanio);
+	send_w(umc, solicitud, tamanio);
 
 	log_info(activeLogger,"Solicitud enviada: (nPag,offset,size)=(%d,%d,%d)", pagina, offset, size);
 
-	char* stackOverflowFlag = recv_waitall_ws(cliente_umc, sizeof(int));
+	char* stackOverflowFlag = recv_waitall_ws(umc, sizeof(int));
 	free(stackOverflowFlag);
 	int overflow = char4ToInt(stackOverflowFlag);
 	if (overflow) {
@@ -232,7 +232,7 @@ void pedirYRecibirSentencia(int* tamanio) {	//pedir al UMC la proxima sentencia 
 	t_sentencia* sentenciaRelativa = obtener_sentencia_relativa(&paginaAPedir);
 	int longitud_restante = longitud_sentencia(sentenciaRelativa); //longitud de la sentencia que aun no pido
 	(*tamanio) = longitud_restante;
-	enviarHeader(cliente_umc, HeaderSolicitudSentencia); //envio el header
+	enviarHeader(umc, HeaderSolicitudSentencia); //envio el header
 
 	// Pido la primera pagina, empezando donde corresponde y terminando donde corresponda.
 	pedirPrimeraSentencia(sentenciaRelativa, paginaAPedir, &longitud_restante);
@@ -260,17 +260,17 @@ void pedirYRecibirSentencia(int* tamanio) {	//pedir al UMC la proxima sentencia 
 }
 
 void enviarPID(){
-	enviarHeader(cliente_umc,HeaderPID);
+	enviarHeader(umc,HeaderPID);
 	char* pid = intToChar4(pcbActual->PID);
-	send_w(cliente_umc,pid,sizeof(int));
+	send_w(umc,pid,sizeof(int));
 	free(pid);
 }
 
 void recibirCantidadDePaginasDeCodigo(){
 	log_debug(debugLogger,"Recibiendo la cantidad de paginas de codigo de UMC.");
-	char* pags = recv_waitall_ws(cliente_umc,sizeof(int));
-	paginasCodigo = char4ToInt(pags);
-	log_debug(debugLogger,"Recibida la cantidad de paginas de codigo |%d|.", paginasCodigo);
+	char* pags = recv_waitall_ws(umc,sizeof(int));
+	cantidadPaginasCodigo = char4ToInt(pags);
+	log_debug(debugLogger,"Recibida la cantidad de paginas de codigo |%d|.", cantidadPaginasCodigo);
 	free(pags);
 }
 
@@ -280,7 +280,7 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	}
 	pcbActual=malloc(sizeof(t_PCB));
 	log_debug(debugLogger, "Recibiendo PCB...");
-	char* serialPCB = leerLargoYMensaje(cliente_nucleo);
+	char* serialPCB = leerLargoYMensaje(nucleo);
 	log_debug(debugLogger, "PCB recibido!");
 	deserializar_PCB(pcbActual, serialPCB);//reemplazo en el pcb actual de cpu que tiene como variable global
 	enviarPID();
@@ -295,7 +295,7 @@ void enviarPCB() {
 	char* serialPCB = malloc(bytes);
 	serializar_PCB(serialPCB, pcbActual);
 
-	enviarLargoYSerial(cliente_nucleo, bytes, serialPCB);
+	enviarLargoYSerial(nucleo, bytes, serialPCB);
 	log_debug(debugLogger, "PCB Enviado!");
 	free(serialPCB);
 }
@@ -317,7 +317,7 @@ void parsear(char* const sentencia) {
  */
 char* recibir_sentencia(int tamanio){
 	log_debug(debugLogger, "Recibiendo sentencia de tamaño |%d|...", tamanio);
-	char* sentencia = recv_waitall_ws(cliente_umc, tamanio);
+	char* sentencia = recv_waitall_ws(umc, tamanio);
 	sentencia[tamanio-1]='\0';
 	log_debug(debugLogger, "Recibida la sentencia: |%s|", sentencia);
 	return sentencia;
@@ -339,8 +339,8 @@ void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la
 	if(normalmente){
 		log_info(activeLogger,ANSI_COLOR_GREEN "El proceso ansisop ejecutó su última instrucción." ANSI_COLOR_RESET);
 	}
-	enviarHeader(cliente_nucleo, HeaderTerminoProceso);
-	enviarHeader(cliente_umc, HeaderTerminoProceso);
+	enviarHeader(nucleo, HeaderTerminoProceso);
+	enviarHeader(umc, HeaderTerminoProceso);
 	pcb_destroy(pcbActual);
 	pcbActual=NULL;
 }
@@ -386,8 +386,8 @@ void inicializar() {
 void finalizar() {
 	log_info(activeLogger,"Finalizando proceso cpu");
 
-	close(cliente_nucleo);
-	close(cliente_umc);
+	close(nucleo);
+	close(umc);
 
 	log_info(activeLogger,"Proceso CPU de PID: |%d| finalizó correctamente.",getpid());
 	destruirLogs();
@@ -434,7 +434,7 @@ void correrTestsUMC(){
 }
 
 void ejemploPedidoLecturaUmc(){ //COMENTAR: finalizar, establecerConexNucleo y esperarProgramas
-	enviarHeader(cliente_umc,HeaderSolicitudSentencia);
+	enviarHeader(umc,HeaderSolicitudSentencia);
 	enviar_solicitud(1,0,4);
 	printf("El resultado del pedido: %s \n",recibir_sentencia(4));
 }

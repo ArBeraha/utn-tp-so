@@ -139,8 +139,7 @@ void recibirFragmentoDeSentencia(int size){
 	sentencia[size-1]='\0';
 	log_debug(debugLogger, "Recibido el fragmento de sentencia |%s|", sentencia);
 	string_append(&sentenciaPedida, sentencia);
-	printf("%s...\n",sentenciaPedida);
-	//free(sentencia); //fixme
+	free(sentencia);
 }
 
 /**
@@ -326,8 +325,6 @@ void obtener_y_parsear() {
 	int tamanio;
 	sentenciaPedida = string_new();
 	pedirYRecibirSentencia(&tamanio);
-	//char* sentencia = recibir_sentencia(tamanio);
-	printf("%s\n\n\n\n",sentenciaPedida); //fixme
 	parsear(sentenciaPedida);
 	free(sentenciaPedida);
 }

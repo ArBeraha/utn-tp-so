@@ -601,6 +601,18 @@ void procesarHeader(t_cliente cliente, char* header) {
 		finalizarPrograma(char4ToInt(pidALiberar));
 		break;
 
+	case HeaderTerminoProceso:
+		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Finalizo proceso de CPU, liberando estructuras" ANSI_COLOR_RESET ,idLog);
+		log_info(activeLogger, "[%d] -------- ANTES -----" ,idLog);
+		devolverTodasLasPaginas();
+		devolverTodaLaMemoria();
+
+		log_info(activeLogger, "[%d] -------- DESPUES -----",idLog);
+		finalizarPrograma(idLog);
+		devolverTodasLasPaginas();
+		devolverTodaLaMemoria();
+		break;
+
 	case HeaderPID:
 		nuevoPid = malloc(sizeof(int));
 		read(cliente.socket, nuevoPid, sizeof(int));

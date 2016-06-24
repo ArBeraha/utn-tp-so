@@ -404,6 +404,8 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 void finalizarPrograma(int idPrograma){
 	enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
 	send_w(swapServer,intToChar4(idPrograma),sizeof(int));
+	char* header = recv_waitall_ws(swapServer,1);
+	printf("LLEGO EL HEADER DE PROCESO ELIMINADO %d \n",char4ToInt(header));
 	sacarMarcosOcupados(idPrograma);
 	flushTlbDePid(idPrograma);
 	tabla_t* tabla = buscarTabla(idPrograma);

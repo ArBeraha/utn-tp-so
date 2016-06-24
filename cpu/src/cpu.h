@@ -63,6 +63,8 @@ int paginasCodigo;
 t_PCB* pcbActual;
 t_stack* stack;
 
+char* sentenciaPedida;
+
 t_config* configCPU;
 customConfig_t config;
 
@@ -85,7 +87,7 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino);
 int cantidad_paginas_ocupa(t_sentencia* sentencia);
 int queda_espacio_en_pagina(t_sentencia* sentencia);
 void enviar_solicitud(int pagina, int offset, int size);
-void pedir_sentencia();
+void pedirYRecibirSentencia();
 void esperar_sentencia();
 void enviarPID();
 void obtenerPCB();

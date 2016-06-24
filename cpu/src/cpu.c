@@ -133,6 +133,16 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
 	return paginaInicio;
 }
 
+void recibirFragmentoDeSentencia(int size){
+	log_debug(debugLogger, "Recibiendo parte de una sentencia. Tamaño del fragmento: |%d|...", size);
+	char* sentencia = recv_waitall_ws(cliente_umc, size);
+	sentencia[size-1]='\0';
+	log_debug(debugLogger, "Recibido el fragmento de sentencia |%s|", sentencia);
+	string_append(&sentenciaPedida, sentencia);
+	printf("%s...\n",sentenciaPedida);
+	//free(sentencia); //fixme
+}
+
 /**
  * Envia a UMC: pag, offest y tamaño, es decir, un t_pedido.
  * Chequea que no haya overflow, mas alla de si pide una sentencia o una variable.
@@ -190,6 +200,7 @@ bool paginaCompleta(int longitud_restante) {
  */
 void pedirPaginaCompleta(int pagina) {
 	enviar_solicitud(pagina, 0, tamanioPaginas);
+	recibirFragmentoDeSentencia(tamanioPaginas);
 }
 
 void pedirPrimeraSentencia(t_sentencia* sentenciaRelativa, int pagina, int* longitud_restante) {
@@ -197,10 +208,12 @@ void pedirPrimeraSentencia(t_sentencia* sentenciaRelativa, int pagina, int* long
 				tamanioPaginas - sentenciaRelativa->offset_inicio); //llega hasta su final o hasta que se termine la pagina, lo mas pequeño
 	enviar_solicitud(pagina, sentenciaRelativa->offset_inicio, tamanioPrimeraSentencia);
 	(*longitud_restante) -= tamanioPrimeraSentencia;
+	recibirFragmentoDeSentencia(tamanioPrimeraSentencia);
 }
 
 void pedirUltimaSentencia(t_sentencia* sentenciaRelativa, int pagina, int longitud_restante){
 	enviar_solicitud(pagina, 0, longitud_restante); //Desde el inicio, con tamaño identico a lo que me falta leer.
+	recibirFragmentoDeSentencia(longitud_restante);
 }
 
 /**
@@ -209,7 +222,7 @@ void pedirUltimaSentencia(t_sentencia* sentenciaRelativa, int pagina, int longit
  * t_pedido_2, ...., t_pedido_n-1 <---- paginas que se piden completas
  * t_pedido_n <---- Si no es la pagina completa, setea el offset fin correcto para no pedir de mas.
  */
-void pedir_sentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecutar
+void pedirYRecibirSentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecutar
 	log_info(activeLogger, "Iniciando pedido de sentencia...");
 	int paginaAPedir; // Lo inicializa obtener_sentencia_relativa
 	t_sentencia* sentenciaRelativa = obtener_sentencia_relativa(&paginaAPedir);
@@ -265,9 +278,7 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	log_debug(debugLogger, "Recibiendo PCB...");
 	char* serialPCB = leerLargoYMensaje(cliente_nucleo);
 	log_debug(debugLogger, "PCB recibido!");
-	printf("Pase por aca a. Aca rompe \n\n\n");
 	deserializar_PCB(pcbActual, serialPCB);//reemplazo en el pcb actual de cpu que tiene como variable global
-	printf("Pase por aca 2 \n\n\n");
 	enviarPID();
 	recibirCantidadDePaginasDeCodigo();
 	stack = pcbActual->SP;
@@ -313,10 +324,12 @@ char* recibir_sentencia(int tamanio){
  */
 void obtener_y_parsear() {
 	int tamanio;
-	pedir_sentencia(&tamanio);
-	char* sentencia = recibir_sentencia(tamanio);
-	parsear(sentencia);
-	free(sentencia);
+	sentenciaPedida = string_new();
+	pedirYRecibirSentencia(&tamanio);
+	//char* sentencia = recibir_sentencia(tamanio);
+	printf("%s\n\n\n\n",sentenciaPedida); //fixme
+	parsear(sentenciaPedida);
+	free(sentenciaPedida);
 }
 
 void finalizar_proceso(){ //voy a esta funcion cuando ejecuto la ultima instruccion o hay una excepcion

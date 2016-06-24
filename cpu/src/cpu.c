@@ -341,6 +341,7 @@ void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la
 	enviarHeader(cliente_nucleo, HeaderTerminoProceso);
 	enviarHeader(cliente_umc, HeaderTerminoProceso);
 	pcb_destroy(pcbActual);
+	pcbActual=NULL;
 }
 
 /**

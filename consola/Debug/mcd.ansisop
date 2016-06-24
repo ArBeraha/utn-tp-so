@@ -1,0 +1,83 @@
+#!/usr/bin/ansisop
+
+function mult
+variables i
+	i= 0
+#Forma asquerosa de si el segundo parametro es 0 :D
+jz $1 mult-ret
+:mult-loop
+	$1 = $1-1
+	i = $0 + i
+	jnz $1 mult-loop
+:mult-ret
+	return i
+end
+
+function geq
+variables t
+#Limite inferior
+	t=0
+:geq-loop
+	t=t+1
+	jz t+$0-$1 false
+#Limite superior
+	jz t-500 true
+	goto geq-loop
+end
+
+
+function mod
+variables i, a, t
+	a=1
+#Excepciones en AnSISOP
+	jz $1 zerodiv
+:mod-loop
+	i <- mult $1,a
+	a=1+a
+	t<-geq i,$0
+	jnz t ret-mod
+	goto mod-loop
+:ret-mod
+#Si son iguales, es divisible (return 0)
+	jz i-$0 false
+	return $0-i-$1
+end
+
+function mcd
+variables r, x
+
+	#Sino divide por 0, y eso es malo
+	jnz $1 mcd-loop
+	
+	#Cambiar de lugar las dos variables
+	x = $0
+	$0 = $1
+	$1 = x
+
+:mcd-loop
+	r <- mod $0,$1
+	$0 = $1
+	$1 = r
+	jnz r mcd-loop
+	return $0
+end
+
+:zerodiv
+	printText No se puede dividir por 0!!
+:true
+	return 1
+:false
+	return 0
+
+begin
+variables x,y,A
+	y=325
+	x=26
+	textPrint MCD entre
+	print x
+	print y
+	textPrint es
+	A <- mcd x,y
+	print A
+end
+

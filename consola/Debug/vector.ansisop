@@ -1,0 +1,22 @@
+#!/usr/bin/ansisop
+begin
+#un vector de 5 posiciones
+variables a, b, c, d, e, i
+	#No inicializo las primeras 5 variables (vector) para tener elementos aleatorios
+	#i va a ser mi iterador, me interesa que empieze en 0
+	i=0
+
+	#Bucle del for
+	:for
+	#imprime el valor iavo del vector
+	print *&a+i
+	#avanzo en el vector (de a 5 posiciones, 1 char + 1 int)
+	i=i+5
+	#Si i no es 25 (5 posiciones del vector * 5 temanio de las variables)
+	jnz 25-i for
+	
+	#Final del bucle
+	textPrint Fin
+end
+
+

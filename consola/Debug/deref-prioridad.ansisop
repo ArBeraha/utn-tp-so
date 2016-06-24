@@ -1,0 +1,40 @@
+#!/usr/bin/ansisop
+begin
+#un vector de 5 posiciones
+variables a, p
+	#Como AnSISOP no soporta parentesis, el operador "*" tiene prioridad maxima
+	
+	#La variable "p" apunta a la variable "a"
+	p = &a
+	#Asigno a la variable "a"
+	a = 19
+
+	#imprimir "*p" es identico a imprimir "a" (sin el *)
+	print *p
+
+	#Si quiero imprimir lo que referencie "p", y sumarle 30
+	print 30+*p
+	#Esto seria como hacer: 30 + *(p)
+	#Que no es lo mismo que:
+	print *p+30
+	#Esto ultimo imprime 30 posiciones desde lo que referencia p
+	#Seria hacer: *(p+30)
+	#Y podria dar fallo de segmento
+
+	#Etas reglas de prioridad solo se aplican con el operador "*"
+	#No con el "&"
+	p = &a+30
+	#Esto asigna a p el valor de la posicion de "a", corrido 30 lugares
+	#osea: &(a) + 30
+	print p
+
+	#Y es identico a hacer
+	p = 30+&a
+	#Que seria como hacer: 30 + &(a)
+	print p
+
+	#No hay forma de hacer algo como: &(a+30)
+	#Pero... para que querriamos hacer eso?
+end
+
+

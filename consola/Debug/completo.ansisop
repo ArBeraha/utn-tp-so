@@ -1,0 +1,39 @@
+#!/usr/bin/ansisop
+
+#Respuesta esperada: 1; 1; Hola Mundo!; 3; Bye
+
+begin
+variables f,  A,  g
+    A = 	0
+    !compartida = 1+A
+    print !compartida
+    jnz !compartida Siguiente 
+:Proximo
+	
+    f = 8	  
+    g <- doble !compartida	
+    io LPT1 20
+
+    textPrint    Hola Mundo!
+    
+    g = 1 + g
+    print 		g    
+    
+    textPrint Bye
+    
+end
+
+
+#Devolver el doble del
+#primer parametro
+function doble
+variables f
+    f = $0 + $0
+    return f
+end
+
+:Siguiente	
+	print A+1
+goto Proximo
+
+

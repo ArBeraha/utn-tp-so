@@ -1,0 +1,29 @@
+#!/usr/bin/ansisop
+begin
+variables x
+	x <- fibo 50
+# Esperable: SegFault en el 10mo (40)
+
+#	x <- fibo 8
+#Esperable: 21
+
+	textPrint Solucion:
+		print x
+end
+
+function fibo
+print $0
+	jz $0 return0
+	jz $0-1 return1
+variables a, b
+	a <- fibo $0-1
+	b <- fibo $0-2
+return a+b
+
+:return0
+return 0
+
+:return1
+return 1
+
+

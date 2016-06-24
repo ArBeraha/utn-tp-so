@@ -1,0 +1,36 @@
+#!/usr/bin/ansisop
+begin
+	goto Etiqueta19
+end
+
+:Etiqueta1
+:Etiqueta2
+:Etiqueta3
+:Etiqueta4
+:Etiqueta5
+:Etiqueta6
+:Etiqueta7
+:Etiqueta8
+:Etiqueta9
+:Etiqueta10
+:Etiqueta11
+:Etiqueta12
+:Etiqueta13
+:Etiqueta14
+:Etiqueta15
+:Etiqueta16
+:Etiqueta17
+:Etiqueta18
+:Etiqueta19
+:Etiqueta20
+:Etiqueta21
+:Etiqueta22
+:Etiqueta23
+:Etiqueta24
+:Etiqueta25
+:Etiqueta26
+:Etiqueta27
+textPrint Alfin entre!
+end
+
+

@@ -1,4 +1,4 @@
-#!/usr/bin/ansisop
+#!consola
 #Overflow en el numero 3*4 + 5 % 300 = 16
 begin
 	variables r

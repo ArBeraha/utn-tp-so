@@ -1,4 +1,4 @@
-#!/usr/bin/ansisop
+#!consola
 begin
 variables a
 	#Imprimi 300 lugares despues de donde se definio a

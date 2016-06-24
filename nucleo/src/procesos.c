@@ -51,7 +51,7 @@ HILO crearProceso(int consola) {
 		char* codigo = getScript(consola);
 		proceso->PCB->cantidad_paginas = ceil(
 				((double) strlen(codigo)) / ((double) tamanio_pagina));
-		if (!pedirPaginas(proceso->PCB->PID, codigo)) {
+		if (!pedirPaginas(proceso->PCB->PID, codigo) || proceso->abortado) {
 			rechazarProceso(proceso->PCB->PID);
 		} else {
 			asignarMetadataProceso(proceso, codigo);
@@ -61,6 +61,7 @@ HILO crearProceso(int consola) {
 			head->posicion=0;
 			stack_push(proceso->PCB->SP,head);
 			//
+			proceso->abortado=false;
 			proceso->cpu = SIN_ASIGNAR;
 			cambiarEstado(proceso, READY);
 			MUTEXPROCESOS(list_add(listaProcesos, proceso));

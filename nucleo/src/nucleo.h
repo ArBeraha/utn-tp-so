@@ -25,6 +25,7 @@
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW   "\x1b[33m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
 #define SIN_ASIGNAR -1
@@ -38,7 +39,7 @@ struct sockaddr_in direccionConsola, direccionCPU, direccionUMC;
 unsigned int tamanioDireccionConsola, tamanioDireccionCPU, tamanio_pagina;
 // Hilos
 pthread_t hiloPlanificacion;
-pthread_mutex_t mutexListos, mutexSalida, mutexCPU, mutexProcesos, mutexUMC, mutexClientes, mutexEstados;
+pthread_mutex_t mutexListos, mutexSalida, mutexCPU, mutexProcesos, mutexUMC, mutexClientes, mutexEstados, mutexPlanificacion;
 // defino la palabra clave THREAD para reconocer las funciones que son main de un hilo
 #define HILO void*
 // MACROS DE MUTEXS
@@ -76,6 +77,7 @@ typedef struct t_proceso {
 	int socketConsola;
 	int socketCPU;
 	int rafagas;
+	bool abortado;
 } t_proceso;
 
 t_proceso* procesos[MAXCLIENTS];
@@ -140,6 +142,9 @@ void destruirCompartidas();
 void atenderHandshake(int cliente);
 void iniciarVigilanciaConfiguracion();
 void procesarCambiosConfiguracion();
+void finalizarConsola(int cliente);
+void finalizarCPU(int cliente);
+void finalizarCliente(int cliente);
 // UMC
 bool pedirPaginas(int PID, char* codigo);
 void establecerConexionConUMC();

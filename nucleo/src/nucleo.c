@@ -128,7 +128,7 @@ void inicializar() {
 
 	cargarConfiguracion();
 	iniciarVigilanciaConfiguracion();
-	iniciarAtrrYMutexs(7,&mutexProcesos,&mutexUMC,&mutexClientes,&mutexEstados,&mutexListos, &mutexSalida, &mutexCPU);
+	iniciarAtrrYMutexs(8,&mutexProcesos,&mutexUMC,&mutexClientes,&mutexEstados,&mutexListos, &mutexSalida, &mutexCPU, &mutexPlanificacion);
 	crearSemaforos();
 	crearIOs();
 	crearCompartidas();
@@ -283,15 +283,21 @@ void atenderHandshake(int cliente){
 	clientes[cliente].atentido = false;
 }
 void recibirFinalizacion(int cliente){
-	int pid = clientes[cliente].pid; // SAFE
-	pthread_mutex_unlock(&mutexClientes);
-	finalizarProceso(pid);
-	pthread_mutex_lock(&mutexClientes);
+	t_proceso* proceso = procesos[clientes[cliente].indice];
+	if (procesoExiste(proceso)) {
+		if (!proceso->abortado) {
+			pthread_mutex_unlock(&mutexProcesos);
+			pthread_mutex_unlock(&mutexClientes);
+			finalizarProceso(proceso->PCB->PID);
+			pthread_mutex_lock(&mutexClientes);
+			pthread_mutex_lock(&mutexProcesos);
+		}
+	}
 }
 
 void procesarHeader(int cliente, char *header) {
 	// mutexClientes SAFE
-	log_info(activeLogger, "Procesando:%s Cliente:%d", headerToString(charToInt(header)),cliente);
+	log_info(activeLogger, "Procesando:" ANSI_COLOR_YELLOW "%s" ANSI_COLOR_RESET " Cliente:%d", headerToString(charToInt(header)),cliente);
 	clientes[cliente].atentido = true;
 
 	switch (charToInt(header)) {
@@ -354,6 +360,45 @@ void procesarHeader(int cliente, char *header) {
 		break;
 	}
 }
+void finalizarConsola(int cliente) {
+	log_info(activeLogger, "Consola:%d se desconectó.", cliente);
+	t_proceso* proceso = procesos[clientes[cliente].indice]; //obtenerProceso(clientes[cliente].pid);
+	if (proceso != NULL) {
+		proceso->abortado = true;
+		if (proceso->estado == READY) {
+			pthread_mutex_unlock(&mutexProcesos);
+			pthread_mutex_unlock(&mutexClientes);
+			finalizarProceso(proceso->PCB->PID);
+			pthread_mutex_lock(&mutexClientes);
+			pthread_mutex_lock(&mutexProcesos);
+		}
+		else if (proceso->estado == EXEC)
+			log_info(activeLogger,"PID:%d finalizará al terminar el quantum actual",proceso->PCB->PID);
+	}
+}
+void finalizarCPU(int cliente){
+	log_info(activeLogger, "CPU:%d se desconectó.",cliente);
+	t_proceso* proceso = procesos[clientes[cliente].indice];//obtenerProceso(clientes[cliente].pid);
+	if (proceso!=NULL){
+		log_info(activeLogger, "PID:%d finalizará por desconexion de su CPU.",proceso->PCB->PID);
+		enviarHeader(proceso->socketConsola,HeaderConsolaFinalizarNormalmente);
+		return;}
+}
+void finalizarCliente(int cliente) {
+	switch (clientes[cliente].identidad) {
+	case SOYCONSOLA:
+		finalizarConsola(cliente);
+		break;
+	case SOYCPU:
+		finalizarCPU(cliente);
+		break;
+	default:
+		log_error(activeLogger, "Cliente indefinido se desconectó.",cliente);
+		break;
+	}
+	quitarCliente(cliente);
+}
+
 int main(void) {
 	system("clear");
 	int i;
@@ -385,8 +430,7 @@ int main(void) {
 			pthread_mutex_lock(&mutexClientes);
 			if (tieneLectura(clientes[i].socket)) {
 				if (read(clientes[i].socket, header, 1) == 0) {
-					log_info(activeLogger, "Un cliente se desconectó.");
-					quitarCliente(i);
+					finalizarCliente(i);
 				} else
 					procesarHeader(i, header);
 			}

@@ -18,7 +18,9 @@ static bool matrizEstados[5][5] = {
 HILO planificar() {
 	while (1) {
 		//Planificacion de Ejecucion y Destruccion de procesos
+		pthread_mutex_lock(&mutexPlanificacion);
 		planificacionFIFO();
+		pthread_mutex_unlock(&mutexPlanificacion);
 
 		//Planificacion IO
 		dictionary_iterator(tablaIO, (void*) planificarIO);
@@ -26,20 +28,31 @@ HILO planificar() {
 }
 void planificarExpulsion(t_proceso* proceso) {
 	// mutexProcesos SAFE
+	// mutexPlanificacion SAFE
 	if (proceso->estado == EXEC) {
-		if (terminoQuantum(proceso))
+		if (terminoQuantum(proceso) || proceso->abortado)
 			expulsarProceso(proceso);
 		else
 			continuarProceso(proceso);
 	}
+
+	if (proceso->abortado){
+		pthread_mutex_unlock(&mutexProcesos);
+		pthread_mutex_unlock(&mutexClientes);
+		finalizarProceso(proceso->PCB->PID);
+		pthread_mutex_lock(&mutexClientes);
+		pthread_mutex_lock(&mutexProcesos);
+	}
 }
 void rafagaProceso(cliente){
 	// mutexClientes SAFE
+	pthread_mutex_lock(&mutexPlanificacion);
 	t_proceso* proceso = procesos[clientes[cliente].pid];//obtenerProceso(clientes[cliente].pid);
 	log_info(debugLogger,"EL PID:%d TERMINO UNA INSTRUCCION",proceso->PCB->PID);
 	proceso->rafagas++;
 	planificarExpulsion(proceso);
 	clientes[cliente].atentido=false;
+	pthread_mutex_unlock(&mutexPlanificacion);
 }
 bool procesoExiste(t_proceso* proceso){
 	int i;
@@ -129,9 +142,11 @@ void expulsarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	log_info(activeLogger,ANSI_COLOR_RED "Expulsando PID:%d de CPU:%d" ANSI_COLOR_RESET,proceso->PCB->PID,proceso->cpu);
 	enviarHeader(proceso->socketCPU, HeaderDesalojarProceso);
-	pthread_mutex_unlock(&mutexClientes);
-	cambiarEstado(proceso, READY);
-	pthread_mutex_lock(&mutexClientes);
+	if (!proceso->abortado){
+		pthread_mutex_unlock(&mutexClientes);
+		cambiarEstado(proceso, READY);
+		pthread_mutex_lock(&mutexClientes);
+	}
 	char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
 	t_PCB* pcb = malloc(sizeof(t_PCB));
 	deserializar_PCB(pcb,serialPcb);

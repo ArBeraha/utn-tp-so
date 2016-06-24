@@ -282,6 +282,13 @@ void atenderHandshake(int cliente){
 	free(header);
 	clientes[cliente].atentido = false;
 }
+void recibirFinalizacion(int cliente){
+	int pid = clientes[cliente].pid; // SAFE
+	pthread_mutex_unlock(&mutexClientes);
+	finalizarProceso(pid);
+	pthread_mutex_lock(&mutexClientes);
+}
+
 void procesarHeader(int cliente, char *header) {
 	// mutexClientes SAFE
 	log_info(activeLogger, "Llego el header: %s", headerToString(charToInt(header)));
@@ -333,6 +340,10 @@ void procesarHeader(int cliente, char *header) {
 
 	case HeaderEntradaSalida:
 		entradaSalida(cliente);
+		break;
+
+	case HeaderTerminoProceso:
+		recibirFinalizacion(cliente);
 		break;
 
 	default:

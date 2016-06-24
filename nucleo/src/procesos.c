@@ -88,7 +88,7 @@ void destruirProceso(t_proceso* proceso) {
 	if (!CU_is_test_running()) {
 		enviarHeader(proceso->socketConsola,
 				HeaderConsolaFinalizarNormalmente);
-		MUTEXCLIENTES(quitarCliente(proceso->consola));
+		//MUTEXCLIENTES(quitarCliente(proceso->consola)); Doble Eliminacion
 	}
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
 	MUTEXPROCESOS(procesos[proceso->PCB->PID] = NULL);

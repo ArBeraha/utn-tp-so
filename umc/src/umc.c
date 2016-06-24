@@ -405,16 +405,13 @@ void finalizarPrograma(int idPrograma){
 	enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
 	send_w(swapServer,intToChar4(idPrograma),sizeof(int));
 	char* header = recv_waitall_ws(swapServer,1);
-	printf("LLEGO EL HEADER DE PROCESO ELIMINADO %d \n",char4ToInt(header));
+	printf("LLEGO EL HEADER DE PROCESO ELIMINADO %d \n",charToInt(header));
 	sacarMarcosOcupados(idPrograma);
 	flushTlbDePid(idPrograma);
 	tabla_t* tabla = buscarTabla(idPrograma);
 	list_destroy((t_list*)tabla->listaPaginas);
 	list_remove(listaTablasPaginas,buscarPosicionTabla(idPrograma));
 }
-
-
-
 
 int reservarPagina(int cantPaginasPedidas, int pid) {
 

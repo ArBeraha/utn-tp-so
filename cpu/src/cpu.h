@@ -73,7 +73,7 @@ t_config* configCPU;
 customConfig_t config;
 
 bool terminar;						//flag para que el proceso sepa cuando terminar
-
+bool overflow;
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
 void informarInstruccionTerminada();
 void setearPC(t_PCB* pcb, t_puntero_instruccion pc);

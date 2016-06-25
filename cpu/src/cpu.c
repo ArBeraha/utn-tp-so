@@ -6,6 +6,16 @@
 
 #include "cpu.h"
 
+void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la ultima instruccion o hay una excepcion
+	if(normalmente){
+		log_info(activeLogger,ANSI_COLOR_GREEN "El proceso ansisop ejecutó su última instrucción." ANSI_COLOR_RESET);
+	}
+	enviarHeader(nucleo, HeaderTerminoProceso);
+	enviarHeader(umc, HeaderTerminoProceso);
+	pcb_destroy(pcbActual);
+	pcbActual=NULL;
+}
+
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
 void setearPC(t_PCB* pcb, t_puntero_instruccion pc) {
 	if(!CU_is_test_running()){
@@ -77,6 +87,7 @@ void procesarHeader(char *header) {
 		break;
 
 	case HeaderPCB:
+		overflow = false;
 		obtenerPCB(); //inicio el proceso de aumentar el PC, pedir a UMC sentencia...
 		break;
 
@@ -167,8 +178,8 @@ void enviar_solicitud(int pagina, int offset, int size) {
 	log_info(activeLogger,"Solicitud enviada: (nPag,offset,size)=(%d,%d,%d)", pagina, offset, size);
 
 	char* stackOverflowFlag = recv_waitall_ws(umc, sizeof(int));
+	overflow = !char4ToInt(stackOverflowFlag);
 	free(stackOverflowFlag);
-	int overflow = char4ToInt(stackOverflowFlag);
 	if (overflow) {
 		lanzar_excepcion_overflow();
 	}
@@ -335,16 +346,6 @@ void obtener_y_parsear() {
 	free(sentenciaPedida);
 }
 
-void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la ultima instruccion o hay una excepcion
-	if(normalmente){
-		log_info(activeLogger,ANSI_COLOR_GREEN "El proceso ansisop ejecutó su última instrucción." ANSI_COLOR_RESET);
-	}
-	enviarHeader(nucleo, HeaderTerminoProceso);
-	enviarHeader(umc, HeaderTerminoProceso);
-	pcb_destroy(pcbActual);
-	pcbActual=NULL;
-}
-
 /**
  * Lanza excepcion por stack overflow y termina el proceso.
  */
@@ -352,6 +353,7 @@ void lanzar_excepcion_overflow(){
 	log_info(activeLogger,ANSI_COLOR_RED "Stack overflow! se intentó leer una dirección inválida." ANSI_COLOR_RESET);
 	log_info(activeLogger,"Terminando la ejecución del programa actual...");
 
+	overflow=true;
 	finalizar_proceso(false);
 
 	log_info(activeLogger,"Proceso terminado!");
@@ -377,6 +379,7 @@ void cargarConfig() {
 void inicializar() {
 	cargarConfig();
 	terminar = false;
+	overflow = false;
 	pcbActual = NULL; //lo dejo en NULL por chequeos en otro lado. Si está en NULL, hace el malloc antes de deserializar, asi que no rompe nada.
 	crearLogs(string_from_format("cpu_%d", getpid()), "CPU", config.DEBUG_RAISE_LOG_LEVEL);
 	log_info(activeLogger, "Soy CPU de process ID %d.", getpid());
@@ -431,12 +434,6 @@ void correrTestsUMC(){
 			reactivarLogs();
 		}
 	}
-}
-
-void ejemploPedidoLecturaUmc(){ //COMENTAR: finalizar, establecerConexNucleo y esperarProgramas
-	enviarHeader(umc,HeaderSolicitudSentencia);
-	enviar_solicitud(1,0,4);
-	printf("El resultado del pedido: %s \n",recibir_sentencia(4));
 }
 
 int main() {

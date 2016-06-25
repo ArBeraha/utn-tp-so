@@ -87,16 +87,18 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 	enviarHeader(umc, HeaderPedirValorVariable);
 	enviar_direccion_umc(direccion); // esto chequea q no haya overflow
 
-	char* valorRecibido = recv_waitall_ws(umc, sizeof(int)); //recibo el valor de UMC
-	valor = char4ToInt(valorRecibido);
-	log_info(activeLogger, "La variable de la dirección fue |%d| dereferenciada! Su valor es |%d|.",
-				direccion, valor);
+	if(!overflow){
+		char* valorRecibido = recv_waitall_ws(umc, sizeof(int)); //recibo el valor de UMC
+		valor = char4ToInt(valorRecibido);
+		log_info(activeLogger, "La variable de la dirección fue |%d| dereferenciada! Su valor es |%d|.",
+					direccion, valor);
 
-	free(valorRecibido);
+		free(valorRecibido);
 
-
-	loggearFinDePrimitiva("Dereferenciar");
-	return valor;
+		loggearFinDePrimitiva("Dereferenciar");
+		return valor;
+	}
+	return 0;
 }
 
 
@@ -108,12 +110,14 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 
 	enviarHeader(umc,HeaderAsignarValor);
 	enviar_direccion_umc(direccion_variable); // esto chequea q no haya overflow
-	char* valorSerializado = intToChar4(valor);
-	send_w(umc, valorSerializado, sizeof(t_valor_variable)); //envio el valor de la variable
+	if(!overflow){
+		char* valorSerializado = intToChar4(valor);
+		send_w(umc, valorSerializado, sizeof(t_valor_variable)); //envio el valor de la variable
 
 
-	free(valorSerializado);
-	loggearFinDePrimitiva("Asignar.");
+		free(valorSerializado);
+		loggearFinDePrimitiva("Asignar.");
+	}
 }
 
 

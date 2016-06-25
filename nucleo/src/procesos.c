@@ -42,6 +42,7 @@ HILO crearProceso(int consola) {
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	proceso->PCB = pcb_create();
 	MUTEXPROCESOS(procesos[consola] = proceso);
+	proceso->abortado=false;
 	proceso->PCB->PID = consola;
 	proceso->estado = NEW;
 	proceso->consola = consola;
@@ -61,7 +62,6 @@ HILO crearProceso(int consola) {
 			head->posicion=0;
 			stack_push(proceso->PCB->SP,head);
 			//
-			proceso->abortado=false;
 			proceso->cpu = SIN_ASIGNAR;
 			cambiarEstado(proceso, READY);
 			MUTEXPROCESOS(list_add(listaProcesos, proceso));

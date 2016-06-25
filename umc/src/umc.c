@@ -384,6 +384,7 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 	char* serialCantidadPaginas = intToChar4(cantPaginas);
 	int i=0;
 
+	pthread_mutex_lock(&lock_accesoSwap);
 	enviarHeader(swapServer,HeaderOperacionIniciarProceso);
 	send_w(swapServer,serialPID,sizeof(int));
 	send_w(swapServer,serialCantidadPaginasTotales,sizeof(int));
@@ -397,6 +398,7 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 	}
 
 	char* header = recv_waitall_ws(swapServer,1);
+	pthread_mutex_unlock(&lock_accesoSwap);
 
 	if (charToInt(header)==HeaderProcesoAgregado){
 		printf("Swap almaceno el script correctamente\n");
@@ -408,9 +410,11 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 
 
 void finalizarPrograma(int idPrograma){
+	pthread_mutex_lock(&lock_accesoSwap);
 	enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
 	send_w(swapServer,intToChar4(idPrograma),sizeof(int));
 	char* header = recv_waitall_ws(swapServer,1);
+	pthread_mutex_unlock(&lock_accesoSwap);
 	printf("LLEGO EL HEADER DE PROCESO ELIMINADO %d \n",charToInt(header));
 	sacarMarcosOcupados(idPrograma);
 	flushTlbDePid(idPrograma);

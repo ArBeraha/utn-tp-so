@@ -116,7 +116,8 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 					log_info(activeLogger, "[%d][L] Se encontro en Tabla de Paginas pero NO ESTA EN MEMORIA. Buscando en SWAP: [Pag]=[%d]",id,pedido.paginaRequerida);
 					log_info(activeLogger, "[%d][L]-------------SWAP-----------",id);
 
-					buscarEnSwap(pedido, cliente);
+					buscarEnSwap(pedido,cliente);
+
 					log_info(activeLogger, "[%d][L] -------------------------",id);
 
 //					agregarATlb(paginaBuscada,pedido.pid);
@@ -251,12 +252,15 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 	char* serialPagina = intToChar4(pedido.paginaRequerida);
 	char* contenidoPagina = malloc(config.tamanio_marco);
 
+	pthread_mutex_lock(&lock_accesoSwap);
 	enviarHeader(swapServer,HeaderOperacionLectura);
 
 	send_w(swapServer,serialPID,sizeof(int));
 	send_w(swapServer,serialPagina,sizeof(int));
 
 	char* header = recv_waitall_ws(swapServer,1);
+
+	pthread_mutex_unlock(&lock_accesoSwap);
 
 	if (charToInt(header)==HeaderOperacionLectura){
 		printf("Contesto con la pagina\n");
@@ -312,7 +316,9 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		pthread_mutex_unlock(&lock_accesoTabla);
 
 		if(paginaASacarDeMemoria->bitModificacion){
+			pthread_mutex_lock(&lock_accesoSwap);
 			enviarASwap(pedido.pid,paginaASacarDeMemoria);
+			pthread_mutex_unlock(&lock_accesoSwap);
 		}
 
 		int marcoSacado = paginaASacarDeMemoria->marcoUtilizado;

@@ -138,6 +138,7 @@ pthread_mutex_t lock_accesoTlb;
 pthread_mutex_t lock_accesoMarcosOcupados;
 pthread_mutex_t lock_accesoUltimaPos;
 pthread_mutex_t lock_accesoLog;
+pthread_mutex_t lock_accesoSwap;
 
 
 //pthread_t vectorHilosCpu[MAXCLIENTS];

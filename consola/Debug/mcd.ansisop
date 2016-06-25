@@ -4,7 +4,7 @@ function mult
 variables i
 	i= 0
 #Forma asquerosa de si el segundo parametro es 0 :D
-jz $1 mult-ret
+jz i mult-ret
 :mult-loop
 	$1 = $1-1
 	i = $0 + i

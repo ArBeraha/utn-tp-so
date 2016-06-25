@@ -293,6 +293,7 @@ void recibirFinalizacion(int cliente){
 			pthread_mutex_lock(&mutexProcesos);
 		}
 	}
+	clientes[cliente].atentido=false;
 }
 
 void procesarHeader(int cliente, char *header) {
@@ -341,7 +342,7 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case headerTermineInstruccion:
-		rafagaProceso(cliente);
+		MUTEXPLANIFICACION(rafagaProceso(cliente));
 		break;
 
 	case HeaderEntradaSalida:
@@ -349,7 +350,7 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case HeaderTerminoProceso:
-		recibirFinalizacion(cliente);
+		MUTEXPLANIFICACION(recibirFinalizacion(cliente));
 		break;
 
 	default:

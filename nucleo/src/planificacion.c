@@ -46,13 +46,11 @@ void planificarExpulsion(t_proceso* proceso) {
 }
 void rafagaProceso(cliente){
 	// mutexClientes SAFE
-	pthread_mutex_lock(&mutexPlanificacion);
 	t_proceso* proceso = procesos[clientes[cliente].pid];//obtenerProceso(clientes[cliente].pid);
 	log_info(debugLogger,"EL PID:%d TERMINO UNA INSTRUCCION",proceso->PCB->PID);
 	proceso->rafagas++;
 	planificarExpulsion(proceso);
 	clientes[cliente].atentido=false;
-	pthread_mutex_unlock(&mutexPlanificacion);
 }
 bool procesoExiste(t_proceso* proceso){
 	int i;

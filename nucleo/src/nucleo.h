@@ -43,6 +43,8 @@ pthread_mutex_t mutexListos, mutexSalida, mutexCPU, mutexProcesos, mutexUMC, mut
 // defino la palabra clave THREAD para reconocer las funciones que son main de un hilo
 #define HILO void*
 // MACROS DE MUTEXS
+#define MUTEXPLANIFICACION(CONTENIDO) \
+	MUTEX(CONTENIDO,mutexPlanificacion);
 #define MUTEXLISTOS(CONTENIDO) \
 	MUTEX(CONTENIDO,mutexListos);
 #define MUTEXSALIDA(CONTENIDO) \

@@ -21,6 +21,9 @@ void enviarASwap(int pid, tablaPagina_t* pagina){
 	send_w(swapServer,serialPID,sizeof(int));
 	send_w(swapServer,serialPagina,sizeof(int));
 	send_w(swapServer,contenidoPagina,config.tamanio_marco);
+	char* header = recv_waitall_ws(swapServer,1);
+	log_info(activeLogger, "Llego header escritura ok de swap: %d \n",charToInt(header));
+
 }
 
 HILO hiloDedicado(int indice) {

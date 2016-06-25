@@ -283,17 +283,19 @@ void atenderHandshake(int cliente){
 	clientes[cliente].atentido = false;
 }
 void recibirFinalizacion(int cliente){
+	printf("PROCESOS:%d\n",mutexProcesos.__data.__lock);
 	t_proceso* proceso = procesos[clientes[cliente].indice];
 	if (procesoExiste(proceso)) {
 		if (!proceso->abortado) {
-			pthread_mutex_unlock(&mutexProcesos);
+			//pthread_mutex_unlock(&mutexProcesos);
 			pthread_mutex_unlock(&mutexClientes);
 			finalizarProceso(proceso->PCB->PID);
 			pthread_mutex_lock(&mutexClientes);
-			pthread_mutex_lock(&mutexProcesos);
+			//pthread_mutex_lock(&mutexProcesos);
 		}
 	}
 	clientes[cliente].atentido=false;
+	printf("PROCESOS:%d\n",mutexProcesos.__data.__lock);
 }
 
 void procesarHeader(int cliente, char *header) {
@@ -405,6 +407,10 @@ int main(void) {
 	int i;
 	char header[1];
 	inicializar();
+
+
+
+
 
 	log_info(activeLogger, "Esperando conexiones ...");
 	while (1) {

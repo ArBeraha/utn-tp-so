@@ -46,7 +46,8 @@ void planificarExpulsion(t_proceso* proceso) {
 }
 void rafagaProceso(cliente){
 	// mutexClientes SAFE
-	t_proceso* proceso = procesos[clientes[cliente].pid];//obtenerProceso(clientes[cliente].pid);
+	printf("PROCESOS:%d\n",mutexProcesos.__data.__lock);
+	t_proceso* proceso = procesos[clientes[cliente].pid];
 	log_info(debugLogger,"EL PID:%d TERMINO UNA INSTRUCCION",proceso->PCB->PID);
 	proceso->rafagas++;
 	planificarExpulsion(proceso);

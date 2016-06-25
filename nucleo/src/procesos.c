@@ -24,7 +24,7 @@ void rechazarProceso(int PID) {
 	if (proceso->estado != NEW)
 		log_warning(activeLogger,
 				"Se esta rechazando el proceso %d ya aceptado!", PID);
-	MUTEXPROCESOS(enviarHeader(proceso->socketConsola, HeaderConsolaFinalizarRechazado));
+	enviarHeader(proceso->socketConsola, HeaderConsolaFinalizarRechazado);
 	log_info(bgLogger,
 			"Consola avisada sobre la finalización del proceso ansisop.");
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
@@ -77,7 +77,7 @@ void finalizarProceso(int PID) {
 	log_info(activeLogger,ANSI_COLOR_RED "Finalizando PID:%d" ANSI_COLOR_RESET,PID);
 	t_proceso* proceso = obtenerProceso(PID);
 	cambiarEstado(proceso,EXIT);
-	MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
+	//MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
 }
 void destruirProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE

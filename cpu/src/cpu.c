@@ -50,8 +50,12 @@ void desalojarProceso() {
 	log_info(activeLogger, "Desalojando proceso...");
 
 	enviarPCB();
-
+	ejecutando = false;
 	log_info(activeLogger, "Proceso desalojado.");
+}
+
+bool puedo_terminar(){
+	return terminar && !ejecutando;
 }
 
 /*--------FUNCIONES----------*/
@@ -61,7 +65,7 @@ void esperar_programas() {
 	if (config.DEBUG_IGNORE_PROGRAMS) {
 		 warnDebug();
 	}else{
-		while (!terminar) {	//mientras no tenga que terminar porque hubo una excepcion
+		while (!puedo_terminar()) {	//mientras no tenga que terminar porque hubo una excepcion
 			header = recv_waitall_ws(nucleo, 1);
 			procesarHeader(header);
 			free(header);
@@ -263,7 +267,6 @@ void pedirYRecibirSentencia(int* tamanio) {	//pedir al UMC la proxima sentencia 
 		paginaAPedir++;
 	}
 
-
 	log_info(activeLogger, "Pedido de sentencia finalizado.");
 	log_info(activeLogger,
 			"Se pidieron %d paginas (estando la primera y la ultima no necesariamente completas)",
@@ -286,10 +289,20 @@ void recibirCantidadDePaginasDeCodigo(){
 	free(pags);
 }
 
+void recibir_quantum_sleep(){
+	char* quantum = recv_waitall_ws(nucleo, sizeof(int));
+	quantum_sleep = char4ToInt(quantum);
+	log_debug(debugLogger, "Valor de quantum_sleep: |%d|",quantum_sleep);
+
+	free(quantum);
+}
+
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	if(pcbActual!=NULL){ //Al principio esta en null, asi no se inicializa.
 		pcb_destroy(pcbActual);
 	}
+	ejecutando = true;
+
 	pcbActual=malloc(sizeof(t_PCB));
 	log_debug(debugLogger, "Recibiendo PCB...");
 	char* serialPCB = leerLargoYMensaje(nucleo);
@@ -339,11 +352,13 @@ char* recibir_sentencia(int tamanio){
  * Loggeada en las funciones que llama
  */
 void obtener_y_parsear() {
+	//recibir_quantum_sleep();
 	int tamanio;
 	//sleep(10); //TODO . le dejo marca porque lo uso para testear el kill -s y el orden de segmentfaulteo de los procesos.
 	sentenciaPedida = string_new();
 	pedirYRecibirSentencia(&tamanio);
 	parsear(sentenciaPedida);
+	sleep(quantum_sleep);
 	free(sentenciaPedida);
 }
 
@@ -379,6 +394,7 @@ void cargarConfig() {
 
 void inicializar() {
 	cargarConfig();
+	ejecutando = false;
 	terminar = false;
 	overflow = false;
 	pcbActual = NULL; //lo dejo en NULL por chequeos en otro lado. Si está en NULL, hace el malloc antes de deserializar, asi que no rompe nada.
@@ -404,7 +420,7 @@ void finalizar() {
  */
 void handler(int sign) {
 	if (sign == SIGUSR1) {
-		log_info(activeLogger, "Recibi SIGUSR1! Adios a todos!");
+		log_info(activeLogger, ANSI_COLOR_RED "Recibi SIGUSR1!" ANSI_COLOR_RESET);
 		terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccion
 		log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");
 	}

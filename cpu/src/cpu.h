@@ -63,6 +63,8 @@ AnSISOP_kernel funcionesKernel;		// funciones kernel de AnSISOP
 
 int tamanioPaginas;					//Tamaño de las paginas
 int cantidadPaginasCodigo;
+int quantum_sleep;  //es lo que tiene que esperar cpu cuando termina de ejecutar una sentencia
+//TODO usar unsigned int??
 
 t_PCB* pcbActual;
 t_stack* stack;
@@ -74,6 +76,8 @@ customConfig_t config;
 
 bool terminar;						//flag para que el proceso sepa cuando terminar
 bool overflow;
+bool ejecutando;
+
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
 void informarInstruccionTerminada();
 void setearPC(t_PCB* pcb, t_puntero_instruccion pc);

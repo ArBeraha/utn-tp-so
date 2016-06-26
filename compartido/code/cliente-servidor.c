@@ -206,23 +206,16 @@ int procesarNuevasConexionesExtendido(int* socket){
 
 char* intToChar4(int num){
 	//RECORDAR: liberar el puntero con free()
-	int i;
-	char *chars;
-	chars = malloc(4);
-	for (i = 0; i != 4; ++i) {
-	    chars[i] = num >> (24 - i * 8);
-	}
-	return chars;
+	char* serial = malloc(sizeof(int));
+	serializar_int(serial,&num);
+	return serial;
 }
 
 int char4ToInt(char* chars){
-	int i,num=0;
-	for (i = 0; i != 4; ++i) {
-	     num += chars[i] << (24 - i * 8);
-	}
-	return num;
+	int a;
+	deserializar_int(&a,chars);
+	return a;
 }
-
 char* leerLargoYMensaje(int sock){
 	char* serialLargo = malloc(sizeof(int));
 	read(sock, serialLargo, sizeof(int));

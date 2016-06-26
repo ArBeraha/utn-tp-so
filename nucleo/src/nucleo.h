@@ -39,18 +39,12 @@ struct sockaddr_in direccionConsola, direccionCPU, direccionUMC;
 unsigned int tamanioDireccionConsola, tamanioDireccionCPU, tamanio_pagina;
 // Hilos
 pthread_t hiloPlanificacion;
-pthread_mutex_t mutexListos, mutexSalida, mutexCPU, mutexProcesos, mutexUMC, mutexClientes, mutexEstados, mutexPlanificacion;
+pthread_mutex_t mutexProcesos, mutexUMC, mutexClientes, mutexEstados, mutexPlanificacion;
 // defino la palabra clave THREAD para reconocer las funciones que son main de un hilo
 #define HILO void*
 // MACROS DE MUTEXS
 #define MUTEXPLANIFICACION(CONTENIDO) \
 	MUTEX(CONTENIDO,mutexPlanificacion);
-#define MUTEXLISTOS(CONTENIDO) \
-	MUTEX(CONTENIDO,mutexListos);
-#define MUTEXSALIDA(CONTENIDO) \
-	MUTEX(CONTENIDO,mutexSalida);
-#define MUTEXCPU(CONTENIDO) \
-	MUTEX(CONTENIDO,mutexCPU);
 #define MUTEXCLIENTES(CONTENIDO) \
 	MUTEX(CONTENIDO,mutexClientes);
 #define MUTEXPROCESOS(CONTENIDO) \
@@ -155,7 +149,7 @@ void handshakearUMC();
 void recibirTamanioPagina();
 void enviarStackSize();
 // Consola
-char* getScript(int consola);
+char* getScript(int consola,bool* exploto);
 // CPU
 void ingresarCPU(int cliente);
 // Procesos

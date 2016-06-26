@@ -48,6 +48,7 @@ typedef struct {
 } t_PCB;
 
 t_PCB* pcb_create();
+void pcb_main(t_PCB* pcb);
 void pcb_destroy(t_PCB* pcb);
 t_stack* stack_create();
 void stack_push(t_stack*,t_stack_item*);

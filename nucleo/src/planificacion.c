@@ -69,12 +69,12 @@ bool clienteExiste(int cliente){
 }
 void planificacionFIFO() {
 	// mutexProcesos SAFE
-	MUTEXSALIDA(
+
 	while (!queue_is_empty(colaSalida))
 		destruirProceso(queue_pop(colaSalida));
-	)
 
-	MUTEXLISTOS(MUTEXCPU(
+
+
 	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU)) {
 		 //Limpiamos las colas de procesos eliminados hasta encontrar uno que no lo este o se vacie
 		while (!queue_is_empty(colaListos)
@@ -92,7 +92,7 @@ void planificacionFIFO() {
 
 		// Si por lo menos una lista no se vacio repetir el proceso
 	}
-	))
+
 }
 void planificarIO(char* io_id, t_IO* io) {
 	if (io->estado == INACTIVE && (!queue_is_empty(io->cola))) {
@@ -117,7 +117,7 @@ void asignarCPU(t_proceso* proceso, int cpu) {
 void desasignarCPU(t_proceso* proceso) {
 	log_info(bgLogger, "Desasignando cpu:%d a pid:%d", proceso->cpu,
 			proceso->PCB->PID);
-	MUTEXCPU(queue_push(colaCPU, (void*) proceso->cpu));
+	queue_push(colaCPU, (void*) proceso->cpu);
 	proceso->cpu = SIN_ASIGNAR;
 	MUTEXPROCESOS(procesos[proceso->cpu] = NULL);
 	MUTEXCLIENTES(clientes[proceso->cpu].pid = -1);
@@ -180,9 +180,9 @@ void cambiarEstado(t_proceso* proceso, int estado) {
 		if (proceso->estado == EXEC)
 			desasignarCPU(proceso);
 		if (estado == READY)
-			{MUTEXLISTOS(queue_push(colaListos, proceso))}
+			queue_push(colaListos, proceso);
 		else if (estado == EXIT)
-			{MUTEXSALIDA(queue_push(colaSalida, proceso))}
+			queue_push(colaSalida, proceso);
 		proceso->estado = estado;
 	} else
 		log_error(activeLogger, "Cambio de estado ILEGAL pid:%d de:%d a:%d",

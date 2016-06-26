@@ -89,6 +89,12 @@ t_PCB* pcb_create() {
 	return pcb;
 }
 
+void pcb_main(t_PCB* pcb){
+	t_stack_item* main = stack_item_create();
+	main->posicion=0;
+	stack_push(pcb->SP,main);
+}
+
 void pcb_destroy(t_PCB* pcb){
 	list_destroy(pcb->indice_codigo);
 	stack_destroy(pcb->SP);

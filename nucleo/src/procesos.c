@@ -39,6 +39,7 @@ void rechazarProceso(int PID) {
 	free(proceso);
 }
 HILO crearProceso(int consola) {
+	bool exploto = false;
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	proceso->PCB = pcb_create();
 	MUTEXPROCESOS(procesos[consola] = proceso);
@@ -49,7 +50,15 @@ HILO crearProceso(int consola) {
 	log_info(bgLogger,"Se esta intentando iniciar el proceso PID:%d",proceso->PCB->PID);
 	MUTEXCLIENTES(proceso->socketConsola = clientes[consola].socket);
 	if (!CU_is_test_running()) {
-		char* codigo = getScript(consola);
+		char* codigo = getScript(consola,&exploto);
+		if (exploto){
+			log_info(activeLogger,ANSI_COLOR_RED "[FLAG RECUPERACION]" ANSI_COLOR_RESET,consola);
+			procesos[consola] = NULL;
+			pcb_destroy(proceso->PCB);
+			free(proceso);
+			return 0;
+		}
+
 		proceso->PCB->cantidad_paginas = ceil(
 				((double) strlen(codigo)) / ((double) tamanio_pagina));
 		if (!pedirPaginas(proceso->PCB->PID, codigo) || proceso->abortado) {
@@ -57,20 +66,20 @@ HILO crearProceso(int consola) {
 		} else {
 			asignarMetadataProceso(proceso, codigo);
 			MUTEXCLIENTES(clientes[consola].pid = (int) proceso);
-			//
-			t_stack_item* head = stack_item_create();
-			head->posicion=0;
-			stack_push(proceso->PCB->SP,head);
-			//
+			pcb_main(proceso->PCB);
 			proceso->cpu = SIN_ASIGNAR;
-			cambiarEstado(proceso, READY);
+			pthread_mutex_lock(&mutexPlanificacion);
 			MUTEXPROCESOS(list_add(listaProcesos, proceso));
+			cambiarEstado(proceso, READY);
+			pthread_mutex_unlock(&mutexPlanificacion);
 			log_info(activeLogger,ANSI_COLOR_GREEN "Creado PID:%d" ANSI_COLOR_RESET,consola);
 		}
 		free(codigo);
 	}
 	return proceso;
 }
+
+
 
 
 void finalizarProceso(int PID) {
@@ -103,7 +112,7 @@ void actualizarPCB(t_proceso* proceso, t_PCB* PCB) { //
 	imprimir_PCB(proceso->PCB);
 }
 void ingresarCPU(int cliente){
-	MUTEXCPU(queue_push(colaCPU,(void*)cliente));
+	MUTEXPLANIFICACION(queue_push(colaCPU,(void*)cliente));
 }
 void bloquearProcesoIO(int PID, char* IO, int tiempo) {
 	if (dictionary_has_key(tablaIO, IO)) {

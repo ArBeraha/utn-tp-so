@@ -94,14 +94,21 @@ void recibirTamanioPagina(){
 	free(serialTamanio);
 }
 /*  ----------INICIO CONSOLA ---------- */
-char* getScript(int consola) {
+char* getScript(int consola,bool* exploto) {
 	log_info(bgLogger, "Recibiendo archivo de consola %d...", consola);
 	pthread_mutex_lock(&mutexClientes);
 	char* script = leerLargoYMensaje(clientes[consola].socket);
 	clientes[consola].atentido = false; //En true se bloquean, incluso si mando muchos de una consola usando un FOR para mandar el comando (leer wikia)
-	pthread_mutex_unlock(&mutexClientes);
+
+	if (script!=NULL)
 	log_info(activeLogger, "Script de consola %d recibido:\n%s", consola,
 			script);
+	else{
+		*exploto=true;
+		log_error(activeLogger, "Llego mal el codigo de consola:%d",consola);
+	}
+
+	pthread_mutex_unlock(&mutexClientes);
 	return script;
 }
 /*  ----------INICIO NUCLEO ---------- */
@@ -128,7 +135,7 @@ void inicializar() {
 
 	cargarConfiguracion();
 	iniciarVigilanciaConfiguracion();
-	iniciarAtrrYMutexs(8,&mutexProcesos,&mutexUMC,&mutexClientes,&mutexEstados,&mutexListos, &mutexSalida, &mutexCPU, &mutexPlanificacion);
+	iniciarAtrrYMutexs(5,&mutexProcesos,&mutexUMC,&mutexClientes,&mutexEstados, &mutexPlanificacion);
 	crearSemaforos();
 	crearIOs();
 	crearCompartidas();
@@ -140,7 +147,7 @@ void inicializar() {
 	inicializarClientes();
 	conectarAUMC();
 //	testear(test_nucleo);
-	crearHilo(&hiloPlanificacion, planificar);
+//	crearHilo(&hiloPlanificacion, planificar);
 }
 void cargarConfiguracion() {
 	log_info(bgLogger, "Cargando archivo de configuracion");
@@ -402,6 +409,7 @@ void finalizarCliente(int cliente) {
 	quitarCliente(cliente);
 }
 
+
 int main(void) {
 	system("clear");
 	int i;
@@ -414,10 +422,13 @@ int main(void) {
 
 	log_info(activeLogger, "Esperando conexiones ...");
 	while (1) {
+
 		FD_ZERO(&socketsParaLectura);
+		FD_SET(umc, &socketsParaLectura);
 		FD_SET(socketConsola, &socketsParaLectura);
 		FD_SET(socketCPU, &socketsParaLectura);
 		FD_SET(cambiosConfiguracion, &socketsParaLectura);
+
 		mayorDescriptor =
 				(((socketConsola > socketCPU) ? socketConsola : socketCPU)
 						< cambiosConfiguracion) ?
@@ -433,6 +444,13 @@ int main(void) {
 		if (tieneLectura(cambiosConfiguracion))
 			procesarCambiosConfiguracion();
 
+		if (tieneLectura(umc)){
+			if (read(umc, header, 1) == 0){
+				log_error(activeLogger,ANSI_COLOR_RED "Finalizando por desconexión de UMC" ANSI_COLOR_RESET);
+				exit(EXIT_FAILURE);
+			}
+		}
+
 		for (i = 0; i < getMaxClients(); i++) {
 			pthread_mutex_lock(&mutexClientes);
 			if (tieneLectura(clientes[i].socket)) {
@@ -443,6 +461,14 @@ int main(void) {
 			}
 			pthread_mutex_unlock(&mutexClientes);
 		}
+		//
+		//Planificacion IO
+		pthread_mutex_lock(&mutexPlanificacion);
+		planificacionFIFO();
+		pthread_mutex_unlock(&mutexPlanificacion);
+		//Planificacion IO
+		dictionary_iterator(tablaIO, (void*) planificarIO);
+		//
 	}
 	finalizar();
 	return EXIT_SUCCESS;

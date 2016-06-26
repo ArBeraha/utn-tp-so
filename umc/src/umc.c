@@ -258,6 +258,9 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 	send_w(swapServer,serialPID,sizeof(int));
 	send_w(swapServer,serialPagina,sizeof(int));
 
+	free(serialPID);
+	free(serialPagina);
+
 	char* header = recv_waitall_ws(swapServer,1);
 
 	pthread_mutex_unlock(&lock_accesoSwap);
@@ -270,22 +273,9 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 	}
 
 	contenidoPagina = recv_waitall_ws(swapServer,config.tamanio_marco);
-
 	agregarAMemoria(pedido,contenidoPagina,cliente);
 
-//	contenidoPagina[config.tamanio_marco]='\0';
-
-
-//	if(pedido.paginaRequerida==1){
-//		char* contenidoPagina = "abcdefghijklmnopqrstuvwxyz";
-//		agregarAMemoria(pedido,contenidoPagina,cliente);
-//	}
-//	if(pedido.paginaRequerida==3){
-//
-//		char* str = malloc(sizeof(int));
-//		memcpy(str,"4",4);
-//		agregarAMemoria(pedido,str,cliente);
-//	}
+	free(header);
 
 	return 1;
 }
@@ -368,9 +358,9 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		pedido.cantBytes=config.tamanio_marco;
 		pedido.offset=0;
 
-		char* contenido2 = malloc(config.tamanio_marco+1);
-		memcpy(contenido2,contenido,config.tamanio_marco);
-		contenido[config.tamanio_marco]='\0';
+//		char* contenido2 = malloc(config.tamanio_marco+1);
+//		memcpy(contenido2,contenido,config.tamanio_marco);
+//		contenido[config.tamanio_marco]='\0';
 
 		almacenarBytesEnUnaPagina(pedido, contenido, cliente);
 	}
@@ -391,6 +381,10 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 	send_w(swapServer,serialCantidadPaginas,sizeof(int));
 
 
+	free(serialPID);
+	free(serialCantidadPaginasTotales);
+	free(serialCantidadPaginas);
+
 	char* fraccionCodigo = malloc(config.tamanio_marco);
 	for(i=0;i<cantPaginas;i++){
 		memcpy(fraccionCodigo,contenido+(i*config.tamanio_marco),config.tamanio_marco);
@@ -406,6 +400,9 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 	}else{
 		return 0;
 	}
+
+	free(fraccionCodigo);
+	free(header);
 }
 
 
@@ -421,6 +418,7 @@ void finalizarPrograma(int idPrograma){
 	tabla_t* tabla = buscarTabla(idPrograma);
 	list_destroy((t_list*)tabla->listaPaginas);
 	list_remove(listaTablasPaginas,buscarPosicionTabla(idPrograma));
+	free(header);
 }
 
 int reservarPagina(int cantPaginasPedidas, int pid) {
@@ -458,6 +456,7 @@ int reservarPagina(int cantPaginasPedidas, int pid) {
 		list_add_in_index((t_list*)tablaPag->listaPaginas, posicion, nuevaPag);
 		pthread_mutex_unlock(&lock_accesoTabla);
 	}
+
 	return 1;
 }
 
@@ -490,11 +489,13 @@ void pedidoLectura(t_cliente cliente){
 
 	char* contenido = devolverPedidoPagina(pedidoLectura,cliente);
 
-	printf("ACAAAAAAAAAAAAAAAA: ");
+	printf("Devolviendo lectura: ");
 	imprimirRegionMemoriaCodigo(contenido,pedidoLectura.cantBytes);
 	imprimir_serializacion(contenido,7);
 	send_w(cliente.socket,contenido,pedidoLectura.cantBytes);
 
+	free(pedidoSerializado);
+	free(pedidoCpu);
 	log_info(activeLogger, ANSI_COLOR_RED "[%d] Finalizo pedido de lectura" ANSI_COLOR_RESET,id);
 
 }
@@ -530,6 +531,8 @@ void headerEscribirPagina(t_cliente cliente){
 
 	almacenarBytesEnUnaPagina(pedido,buffer,cliente);
 
+	free(pedidoSerializadoEscritura);
+	free(pedidoCpuEscritura);
 	log_info(activeLogger, ANSI_COLOR_RED "[%d] Finalizo pedido de escritura" ANSI_COLOR_RESET,id);
 }
 
@@ -553,6 +556,11 @@ void operacionScript(t_cliente cliente) {
 	} else {
 		send_w(cliente.socket, intToChar(0), 1);
 	}
+
+	free(pidScript);
+	free(cantidadDePaginasScript);
+	free(tamanioCodigoScript);
+	free(codigoScript);
 	log_info(activeLogger, ANSI_COLOR_RED "Finalizo pedido de inicializacion de programa" ANSI_COLOR_RESET);
 }
 
@@ -608,6 +616,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 		char* pidALiberar = malloc(sizeof(int));
 		read(cliente.socket , pidALiberar, sizeof(int));
 		finalizarPrograma(char4ToInt(pidALiberar));
+		free(pidALiberar);
 		break;
 
 	case HeaderTerminoProceso:
@@ -642,7 +651,6 @@ void procesarHeader(t_cliente cliente, char* header) {
 		char* paginasCodigo = intToChar4(cantPaginasDePid(verifNuevo) - paginas_stack);
 		send_w(cliente.socket,paginasCodigo,sizeof(int));
 		free(paginasCodigo);
-
 		break;
 
 	default:
@@ -758,7 +766,10 @@ void finalizar() {
 	destruirLogs();
 	log_destroy(dump);
 	list_destroy(listaTablasPaginas);
+	free(tlb);
 	free(memoria);
+	free(vectorClientes);
+	free(vectorMarcosOcupados);
 	pthread_mutex_destroy(&lock_accesoMarcosOcupados);
 	pthread_mutex_destroy(&lock_accesoMemoria);
 	pthread_mutex_destroy(&lock_accesoTabla);
@@ -767,32 +778,32 @@ void finalizar() {
 }
 
 
-void test2(){
-	t_cliente clienteTest;
-
-	reservarPagina(3,0); // 3 para el codigo
-	reservarPagina(paginas_stack,0); //Para datos
-
-		pedidoLectura_t pedido3;
-			pedido3.pid=0;
-			pedido3.paginaRequerida=1; //Pagina de codigo. Char*
-			pedido3.offset=5;
-			pedido3.cantBytes=2;
-
-		devolverPedidoPagina(pedido3,clienteTest);
-
-		mostrarTlb();
-
-		pedidoLectura_t pedido4;
-			pedido4.pid=0;
-			pedido4.paginaRequerida=3; //Pagina de datos. Int, leo de a 4 bytes
-			pedido4.offset=3;
-			pedido4.cantBytes=4;
-
-		devolverPedidoPagina(pedido4,clienteTest);
-
-	devolverTodaLaMemoria();
-
-	mostrarTlb();
-}
+//void test2(){
+//	t_cliente clienteTest;
+//
+//	reservarPagina(3,0); // 3 para el codigo
+//	reservarPagina(paginas_stack,0); //Para datos
+//
+//		pedidoLectura_t pedido3;
+//			pedido3.pid=0;
+//			pedido3.paginaRequerida=1; //Pagina de codigo. Char*
+//			pedido3.offset=5;
+//			pedido3.cantBytes=2;
+//
+//		devolverPedidoPagina(pedido3,clienteTest);
+//
+//		mostrarTlb();
+//
+//		pedidoLectura_t pedido4;
+//			pedido4.pid=0;
+//			pedido4.paginaRequerida=3; //Pagina de datos. Int, leo de a 4 bytes
+//			pedido4.offset=3;
+//			pedido4.cantBytes=4;
+//
+//		devolverPedidoPagina(pedido4,clienteTest);
+//
+//	devolverTodaLaMemoria();
+//
+//	mostrarTlb();
+//}
 

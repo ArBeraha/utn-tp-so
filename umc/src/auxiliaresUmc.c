@@ -31,7 +31,7 @@ void flushTlbDePid(int pidViejo){
 	pthread_mutex_lock(&lock_accesoTlb);
 		int i;
 		for(i = 0; i<config.entradas_tlb; i++){
-			if(tlb[i].pid=pidViejo){
+			if(tlb[i].pid==pidViejo){
 				tlb[i].pid=-1;
 				tlb[i].pagina=-1;
 				tlb[i].marcoUtilizado=-1;
@@ -56,18 +56,17 @@ int buscarUltimaPosSacada(int pidParam){
 
 void cambiarUltimaPosicion(int pidParam, int ultima){
 	int i;
-		int size = list_size(listaUltimaPosicionSacada);
-		for(i=0;i<size;i++){
-			ultimaSacada_t* entrada = list_get(listaUltimaPosicionSacada,i);
-			if(entrada->pid == pidParam){
-				entrada->posicion=ultima;
-			}
+	int size = list_size(listaUltimaPosicionSacada);
+	for(i=0;i<size;i++){
+		ultimaSacada_t* entrada = list_get(listaUltimaPosicionSacada,i);
+		if(entrada->pid == pidParam){
+			entrada->posicion=ultima;
 		}
+	}
 }
 
 
 int estaEnTlb(pedidoLectura_t pedido){
-
 	pthread_mutex_lock(&lock_accesoTlb);
 	int i;
 

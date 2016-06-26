@@ -112,7 +112,6 @@ int sacarConModificado(int pid){
 
 	pthread_mutex_unlock(&lock_accesoUltimaPos);
 	pthread_mutex_unlock(&lock_accesoTabla);
-
 	log_error(activeLogger, "[%d] Algo fallo en CLOCK MODIFICADO",pid);
 
 	return -1;

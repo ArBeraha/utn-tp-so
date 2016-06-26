@@ -637,7 +637,8 @@ void procesarHeader(t_cliente cliente, char* header) {
 		int viejoPid=0;
 		MUTEXCLIENTES(viejoPid = clientes[cliente.indice].pid);
 		MUTEXCLIENTES(clientes[cliente.indice].pid=char4ToInt(nuevoPid));
-		int verifNuevo = clientes[cliente.indice].pid;
+		int verifNuevo;
+		MUTEXCLIENTES(verifNuevo = clientes[cliente.indice].pid);
 		printf("VERIFICO NUEVO : %d \n",verifNuevo);
 
 		if(viejoPid!=char4ToInt(nuevoPid)){

@@ -54,7 +54,7 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente c
 char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 
 //SI ESTA EN TLB DEVUELVO
-	int id =0;
+	int id = 0;
 	MUTEXCLIENTES(id = clientes[cliente.indice].pid);
 
 	if(estaEnTlb(pedido) && config.entradas_tlb){
@@ -136,11 +136,13 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 			}
 // SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
 			else{
+				printf("ERRORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR 1!!!!");
 				enviarHeader(cliente.socket,HeaderNoExistePagina);
 			}
 		}
 // SI NO EXISTE LA TABLA DE PAGINAS EN LA LISTA TOTAL DE PAGS
 		else{
+			printf("ERRORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR 2!!!!");
 			enviarHeader(cliente.socket,HeaderNoExisteTablaDePag);
 		}
 	}
@@ -235,12 +237,14 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 				}
 			}// SI NO EXISTE LA PAGINA DENTRO DE LA TABLA DE PAG
 			else{
-					enviarHeader(cliente.socket,HeaderNoExistePagina);
+				printf("ERRORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR 3!!!!");
+				enviarHeader(cliente.socket,HeaderNoExistePagina);
 			}
 			// SI NO EXISTE LA TABLA DE PAGINAS EN LA LISTA TOTAL DE PAGS
 		}
 		else{
-				enviarHeader(cliente.socket,HeaderNoExisteTablaDePag);
+			printf("ERRORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR 4!!!!");
+			enviarHeader(cliente.socket,HeaderNoExisteTablaDePag);
 		}
 	}
 	return "Error ifs";
@@ -358,9 +362,9 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		pedido.cantBytes=config.tamanio_marco;
 		pedido.offset=0;
 
-//		char* contenido2 = malloc(config.tamanio_marco+1);
-//		memcpy(contenido2,contenido,config.tamanio_marco);
-//		contenido[config.tamanio_marco]='\0';
+		char* contenido2 = malloc(config.tamanio_marco+1);
+		memcpy(contenido2,contenido,config.tamanio_marco);
+		contenido[config.tamanio_marco]='\0';
 
 		almacenarBytesEnUnaPagina(pedido, contenido, cliente);
 	}
@@ -401,7 +405,6 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 		return 0;
 	}
 
-	free(fraccionCodigo);
 	free(header);
 }
 
@@ -560,7 +563,7 @@ void operacionScript(t_cliente cliente) {
 	free(pidScript);
 	free(cantidadDePaginasScript);
 	free(tamanioCodigoScript);
-	free(codigoScript);
+
 	log_info(activeLogger, ANSI_COLOR_RED "Finalizo pedido de inicializacion de programa" ANSI_COLOR_RESET);
 }
 
@@ -574,7 +577,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 	int idLog=0;
 	MUTEXCLIENTES(idLog = clientes[cliente.indice].pid;)
 
-	//mostrarTlb(); //TODO PARA DEBUGEAR, ESPERAR A QUE ANDE EL TEMA DE CPU Y EL CAMBIO DE PROCESO
+//	mostrarTlb(); //TODO PARA DEBUGEAR, ESPERAR A QUE ANDE EL TEMA DE CPU Y EL CAMBIO DE PROCESO
 
 	switch (charToInt(header)) {
 

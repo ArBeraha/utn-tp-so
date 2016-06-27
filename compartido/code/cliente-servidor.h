@@ -18,6 +18,7 @@
 #include <sys/time.h>
 #include <commons/string.h>
 #include <string.h>
+#include "serializacion.h"
 
 #define MAXCLIENTS 300
 

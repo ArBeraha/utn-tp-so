@@ -44,9 +44,10 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
 
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 	char* resultado = almacenarBytes(pedido,buffer,cliente);
-	if(strcmp(resultado,"RELLAMAR")>0){ //SIGNIFICA QUE SON IGUALES
+	if(strcmp(resultado,"RELLAMAR")>0){ //SIGNIFICA QUE SON DISTINTOS
 		return resultado;
 	}else{
+		printf("_________RELLAMAR________\n");
 		return almacenarBytes(pedido,buffer,cliente);
 	}
 }
@@ -94,7 +95,6 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 					pthread_mutex_unlock(&lock_accesoTabla);
 					log_info(activeLogger, "[%d][L] Se encontro en Tabla de Paginas y esta en memoria",id);
 					log_info(activeLogger, "[%d][L] Realizando LECTURA [Pag,Off,Bytes] = [%d,%d,%d]",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes);
-
 					log_info(activeLogger, "[%d][L] Accediendo a MP",id);
 					usleep(retardoMemoria);
 
@@ -105,7 +105,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 
 					agregarATlb(paginaBuscada,pedido.pid);
 
-					log_info(activeLogger, "[%d][L] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
+//					log_info(activeLogger, "[%d][L] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
 
 					return contenido;
 
@@ -213,7 +213,7 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 					agregarATlb(paginaBuscada,pedido.pid);
 
-					log_info(activeLogger, "[%d][E] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
+//					log_info(activeLogger, "[%d][E] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
 
 					return "1";
 				}
@@ -280,8 +280,6 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 	int id=0;
 	id=clientes[cliente.indice].pid;
 
-	devolverTodasLasPaginas();
-
 	if(cantPaginasEnMemoriaDePid(pedido.pid)>=config.marcos_x_proceso){
 		int posicionPaginaSacada=0;
 
@@ -337,7 +335,8 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		pedido.cantBytes=config.tamanio_marco;
 		pedido.offset=0;
 
-		almacenarBytesEnUnaPagina(pedido,contenido,cliente);
+//		almacenarBytesEnUnaPagina(pedido,contenido,cliente);
+		almacenarBytes(pedido,contenido,cliente);
 	}
 	else{
 		pthread_mutex_lock(&lock_accesoTabla);
@@ -363,7 +362,8 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		memcpy(contenido2,contenido,config.tamanio_marco);
 		contenido[config.tamanio_marco]='\0';
 
-		almacenarBytesEnUnaPagina(pedido, contenido, cliente);
+//		almacenarBytesEnUnaPagina(pedido, contenido, cliente);
+		almacenarBytes(pedido, contenido, cliente);
 	}
 
 }

@@ -17,9 +17,6 @@ int sacarConClock(int pid){
 	int cantidadPaginas = list_size((t_list*)tabla->listaPaginas);
 	int posAReemplazar = 0;
 	tablaPagina_t* puntero;
-	printf("-------------*************************************----- \n");
-
-	printf("CANTIDAD PAGINAS: %d  -------------*************************************----- \n", cantidadPaginas);
 
 	//Primera vuelta, doy segunda oportunidad
 
@@ -54,8 +51,6 @@ int sacarConClock(int pid){
 
 int sacarConModificado(int pid){
 
-	printf("ultiams pos sacada : %d -------------- \n",buscarUltimaPosSacada(pid));
-
 	pthread_mutex_lock(&lock_accesoTabla);
 	pthread_mutex_lock(&lock_accesoUltimaPos);
 
@@ -65,13 +60,10 @@ int sacarConModificado(int pid){
 	int posAReemplazar = 0;
 	tablaPagina_t* puntero;
 
-	printf("-------------*************************************----- \n");
-	printf("CANTIDAD PAGINAS: %d  -------------*************************************----- \n", cantidadPaginas);
 
 	//Primera vuelta, me fijo si hay alguno (0,0) sin modificar nada
 	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar-buscarUltimaPosSacada(pid)<cantidadPaginas;posAReemplazar++){
 		puntero = list_get((t_list*)tabla->listaPaginas,posAReemplazar%cantidadPaginas);
-		printf("PUNTERO: %d  *&*&*&*&\n",posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitModificacion==0 && puntero->bitPresencia==1){
 			cambiarUltimaPosicion(pid,posAReemplazar%cantidadPaginas);
 			pthread_mutex_unlock(&lock_accesoUltimaPos);

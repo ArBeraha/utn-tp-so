@@ -59,20 +59,20 @@ int primitivaDevolverCompartida(char* compartida) {
 }
 void imprimirVariable(int cliente) {
 	printf("Imprimir Variable de CPU:%d\n",cliente);
-	int socketConsola = procesos[clientes[cliente].pid]->socketConsola;
-	printf("Obtenido socketConsola:%d\n",socketConsola);
+	t_proceso* proceso = obtenerProceso(cliente);
+	printf("Obtenido socketConsola:%d\n",proceso->socketConsola);
 	char* serialValor = malloc( sizeof(int));
-	read(clientes[cliente].socket, serialValor, sizeof(int));
-	enviarHeader(socketConsola, HeaderImprimirVariableConsola);
-	send_w(socketConsola, serialValor, sizeof(ansisop_var_t));
+	read(proceso->socketCPU, serialValor, sizeof(int));
+	enviarHeader(proceso->socketConsola, HeaderImprimirVariableConsola);
+	send_w(proceso->socketConsola, serialValor, sizeof(ansisop_var_t));
 	free(serialValor);
 	clientes[cliente].atentido=false;
 }
 void imprimirTexto(int cliente) {
-	int socketConsola = procesos[clientes[cliente].pid]->socketConsola;
-	char* texto = leerLargoYMensaje(clientes[cliente].socket);
-	enviarHeader(socketConsola, HeaderImprimirTextoConsola);
-	enviarLargoYString(socketConsola, texto);
+	t_proceso* proceso = obtenerProceso(cliente);
+	char* texto = leerLargoYMensaje(proceso->socketCPU);
+	enviarHeader(proceso->socketConsola, HeaderImprimirTextoConsola);
+	enviarLargoYString(proceso->socketConsola, texto);
 	clientes[cliente].atentido=false;
 	free(texto);
 }

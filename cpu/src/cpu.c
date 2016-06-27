@@ -153,12 +153,23 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
 	return paginaInicio;
 }
 
+void sacarSaltoDeLinea(char* texto, int pos)
+{
+	if(texto[pos-1]=='\n'){
+		texto[pos-1]='\0';
+	}
+}
+
 void recibirFragmentoDeSentencia(int size){
 	log_debug(debugLogger, "Recibiendo parte de una sentencia. Tamaño del fragmento: |%d|...", size);
-	char* sentencia = recv_waitall_ws(umc, size);
-	sentencia[size-1]='\0';
+	char* serialSentencia = recv_waitall_ws(umc, size);
+	sacarSaltoDeLinea(serialSentencia, size);
+	char* sentencia = malloc(size+1);
+	sentencia[size]='\0';
+	memcpy(sentencia,serialSentencia,size);
 	log_debug(debugLogger, "Recibido el fragmento de sentencia |%s|", sentencia);
 	string_append(&sentenciaPedida, sentencia);
+	free(serialSentencia);
 	free(sentencia);
 }
 
@@ -219,6 +230,7 @@ bool paginaCompleta(int longitud_restante) {
  * Pide una pagina entera a UMC
  */
 void pedirPaginaCompleta(int pagina) {
+	enviarHeader(umc, HeaderSolicitudSentencia);
 	enviar_solicitud(pagina, 0, tamanioPaginas);
 	recibirFragmentoDeSentencia(tamanioPaginas);
 }
@@ -226,12 +238,14 @@ void pedirPaginaCompleta(int pagina) {
 void pedirPrimeraSentencia(t_sentencia* sentenciaRelativa, int pagina, int* longitud_restante) {
 	int tamanioPrimeraSentencia = minimo(*longitud_restante,
 				tamanioPaginas - sentenciaRelativa->offset_inicio); //llega hasta su final o hasta que se termine la pagina, lo mas pequeño
+	enviarHeader(umc, HeaderSolicitudSentencia);
 	enviar_solicitud(pagina, sentenciaRelativa->offset_inicio, tamanioPrimeraSentencia);
 	(*longitud_restante) -= tamanioPrimeraSentencia;
 	recibirFragmentoDeSentencia(tamanioPrimeraSentencia);
 }
 
 void pedirUltimaSentencia(t_sentencia* sentenciaRelativa, int pagina, int longitud_restante){
+	enviarHeader(umc, HeaderSolicitudSentencia);
 	enviar_solicitud(pagina, 0, longitud_restante); //Desde el inicio, con tamaño identico a lo que me falta leer.
 	recibirFragmentoDeSentencia(longitud_restante);
 }
@@ -248,7 +262,6 @@ void pedirYRecibirSentencia(int* tamanio) {	//pedir al UMC la proxima sentencia 
 	t_sentencia* sentenciaRelativa = obtener_sentencia_relativa(&paginaAPedir);
 	int longitud_restante = longitud_sentencia(sentenciaRelativa); //longitud de la sentencia que aun no pido
 	(*tamanio) = longitud_restante;
-	enviarHeader(umc, HeaderSolicitudSentencia); //envio el header
 
 	// Pido la primera pagina, empezando donde corresponde y terminando donde corresponda.
 	pedirPrimeraSentencia(sentenciaRelativa, paginaAPedir, &longitud_restante);

@@ -1,0 +1,70 @@
+#!/usr/bin/ansisop
+
+function geq
+variables t
+	t=0
+:geq-loop
+	t=t+1
+	jz t+$0-$1 false
+	jz t-$1 true
+	goto geq-loop
+end
+
+:true
+	return 1
+:false
+	return 0
+
+begin
+variables s,i,c,t
+	wait start
+	jz !terminar fin
+	#Mutex para que cada uno agarre un step diferente
+	wait mutex
+:next-step
+		s = !step
+		!step = s+1
+	signal mutex
+
+	textPrint Step
+	print s
+	i = s
+	c = 1
+
+	#si el step es mas grande que el numero a buscar
+	t <- geq s,!search
+	jnz t fin
+
+	textPrint Iterador
+:main-loop
+
+	#si lo encontro otro
+	jz !terminar fin
+	#o si lo encontraste
+	jz !search-i done
+
+	#Si te pasaste
+	t <- geq i,!search
+	#anda al proximo Step libre
+	jnz t next-step
+
+	#Incrementa
+	i = i + s
+	c = c+1
+
+	#mostrar
+	print i
+
+	#e itera
+	goto main-loop
+
+:fin
+end
+
+
+:done
+	!a = s
+	!b = c
+	signal done
+	goto fin
+

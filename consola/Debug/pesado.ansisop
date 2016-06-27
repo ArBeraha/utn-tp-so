@@ -1,4 +1,4 @@
-#!consola
+#!/usr/bin/ansisop
 begin
 	goto Etiqueta19
 end

@@ -1,0 +1,40 @@
+#!/usr/bin/ansisop
+
+begin
+variables i,c
+
+
+#Nivel de concurrencia
+	c	= 4
+	!search = 121
+
+	i=0
+	!step = 2
+	!a = 0
+	!b = 0
+
+	!terminar = 1
+
+	textPrint Inicio
+#Let the watergates, segun cuantos esten posteados
+:start
+	wait mutex
+		signal start
+	signal mutex
+		i = i+1
+	jnz i-c start
+
+	i=0
+	wait done
+
+#si signalean, es porque encontraron una factorizacion
+	print !a
+	print !b
+
+	!terminar = 0
+	textPrint Fin!
+	jz !b fin
+
+:fin
+
+end

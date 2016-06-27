@@ -1,10 +1,10 @@
-#!consola
+#!/usr/bin/ansisop
 
 function mult
 variables i
 	i= 0
 #Forma asquerosa de si el segundo parametro es 0 :D
-jz i mult-ret
+jz $1 mult-ret
 :mult-loop
 	$1 = $1-1
 	i = $0 + i

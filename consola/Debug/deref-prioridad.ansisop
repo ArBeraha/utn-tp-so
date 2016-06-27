@@ -1,4 +1,4 @@
-#!consola
+#!/usr/bin/ansisop
 begin
 #un vector de 5 posiciones
 variables a, p

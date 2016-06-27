@@ -1,4 +1,4 @@
-#!consola
+#!/usr/bin/ansisop
 begin
 #un vector de 5 posiciones
 variables a, b, c, d, e, i
@@ -10,10 +10,12 @@ variables a, b, c, d, e, i
 	:for
 	#imprime el valor iavo del vector
 	print *&a+i
-	#avanzo en el vector (de a 5 posiciones, 1 char + 1 int)
-	i=i+5
-	#Si i no es 25 (5 posiciones del vector * 5 temanio de las variables)
-	jnz 25-i for
+	#pongo en 0 el valor de la posicion para verificar escritura
+	*&a+i = 0
+	#avanzo en el vector (de a 4 posiciones, 1 int)
+	i=i+4
+	#Si i no es 20 (5 posiciones del vector * 4 temanio de las variables)
+	jnz 20-i for
 	
 	#Final del bucle
 	textPrint Fin

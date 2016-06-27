@@ -71,4 +71,5 @@ char* headerToString(header_t header) {
 		case HeaderProcesoNoEncontrado: return "HeaderProcesoNoEncontrado";
 		case HeaderPID: return "HeaderPID";
 	}
+	return "Header no definido";
 }

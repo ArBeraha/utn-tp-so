@@ -47,8 +47,8 @@ HILO crearProceso(int consola) {
 	proceso->PCB->PID = consola;
 	proceso->estado = NEW;
 	proceso->consola = consola;
-	log_info(bgLogger,"Se esta intentando iniciar el proceso PID:%d",proceso->PCB->PID);
 	MUTEXCLIENTES(proceso->socketConsola = clientes[consola].socket);
+	log_info(bgLogger,"Se esta intentando iniciar el proceso PID:%d",proceso->PCB->PID);
 	if (!CU_is_test_running()) {
 		char* codigo = getScript(consola,&exploto);
 		if (exploto){
@@ -65,7 +65,7 @@ HILO crearProceso(int consola) {
 			rechazarProceso(proceso->PCB->PID);
 		} else {
 			asignarMetadataProceso(proceso, codigo);
-			MUTEXCLIENTES(clientes[consola].pid = (int) proceso);
+			MUTEXCLIENTES(clientes[consola].pid = consola);
 			pcb_main(proceso->PCB);
 			proceso->cpu = SIN_ASIGNAR;
 			pthread_mutex_lock(&mutexPlanificacion);

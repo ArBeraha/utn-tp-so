@@ -47,7 +47,6 @@ char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente c
 	if(strcmp(resultado,"RELLAMAR")>0){ //SIGNIFICA QUE SON DISTINTOS
 		return resultado;
 	}else{
-		printf("_________RELLAMAR________\n");
 		return almacenarBytes(pedido,buffer,cliente);
 	}
 }

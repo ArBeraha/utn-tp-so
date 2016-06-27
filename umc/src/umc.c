@@ -55,7 +55,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 
 //SI ESTA EN TLB DEVUELVO
 	int id = 0;
-	MUTEXCLIENTES(id = clientes[cliente.indice].pid);
+	id = clientes[cliente.indice].pid;
 
 	if(estaEnTlb(pedido) && config.entradas_tlb){
 
@@ -152,7 +152,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 	int id =0;
-	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
+	id=clientes[cliente.indice].pid;
 
 	if(estaEnTlb(pedido) && config.entradas_tlb){
 
@@ -278,7 +278,7 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 
 void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente){
 	int id=0;
-	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
+	id=clientes[cliente.indice].pid;
 
 	if(cantPaginasEnMemoriaDePid(pedido.pid)>=config.marcos_x_proceso){
 		int posicionPaginaSacada=0;
@@ -457,7 +457,7 @@ void pedidoLectura(t_cliente cliente){
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
 	char* pedidoSerializado = malloc(sizeof(t_pedido));
 	int id=0;
-	MUTEXCLIENTES(id = clientes[cliente.indice].pid)
+	id = clientes[cliente.indice].pid;
 
 	read(cliente.socket, pedidoSerializado, sizeof(t_pedido));
 
@@ -496,7 +496,7 @@ void headerEscribirPagina(t_cliente cliente){
 	t_pedido* pedidoCpuEscritura = malloc(sizeof(t_pedido));
 	char* pedidoSerializadoEscritura = malloc(sizeof(t_pedido));
 	int id =0;
-	MUTEXCLIENTES(id=clientes[cliente.indice].pid);
+	id=clientes[cliente.indice].pid;
 
 	read(cliente.socket, pedidoSerializadoEscritura, sizeof(t_pedido));
 	deserializar_pedido(pedidoCpuEscritura,pedidoSerializadoEscritura);
@@ -564,7 +564,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 			charToInt(header));
 	char* nuevoPid;
 	int idLog=0;
-	MUTEXCLIENTES(idLog = clientes[cliente.indice].pid;)
+	idLog = clientes[cliente.indice].pid;
 
 //	mostrarTlb(); //TODO PARA DEBUGEAR, ESPERAR A QUE ANDE EL TEMA DE CPU Y EL CAMBIO DE PROCESO
 
@@ -627,10 +627,10 @@ void procesarHeader(t_cliente cliente, char* header) {
 		nuevoPid = malloc(sizeof(int));
 		read(cliente.socket, nuevoPid, sizeof(int));
 		int viejoPid=0;
-		MUTEXCLIENTES(viejoPid = clientes[cliente.indice].pid);
-		MUTEXCLIENTES(clientes[cliente.indice].pid=char4ToInt(nuevoPid));
+		viejoPid = clientes[cliente.indice].pid;
+		clientes[cliente.indice].pid=char4ToInt(nuevoPid);
 		int verifNuevo;
-		MUTEXCLIENTES(verifNuevo = clientes[cliente.indice].pid);
+		verifNuevo = clientes[cliente.indice].pid;
 		printf("VERIFICO NUEVO : %d \n",verifNuevo);
 
 		if(viejoPid!=char4ToInt(nuevoPid)){
@@ -666,7 +666,13 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 	dump = log_create("dump", "UMC", false, LOG_LEVEL_INFO);
 	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
 	cargarCFG();
-	iniciarAtrrYMutexs(1, &mutexClientes);
+	iniciarAtrrYMutexs(8, &mutexClientes,&mutexSwap,
+	&lock_accesoMemoria,
+	&lock_accesoTabla,
+	&lock_accesoTlb,
+	&lock_accesoMarcosOcupados,
+	&lock_accesoUltimaPos,
+	&lock_accesoLog);
 
 	listaTablasPaginas = list_create();
 	log_info(activeLogger,"Creada la tabla de paginas");
@@ -744,14 +750,14 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 	listaUltimaPosicionSacada = list_create();
 
-	pthread_attr_init(&detachedAttr);
-	pthread_attr_setdetachstate(&detachedAttr, PTHREAD_CREATE_DETACHED);
-	pthread_mutex_init(&lock_accesoMarcosOcupados, NULL);
-	pthread_mutex_init(&lock_accesoLog, NULL);
-	pthread_mutex_init(&lock_accesoMemoria, NULL);
-	pthread_mutex_init(&lock_accesoTabla, NULL);
-	pthread_mutex_init(&lock_accesoTlb, NULL);
-	pthread_mutex_init(&lock_accesoUltimaPos, NULL);
+//	pthread_attr_init(&detachedAttr);
+//	pthread_attr_setdetachstate(&detachedAttr, PTHREAD_CREATE_DETACHED);
+//	pthread_mutex_init(&lock_accesoMarcosOcupados, NULL);
+//	pthread_mutex_init(&lock_accesoLog, NULL);
+//	pthread_mutex_init(&lock_accesoMemoria, NULL);
+//	pthread_mutex_init(&lock_accesoTabla, NULL);
+//	pthread_mutex_init(&lock_accesoTlb, NULL);
+//	pthread_mutex_init(&lock_accesoUltimaPos, NULL);
 
 }
 

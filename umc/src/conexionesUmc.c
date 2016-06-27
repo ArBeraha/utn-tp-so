@@ -31,7 +31,7 @@ HILO hiloDedicado(int indice) {
 	printf("INDICE:%d\n",clienteLocal.indice);
 	char* header = malloc(1);
 	while (recv(clienteLocal.socket, header, 1, MSG_WAITALL)>=0){
-		procesarHeader(clienteLocal, header);
+		MUTEXCLIENTES(procesarHeader(clienteLocal, header);)
 	}
 	free(header);
 	int pid;

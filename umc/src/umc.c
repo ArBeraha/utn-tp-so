@@ -265,21 +265,13 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 	free(serialPID);
 	free(serialPagina);
 
-	char* header = recv_waitall_ws(swapServer,1);
 
 	pthread_mutex_unlock(&lock_accesoSwap);
 
-	if (charToInt(header)==HeaderOperacionLectura){
-		printf("Contesto con la pagina\n");
-	}
-	else{
-		return 0;
-	}
+
 
 	contenidoPagina = recv_waitall_ws(swapServer,config.tamanio_marco);
 	agregarAMemoria(pedido,contenidoPagina,cliente);
-
-	free(header);
 
 	return 1;
 }
@@ -413,15 +405,12 @@ void finalizarPrograma(int idPrograma){
 	pthread_mutex_lock(&lock_accesoSwap);
 	enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
 	send_w(swapServer,intToChar4(idPrograma),sizeof(int));
-	char* header = recv_waitall_ws(swapServer,1);
 	pthread_mutex_unlock(&lock_accesoSwap);
-	printf("LLEGO EL HEADER DE PROCESO ELIMINADO %d \n",charToInt(header));
 	sacarMarcosOcupados(idPrograma);
 	flushTlbDePid(idPrograma);
 	tabla_t* tabla = buscarTabla(idPrograma);
 	list_destroy((t_list*)tabla->listaPaginas);
 	list_remove(listaTablasPaginas,buscarPosicionTabla(idPrograma));
-	free(header);
 }
 
 int reservarPagina(int cantPaginasPedidas, int pid) {

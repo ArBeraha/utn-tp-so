@@ -180,7 +180,6 @@ void operacionEscritura(){
 	log_info(activeLogger, "Se recibio escritura del pid:%d pagina:%d",pid,pagina);
 	contenido = recv_waitall_ws(cliente,config.tamanio_pagina);
 	escribirPagina(buscarProcesoSegunPID(pid)->posPagina+pagina,contenido);
-	enviarHeader(cliente,HeaderEscrituraCorrecta);
 	//usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
 	free(serialPID);
 	free(serialPagina);
@@ -200,7 +199,6 @@ void operacionLectura(){
 		buscarProcesoSegunPID(pid)->posPagina
 			+ pagina);
 	usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
-	enviarHeader(cliente, HeaderOperacionLectura);
 	send_w(cliente, contenido, config.tamanio_pagina);
 	free(contenido);
 
@@ -215,7 +213,6 @@ void operacionFinalizar(){
 	int pid = char4ToInt(serialPID);
 	log_info(activeLogger, "Se recibio finalizacion del pid:%d",pid);
     finalizarProceso(pid);
-	enviarHeader(cliente,HeaderProcesoEliminado);
 	free(serialPID);
 }
 // Funciones para el manejo del Espacio

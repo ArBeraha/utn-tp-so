@@ -8,34 +8,30 @@
 #include <math.h>
 #include "nucleo.h"
 
-t_proceso* obtenerProceso(int PID){
-	t_proceso* proceso;
-	pthread_mutex_lock(&mutexProcesos);
-	proceso = procesos[PID];
-	pthread_mutex_unlock(&mutexProcesos);
+t_proceso* obtenerProceso(int cliente){
+	t_proceso* proceso = clientes[cliente].proceso;
 	if (proceso == NULL){
-		log_error(activeLogger,"Se solicita el proceso PID:%d inexistente", PID);
+		log_error(activeLogger,"Se solicita el proceso del cliente:%d inexistente", cliente);
 		return NULL;}
 	else
 	return proceso;
 }
 
 /*  ----------INICIO PROCESOS---------- */
-void rechazarProceso(int PID) {
-	t_proceso* proceso = obtenerProceso(PID);
+void rechazarProceso(t_proceso* proceso) {
 	if (proceso->estado != NEW)
 		log_warning(activeLogger,
-				"Se esta rechazando el proceso %d ya aceptado!", PID);
+				"Se esta rechazando el proceso %d ya aceptado!", proceso->PCB->PID);
 	enviarHeader(proceso->socketConsola, HeaderConsolaFinalizarRechazado);
 	log_info(bgLogger,
 			"Consola avisada sobre la finalización del proceso ansisop.");
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
-	MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
+//	MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
 	// POSIBLE DOBLE ELIMINACION?
 //	pthread_mutex_lock(&mutexClientes);
 //	quitarCliente(proceso->consola);
 //	pthread_mutex_unlock(&mutexClientes);
-	MUTEXPROCESOS(procesos[PID] = NULL);
+//	MUTEXPROCESOS(procesos[PID] = NULL);
 	pcb_destroy(proceso->PCB);
 
 	free(proceso);
@@ -44,18 +40,17 @@ HILO crearProceso(int consola) {
 	bool exploto = false;
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	proceso->PCB = pcb_create();
-	MUTEXPROCESOS(procesos[consola] = proceso);
 	proceso->abortado=false;
-	proceso->PCB->PID = consola;
+	proceso->PCB->PID = procesos++;
 	proceso->estado = NEW;
 	proceso->consola = consola;
+	MUTEXCLIENTES(clientes[consola].proceso=proceso);
 	MUTEXCLIENTES(proceso->socketConsola = clientes[consola].socket);
 	log_info(bgLogger,"Se esta intentando iniciar el proceso PID:%d",proceso->PCB->PID);
 	if (!CU_is_test_running()) {
 		char* codigo = getScript(consola,&exploto);
 		if (exploto){
 			log_info(activeLogger,ANSI_COLOR_RED "[FLAG RECUPERACION]" ANSI_COLOR_RESET,consola);
-			procesos[consola] = NULL;
 			pcb_destroy(proceso->PCB);
 			free(proceso);
 			return 0;
@@ -63,15 +58,15 @@ HILO crearProceso(int consola) {
 
 		proceso->PCB->cantidad_paginas = ceil(
 				((double) strlen(codigo)) / ((double) tamanio_pagina));
-		if (!pedirPaginas(proceso->PCB->PID, codigo) || proceso->abortado) {
-			rechazarProceso(proceso->PCB->PID);
+		if (!pedirPaginas(proceso, codigo) || proceso->abortado) {
+			rechazarProceso(proceso);
 		} else {
 			asignarMetadataProceso(proceso, codigo);
 			MUTEXCLIENTES(clientes[consola].pid = consola);
 			pcb_main(proceso->PCB);
 			proceso->cpu = SIN_ASIGNAR;
 			pthread_mutex_lock(&mutexPlanificacion);
-			MUTEXPROCESOS(list_add(listaProcesos, proceso));
+//			MUTEXPROCESOS(list_add(listaProcesos, proceso));
 			cambiarEstado(proceso, READY);
 			pthread_mutex_unlock(&mutexPlanificacion);
 			log_info(activeLogger,ANSI_COLOR_GREEN "Creado PID:%d" ANSI_COLOR_RESET,consola);
@@ -81,13 +76,14 @@ HILO crearProceso(int consola) {
 	return proceso;
 }
 
-
-
-
-void finalizarProceso(int PID) {
-	log_info(activeLogger,ANSI_COLOR_RED "Finalizando PID:%d" ANSI_COLOR_RESET,PID);
-	t_proceso* proceso = obtenerProceso(PID);
+void finalizarProceso(int cliente) {
+	printf("ANTES DE OBTENER\n");
+	t_proceso* proceso = obtenerProceso(cliente);
+	log_info(activeLogger,ANSI_COLOR_RED "Finalizando PID:%d" ANSI_COLOR_RESET,proceso->PCB->PID);
+	printf("DESP DE OBTENER\n");
+	printf("ANTES DE CAMBIAR ESTADO\n");
 	cambiarEstado(proceso,EXIT);
+	printf("DESPUES DE CAMBIAR ESTADO\n");
 	//MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
 }
 void destruirProceso(t_proceso* proceso) {
@@ -97,13 +93,15 @@ void destruirProceso(t_proceso* proceso) {
 		log_warning(activeLogger,
 				"Se esta destruyendo el proceso %d que no libero sus recursos! y esta en estado:%d",
 				proceso->PCB->PID, proceso->estado);
+	clientes[proceso->consola].proceso=NULL;
 	if (!CU_is_test_running()) {
 		enviarHeader(proceso->socketConsola,
 				HeaderConsolaFinalizarNormalmente);
 		//MUTEXCLIENTES(quitarCliente(proceso->consola)); Doble Eliminacion
 	}
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
-	MUTEXPROCESOS(procesos[proceso->PCB->PID] = NULL);
+	//MUTEXPROCESOS(procesos[proceso->PCB->PID] = NULL);
+
 	pcb_destroy(proceso->PCB);
 	free(proceso); // Destruir Proceso y PCB
 
@@ -111,7 +109,7 @@ void destruirProceso(t_proceso* proceso) {
 void actualizarPCB(t_proceso* proceso, t_PCB* PCB) { //
 	pcb_destroy(proceso->PCB);
 	proceso->PCB = PCB;
-	imprimir_PCB(proceso->PCB);
+	//imprimir_PCB(proceso->PCB);
 }
 void ingresarCPU(int cliente){
 	MUTEXPLANIFICACION(queue_push(colaCPU,(void*)cliente));

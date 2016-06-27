@@ -7,10 +7,9 @@
 #include "nucleo.h"
 
 /* ---------- INICIO PARA UMC ---------- */
-bool pedirPaginas(int PID, char* codigo) {
-	t_proceso* proceso = obtenerProceso(PID);
+bool pedirPaginas(t_proceso* proceso, char* codigo) {
 	char* serialPaginas = intToChar4(proceso->PCB->cantidad_paginas);
-	char* serialPid = intToChar4(PID);
+	char* serialPid = intToChar4(proceso->PCB->PID);
 	char* respuesta = malloc(1);
 	if (DEBUG_IGNORE_UMC || DEBUG_IGNORE_UMC_PAGES) { // Para DEBUG
 		log_warning(activeLogger,
@@ -28,10 +27,10 @@ bool pedirPaginas(int PID, char* codigo) {
 		pthread_mutex_unlock(&mutexUMC);
 		if (charToInt(respuesta) == 1)
 			log_info(activeLogger, "Hay memoria disponible para el proceso %d.",
-					PID);
+					proceso->PCB->PID);
 		else if (charToInt(respuesta) == 0)
 			log_info(activeLogger, "No hay memoria disponible para el proceso %d.",
-					PID);
+					proceso->PCB->PID);
 		else
 			log_warning(activeLogger, "Umc debería enviar (0 o 1) y envió %s",
 					charToInt(respuesta));
@@ -130,12 +129,12 @@ void inicializar() {
 
 	int i;
 	for (i=0;i<getMaxClients();i++){
-		procesos[i]=NULL;
+		clientes[i].proceso=NULL;
 	}
 
 	cargarConfiguracion();
 	iniciarVigilanciaConfiguracion();
-	iniciarAtrrYMutexs(5,&mutexProcesos,&mutexUMC,&mutexClientes,&mutexEstados, &mutexPlanificacion);
+	iniciarAtrrYMutexs(4,&mutexUMC,&mutexClientes,&mutexEstados, &mutexPlanificacion);
 	crearSemaforos();
 	crearIOs();
 	crearCompartidas();
@@ -290,19 +289,12 @@ void atenderHandshake(int cliente){
 	clientes[cliente].atentido = false;
 }
 void recibirFinalizacion(int cliente){
-	printf("PROCESOS:%d\n",mutexProcesos.__data.__lock);
-	t_proceso* proceso = procesos[clientes[cliente].indice];
+	t_proceso* proceso = obtenerProceso(cliente);
 	if (procesoExiste(proceso)) {
-		if (!proceso->abortado) {
-			//pthread_mutex_unlock(&mutexProcesos);
-			pthread_mutex_unlock(&mutexClientes);
-			finalizarProceso(proceso->PCB->PID);
-			pthread_mutex_lock(&mutexClientes);
-			//pthread_mutex_lock(&mutexProcesos);
-		}
+		if (!proceso->abortado)
+			finalizarProceso(cliente);
 	}
 	clientes[cliente].atentido=false;
-	printf("PROCESOS:%d\n",mutexProcesos.__data.__lock);
 }
 
 void procesarHeader(int cliente, char *header) {
@@ -372,15 +364,13 @@ void procesarHeader(int cliente, char *header) {
 }
 void finalizarConsola(int cliente) {
 	log_info(activeLogger, "Consola:%d se desconectó.", cliente);
-	t_proceso* proceso = procesos[clientes[cliente].indice]; //obtenerProceso(clientes[cliente].pid);
+	t_proceso* proceso = obtenerProceso(cliente);
 	if (proceso != NULL) {
 		proceso->abortado = true;
 		if (proceso->estado == READY) {
-			pthread_mutex_unlock(&mutexProcesos);
 			pthread_mutex_unlock(&mutexClientes);
-			finalizarProceso(proceso->PCB->PID);
+			finalizarProceso(cliente);
 			pthread_mutex_lock(&mutexClientes);
-			pthread_mutex_lock(&mutexProcesos);
 		}
 		else if (proceso->estado == EXEC)
 			log_info(activeLogger,"PID:%d finalizará al terminar el quantum actual",proceso->PCB->PID);
@@ -388,7 +378,7 @@ void finalizarConsola(int cliente) {
 }
 void finalizarCPU(int cliente){
 	log_info(activeLogger, "CPU:%d se desconectó.",cliente);
-	t_proceso* proceso = procesos[clientes[cliente].indice];//obtenerProceso(clientes[cliente].pid);
+	t_proceso* proceso = obtenerProceso(cliente);
 	if (proceso!=NULL){
 		log_info(activeLogger, "PID:%d finalizará por desconexion de su CPU.",proceso->PCB->PID);
 		enviarHeader(proceso->socketConsola,HeaderConsolaFinalizarNormalmente);
@@ -409,16 +399,12 @@ void finalizarCliente(int cliente) {
 	quitarCliente(cliente);
 }
 
-
 int main(void) {
 	system("clear");
 	int i;
 	char header[1];
 	inicializar();
-
-
-
-
+	procesos=0;
 
 	log_info(activeLogger, "Esperando conexiones ...");
 	while (1) {

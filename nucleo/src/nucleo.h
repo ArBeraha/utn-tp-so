@@ -28,6 +28,8 @@
 #define ANSI_COLOR_YELLOW   "\x1b[33m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
+int procesos;
+
 #define SIN_ASIGNAR -1
 /* ---------- INICIO DEBUG ---------- */
 // Es util para debugear sin tener una consola extra con UMC abierto.
@@ -39,15 +41,13 @@ struct sockaddr_in direccionConsola, direccionCPU, direccionUMC;
 unsigned int tamanioDireccionConsola, tamanioDireccionCPU, tamanio_pagina;
 // Hilos
 pthread_t hiloPlanificacion;
-pthread_mutex_t mutexProcesos, mutexUMC, mutexClientes, mutexEstados, mutexPlanificacion;
+pthread_mutex_t mutexUMC, mutexClientes, mutexEstados, mutexPlanificacion;
 // defino la palabra clave THREAD para reconocer las funciones que son main de un hilo
 #define HILO void*
 // MACROS DE MUTEXS
 #define MUTEXPLANIFICACION(CONTENIDO) \
 	MUTEX(CONTENIDO,mutexPlanificacion);
 #define MUTEXCLIENTES(CONTENIDO) \
-	MUTEX(CONTENIDO,mutexClientes);
-#define MUTEXPROCESOS(CONTENIDO) \
 	MUTEX(CONTENIDO,mutexClientes);
 #define MUTEXESTADOS(CONTENIDO) \
 	MUTEX(CONTENIDO,mutexEstados);
@@ -76,7 +76,7 @@ typedef struct t_proceso {
 	bool abortado;
 } t_proceso;
 
-t_proceso* procesos[MAXCLIENTS];
+//t_proceso* procesos[MAXCLIENTS];
 
 typedef struct t_IO {
 	int retardo;
@@ -142,7 +142,7 @@ void finalizarConsola(int cliente);
 void finalizarCPU(int cliente);
 void finalizarCliente(int cliente);
 // UMC
-bool pedirPaginas(int PID, char* codigo);
+bool pedirPaginas(t_proceso* proceso, char* codigo);
 void establecerConexionConUMC();
 void conectarAUMC();
 void handshakearUMC();
@@ -154,7 +154,7 @@ char* getScript(int consola,bool* exploto);
 void ingresarCPU(int cliente);
 // Procesos
 HILO crearProceso(int consola);
-void rechazarProceso(int PID);
+void rechazarProceso(t_proceso* proceso);
 void bloquearProceso(int PID);
 void bloquearProcesoIO(int PID, char* IO, int tiempo);
 void bloquearProcesoSem(int PID, char* semid);

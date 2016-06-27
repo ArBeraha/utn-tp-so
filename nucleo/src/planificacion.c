@@ -37,17 +37,14 @@ void planificarExpulsion(t_proceso* proceso) {
 	}
 
 	if (proceso->abortado){
-		pthread_mutex_unlock(&mutexProcesos);
 		pthread_mutex_unlock(&mutexClientes);
-		finalizarProceso(proceso->PCB->PID);
+		finalizarProceso(proceso->consola);
 		pthread_mutex_lock(&mutexClientes);
-		pthread_mutex_lock(&mutexProcesos);
 	}
 }
-void rafagaProceso(cliente){
+void rafagaProceso(int cliente){
 	// mutexClientes SAFE
-	printf("PROCESOS:%d\n",mutexProcesos.__data.__lock);
-	t_proceso* proceso = procesos[clientes[cliente].pid];
+	t_proceso* proceso = obtenerProceso(cliente);
 	log_info(debugLogger,"EL PID:%d TERMINO UNA INSTRUCCION",proceso->PCB->PID);
 	proceso->rafagas++;
 	planificarExpulsion(proceso);
@@ -56,7 +53,7 @@ void rafagaProceso(cliente){
 bool procesoExiste(t_proceso* proceso){
 	int i;
 	for (i=0;i<getMaxClients();i++){
-		if (procesos[i]==proceso)
+		if (clientes[i].proceso==proceso)
 			return true;
 	}
 	return false;
@@ -110,7 +107,7 @@ void asignarCPU(t_proceso* proceso, int cpu) {
 	cambiarEstado(proceso,EXEC);
 	proceso->cpu = cpu;
 	proceso->rafagas=0;
-	MUTEXPROCESOS(procesos[cpu] = proceso);
+	MUTEXCLIENTES(clientes[cpu].proceso = proceso);
 	MUTEXCLIENTES(clientes[cpu].pid = proceso->PCB->PID);
 	MUTEXCLIENTES(proceso->socketCPU = clientes[cpu].socket);
 }
@@ -119,12 +116,11 @@ void desasignarCPU(t_proceso* proceso) {
 			proceso->PCB->PID);
 	queue_push(colaCPU, (void*) proceso->cpu);
 	proceso->cpu = SIN_ASIGNAR;
-	MUTEXPROCESOS(procesos[proceso->cpu] = NULL);
-	MUTEXCLIENTES(clientes[proceso->cpu].pid = -1);
+	clientes[proceso->cpu].proceso = NULL;
+	clientes[proceso->cpu].pid = -1;
 }
 void ejecutarProceso(t_proceso* proceso, int cpu) {
 	// mutexProcesos SAFE
-	//t_proceso* proceso = (t_proceso*) PID;//obtenerProceso(PID);
 	log_info(activeLogger,ANSI_COLOR_GREEN "Ejecutando PID:%d con CPU:%d" ANSI_COLOR_RESET, proceso->PCB->PID, cpu);
 	asignarCPU(proceso,cpu);
 	if (!CU_is_test_running()) {

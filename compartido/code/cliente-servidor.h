@@ -35,6 +35,7 @@ typedef struct {
 	bool atentido;
 	int pid;
 	pthread_t hilo;
+	void* proceso;
 } t_cliente;
 
 t_cliente clientes[MAXCLIENTS];

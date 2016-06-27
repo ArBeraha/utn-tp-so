@@ -10,7 +10,9 @@
 
 t_proceso* obtenerProceso(int PID){
 	t_proceso* proceso;
-	MUTEXPROCESOS(proceso = procesos[PID]);
+	pthread_mutex_lock(&mutexProcesos);
+	proceso = procesos[PID];
+	pthread_mutex_unlock(&mutexProcesos);
 	if (proceso == NULL){
 		log_error(activeLogger,"Se solicita el proceso PID:%d inexistente", PID);
 		return NULL;}

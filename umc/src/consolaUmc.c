@@ -74,8 +74,8 @@ void devolverTodasLasPaginas(){  //OK
 			tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
 			unaPagina = list_get((t_list*)unaTabla->listaPaginas,j);
 
-			printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d \n",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
-			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d \n",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
+			printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d \n",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
+			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d \n",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
 		}
 	}
 	pthread_mutex_unlock(&lock_accesoTabla);

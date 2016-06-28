@@ -91,6 +91,19 @@ void procesarHeader(char *header) {
 		finalizar();
 		break;
 
+	case HeaderConsolaFinalizarMuerteCPU:
+		log_info(activeLogger,"Proceso terminado por desconexión de CPU.");
+		destruirLogs();
+		close(cliente);
+		exit(EXIT_SUCCESS);
+		break;
+
+	case HeaderConsolaFinalizarErrorInstruccion:
+	log_info(activeLogger,"Proceso terminado instrucción o parametro invalido");
+	destruirLogs();
+	close(cliente);
+	exit(EXIT_SUCCESS);
+
 	default:
 		log_error(errorLogger, "Llego cualquier cosa.");
 		log_error(errorLogger,

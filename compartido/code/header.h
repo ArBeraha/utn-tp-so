@@ -64,7 +64,9 @@ typedef enum {
 	HeaderEscrituraCorrecta, //48
 	HeaderEscrituraErronea, //49
 	HeaderProcesoNoEncontrado, //50
-	HeaderPID
+	HeaderPID,
+	HeaderConsolaFinalizarMuerteCPU,
+	HeaderConsolaFinalizarErrorInstruccion,
 } header_t;
 
 char* headerToMSG(header_t header);

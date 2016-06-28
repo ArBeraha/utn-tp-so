@@ -322,7 +322,8 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	log_debug(debugLogger, "PCB recibido!");
 	deserializar_PCB(pcbActual, serialPCB);//reemplazo en el pcb actual de cpu que tiene como variable global
 	enviarPID();
-	recibirCantidadDePaginasDeCodigo();
+	//recibirCantidadDePaginasDeCodigo();
+	cantidadPaginasCodigo = pcbActual->cantidad_paginas;
 	stack = pcbActual->SP;
 	free(serialPCB);
 }

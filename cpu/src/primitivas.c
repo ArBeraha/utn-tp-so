@@ -129,7 +129,7 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 	t_valor_variable valorVarCompartida;
 	int nameSize = strlen(nombreVarCompartida) + 1;
 
-	enviarHeader(umc,HeaderPedirValorVariableCompartida);
+	enviarHeader(nucleo,HeaderPedirValorVariableCompartida);
 
 	char* sizeSerializado = intToChar4(nameSize);
 	send_w(nucleo, sizeSerializado, sizeof(int));
@@ -156,7 +156,7 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 			valorVarCompartida, nombreVarCompartida);
 
 	//envio el header, el tamaño del nombre y el nombre
-	enviarHeader(umc, HeaderAsignarValorVariableCompartida);
+	enviarHeader(nucleo, HeaderAsignarValorVariableCompartida);
 	enviarLargoYString(nucleo,nombreVarCompartida);
 
 	//envio el valor
@@ -276,11 +276,15 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) 
 	enviarHeader(nucleo,HeaderEntradaSalida);
 
 	enviarLargoYString(nucleo,dispositivo);				//envio la cadena
+// 	QUIEN HIZO ESTO QUERIA MATARME DEL DISGUSTO
 
-	char* time = intToChar(tiempoUsoDispositivo);							//envio el tiempo
-	send_w(nucleo,time,strlen(time));
+//	char* time = intToChar(tiempoUsoDispositivo);							//envio el tiempo
+//	send_w(nucleo,time,strlen(time));
+//	free(time);
+
+	char* time = intToChar4(tiempoUsoDispositivo);
+	send_w(nucleo,time,sizeof(int));
 	free(time);
-
 
 	loggearFinDePrimitiva("Entrada-Salida");
 }
@@ -297,7 +301,6 @@ void wait_semaforo(t_nombre_semaforo identificador_semaforo) {
 
 	enviarLargoYString(nucleo,identificador_semaforo);
 	//Si el proceso no pudiese seguir, nucleo al bloquearlo lo para con un header enviado a procesarHeader.
-
 
 	loggearFinDePrimitiva("wait");
 }

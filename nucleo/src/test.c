@@ -23,7 +23,7 @@ void test_cicloDeVidaProcesos() {
 	io->cola = queue_create();
 	io->estado = INACTIVE;
 	dictionary_put(tablaIO, "ScannerTest1", io);
-	bloquearProcesoIO(proceso->PCB->PID, "ScannerTest1",2);
+	bloquearProcesoIO(consola, "ScannerTest1",2);
 
 	CU_ASSERT_FALSE(queue_is_empty(colaCPU));
 	CU_ASSERT_EQUAL(proceso->estado, BLOCK);
@@ -32,7 +32,7 @@ void test_cicloDeVidaProcesos() {
 	bloqueo(queue_pop(io->cola));
 
 	CU_ASSERT_EQUAL(proceso->estado, READY);
-	finalizarProceso(proceso->PCB->PID);
+	finalizarProceso(consola);
 	CU_ASSERT_EQUAL(proceso->estado, EXIT);
 	CU_ASSERT_FALSE(queue_is_empty(colaSalida));
 	destruirProceso(proceso);
@@ -85,7 +85,7 @@ void test_bloqueosIO() {
 	cambiarEstado(proceso,READY);
 
 	ejecutarProceso(proceso,(int)queue_pop(colaCPU));
-	bloquearProcesoIO(proceso->PCB->PID,"ScannerTest2",2);
+	bloquearProcesoIO(consola,"ScannerTest2",2);
 	dictionary_iterator(tablaIO,(void*)planificarIO);
 	CU_ASSERT_EQUAL(io->estado,ACTIVE);
 	sleep(io->retardo*2+1);
@@ -94,7 +94,7 @@ void test_bloqueosIO() {
 	dictionary_remove(tablaIO,"ScannerTest2");
 	queue_destroy(io->cola);
 	free(io);
-	finalizarProceso(proceso->PCB->PID);
+	finalizarProceso(consola);
 	destruirProceso(proceso);
 
 	queue_clean(colaSalida);
@@ -122,7 +122,7 @@ void test_semaforos(){
 	primitivaSignal(0,"SEM1");
 	CU_ASSERT_EQUAL(((t_semaforo*)dictionary_get(tablaSEM,"SEM1"))->valor,1);
 
-	finalizarProceso(proceso->PCB->PID);
+	finalizarProceso(0);
 	destruirProceso(proceso);
 	queue_clean(colaSalida);
 	queue_clean(colaListos);
@@ -132,7 +132,8 @@ void test_semaforos(){
 }
 void test_compartidas(){
 	log_info(bgLogger, "INICIO test_compartidas()");
-	char* compartida = "!tiempo3";
+	char* compartida = malloc(9);
+	memcpy(compartida,"!tiempo3",9);
 	CU_ASSERT_EQUAL(primitivaDevolverCompartida(compartida),0);
 	primitivaAsignarCompartida(compartida,11);
 	CU_ASSERT_EQUAL(primitivaDevolverCompartida(compartida),11);

@@ -90,7 +90,7 @@ typedef struct t_semaforo {
 } t_semaforo;
 typedef struct t_bloqueo {
 	t_IO* IO;
-	int PID;
+	t_proceso* proceso;
 	int tiempo;
 } t_bloqueo;
 typedef struct customConfig {
@@ -155,10 +155,10 @@ void ingresarCPU(int cliente);
 // Procesos
 HILO crearProceso(int consola);
 void rechazarProceso(t_proceso* proceso);
-void bloquearProceso(int PID);
-void bloquearProcesoIO(int PID, char* IO, int tiempo);
-void bloquearProcesoSem(int PID, char* semid);
-void desbloquearProceso(int PID);
+void bloquearProceso(t_proceso* proceso);
+void bloquearProcesoIO(int cliente, char* IO, int tiempo);
+void bloquearProcesoSem(int cliente, char* semid);
+void desbloquearProceso(t_proceso* proceso);
 void finalizarProceso(int PID);
 void destruirProceso(t_proceso* proceso);
 void actualizarPCB(t_proceso* proceso, t_PCB* PCB);

@@ -290,6 +290,7 @@ void atenderHandshake(int cliente){
 }
 void recibirFinalizacion(int cliente){
 	t_proceso* proceso = obtenerProceso(cliente);
+	desasignarCPU(proceso);
 	if (procesoExiste(proceso)) {
 		if (!proceso->abortado)
 			finalizarProceso(cliente);
@@ -364,13 +365,11 @@ void procesarHeader(int cliente, char *header) {
 }
 void finalizarConsola(int cliente) {
 	log_info(activeLogger, "Consola:%d se desconectó.", cliente);
-	t_proceso* proceso = obtenerProceso(cliente);
+	t_proceso* proceso = clientes[cliente].proceso;
 	if (proceso != NULL) {
 		proceso->abortado = true;
 		if (proceso->estado == READY) {
-			pthread_mutex_unlock(&mutexClientes);
 			finalizarProceso(cliente);
-			pthread_mutex_lock(&mutexClientes);
 		}
 		else if (proceso->estado == EXEC)
 			log_info(activeLogger,"PID:%d finalizará al terminar el quantum actual",proceso->PCB->PID);

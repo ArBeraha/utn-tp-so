@@ -12,40 +12,55 @@ void recibirWait(int cliente){
 	free(semid);
 }
 void recibirSignal(int cliente){
+	log_info(activeLogger,"Llego un signal, ESPERANDO");
 	char* semid = leerLargoYMensaje(clientes[cliente].socket);
 	primitivaSignal(cliente,semid);
 	free(semid);
 }
 void primitivaWait(int cliente, char* semid) {
-	log_info(activeLogger,"Llego un wait para el semaforo %s",semid);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
-	if (sem->valor > 0)
+	if (sem->valor > 0){
+		log_info(activeLogger,"Semaforo %s tiene carga %d y CPU%d continua",semid, sem->valor,cliente);
 		sem->valor--;
-	else
-		bloquearProcesoSem(clientes[cliente].pid, semid);
+	}
+	else{
+		bloquearProcesoSem(cliente, semid);}
+	clientes[cliente].atentido=false;
 }
 void primitivaSignal(int cliente, char* semid) {
 	log_info(activeLogger,"Llego un signal para el semaforo %s",semid);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
-	if (!queue_is_empty(sem->cola))
-		desbloquearProceso((int)queue_pop(sem->cola));
-	else
+	if (!queue_is_empty(sem->cola)){
+		t_proceso* proceso = queue_pop(sem->cola);
+		desbloquearProceso(proceso);
+		//planificarExpulsion(proceso);
+	}
+	else{
 	sem->valor++;
+	log_info(activeLogger,"Semaforo %s:%d",semid,sem->valor);
+	}
+	clientes[cliente].atentido=false;
 }
 void recibirAsignarCompartida(int cliente){
-	char* compartida = leerLargoYMensaje(clientes[cliente].socket);
+	char* compartidaSerial = leerLargoYMensaje(clientes[cliente].socket);
+	char* compartida=string_from_format("!%s",compartidaSerial);
 	char* valor = malloc(sizeof(int));
 	read(clientes[cliente].socket, valor, sizeof(int));
 	primitivaAsignarCompartida(compartida,char4ToInt(valor));
 	free(compartida);
+	free(compartidaSerial);
 	free(valor);
+	clientes[cliente].atentido=false;
 }
 void recibirDevolverCompartida(int cliente){
-	char* compartida = leerLargoYMensaje(clientes[cliente].socket);
+	char* compartidaSerial = leerLargoYMensaje(clientes[cliente].socket);
+	char* compartida=string_from_format("!%s",compartidaSerial);
 	char* valor = intToChar4(primitivaDevolverCompartida(compartida));
 	send_w(clientes[cliente].socket, valor, sizeof(int));
 	free(valor);
+	free(compartidaSerial);
 	free(compartida);
+	clientes[cliente].atentido=false;
 }
 void primitivaAsignarCompartida(char* compartida, int valor) {
 	*(int*) dictionary_get(tablaGlobales, compartida) = valor;
@@ -77,11 +92,13 @@ void imprimirTexto(int cliente) {
 	free(texto);
 }
 void entradaSalida(int cliente) {
-	log_info(activeLogger,"Proceso pidio IO");
 	char* serialIO = leerLargoYMensaje(clientes[cliente].socket);
 	char* serialTiempo = malloc(sizeof(int));
 	read(clientes[cliente].socket,serialTiempo,sizeof(int));
-	bloquearProcesoIO(clientes[cliente].pid,serialIO,char4ToInt(serialTiempo));
+	int tiempo = char4ToInt(serialTiempo);
+	log_info(activeLogger,"CPU:%d pidio IO:%s por %d unidades de tiempo",cliente,serialIO,tiempo);
+	bloquearProcesoIO(cliente,serialIO,tiempo);
 	free(serialIO);
 	free(serialTiempo);
+	clientes[cliente].atentido=false;
 }

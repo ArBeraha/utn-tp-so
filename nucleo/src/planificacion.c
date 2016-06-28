@@ -11,7 +11,7 @@ static bool matrizEstados[5][5] = {
 		/* NEW 	 */{ false, true, false, false, true },
 		/* READY */{ false, false, true, false, true },
 		/* EXEC  */{ false, true, false, true, true },
-		/* BLOCK */{ false, true, false, false, true },
+		/* BLOCK */{ false, true, true, false, true },
 		/* EXIT  */{ false, false, false, false, false } };
 
 /*  ----------INICIO PLANIFICACION ---------- */
@@ -29,12 +29,16 @@ HILO planificar() {
 void planificarExpulsion(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	// mutexPlanificacion SAFE
-	if (proceso->estado == EXEC) {
-		if (terminoQuantum(proceso) || proceso->abortado)
+
+	if (proceso->estado == BLOCK){
+		expulsarProceso(proceso);
+		return;
+	}
+
+		if (proceso->estado == EXEC && (terminoQuantum(proceso) || proceso->abortado))
 			expulsarProceso(proceso);
 		else
 			continuarProceso(proceso);
-	}
 
 	if (proceso->abortado){
 		pthread_mutex_unlock(&mutexClientes);
@@ -57,6 +61,15 @@ bool procesoExiste(t_proceso* proceso){
 			return true;
 	}
 	return false;
+}
+
+t_proceso* buscarPID(int PID){
+	int i;
+	for (i=0;i<getMaxClients();i++){
+		if (clientes[i].pid==PID)
+			return clientes[i].proceso;
+	}
+	return NULL;
 }
 bool clienteExiste(int cliente){
 	if (clientes[cliente].socket != 0)
@@ -137,16 +150,15 @@ void expulsarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	log_info(activeLogger,ANSI_COLOR_RED "Expulsando PID:%d de CPU:%d" ANSI_COLOR_RESET,proceso->PCB->PID,proceso->cpu);
 	enviarHeader(proceso->socketCPU, HeaderDesalojarProceso);
-	if (!proceso->abortado){
-		pthread_mutex_unlock(&mutexClientes);
-		cambiarEstado(proceso, READY);
-		pthread_mutex_lock(&mutexClientes);
-	}
 	char* serialPcb = leerLargoYMensaje(proceso->socketCPU);
 	t_PCB* pcb = malloc(sizeof(t_PCB));
 	deserializar_PCB(pcb,serialPcb);
 	actualizarPCB(proceso,pcb);
+	if (!proceso->abortado && proceso->estado==EXEC){
+		cambiarEstado(proceso, READY);
+	}
 	free(serialPcb);
+	desasignarCPU(proceso);
 }
 
 void continuarProceso(t_proceso* proceso) {
@@ -159,10 +171,10 @@ void continuarProceso(t_proceso* proceso) {
 	free(serialSleep);*/
 }
 HILO bloqueo(t_bloqueo* info) {
-	log_info(bgLogger, "Ejecutando IO pid:%d por:%dseg", info->PID,
-			info->IO->retardo);
+	log_info(bgLogger, "Ejecutando IO pid:%d por:%dseg", info->proceso->PCB->PID,
+			info->IO->retardo*info->tiempo);
 	sleep(info->IO->retardo*info->tiempo);
-	desbloquearProceso(info->PID);
+	desbloquearProceso(info->proceso);
 	info->IO->estado = INACTIVE;
 	free(info);
 	return NULL;
@@ -173,15 +185,17 @@ void cambiarEstado(t_proceso* proceso, int estado) {
 	if (legalidad) {
 		log_info(bgLogger, "Cambio de estado pid:%d de:%d a:%d",
 				proceso->PCB->PID, proceso->estado, estado);
-		if (proceso->estado == EXEC)
-			desasignarCPU(proceso);
-		if (estado == READY)
-			queue_push(colaListos, proceso);
-		else if (estado == EXIT)
-			queue_push(colaSalida, proceso);
+		if (estado == READY){
+			log_info(activeLogger,"Añadiendo a colaListos pid:%d",proceso->PCB->PID);
+			queue_push(colaListos, proceso);}
+		else if (estado == EXIT){
+			log_info(activeLogger,"Añadiendo a colaSalida pid:%d",proceso->PCB->PID);
+			queue_push(colaSalida, proceso);}
 		proceso->estado = estado;
-	} else
+	} else{
 		log_error(activeLogger, "Cambio de estado ILEGAL pid:%d de:%d a:%d",
 				proceso->PCB->PID, proceso->estado, estado);
+		exit(EXIT_FAILURE);
+	}
 }
 

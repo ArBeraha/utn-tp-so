@@ -77,13 +77,9 @@ HILO crearProceso(int consola) {
 }
 
 void finalizarProceso(int cliente) {
-	printf("ANTES DE OBTENER\n");
 	t_proceso* proceso = obtenerProceso(cliente);
 	log_info(activeLogger,ANSI_COLOR_RED "Finalizando PID:%d" ANSI_COLOR_RESET,proceso->PCB->PID);
-	printf("DESP DE OBTENER\n");
-	printf("ANTES DE CAMBIAR ESTADO\n");
 	cambiarEstado(proceso,EXIT);
-	printf("DESPUES DE CAMBIAR ESTADO\n");
 	//MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
 }
 void destruirProceso(t_proceso* proceso) {
@@ -114,35 +110,35 @@ void actualizarPCB(t_proceso* proceso, t_PCB* PCB) { //
 void ingresarCPU(int cliente){
 	MUTEXPLANIFICACION(queue_push(colaCPU,(void*)cliente));
 }
-void bloquearProcesoIO(int PID, char* IO, int tiempo) {
+void bloquearProcesoIO(int cliente, char* IO, int tiempo) {
 	if (dictionary_has_key(tablaIO, IO)) {
 		log_info(activeLogger, "Añadiendo el Proceso a la cola del IO");
-		bloquearProceso(PID);
+		t_proceso* proceso = obtenerProceso(cliente);
+		bloquearProceso(proceso);
 		t_bloqueo* info = malloc(sizeof(t_bloqueo));
 		info->IO = (t_IO*) dictionary_get(tablaIO, IO);
-		info->PID = PID;
+		info->proceso = proceso;
 		info->tiempo = tiempo;
 		queue_push((info->IO)->cola,(t_bloqueo*) info);
 	} else
 		log_info(activeLogger, "El IO solicitado no existe");
 }
-void bloquearProcesoSem(int PID, char* semid) {
+void bloquearProcesoSem(int cliente, char* semid) {
 	if (dictionary_has_key(tablaSEM, semid)) {
 		log_info(activeLogger, "Añadiendo el Proceso a la cola del Semaforo");
-		bloquearProceso(PID);
+		t_proceso* proceso = obtenerProceso(cliente);
+		bloquearProceso(proceso);
 		queue_push(((t_semaforo*) dictionary_get(tablaSEM, semid))->cola,
-				(t_proceso*) PID);
+				proceso);
 	} else
 		log_info(activeLogger, "El Semaforo solicitado no existe");
 }
-void bloquearProceso(int PID) {
-	log_info(activeLogger,"Bloqueando proceso pid:%d",PID);
-	t_proceso* proceso = obtenerProceso(PID);
+void bloquearProceso(t_proceso* proceso) {
+	log_info(activeLogger,"Bloqueando proceso pid:%d",proceso->PCB->PID);
 	cambiarEstado(proceso,BLOCK);
 }
-void desbloquearProceso(int PID) {
-	log_info(activeLogger,"Desbloqueando proceso pid:%d",PID);
-	t_proceso* proceso = obtenerProceso(PID);
+void desbloquearProceso(t_proceso* proceso) {
+	log_info(activeLogger,"Desbloqueando proceso pid:%d",proceso->PCB->PID);
 	cambiarEstado(proceso,READY);
 }
 void asignarMetadataProceso(t_proceso* p, char* codigo) {

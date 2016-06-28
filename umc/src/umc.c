@@ -645,12 +645,13 @@ void procesarHeader(t_cliente cliente, char* header) {
 
 		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Cambio PID viejo: %d por nuevo: %d " ANSI_COLOR_RESET ,idLog,viejoPid,char4ToInt(nuevoPid));
 		devolverTodaLaMemoria();
-		printf("\n\n\n\n ro, aca me tira segment faul \n\n\n\n");
+//		printf("\n\n\n\n ro, aca me tira segment faul \n\n\n\n");
 //		sleep(10);
-		log_info(activeLogger,"[%d] Buscando paginas del pid ",verifNuevo);
-		char* paginasCodigo = intToChar4(cantPaginasDePid(verifNuevo) - paginas_stack);
-		send_w(cliente.socket,paginasCodigo,sizeof(int));
-		free(paginasCodigo);
+		// NO VA MAS ESTO
+//		log_info(activeLogger,"[%d] Buscando paginas del pid ",verifNuevo);
+//		char* paginasCodigo = intToChar4(cantPaginasDePid(verifNuevo) - paginas_stack);
+//		send_w(cliente.socket,paginasCodigo,sizeof(int));
+//		free(paginasCodigo);
 		break;
 
 	default:

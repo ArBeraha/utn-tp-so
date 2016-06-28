@@ -91,8 +91,12 @@ void destruirProceso(t_proceso* proceso) {
 				proceso->PCB->PID, proceso->estado);
 	clientes[proceso->consola].proceso=NULL;
 	if (!CU_is_test_running()) {
-		enviarHeader(proceso->socketConsola,
-				HeaderConsolaFinalizarNormalmente);
+		if (proceso->abortado)
+			enviarHeader(proceso->socketConsola,
+					HeaderConsolaFinalizarErrorInstruccion);
+		else
+			enviarHeader(proceso->socketConsola,
+					HeaderConsolaFinalizarNormalmente);
 		//MUTEXCLIENTES(quitarCliente(proceso->consola)); Doble Eliminacion
 	}
 	// todo: avisarUmcQueLibereRecursos(proceso->PCB) // e vo' umc liberá los datos
@@ -111,17 +115,21 @@ void ingresarCPU(int cliente){
 	MUTEXPLANIFICACION(queue_push(colaCPU,(void*)cliente));
 }
 void bloquearProcesoIO(int cliente, char* IO, int tiempo) {
+	t_proceso* proceso = obtenerProceso(cliente);
 	if (dictionary_has_key(tablaIO, IO)) {
 		log_info(activeLogger, "Añadiendo el Proceso a la cola del IO");
-		t_proceso* proceso = obtenerProceso(cliente);
+
 		bloquearProceso(proceso);
 		t_bloqueo* info = malloc(sizeof(t_bloqueo));
 		info->IO = (t_IO*) dictionary_get(tablaIO, IO);
 		info->proceso = proceso;
 		info->tiempo = tiempo;
 		queue_push((info->IO)->cola,(t_bloqueo*) info);
-	} else
-		log_info(activeLogger, "El IO solicitado no existe");
+	} else{
+		log_error(activeLogger, "El IO solicitado no existe");
+		proceso->abortado=true;
+	}
+
 }
 void bloquearProcesoSem(int cliente, char* semid) {
 	if (dictionary_has_key(tablaSEM, semid)) {
@@ -131,7 +139,7 @@ void bloquearProcesoSem(int cliente, char* semid) {
 		queue_push(((t_semaforo*) dictionary_get(tablaSEM, semid))->cola,
 				proceso);
 	} else
-		log_info(activeLogger, "El Semaforo solicitado no existe");
+		log_error(activeLogger, "El Semaforo solicitado no existe");
 }
 void bloquearProceso(t_proceso* proceso) {
 	log_info(activeLogger,"Bloqueando proceso pid:%d",proceso->PCB->PID);
@@ -144,6 +152,7 @@ void desbloquearProceso(t_proceso* proceso) {
 void asignarMetadataProceso(t_proceso* p, char* codigo) {
 	int i;
 	t_medatada_program* metadata = metadata_desde_literal(codigo);
+	p->PCB->PC=metadata->instruccion_inicio;
 	t_sentencia* sentencia;
 	for (i = 0; i < metadata->instrucciones_size; i++) {
 		sentencia = malloc(sizeof(t_sentencia));

@@ -12,12 +12,12 @@ void recibirWait(int cliente){
 	free(semid);
 }
 void recibirSignal(int cliente){
-	log_info(activeLogger,"Llego un signal, ESPERANDO");
 	char* semid = leerLargoYMensaje(clientes[cliente].socket);
 	primitivaSignal(cliente,semid);
 	free(semid);
 }
 void primitivaWait(int cliente, char* semid) {
+	log_info(activeLogger,"Wait para el semaforo %s",semid);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
 	if (sem->valor > 0){
 		log_info(activeLogger,"Semaforo %s tiene carga %d y CPU%d continua",semid, sem->valor,cliente);
@@ -28,7 +28,7 @@ void primitivaWait(int cliente, char* semid) {
 	clientes[cliente].atentido=false;
 }
 void primitivaSignal(int cliente, char* semid) {
-	log_info(activeLogger,"Llego un signal para el semaforo %s",semid);
+	log_info(activeLogger,"Signal para el semaforo %s",semid);
 	t_semaforo* sem = (t_semaforo*) dictionary_get(tablaSEM, semid);
 	if (!queue_is_empty(sem->cola)){
 		t_proceso* proceso = queue_pop(sem->cola);
@@ -47,6 +47,9 @@ void recibirAsignarCompartida(int cliente){
 	char* valor = malloc(sizeof(int));
 	read(clientes[cliente].socket, valor, sizeof(int));
 	primitivaAsignarCompartida(compartida,char4ToInt(valor));
+	t_proceso* proceso = obtenerProceso(cliente);
+	if (!dictionary_has_key(tablaGlobales,compartida))
+		proceso->abortado=true;
 	free(compartida);
 	free(compartidaSerial);
 	free(valor);
@@ -57,25 +60,29 @@ void recibirDevolverCompartida(int cliente){
 	char* compartida=string_from_format("!%s",compartidaSerial);
 	char* valor = intToChar4(primitivaDevolverCompartida(compartida));
 	send_w(clientes[cliente].socket, valor, sizeof(int));
+	t_proceso* proceso = obtenerProceso(cliente);
+	if (!dictionary_has_key(tablaGlobales,compartida))
+		proceso->abortado=true;
 	free(valor);
 	free(compartidaSerial);
 	free(compartida);
 	clientes[cliente].atentido=false;
 }
 void primitivaAsignarCompartida(char* compartida, int valor) {
-	*(int*) dictionary_get(tablaGlobales, compartida) = valor;
+	if (dictionary_has_key(tablaGlobales,compartida))
+		*(int*) dictionary_get(tablaGlobales, compartida) = valor;
+	else
+		log_error(activeLogger,"Se pidio asignar la compartida %s inexistente",compartida);
 }
 int primitivaDevolverCompartida(char* compartida) {
 	if (dictionary_has_key(tablaGlobales,compartida))
 		return (*(int*) dictionary_get(tablaGlobales, compartida));
 	else
-		log_error(activeLogger,"Se pidio el valor de la global %s inexistente",compartida);
+		log_error(activeLogger,"Se pidio el valor de la compartida %s inexistente",compartida);
 	return 0;
 }
 void imprimirVariable(int cliente) {
-	printf("Imprimir Variable de CPU:%d\n",cliente);
 	t_proceso* proceso = obtenerProceso(cliente);
-	printf("Obtenido socketConsola:%d\n",proceso->socketConsola);
 	char* serialValor = malloc( sizeof(int));
 	read(proceso->socketCPU, serialValor, sizeof(int));
 	enviarHeader(proceso->socketConsola, HeaderImprimirVariableConsola);

@@ -28,9 +28,10 @@ void incrementarPC(t_PCB* pcb) {
 	setearPC(pcb, (t_puntero_instruccion)((pcb->PC) + 1));
 }
 
-void informarInstruccionTerminada() {
+void informarInstruccionTerminada(char* sentencia) { /* NO SE LLAMA */
+
 	// Le aviso a nucleo que termino una instruccion, para que calcule cuanto quantum le queda al proceso ansisop.
-	if(pcbActual->PC==list_size(pcbActual->indice_codigo)-1){
+	if(strcmp(sentencia,"end")==0){
 		finalizar_proceso(true);
 	}else{
 		enviarHeader(nucleo,headerTermineInstruccion);
@@ -346,11 +347,16 @@ void parsear(char* const sentencia) {
 	log_info(activeLogger, "Ejecutando la sentencia |%s|...", sentencia);
 	pcbActual->PC++; //si desp el parser lo setea en otro lado mediante una primitiva, es tema suyo.
 					//lo incremento antes asi no se desfasa.
-	analizadorLinea(sentencia, &funciones, &funcionesKernel);
-	log_info(activeLogger, "PC actualizado a |%d|",pcbActual->PC);
-	informarInstruccionTerminada();
-}
 
+	if(strcmp(sentencia,"end")!=0){
+		analizadorLinea(sentencia, &funciones, &funcionesKernel);
+		log_info(activeLogger, "PC actualizado a |%d|",pcbActual->PC);
+		enviarHeader(nucleo,headerTermineInstruccion);
+		log_debug(debugLogger,"Informé a nucleo del fin de una instrucción");
+	}
+	else
+		finalizar_proceso(true);
+}
 /**
  * Recibo la sentencia previamente pedida.
  */

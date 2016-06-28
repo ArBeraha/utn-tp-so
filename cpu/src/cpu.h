@@ -79,7 +79,7 @@ bool overflow;
 bool ejecutando;
 
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
-void informarInstruccionTerminada();
+void informarInstruccionTerminada(char* sentencia);
 void setearPC(t_PCB* pcb, t_puntero_instruccion pc);
 void incrementarPC(t_PCB* pcb) ;
 void loggearFinDePrimitiva(char* instr);

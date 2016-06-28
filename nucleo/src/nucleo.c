@@ -380,7 +380,7 @@ void finalizarCPU(int cliente){
 	t_proceso* proceso = obtenerProceso(cliente);
 	if (proceso!=NULL){
 		log_info(activeLogger, "PID:%d finalizará por desconexion de su CPU.",proceso->PCB->PID);
-		enviarHeader(proceso->socketConsola,HeaderConsolaFinalizarNormalmente);
+		enviarHeader(proceso->socketConsola,HeaderConsolaFinalizarMuerteCPU);
 		return;}
 }
 void finalizarCliente(int cliente) {

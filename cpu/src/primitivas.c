@@ -207,7 +207,7 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar)
 	t_stack_item* newHead = stack_item_create();
 	//newHead->argumentos El parser llama a definir variable y se ocupa de esto
 	//newHead->identificadores no tiene nada por ahora. Se va llenando en otras primitivas, a medida que se declaren variables locales.
-	newHead->posicionRetorno = dondeRetornar;
+	newHead->posicionRetorno = pcbActual->PC; //dondeRetornar;
 	newHead->posicion = stack_size(stack); // Si el stack tiene pos 0, size=1, si tiene 0 y 1, size=2,... Da la posicion del lugar nuevo.
 	//newHead->valorDeRetorno es el parser quien en retornar le pasa en que variable guardar el resultado.
 	stack_push(stack, newHead);

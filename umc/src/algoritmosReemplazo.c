@@ -15,31 +15,31 @@ int sacarConClock(int pid){
 	tabla_t* tabla = malloc(sizeof(tabla_t));
 	tabla = buscarTabla(pid); //TABLA CON ID A REEMPLAZAR
 	int cantidadPaginas = list_size((t_list*)tabla->listaPaginas);
-	int posAReemplazar;
+	int posAReemplazar = 0;
 	tablaPagina_t* puntero;
 
 	//Primera vuelta, doy segunda oportunidad
 
-	for(posAReemplazar=buscarUltimaPosSacada(pid); posAReemplazar<cantidadPaginas; posAReemplazar++){
+	for(posAReemplazar=buscarUltimaPosSacada(pid); posAReemplazar-buscarUltimaPosSacada(pid)<cantidadPaginas; posAReemplazar++){
 			puntero = list_get((t_list*)tabla->listaPaginas,posAReemplazar%cantidadPaginas);
 			if(puntero->bitUso==0 && puntero->bitPresencia==1){
-				cambiarUltimaPosicion(pid,posAReemplazar);
+				cambiarUltimaPosicion(pid,posAReemplazar%cantidadPaginas);
 				pthread_mutex_unlock(&lock_accesoUltimaPos);
 				pthread_mutex_unlock(&lock_accesoTabla);
-				return posAReemplazar;
+				return posAReemplazar%cantidadPaginas;
 			}else{
 				puntero->bitUso=0;
 			}
 		}
 
 	//Segunda vuelta
-	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar<cantidadPaginas;posAReemplazar++){
+	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar-buscarUltimaPosSacada(pid)<cantidadPaginas;posAReemplazar++){
 		puntero = list_get((t_list*)tabla->listaPaginas,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitPresencia==1){
-			cambiarUltimaPosicion(pid,posAReemplazar);
+			cambiarUltimaPosicion(pid,posAReemplazar%cantidadPaginas);
 			pthread_mutex_unlock(&lock_accesoUltimaPos);
 			pthread_mutex_unlock(&lock_accesoTabla);
-			return posAReemplazar;
+			return posAReemplazar%cantidadPaginas;
 		}
 	}
 
@@ -57,54 +57,55 @@ int sacarConModificado(int pid){
 	tabla_t* tabla = malloc(sizeof(tabla_t));
 	tabla = buscarTabla(pid);
 	int cantidadPaginas = list_size((t_list*)tabla->listaPaginas);
-	int posAReemplazar;
+	int posAReemplazar = 0;
 	tablaPagina_t* puntero;
 
+
 	//Primera vuelta, me fijo si hay alguno (0,0) sin modificar nada
-	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar<cantidadPaginas;posAReemplazar++){
+	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar-buscarUltimaPosSacada(pid)<cantidadPaginas;posAReemplazar++){
 		puntero = list_get((t_list*)tabla->listaPaginas,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitModificacion==0 && puntero->bitPresencia==1){
-			cambiarUltimaPosicion(pid,posAReemplazar);
+			cambiarUltimaPosicion(pid,posAReemplazar%cantidadPaginas);
 			pthread_mutex_unlock(&lock_accesoUltimaPos);
 			pthread_mutex_unlock(&lock_accesoTabla);
-			return posAReemplazar;
+			return posAReemplazar%cantidadPaginas;
 		}
 	}
 
 	//Segunda vuelta
-	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar<cantidadPaginas;posAReemplazar++){
+	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar-buscarUltimaPosSacada(pid)<cantidadPaginas;posAReemplazar++){
 		puntero = list_get((t_list*)tabla->listaPaginas,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitModificacion==1 && puntero->bitPresencia==1){
-			cambiarUltimaPosicion(pid,posAReemplazar);
+			cambiarUltimaPosicion(pid,posAReemplazar%cantidadPaginas);
 			pthread_mutex_unlock(&lock_accesoUltimaPos);
 			pthread_mutex_unlock(&lock_accesoTabla);
-			return posAReemplazar;
+			return posAReemplazar%cantidadPaginas;
 		}else{
 			puntero->bitUso=0;
 		}
 	}
 
 	//PrimerVuelta
-	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar<cantidadPaginas;posAReemplazar++){
+	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar-buscarUltimaPosSacada(pid)<cantidadPaginas;posAReemplazar++){
 		puntero = list_get((t_list*)tabla->listaPaginas,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitPresencia==1){
-			cambiarUltimaPosicion(pid,posAReemplazar);
+			cambiarUltimaPosicion(pid,posAReemplazar%cantidadPaginas);
 			pthread_mutex_unlock(&lock_accesoUltimaPos);
 			pthread_mutex_unlock(&lock_accesoTabla);
-			return posAReemplazar;
+			return posAReemplazar%cantidadPaginas;
 		}else{
 			puntero->bitUso=0;
 		}
 	}
 
 	//Segunda vuelta
-	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar<cantidadPaginas;posAReemplazar++){
+	for(posAReemplazar=buscarUltimaPosSacada(pid);posAReemplazar-buscarUltimaPosSacada(pid)<cantidadPaginas;posAReemplazar++){
 		puntero = list_get((t_list*)tabla->listaPaginas,posAReemplazar%cantidadPaginas);
 		if(puntero->bitUso==0 && puntero->bitModificacion==1 && puntero->bitPresencia==1){
-			cambiarUltimaPosicion(pid,posAReemplazar);
+			cambiarUltimaPosicion(pid,posAReemplazar%cantidadPaginas);
 			pthread_mutex_unlock(&lock_accesoUltimaPos);
 			pthread_mutex_unlock(&lock_accesoTabla);
-			return posAReemplazar;
+			return posAReemplazar%cantidadPaginas;
 		}else{
 			puntero->bitUso=0;
 		}

@@ -176,7 +176,7 @@ int cantidadMarcosLibres(){
 	return c;
 }
 
-void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam){ //Y la agrega tmb...
+void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam,int *pid,int *pag,int *marco){ //Y la agrega tmb...
 	pthread_mutex_lock(&lock_accesoTlb);
 	int menorTiempo= tlb[0].contadorTiempo;
 	int posicionMenorTiempo = 0;
@@ -187,37 +187,51 @@ void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam){ //Y la agrega 
 			posicionMenorTiempo = i;
 		}
 	}
+
+	*pid = tlb[posicionMenorTiempo].pid;
+	*pag = tlb[posicionMenorTiempo].pagina;
+	*marco = tlb[posicionMenorTiempo].marcoUtilizado;
+
 	tlb[posicionMenorTiempo].pid=pidParam;
 	tlb[posicionMenorTiempo].pagina=pagina->nroPagina;
 	tlb[posicionMenorTiempo].marcoUtilizado=pagina->marcoUtilizado;
 	tlb[posicionMenorTiempo].contadorTiempo=tiempo++;
+
 	pthread_mutex_unlock(&lock_accesoTlb);
 }
 
 void agregarATlb(tablaPagina_t* pagina,int pidParam){
-	pedidoLectura_t pedido;
-	pedido.pid = pidParam;
-	pedido.paginaRequerida = pagina->nroPagina;
-	pedido.offset=0;
-	pedido.cantBytes=0;
+	if(config.entradas_tlb){
+		pedidoLectura_t pedido;
+		pedido.pid = pidParam;
+		pedido.paginaRequerida = pagina->nroPagina;
+		pedido.offset=0;
+		pedido.cantBytes=0;
 
-	if(estaEnTlb(pedido)==0){
-		int i;
-		pthread_mutex_lock(&lock_accesoTlb);
-		for(i=0;i<config.entradas_tlb;i++){
-			if(tlb[i].pid==-1){
-				//Se encontro un espacio libre en la tlb, se va a guardar ahi
-				tlb[i].pagina = pagina->nroPagina;
-				tlb[i].marcoUtilizado = pagina->marcoUtilizado;
-				tlb[i].pid = pidParam;
-				tlb[i].contadorTiempo = tiempo++;
+		if(estaEnTlb(pedido)==0){
+			int i;
+			pthread_mutex_lock(&lock_accesoTlb);
+			for(i=0;i<config.entradas_tlb;i++){
+				if(tlb[i].pid==-1){
+					//Se encontro un espacio libre en la tlb, se va a guardar ahi
+					tlb[i].pagina = pagina->nroPagina;
+					tlb[i].marcoUtilizado = pagina->marcoUtilizado;
+					tlb[i].pid = pidParam;
+					tlb[i].contadorTiempo = tiempo++;
 
-				pthread_mutex_unlock(&lock_accesoTlb);
-				return;
+					pthread_mutex_unlock(&lock_accesoTlb);
+					log_info(activeLogger, "[%d] Agregado a TLB [Pagina,Marco] = [%d,%d]",pidParam,pedido.paginaRequerida,pagina->marcoUtilizado);
+					return;
+				}
 			}
+			pthread_mutex_unlock(&lock_accesoTlb);
+			int pid=0,pag=0, marco=0;
+			reemplazarEntradaConLru(pagina,pidParam,&pid,&pag,&marco);
+			log_info(activeLogger, "[%d] Agregado a TLB [Pagina,Marco] = [%d,%d]. Habiendo reemplazado: [%d,%d,%d] [Pid,Pag,Marco] ",pidParam,pedido.paginaRequerida,pagina->marcoUtilizado,pid,pag,marco);
 		}
-		pthread_mutex_unlock(&lock_accesoTlb);
-		reemplazarEntradaConLru(pagina,pidParam);
+	}
+	else{
+		log_info(activeLogger, "La TLB NO esta habilitada, por lo tanto no se agrego la entrada");
 	}
 }
 

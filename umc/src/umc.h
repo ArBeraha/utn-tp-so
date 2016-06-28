@@ -158,8 +158,9 @@ int paginas_stack;
 
 //Prototipos
 
-void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam); //TODO
-void reemplazarEntradaConClock(tablaPagina_t* pagina,int pidParam); //TODO
+//void reemplazarEntradaConLru(tablaPagina_t* pagina,int pidParam,int &pid,int &pag,int &marco);
+void reemplazarEntradaConClock(tablaPagina_t* pagina,int pidParam);
+void reemplazarEntradaConModificado(tablaPagina_t* pagina,int pidParam);
 int estaEnTlb(pedidoLectura_t pedido);
 int buscarEnTlb(pedidoLectura_t pedido);
 int existePidEnListadeTablas(int pid);

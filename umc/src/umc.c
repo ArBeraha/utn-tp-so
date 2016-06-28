@@ -44,7 +44,7 @@ char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
 
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 	char* resultado = almacenarBytes(pedido,buffer,cliente);
-	if(strcmp(resultado,"RELLAMAR")>0){ //SIGNIFICA QUE SON IGUALES
+	if(strcmp(resultado,"RELLAMAR")>0){ //SIGNIFICA QUE SON DISTINTOS
 		return resultado;
 	}else{
 		return almacenarBytes(pedido,buffer,cliente);
@@ -94,7 +94,6 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 					pthread_mutex_unlock(&lock_accesoTabla);
 					log_info(activeLogger, "[%d][L] Se encontro en Tabla de Paginas y esta en memoria",id);
 					log_info(activeLogger, "[%d][L] Realizando LECTURA [Pag,Off,Bytes] = [%d,%d,%d]",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes);
-
 					log_info(activeLogger, "[%d][L] Accediendo a MP",id);
 					usleep(retardoMemoria);
 
@@ -105,7 +104,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 
 					agregarATlb(paginaBuscada,pedido.pid);
 
-					log_info(activeLogger, "[%d][L] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
+//					log_info(activeLogger, "[%d][L] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
 
 					return contenido;
 
@@ -213,7 +212,7 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 					agregarATlb(paginaBuscada,pedido.pid);
 
-					log_info(activeLogger, "[%d][E] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
+//					log_info(activeLogger, "[%d][E] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
 
 					return "1";
 				}
@@ -305,6 +304,9 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 			pthread_mutex_lock(&lock_accesoSwap);
 			enviarASwap(pedido.pid,paginaASacarDeMemoria);
 			pthread_mutex_unlock(&lock_accesoSwap);
+			pthread_mutex_lock(&lock_accesoTabla);
+			paginaASacarDeMemoria->bitModificacion=0;
+			pthread_mutex_unlock(&lock_accesoTabla);
 		}
 
 		int marcoSacado = paginaASacarDeMemoria->marcoUtilizado;
@@ -332,7 +334,8 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		pedido.cantBytes=config.tamanio_marco;
 		pedido.offset=0;
 
-		almacenarBytesEnUnaPagina(pedido,contenido,cliente);
+//		almacenarBytesEnUnaPagina(pedido,contenido,cliente);
+		almacenarBytes(pedido,contenido,cliente);
 	}
 	else{
 		pthread_mutex_lock(&lock_accesoTabla);
@@ -358,7 +361,8 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 		memcpy(contenido2,contenido,config.tamanio_marco);
 		contenido[config.tamanio_marco]='\0';
 
-		almacenarBytesEnUnaPagina(pedido, contenido, cliente);
+//		almacenarBytesEnUnaPagina(pedido, contenido, cliente);
+		almacenarBytes(pedido, contenido, cliente);
 	}
 
 }
@@ -534,6 +538,7 @@ void operacionScript(t_cliente cliente) {
 	char* tamanioCodigoScript = malloc(sizeof(int));
 
 	read(cliente.socket, pidScript, 4);
+	log_info(activeLogger, ANSI_COLOR_GREEN "Pedido de inicilizacion de PID: %d " ANSI_COLOR_RESET,char4ToInt(pidScript));
 	read(cliente.socket, cantidadDePaginasScript, 4);
 	read(cliente.socket, tamanioCodigoScript, 4);
 	char* codigoScript = malloc(char4ToInt(tamanioCodigoScript));
@@ -564,6 +569,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 			charToInt(header));
 	char* nuevoPid;
 	int idLog=0;
+	int viejoPid=0;
 	idLog = clientes[cliente.indice].pid;
 
 //	mostrarTlb(); //TODO PARA DEBUGEAR, ESPERAR A QUE ANDE EL TEMA DE CPU Y EL CAMBIO DE PROCESO
@@ -624,10 +630,9 @@ void procesarHeader(t_cliente cliente, char* header) {
 		break;
 
 	case HeaderPID:
+		viejoPid = clientes[cliente.indice].pid;
 		nuevoPid = malloc(sizeof(int));
 		read(cliente.socket, nuevoPid, sizeof(int));
-		int viejoPid=0;
-		viejoPid = clientes[cliente.indice].pid;
 		clientes[cliente.indice].pid=char4ToInt(nuevoPid);
 		int verifNuevo;
 		verifNuevo = clientes[cliente.indice].pid;
@@ -641,6 +646,8 @@ void procesarHeader(t_cliente cliente, char* header) {
 		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Cambio PID viejo: %d por nuevo: %d " ANSI_COLOR_RESET ,idLog,viejoPid,char4ToInt(nuevoPid));
 		devolverTodaLaMemoria();
 		printf("\n\n\n\n ro, aca me tira segment faul \n\n\n\n");
+//		sleep(10);
+		log_info(activeLogger,"[%d] Buscando paginas del pid ",verifNuevo);
 		char* paginasCodigo = intToChar4(cantPaginasDePid(verifNuevo) - paginas_stack);
 		send_w(cliente.socket,paginasCodigo,sizeof(int));
 		free(paginasCodigo);

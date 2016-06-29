@@ -1,14 +1,15 @@
 # Estos van manualmene, con add -f, solo en casos de necesidad
 *.mk
 makefile
+*.log
+dump
+swap.data
 /consola/Debug/code/subdir.mk
 /cpu/Debug/code/subdir.mk
 /umc/Debug/code/subdir.mk
 /swap/Debug/code/subdir.mk
 /nucleo/Debug/code/subdir.mk
 
-dump
-swap.data
 
 # Object files
 *.o
@@ -59,7 +60,5 @@ swap.data
 *.metadata/
 /Remote*/
 /compartido/Debug/
-*.log
-dump
 *.*~
 *~

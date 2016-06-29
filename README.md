@@ -19,6 +19,10 @@
     kill -s SIGUSR1 <<pid>>, pudiendose conocer el pid con:
     ps -a
 
+## Monitorear consumo de recursos en tiempo real
+
+    htop --delay=0 pid=<<PID>>, donde <<PID>> es obviamente el pid del proceso.
+
 # Agregar alias, comandos útiles
 en el home:
 

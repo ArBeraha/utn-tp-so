@@ -142,7 +142,7 @@ void ejecutarProceso(t_proceso* proceso, int cpu) {
 		serializar_PCB(serialPCB, proceso->PCB);
 		enviarHeader(proceso->socketCPU,HeaderPCB);
 		enviarLargoYSerial(proceso->socketCPU, bytes, serialPCB);
-		enviarHeader(proceso->socketCPU, HeaderContinuarProceso);
+		continuarProceso(proceso);
 		free(serialPCB);
 	}
 }
@@ -165,15 +165,15 @@ void continuarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	log_info(activeLogger,"Continuando PID:%d",proceso->PCB->PID);
 	enviarHeader(proceso->socketCPU, HeaderContinuarProceso);
-	/*
+
 	char* serialSleep = intToChar4(config.queantum_sleep);
 	send_w(proceso->socketCPU,serialSleep,sizeof(int));
-	free(serialSleep);*/
+	free(serialSleep);
 }
 HILO bloqueo(t_bloqueo* info) {
 	log_info(bgLogger, "Ejecutando IO pid:%d por:%dseg", info->proceso->PCB->PID,
 			info->IO->retardo*info->tiempo);
-	sleep(info->IO->retardo*info->tiempo);
+	usleep(info->IO->retardo*info->tiempo);
 	desbloquearProceso(info->proceso);
 	info->IO->estado = INACTIVE;
 	free(info);

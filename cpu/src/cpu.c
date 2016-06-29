@@ -364,9 +364,9 @@ char* recibir_sentencia(int tamanio){
  * Loggeada en las funciones que llama
  */
 void obtener_y_parsear() {
-	//recibir_quantum_sleep(); //TODO activar para la entrega.
+	recibir_quantum_sleep(); //TODO activar para la entrega.
 	int tamanio;
-	//sleep(10); //TODO . le dejo marca porque lo uso para testear el kill -s y el orden de segmentfaulteo de los procesos.
+	usleep(quantum_sleep); //TODO . le dejo marca porque lo uso para testear el kill -s y el orden de segmentfaulteo de los procesos.
 	sentenciaPedida = string_new();
 	pedirYRecibirSentencia(&tamanio);
 	parsear(sentenciaPedida);

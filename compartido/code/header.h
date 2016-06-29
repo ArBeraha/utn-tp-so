@@ -67,6 +67,7 @@ typedef enum {
 	HeaderPID,
 	HeaderConsolaFinalizarMuerteCPU,
 	HeaderConsolaFinalizarErrorInstruccion,
+	headerCPUTerminada
 } header_t;
 
 char* headerToMSG(header_t header);

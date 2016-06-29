@@ -424,7 +424,8 @@ void inicializar() {
 }
 
 void finalizar() {
-	log_info(activeLogger,"Finalizando proceso cpu");
+	log_info(activeLogger,"Finalizando proceso cpu...");
+	enviarHeader(umc,headerCPUTerminada);
 
 	close(nucleo);
 	close(umc);

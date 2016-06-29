@@ -1,4 +1,4 @@
-#!/usr/bin/ansisop
+#!./consola
 
 function mult
 variables i

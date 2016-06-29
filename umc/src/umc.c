@@ -681,7 +681,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursivo
 
 
-	crearLogs("Umc", "Proceso", 0);
+	crearLogs("Umc", "UMC", 0);
 	dump = log_create("dump", "UMC", false, LOG_LEVEL_INFO);
 	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
 	cargarCFG();

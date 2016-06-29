@@ -408,13 +408,15 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 void finalizarPrograma(int idPrograma){
 	pthread_mutex_lock(&lock_accesoSwap);
 	enviarHeader(swapServer,HeaderOperacionFinalizarProceso);
-	send_w(swapServer,intToChar4(idPrograma),sizeof(int));
+	char* serialIdPrograma = intToChar4(idPrograma);
+	send_w(swapServer,serialIdPrograma,sizeof(int));
 	pthread_mutex_unlock(&lock_accesoSwap);
 	sacarMarcosOcupados(idPrograma);
 	flushTlbDePid(idPrograma);
 	tabla_t* tabla = buscarTabla(idPrograma);
 	list_destroy((t_list*)tabla->listaPaginas);
 	list_remove(listaTablasPaginas,buscarPosicionTabla(idPrograma));
+	free(serialIdPrograma);
 }
 
 int reservarPagina(int cantPaginasPedidas, int pid) {
@@ -477,10 +479,14 @@ void pedidoLectura(t_cliente cliente){
 	log_info(activeLogger, "[%d] Realizando lectura de [Pag,Off,Bytes] = [%d,%d,%d]",id,pedidoLectura.paginaRequerida,pedidoLectura.offset,pedidoLectura.cantBytes);
 
 	if(!existePaginaBuscadaEnTabla(pedidoCpu->pagina,buscarTabla(id))){
-		send_w(cliente.socket, intToChar4(0),sizeof(int));
+		char* serialRespuesta = intToChar4(0);
+		send_w(cliente.socket, serialRespuesta,sizeof(int));
+		free(serialRespuesta);
 		return;
 	}else{
-		send_w(cliente.socket, intToChar4(1),sizeof(int));
+		char* serialRespuesta = intToChar4(1);
+		send_w(cliente.socket, serialRespuesta,sizeof(int));
+		free(serialRespuesta);
 	}
 
 	char* contenido = devolverPedidoPagina(pedidoLectura,cliente);
@@ -508,10 +514,14 @@ void headerEscribirPagina(t_cliente cliente){
 	char* buffer = malloc(pedidoCpuEscritura->size);
 
 	if(!existePaginaBuscadaEnTabla(pedidoCpuEscritura->pagina,buscarTabla(id))){
-		send_w(cliente.socket, intToChar4(0),sizeof(int));
+		char* serialRespuesta = intToChar4(0);
+		send_w(cliente.socket, serialRespuesta,sizeof(int));
+		free(serialRespuesta);
 		return;
 	}else{
-		send_w(cliente.socket, intToChar4(1),sizeof(int));
+		char* serialRespuesta = intToChar4(1);
+		send_w(cliente.socket, serialRespuesta,sizeof(int));
+		free(serialRespuesta);
 	}
 
 	read(cliente.socket, buffer, sizeof(int));
@@ -549,9 +559,13 @@ void operacionScript(t_cliente cliente) {
 
 		reservarPagina(char4ToInt(cantidadDePaginasScript), char4ToInt(pidScript));
 		reservarPagina(paginas_stack, char4ToInt(pidScript));
-		send_w(cliente.socket, intToChar(1), 1);
+		char* serialRespuesta = intToChar(1);
+		send_w(cliente.socket, serialRespuesta,1);
+		free(serialRespuesta);
 	} else {
-		send_w(cliente.socket, intToChar(0), 1);
+		char* serialRespuesta = intToChar(0);
+		send_w(cliente.socket, serialRespuesta,1);
+		free(serialRespuesta);
 	}
 
 	free(pidScript);
@@ -586,7 +600,9 @@ void procesarHeader(t_cliente cliente, char* header) {
 
 	case HeaderTamanioPagina:
 		log_info(activeLogger, ANSI_COLOR_GREEN "[%d] Pedido tamanio paginas" ANSI_COLOR_RESET ,idLog);
-		send_w(cliente.socket,intToChar4(config.tamanio_marco),sizeof(int));
+		char* serialTamanioMarco = intToChar4(config.tamanio_marco);
+		send_w(cliente.socket,serialTamanioMarco,sizeof(int));
+		free(serialTamanioMarco);
 		break;
 
 	case HeaderPedirValorVariable:  //PARA NUCLEO

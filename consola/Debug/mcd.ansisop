@@ -63,7 +63,7 @@ variables r, x
 end
 
 :zerodiv
-	printText No se puede dividir por 0!!
+	textPrint No se puede dividir por 0!!
 :true
 	return 1
 :false

@@ -94,10 +94,8 @@ void procesarHeader(char *header) {
 		break;
 
 	case HeaderPCB:
-		if(!puedo_terminar()){
-			overflow = false;
-			obtenerPCB();
-		}
+		overflow = false;
+		obtenerPCB();
 		break;
 
 	case HeaderContinuarProceso:

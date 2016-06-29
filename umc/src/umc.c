@@ -526,7 +526,6 @@ void headerEscribirPagina(t_cliente cliente){
 
 	read(cliente.socket, buffer, sizeof(int));
 
-
 	pedidoLectura_t pedido;
 	pedido.pid = id;
 	pedido.paginaRequerida = pedidoCpuEscritura->pagina;
@@ -585,8 +584,6 @@ void procesarHeader(t_cliente cliente, char* header) {
 	int idLog=0;
 	int viejoPid=0;
 	idLog = clientes[cliente.indice].pid;
-
-//	mostrarTlb(); //TODO PARA DEBUGEAR, ESPERAR A QUE ANDE EL TEMA DE CPU Y EL CAMBIO DE PROCESO
 
 	switch (charToInt(header)) {
 
@@ -661,13 +658,11 @@ void procesarHeader(t_cliente cliente, char* header) {
 
 		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Cambio PID viejo: %d por nuevo: %d " ANSI_COLOR_RESET ,idLog,viejoPid,char4ToInt(nuevoPid));
 		devolverTodaLaMemoria();
-//		printf("\n\n\n\n ro, aca me tira segment faul \n\n\n\n");
-//		sleep(10);
-		// NO VA MAS ESTO
-//		log_info(activeLogger,"[%d] Buscando paginas del pid ",verifNuevo);
-//		char* paginasCodigo = intToChar4(cantPaginasDePid(verifNuevo) - paginas_stack);
-//		send_w(cliente.socket,paginasCodigo,sizeof(int));
-//		free(paginasCodigo);
+		break;
+
+	case headerCPUTerminada:
+		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Chau CPU: %d -  No vuelvas :)  " ANSI_COLOR_RESET ,clientes[cliente.indice]);
+		quitarCliente(cliente.indice);
 		break;
 
 	default:
@@ -774,14 +769,14 @@ void crearMemoriaYTlbYTablaPaginas(){
 
 	listaUltimaPosicionSacada = list_create();
 
-//	pthread_attr_init(&detachedAttr);
-//	pthread_attr_setdetachstate(&detachedAttr, PTHREAD_CREATE_DETACHED);
-//	pthread_mutex_init(&lock_accesoMarcosOcupados, NULL);
-//	pthread_mutex_init(&lock_accesoLog, NULL);
-//	pthread_mutex_init(&lock_accesoMemoria, NULL);
-//	pthread_mutex_init(&lock_accesoTabla, NULL);
-//	pthread_mutex_init(&lock_accesoTlb, NULL);
-//	pthread_mutex_init(&lock_accesoUltimaPos, NULL);
+	pthread_attr_init(&detachedAttr);
+	pthread_attr_setdetachstate(&detachedAttr, PTHREAD_CREATE_DETACHED);
+	pthread_mutex_init(&lock_accesoMarcosOcupados, NULL);
+	pthread_mutex_init(&lock_accesoLog, NULL);
+	pthread_mutex_init(&lock_accesoMemoria, NULL);
+	pthread_mutex_init(&lock_accesoTabla, NULL);
+	pthread_mutex_init(&lock_accesoTlb, NULL);
+	pthread_mutex_init(&lock_accesoUltimaPos, NULL);
 
 }
 

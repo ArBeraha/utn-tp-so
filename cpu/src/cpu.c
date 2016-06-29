@@ -6,6 +6,12 @@
 
 #include "cpu.h"
 
+bool noEsEnd(char* sentencia){
+	return strcmp(sentencia,"end")!=0
+			&& strcmp(sentencia,"\tend")!=0
+			&& strcmp(sentencia,"\t\tend")!=0;
+}
+
 void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la ultima instruccion o hay una excepcion
 	if(normalmente){
 		log_info(activeLogger,ANSI_COLOR_GREEN "El proceso ansisop ejecutó su última instrucción." ANSI_COLOR_RESET);
@@ -31,7 +37,7 @@ void incrementarPC(t_PCB* pcb) {
 void informarInstruccionTerminada(char* sentencia) { /* NO SE LLAMA */
 
 	// Le aviso a nucleo que termino una instruccion, para que calcule cuanto quantum le queda al proceso ansisop.
-	if(strcmp(sentencia,"end")==0){
+	if(!noEsEnd(sentencia)){
 		finalizar_proceso(true);
 	}else{
 		enviarHeader(nucleo,headerTermineInstruccion);
@@ -63,14 +69,10 @@ bool puedo_terminar(){
 void esperar_programas() {
 	log_debug(debugLogger, "Esperando programas de nucleo.");
 	char* header;
-	if (config.DEBUG_IGNORE_PROGRAMS) {
-		 warnDebug();
-	}else{
-		while (!puedo_terminar()) {	//mientras no tenga que terminar porque hubo una excepcion
-			header = recv_waitall_ws(nucleo, 1);
-			procesarHeader(header);
-			free(header);
-		}
+	while (!puedo_terminar()) {
+		header = recv_waitall_ws(nucleo, 1);
+		procesarHeader(header);
+		free(header);
 	}
 	log_debug(debugLogger, "Ya no se esperan programas de nucleo.");
 }
@@ -123,17 +125,11 @@ void procesarHeader(char *header) {
  * Si ignoro UMC por config, lo seteo en -99999
  */
 void pedir_tamanio_paginas() {
-	if (!config.DEBUG_IGNORE_UMC) {
-		enviarHeader(umc,HeaderTamanioPagina); //le pido a umc el tamanio de las paginas
-		char* tamanio = recv_nowait_ws(umc, sizeof(int)); //recibo el tamanio de las paginas
-		tamanioPaginas = char4ToInt(tamanio);
-		log_debug(debugLogger, "El tamaño de paginas es: |%d|",tamanioPaginas);
-		free(tamanio);
-	} else {
-		tamanioPaginas = -99999;
-		warnDebug();
-		log_debug(debugLogger, "UMC DEBUG ACTIVADO! tamanioPaginas va a valer -99999.");
-	}
+	enviarHeader(umc,HeaderTamanioPagina); //le pido a umc el tamanio de las paginas
+	char* tamanio = recv_nowait_ws(umc, sizeof(int)); //recibo el tamanio de las paginas
+	tamanioPaginas = char4ToInt(tamanio);
+	log_debug(debugLogger, "El tamaño de paginas es: |%d|",tamanioPaginas);
+	free(tamanio);
 }
 
 
@@ -282,9 +278,6 @@ void pedirYRecibirSentencia(int* tamanio) {	//pedir al UMC la proxima sentencia 
 	}
 
 	log_info(activeLogger, "Pedido de sentencia finalizado.");
-	log_info(activeLogger,
-			"Se pidieron %d paginas (estando la primera y la ultima no necesariamente completas)",
-			paginaAPedir);
 	free(sentenciaRelativa);
 }
 
@@ -312,7 +305,7 @@ void recibir_quantum_sleep(){
 }
 
 void obtenerPCB() {		//recibo el pcb que me manda nucleo
-	if(pcbActual!=NULL){ //Al principio esta en null, asi no se inicializa.
+	if(pcbActual!=NULL){
 		pcb_destroy(pcbActual);
 	}
 	ejecutando = true;
@@ -321,9 +314,8 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	log_debug(debugLogger, "Recibiendo PCB...");
 	char* serialPCB = leerLargoYMensaje(nucleo);
 	log_debug(debugLogger, "PCB recibido!");
-	deserializar_PCB(pcbActual, serialPCB);//reemplazo en el pcb actual de cpu que tiene como variable global
+	deserializar_PCB(pcbActual, serialPCB);
 	enviarPID();
-	//recibirCantidadDePaginasDeCodigo();
 	cantidadPaginasCodigo = pcbActual->cantidad_paginas;
 	stack = pcbActual->SP;
 	free(serialPCB);
@@ -348,7 +340,7 @@ void parsear(char* const sentencia) {
 	pcbActual->PC++; //si desp el parser lo setea en otro lado mediante una primitiva, es tema suyo.
 					//lo incremento antes asi no se desfasa.
 
-	if(strcmp(sentencia,"end")!=0){
+	if(noEsEnd(sentencia)){
 		analizadorLinea(sentencia, &funciones, &funcionesKernel);
 		log_info(activeLogger, "PC actualizado a |%d|",pcbActual->PC);
 		enviarHeader(nucleo,headerTermineInstruccion);
@@ -372,7 +364,7 @@ char* recibir_sentencia(int tamanio){
  * Loggeada en las funciones que llama
  */
 void obtener_y_parsear() {
-	//recibir_quantum_sleep();
+	//recibir_quantum_sleep(); //TODO activar para la entrega.
 	int tamanio;
 	//sleep(10); //TODO . le dejo marca porque lo uso para testear el kill -s y el orden de segmentfaulteo de los procesos.
 	sentenciaPedida = string_new();
@@ -425,7 +417,7 @@ void inicializar() {
 	ejecutando = false;
 	terminar = false;
 	overflow = false;
-	pcbActual = NULL; //lo dejo en NULL por chequeos en otro lado. Si está en NULL, hace el malloc antes de deserializar, asi que no rompe nada.
+	pcbActual = NULL; //lo dejo en NULL por chequeos en otro lado.
 	crearLogs(string_from_format("cpu_%d", getpid()), "CPU", config.DEBUG_RAISE_LOG_LEVEL);
 	log_info(activeLogger, "Soy CPU de process ID %d.", getpid());
 	inicializar_primitivas();

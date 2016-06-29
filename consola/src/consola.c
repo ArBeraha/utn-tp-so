@@ -12,9 +12,12 @@ void cargarConfig(){
 	configConsola = config_create("consola.cfg");
 	config.puertoNucleo = config_get_int_value(configConsola, "PUERTO_NUCLEO");
 	config.ipNucleo = config_get_string_value(configConsola, "IP_NUCLEO");
-	config.DEBUG = config_get_int_value(configConsola, "DEBUG");
-	config.DEBUG_LOG_OLD_REMOVE = config_get_int_value(configConsola, "DEBUG_LOG_OLD_REMOVE");
-	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configConsola, "DEBUG_RAISE_LOG_LEVEL");
+//	config.DEBUG = config_get_int_value(configConsola, "DEBUG");
+//	config.DEBUG_LOG_OLD_REMOVE = config_get_int_value(configConsola, "DEBUG_LOG_OLD_REMOVE");
+//	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configConsola, "LOGGEAR_TODO");
+	config.DEBUG = false;
+	config.DEBUG_LOG_OLD_REMOVE = false;
+	config.DEBUG_RAISE_LOG_LEVEL = 0;
 }
 
 void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el navegador xD
@@ -197,7 +200,6 @@ void cargarYEnviarArchivo() {
 }
 
 int main(int argc, char* argv[]) {
-	system("clear");
 	cargarConfig();
 	if (config.DEBUG_LOG_OLD_REMOVE) {
 		log_warning(warningLogger, "DEBUG_LOG_OLD_REMOVE esta en true!");

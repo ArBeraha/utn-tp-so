@@ -94,12 +94,16 @@ void procesarHeader(char *header) {
 		break;
 
 	case HeaderPCB:
-		overflow = false;
-		obtenerPCB(); //inicio el proceso de aumentar el PC, pedir a UMC sentencia...
+		if(!puedo_terminar()){
+			overflow = false;
+			obtenerPCB();
+		}
 		break;
 
 	case HeaderContinuarProceso:
-		obtener_y_parsear();
+		if(!puedo_terminar()){
+			obtener_y_parsear();
+		}
 		break;
 
 	case HeaderDesalojarProceso:
@@ -364,14 +368,16 @@ char* recibir_sentencia(int tamanio){
  * Loggeada en las funciones que llama
  */
 void obtener_y_parsear() {
-	recibir_quantum_sleep(); //TODO activar para la entrega.
-	int tamanio;
-	usleep(quantum_sleep); //TODO . le dejo marca porque lo uso para testear el kill -s y el orden de segmentfaulteo de los procesos.
-	sentenciaPedida = string_new();
-	pedirYRecibirSentencia(&tamanio);
-	parsear(sentenciaPedida);
-	sleep(quantum_sleep);
-	free(sentenciaPedida);
+	recibir_quantum_sleep();
+	if(!puedo_terminar()){
+		int tamanio;
+		usleep(quantum_sleep);
+		sentenciaPedida = string_new();
+		pedirYRecibirSentencia(&tamanio);
+		parsear(sentenciaPedida);
+		sleep(quantum_sleep);
+		free(sentenciaPedida);
+	}
 }
 
 /**
@@ -426,11 +432,13 @@ void inicializar() {
 void finalizar() {
 	log_info(activeLogger,"Finalizando proceso cpu...");
 	enviarHeader(umc,headerCPUTerminada);
+//	enviarHeader(nucleo,headerNoTermineQuantumPeroToma);
+//	desalojarProceso();
 
 	close(nucleo);
 	close(umc);
 
-	log_info(activeLogger,"Proceso CPU de PID: |%d| finalizó correctamente.",getpid());
+	log_info(activeLogger,"CPU de PID finalizó correctamente.");
 	destruirLogs();
 	exit(EXIT_SUCCESS);
 }

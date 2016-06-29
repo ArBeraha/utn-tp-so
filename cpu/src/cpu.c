@@ -403,13 +403,21 @@ void cargarConfig() {
 	config.ipNucleo = config_get_string_value(configCPU, "IP_NUCLEO");
 	config.puertoUMC = config_get_int_value(configCPU, "PUERTO_UMC");
 	config.ipUMC = config_get_string_value(configCPU, "IP_UMC");
-	config.DEBUG_IGNORE_UMC = config_get_int_value(configCPU, "DEBUG_IGNORE_UMC");
-	config.DEBUG_IGNORE_PROGRAMS = config_get_int_value(configCPU, "DEBUG_IGNORE_PROGRAMS");
-	config.DEBUG_IGNORE_NUCLEO = config_get_int_value(configCPU, "DEBUG_IGNORE_NUCLEO");
-	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configCPU, "DEBUG_RAISE_LOG_LEVEL");
-	config.DEBUG_RUN_UNITARY_TESTS = config_get_int_value(configCPU, "DEBUG_RUN_UNITARY_TESTS");
-	config.DEBUG_RUN_TESTS_WITH_UMC = config_get_int_value(configCPU, "DEBUG_RUN_TESTS_WITH_UMC");
-	config.DEBUG_LOG_ON_TESTS = config_get_int_value(configCPU, "DEBUG_LOG_ON_TESTS");
+	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configCPU, "LOGGEAR_TODO");
+
+
+	//	config.DEBUG_IGNORE_UMC = config_get_int_value(configCPU, "DEBUG_IGNORE_UMC");
+	//	config.DEBUG_IGNORE_PROGRAMS = config_get_int_value(configCPU, "DEBUG_IGNORE_PROGRAMS");
+	//	config.DEBUG_IGNORE_NUCLEO = config_get_int_value(configCPU, "DEBUG_IGNORE_NUCLEO");
+	//	config.DEBUG_RUN_UNITARY_TESTS = config_get_int_value(configCPU, "DEBUG_RUN_UNITARY_TESTS");
+	//	config.DEBUG_RUN_TESTS_WITH_UMC = config_get_int_value(configCPU, "DEBUG_RUN_TESTS_WITH_UMC");
+	//	config.DEBUG_LOG_ON_TESTS = config_get_int_value(configCPU, "DEBUG_LOG_ON_TESTS");
+		config.DEBUG_IGNORE_UMC = false;
+		config.DEBUG_IGNORE_PROGRAMS = false;
+		config.DEBUG_IGNORE_NUCLEO = false;
+		config.DEBUG_RUN_UNITARY_TESTS = false;
+		config.DEBUG_RUN_TESTS_WITH_UMC = false;
+		config.DEBUG_LOG_ON_TESTS = false;
 }
 
 void inicializar() {

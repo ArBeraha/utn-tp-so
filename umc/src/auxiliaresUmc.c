@@ -338,6 +338,7 @@ void imprimirRegionMemoriaCodigo(char* region, int size){
 	printf("(REGION CODIGO):");
 	for(i=0;i<size;i++){
 //			putchar(region[i]);
+		if (region[i]>=32 || region[i]=='\n')
 			printf("%c",region[i]);
 	}
 }

@@ -124,8 +124,6 @@ void devolverTodaLaMemoria(){
 			tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
 			unaPagina = list_get((t_list*)unaTabla->listaPaginas,j);
 			//Hago un solo print f de las caracteristicas
-			printf("Accediendo a memoria... \n ");
-			usleep(retardoMemoria);
 
 			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
@@ -172,8 +170,6 @@ void devolverMemoriaDePid(int pid){
 		unaPagina = list_get((t_list*)unaTabla->listaPaginas,i);
 
 		if(unaPagina->bitPresencia==1){
-			printf("Accediendo a memoria... \n ");
-			usleep(retardoMemoria);
 
 			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado);
 

@@ -75,7 +75,7 @@ t_config* configCPU;
 customConfig_t config;
 
 bool terminar;						//flag para que el proceso sepa cuando terminar
-bool overflow;
+int overflow;
 bool ejecutando;
 
 /*----- Operaciones sobre el PC y avisos por quantum -----*/

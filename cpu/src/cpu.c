@@ -6,6 +6,13 @@
 
 #include "cpu.h"
 
+
+
+
+bool hayOverflow(){
+	printf("Overflow: %d ..... 1 = OK", overflow);
+	return overflow!=1;
+}
 bool noEsEnd(char* sentencia){
 	return strcmp(sentencia,"end")!=0
 			&& strcmp(sentencia,"\tend")!=0
@@ -94,7 +101,7 @@ void procesarHeader(char *header) {
 		break;
 
 	case HeaderPCB:
-		overflow = false;
+		overflow = 1;
 		obtenerPCB();
 		break;
 
@@ -109,7 +116,7 @@ void procesarHeader(char *header) {
 		break;
 
 	case HeaderExcepcion:
-		lanzar_excepcion_overflow();
+		lanzar_excepcion_overflow(0);
 		break;
 
 	default:
@@ -160,17 +167,21 @@ void sacarSaltoDeLinea(char* texto, int pos)
 }
 
 void recibirFragmentoDeSentencia(int size){
-	log_debug(debugLogger, "Recibiendo parte de una sentencia. Tamaño del fragmento: |%d|...", size);
-	char* serialSentencia = recv_waitall_ws(umc, size);
-	sacarSaltoDeLinea(serialSentencia, size);
-	char* sentencia = malloc(size+1);
-	sentencia[size]='\0';
-	memcpy(sentencia,serialSentencia,size);
-	log_debug(debugLogger, "Recibido el fragmento de sentencia |%s|", sentencia);
-	string_append(&sentenciaPedida, sentencia);
-	free(serialSentencia);
-	free(sentencia);
+	if(!hayOverflow()){
+		log_debug(debugLogger, "Recibiendo parte de una sentencia. Tamaño del fragmento: |%d|...", size);
+		char* serialSentencia = recv_waitall_ws(umc, size);
+		sacarSaltoDeLinea(serialSentencia, size);
+		char* sentencia = malloc(size+1);
+		sentencia[size]='\0';
+		memcpy(sentencia,serialSentencia,size);
+		log_debug(debugLogger, "Recibido el fragmento de sentencia |%s|", sentencia);
+		string_append(&sentenciaPedida, sentencia);
+		free(serialSentencia);
+		free(sentencia);
+	}
 }
+
+
 
 /**
  * Envia a UMC: pag, offest y tamaño, es decir, un t_pedido.
@@ -178,26 +189,29 @@ void recibirFragmentoDeSentencia(int size){
  * Se usa para indicar en que posicion escribir, pedir variable y pedir sentencia.
  */
 void enviar_solicitud(int pagina, int offset, int size) {
-	t_pedido pedido;
-	pedido.offset = offset;
-	pedido.pagina = pagina;
-	pedido.size = size;
+	if(!hayOverflow()){
+		t_pedido pedido;
+			pedido.offset = offset;
+			pedido.pagina = pagina;
+			pedido.size = size;
 
-	char* solicitud = string_new();
+			char* solicitud = string_new();
 
-	int tamanio = serializar_pedido(solicitud, &pedido);
+			int tamanio = serializar_pedido(solicitud, &pedido);
 
-	send_w(umc, solicitud, tamanio);
+			send_w(umc, solicitud, tamanio);
 
-	log_info(activeLogger,"Solicitud enviada: (nPag,offset,size)=(%d,%d,%d)", pagina, offset, size);
+			log_info(activeLogger,"Solicitud enviada: (nPag,offset,size)=(%d,%d,%d)", pagina, offset, size);
 
-	char* stackOverflowFlag = recv_waitall_ws(umc, sizeof(int));
-	overflow = !char4ToInt(stackOverflowFlag);
-	free(stackOverflowFlag);
-	if (overflow) {
-		lanzar_excepcion_overflow();
+			char* stackOverflowFlag = recv_waitall_ws(umc, sizeof(int));
+			overflow = char4ToInt(stackOverflowFlag);
+			free(stackOverflowFlag);
+			printf("UMC mando overflow = %d\n",overflow);
+			if (hayOverflow()) {
+				lanzar_excepcion_overflow(overflow);
+			}
+			free(solicitud);
 	}
-	free(solicitud);
 }
 
 t_sentencia* obtener_sentencia_relativa(int* paginaInicioSentencia) {
@@ -372,20 +386,26 @@ void obtener_y_parsear() {
 		usleep(quantum_sleep);
 		sentenciaPedida = string_new();
 		pedirYRecibirSentencia(&tamanio);
-		parsear(sentenciaPedida);
-		sleep(quantum_sleep);
-		free(sentenciaPedida);
+		if(!hayOverflow()){
+			parsear(sentenciaPedida);
+			free(sentenciaPedida);
+		}
 	}
 }
 
 /**
  * Lanza excepcion por stack overflow y termina el proceso.
  */
-void lanzar_excepcion_overflow(){
-	log_info(activeLogger,ANSI_COLOR_RED "Stack overflow! se intentó leer una dirección inválida." ANSI_COLOR_RESET);
-	log_info(activeLogger,"Terminando la ejecución del programa actual...");
+void lanzar_excepcion_overflow(int flagDeUmc){
+	switch(flagDeUmc){
+	case 0: log_info(activeLogger,ANSI_COLOR_RED "Stack overflow! se intentó leer una dirección inválida." ANSI_COLOR_RESET);
+			break;
+	case 2:  log_info(activeLogger,ANSI_COLOR_RED "No hay marcos suficientes para el proceso." ANSI_COLOR_RESET);
+			break;
+	default: printf("LLEGO CUALQUIER COSA\n");
+	}
+	log_info(activeLogger,"terminada la ejecución del programa actual.");
 
-	overflow=true;
 	finalizar_proceso(false);
 
 	log_info(activeLogger,"Proceso terminado!");

@@ -264,12 +264,10 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 	free(serialPID);
 	free(serialPagina);
 
-
 	pthread_mutex_unlock(&lock_accesoSwap);
 
-
-
 	contenidoPagina = recv_waitall_ws(swapServer,config.tamanio_marco);
+
 	agregarAMemoria(pedido,contenidoPagina,cliente);
 
 	return 1;
@@ -469,6 +467,7 @@ int reservarPagina(int cantPaginasPedidas, int pid) {
 	return 1;
 }
 
+
 void pedidoLectura(t_cliente cliente) {
 	devolverTodaLaMemoria();
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
@@ -481,6 +480,7 @@ void pedidoLectura(t_cliente cliente) {
 	if (estaConectado(cliente) && buscarTabla(id)!=NULL) {
 
 		imprimir_serializacion(pedidoSerializado, 12);
+		printf("ACA0 \n");
 		deserializar_pedido(pedidoCpu, pedidoSerializado);
 
 		pedidoLectura_t pedidoLectura;
@@ -488,23 +488,44 @@ void pedidoLectura(t_cliente cliente) {
 		pedidoLectura.paginaRequerida = pedidoCpu->pagina;
 		pedidoLectura.offset = pedidoCpu->offset;
 		pedidoLectura.cantBytes = pedidoCpu->size;
-
+		printf("ACA1 \n");
 		log_info(activeLogger,
 				"[%d] Realizando lectura de [Pag,Off,Bytes] = [%d,%d,%d]", id,
 				pedidoLectura.paginaRequerida, pedidoLectura.offset,
 				pedidoLectura.cantBytes);
 
 		if (!existePaginaBuscadaEnTabla(pedidoCpu->pagina, buscarTabla(id))) {
+			printf("ACA2A \n");
 			char* serialRespuesta = intToChar4(0);
 			if (estaConectado(cliente))
 				send_w(cliente.socket, serialRespuesta, sizeof(int));
 			free(serialRespuesta);
+			printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A    0\n\n\n\n\n ");
 			return;
-		} else {
-			char* serialRespuesta = intToChar4(1);
-			if (estaConectado(cliente))
+		}
+		else {
+			printf("ACA2B \n");
+			tabla_t* tabla = buscarTabla(id);
+			printf("ACA2C \n");
+			tablaPagina_t* pagina = list_get((t_list*)tabla->listaPaginas,pedidoLectura.paginaRequerida);
+			printf("ACA2D \n");
+			printf("Cant marc lib: %d \n",cantidadMarcosLibres());
+			printf("Cant pag en mem pid: %d \n",cantPaginasEnMemoriaDePid(id));
+			printf("Bit pres: %d \n",pagina->bitPresencia );
+			if(pagina->bitPresencia == 0 && cantidadMarcosLibres()==0 && cantPaginasEnMemoriaDePid(id)<config.marcos_x_proceso){
+				char* serialRespuesta = intToChar4(2);
+				if (estaConectado(cliente))
 				send_w(cliente.socket, serialRespuesta, sizeof(int));
-			free(serialRespuesta);
+				free(serialRespuesta);
+				printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A    2\n\n\n\n\n ");
+				return;
+			}else{
+				printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A    1\n\n\n\n\n ");
+				char* serialRespuesta = intToChar4(1);
+				if (estaConectado(cliente))
+					send_w(cliente.socket, serialRespuesta, sizeof(int));
+				free(serialRespuesta);
+			}
 		}
 
 		char* contenido = devolverPedidoPagina(pedidoLectura, cliente);
@@ -541,16 +562,47 @@ void headerEscribirPagina(t_cliente cliente){
 
 	char* buffer = malloc(pedidoCpuEscritura->size);
 
-	if(!existePaginaBuscadaEnTabla(pedidoCpuEscritura->pagina,buscarTabla(id))){
-		char* serialRespuesta = intToChar4(0);
-		send_w(cliente.socket, serialRespuesta,sizeof(int));
-		free(serialRespuesta);
-		return;
-	}else{
-		char* serialRespuesta = intToChar4(1);
-		send_w(cliente.socket, serialRespuesta,sizeof(int));
-		free(serialRespuesta);
-	}
+//	if(!existePaginaBuscadaEnTabla(pedidoCpuEscritura->pagina,buscarTabla(id))){
+//		char* serialRespuesta = intToChar4(0);
+//		send_w(cliente.socket, serialRespuesta,sizeof(int));
+//		free(serialRespuesta);
+//		return;
+//	}else{
+//		char* serialRespuesta = intToChar4(1);
+//		send_w(cliente.socket, serialRespuesta,sizeof(int));
+//		free(serialRespuesta);
+//	}
+
+	if (!existePaginaBuscadaEnTabla(pedidoCpuEscritura->pagina, buscarTabla(id))) {
+				char* serialRespuesta = intToChar4(0);
+				if (estaConectado(cliente))
+					send_w(cliente.socket, serialRespuesta, sizeof(int));
+				free(serialRespuesta);
+				printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A    0\n\n\n\n\n ");
+				return;
+			}
+			else {
+				tabla_t* tabla = buscarTabla(id);
+				tablaPagina_t* pagina = list_get((t_list*)tabla->listaPaginas,pedidoCpuEscritura->pagina);
+				printf("Cant marc lib: %d \n",cantidadMarcosLibres());
+				printf("Cant pag en mem pid: %d \n",cantPaginasEnMemoriaDePid(id));
+				printf("Bit pres: %d \n",pagina->bitPresencia );
+				if(pagina->bitPresencia == 0 && cantidadMarcosLibres()==0 && cantPaginasEnMemoriaDePid(id)<config.marcos_x_proceso){
+					char* serialRespuesta = intToChar4(2);
+					if (estaConectado(cliente))
+					send_w(cliente.socket, serialRespuesta, sizeof(int));
+					free(serialRespuesta);
+					printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A   2\n\n\n\n\n ");
+					return;
+				}else{
+					printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A   1\n\n\n\n\n ");
+					char* serialRespuesta = intToChar4(1);
+					if (estaConectado(cliente))
+						send_w(cliente.socket, serialRespuesta, sizeof(int));
+					free(serialRespuesta);
+				}
+			}
+
 
 	read(cliente.socket, buffer, sizeof(int));
 
@@ -706,7 +758,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursivo
 
 
-	crearLogs("Umc", "UMC", 0);
+	crearLogs("Umc", "UMC", -1);
 	dump = log_create("dump", "UMC", false, LOG_LEVEL_INFO);
 	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
 	cargarCFG();

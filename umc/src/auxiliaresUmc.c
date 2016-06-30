@@ -162,6 +162,7 @@ int buscarPrimerMarcoLibre(){
 	return -1;
 }
 
+
 int cantidadMarcosLibres(){
 	int i;
 	int c=0;

@@ -58,7 +58,8 @@ typedef struct customConfig {
 
 	int cantidad_marcos;
 	int tamanio_marco;
-
+	int mostrar_paginas;
+	int mostrar_tlb;
 	int entradas_tlb;
 	int retardo;
 	char* ip_swap;

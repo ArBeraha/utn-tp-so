@@ -31,6 +31,8 @@ void cargarCFG() {
 	config.puerto_cpu = config_get_int_value(configUmc, "PUERTO_UMC_CPU");
 	config.algoritmo_paginas= config_get_string_value(configUmc, "ALGORITMO_REEMPLAZO");
 	config.marcos_x_proceso = config_get_int_value(configUmc, "MARCOS_X_PROCESO");
+	config.mostrar_tlb = config_get_int_value(configUmc, "MOSTRAR_TLB");
+	config.mostrar_paginas = config_get_int_value(configUmc, "MOSTRAR_PAGINAS");
 }
 
 char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
@@ -103,7 +105,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 					pthread_mutex_unlock(&lock_accesoMemoria);
 
 					agregarATlb(paginaBuscada,pedido.pid);
-					mostrarTlb();
+					if(config.mostrar_tlb)mostrarTlb();
 //					log_info(activeLogger, "[%d][L] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
 
 					return contenido;
@@ -211,7 +213,7 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 					ponerBitModif1(pedido.pid,pedido.paginaRequerida);
 
 					agregarATlb(paginaBuscada,pedido.pid);
-					mostrarTlb();
+					if(config.mostrar_tlb)mostrarTlb();
 
 //					log_info(activeLogger, "[%d][E] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
 
@@ -470,6 +472,9 @@ int reservarPagina(int cantPaginasPedidas, int pid) {
 
 
 void pedidoLectura(t_cliente cliente) {
+
+	if(config.mostrar_paginas){ devolverTodasLasPaginas(); printf("\n");}
+
 	devolverTodasLasPaginas();
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
 	char* pedidoSerializado = malloc(sizeof(t_pedido));
@@ -523,7 +528,6 @@ void pedidoLectura(t_cliente cliente) {
 		if (estaConectado(cliente)) {
 			printf("Devolviendo lectura: ");
 			imprimirRegionMemoriaCodigo(contenido, pedidoLectura.cantBytes);
-			imprimir_serializacion(contenido, pedidoLectura.cantBytes);
 			send_w(cliente.socket, contenido, pedidoLectura.cantBytes);
 		} else
 			printf("Se interrumpió la lectura por desconexión\n");
@@ -538,6 +542,9 @@ void pedidoLectura(t_cliente cliente) {
 
 
 void headerEscribirPagina(t_cliente cliente){
+
+	if(config.mostrar_paginas){ devolverTodasLasPaginas(); printf("\n");}
+
 	t_pedido* pedidoCpuEscritura = malloc(sizeof(t_pedido));
 	char* pedidoSerializadoEscritura = malloc(sizeof(t_pedido));
 	int id =0;

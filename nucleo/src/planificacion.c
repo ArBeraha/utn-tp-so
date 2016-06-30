@@ -18,7 +18,7 @@ bool isclosed(int sock) {
   FD_SET(sock, &rfd);
   struct timeval e;
   e.tv_sec = 0;
-  e.tv_usec = 500000;
+  e.tv_usec = 1;
 
   select(sock+1, &rfd, 0, 0, &e);
   if (!FD_ISSET(sock, &rfd))

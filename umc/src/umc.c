@@ -404,6 +404,14 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 	free(header);
 }
 
+t_cliente* buscarClientePorPid(int pid){
+	int i;
+	for (i=0;i<getMaxClients();i++){
+		if (clientes[i].pid==pid)
+			return &clientes[i];
+	}
+	return NULL;
+}
 
 void finalizarPrograma(int idPrograma){
 	pthread_mutex_lock(&lock_accesoSwap);
@@ -417,6 +425,7 @@ void finalizarPrograma(int idPrograma){
 		tabla_t* tabla = buscarTabla(idPrograma);
 		list_destroy((t_list*)tabla->listaPaginas);
 		list_remove(listaTablasPaginas,buscarPosicionTabla(idPrograma));
+//		close(buscarClientePorPid(idPrograma)->socket);
 	}
 	free(serialIdPrograma);
 }
@@ -460,8 +469,6 @@ int reservarPagina(int cantPaginasPedidas, int pid) {
 	return 1;
 }
 
-
-
 void pedidoLectura(t_cliente cliente) {
 	devolverTodaLaMemoria();
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
@@ -471,7 +478,7 @@ void pedidoLectura(t_cliente cliente) {
 
 	read(cliente.socket, pedidoSerializado, sizeof(t_pedido));
 
-	if (existePidEnListadeTablas(id)) {
+	if (estaConectado(cliente) && buscarTabla(id)!=NULL) {
 
 		imprimir_serializacion(pedidoSerializado, 12);
 		deserializar_pedido(pedidoCpu, pedidoSerializado);
@@ -720,19 +727,19 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 
 	crearHilo(&hiloRecibirComandos,(HILO)recibirComandos);
 
-	configurarServidorExtendido(&socketNucleo, &direccionNucleo,
-			config.puerto_umc_nucleo, &tamanioDireccionNucleo, &activadoNucleo);
-
 	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puerto_cpu,
 			&tamanioDireccionCPU, &activadoCPU);
+
+	configurarServidorExtendido(&socketNucleo, &direccionNucleo,
+			config.puerto_umc_nucleo, &tamanioDireccionNucleo, &activadoNucleo);
 
 	inicializarClientes();
 	log_info(activeLogger, "Esperando conexiones CPU/NUCLEO...");
 
 	while (1) {
 		FD_ZERO(&socketsParaLectura);
-		FD_SET(socketNucleo, &socketsParaLectura);
 		FD_SET(socketCPU, &socketsParaLectura);
+		FD_SET(socketNucleo, &socketsParaLectura);
 
 		mayorDescriptor = (socketNucleo > socketCPU) ? socketNucleo : socketCPU;
 

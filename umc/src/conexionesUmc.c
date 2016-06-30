@@ -35,6 +35,7 @@ HILO hiloDedicado(int indice) {
 	}
 	free(header);
 	log_info(activeLogger, "[%d]Hasta aqui llego el hilo",clienteLocal.indice);
+	close(clienteLocal.socket);
 	return 0;
 }
 

@@ -29,17 +29,18 @@ HILO planificar() {
 void planificarExpulsion(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	// mutexPlanificacion SAFE
+	if (estaConectado(clientes[proceso->cpu])) {
+		if (proceso->estado == BLOCK) {
+			expulsarProceso(proceso);
+			return;
+		}
 
-	if (proceso->estado == BLOCK){
-		expulsarProceso(proceso);
-		return;
-	}
-
-		if (proceso->estado == EXEC && (terminoQuantum(proceso) || proceso->abortado))
+		if (proceso->estado == EXEC
+				&& (terminoQuantum(proceso) || proceso->abortado))
 			expulsarProceso(proceso);
 		else
 			continuarProceso(proceso);
-
+	}
 	if (proceso->abortado){
 //		pthread_mutex_unlock(&mutexClientes);
 		liberarRecursos(proceso);

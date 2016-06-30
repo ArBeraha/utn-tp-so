@@ -159,11 +159,14 @@ void operacionIniciarProceso(){
 	for (i=0;i<paginasCodigo;i++){
 		log_info(activeLogger,"Recibiendo pagina:%d",i);
 		char* pagina = recv_waitall_ws(cliente,config.tamanio_pagina);
-		escribirPagina(proceso->posPagina+i,pagina);
+		if (proceso!=NULL)
+			escribirPagina(proceso->posPagina+i,pagina);
 		free(pagina);
 	}
+	if (proceso!=NULL)
 	log_info(activeLogger,"Recibidas todas las paginas de codigo");
-	enviarHeader(cliente,HeaderProcesoAgregado);
+	else log_info(activeLogger, "Paginas rechazadas por falta de espacio");
+
 	free(serialPID);
 	free(serialPagina);
 	free(serialPaginasCodigo);
@@ -180,7 +183,7 @@ void operacionEscritura(){
 	log_info(activeLogger, "Se recibio escritura del pid:%d pagina:%d",pid,pagina);
 	contenido = recv_waitall_ws(cliente,config.tamanio_pagina);
 	escribirPagina(buscarProcesoSegunPID(pid)->posPagina+pagina,contenido);
-	//usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
+	usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
 	free(serialPID);
 	free(serialPagina);
 	free(contenido);
@@ -271,7 +274,7 @@ t_infoProceso* asignarEspacioANuevoProceso(int pid, int paginasAIniciar) {
 		}
 		return agregarProceso(pid, paginasAIniciar);
 	} else {
-//		enviarHeader(cliente,HeaderNoHayEspacio);
+		enviarHeader(cliente,HeaderNoHayEspacio);
 		printf("No hay espacio suficiente para asignar al nuevo proceso.\n");
 		log_error(activeLogger, "Fallo la iniciacion del programa %d ", pid);
 	}
@@ -310,7 +313,7 @@ void compactar() {
 			i += (procesoActual->cantidadDePaginas) - 1;
 		}
 	}
-	//usleep(config.retardo_compactacion); //TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
+	usleep(config.retardo_compactacion); //TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
 	log_info(activeLogger, "Compactación finalizada.");
 }
 void configurarBitarray() {
@@ -378,10 +381,9 @@ t_infoProceso* agregarProceso(int pid, int paginasAIniciar) {
 		list_add(espacioUtilizado, (void*) proceso);
 		log_info(activeLogger, "Se inicializo el proceso pid:%d",pid);
 		//printf("Proceso agregado exitosamente\n");
-//		enviarHeader(cliente,HeaderProcesoAgregado);
+		enviarHeader(cliente,HeaderProcesoAgregado);
 		return proceso;
 	} else {
-//		enviarHeader(cliente, HeaderError);
 		printf("Error Nunca debio llegar acá al agregar Proceso\n");
 		return NULL;
 	}
@@ -464,7 +466,7 @@ int existeElPid(int unPid){
 //**************************************************MAIN SWAP*****************************************************************
 int main() {
 	inicializar();
-	testear(test_swap);
+	//testear(test_swap);
 	conectar_umc();
 	esperar_peticiones();
 	finalizar();

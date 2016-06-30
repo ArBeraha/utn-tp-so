@@ -64,6 +64,7 @@ typedef enum {
 	HeaderEscrituraCorrecta, //48
 	HeaderEscrituraErronea, //49
 	HeaderProcesoNoEncontrado, //50
+	HeaderProcesoNoAgregado,
 	HeaderPID,
 	HeaderConsolaFinalizarMuerteCPU,
 	HeaderConsolaFinalizarErrorInstruccion,

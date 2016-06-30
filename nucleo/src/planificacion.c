@@ -6,6 +6,28 @@
  */
 #include "nucleo.h"
 
+
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+
+bool isclosed(int sock) {
+  fd_set rfd;
+  FD_ZERO(&rfd);
+  FD_SET(sock, &rfd);
+  struct timeval e;
+  e.tv_sec = 0;
+  e.tv_usec = 500000;
+
+  select(sock+1, &rfd, 0, 0, &e);
+  if (!FD_ISSET(sock, &rfd))
+    return false;
+  int n = 0;
+  ioctl(sock, FIONREAD, &n);
+  return n == 0;
+}
+
 static bool matrizEstados[5][5] = {
 //		     		NEW    READY  EXEC   BLOCK  EXIT
 		/* NEW 	 */{ false, true, false, false, true },
@@ -142,7 +164,7 @@ void ejecutarProceso(t_proceso* proceso, int cpu) {
 		int bytes = bytes_PCB(proceso->PCB);
 		char* serialPCB = malloc(bytes);
 		serializar_PCB(serialPCB, proceso->PCB);
-		if (estaConectado(clientes[proceso->cpu])){
+		if (!isclosed(proceso->socketCPU)) {
 			enviarHeader(proceso->socketCPU,HeaderPCB);
 			enviarLargoYSerial(proceso->socketCPU, bytes, serialPCB);
 			continuarProceso(proceso);
@@ -169,7 +191,7 @@ void continuarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	log_info(activeLogger,"Continuando PID:%d",proceso->PCB->PID);
 	char* serialSleep = intToChar4(config.queantum_sleep);
-	if (estaConectado(clientes[proceso->cpu])) {
+	if (!isclosed(proceso->socketCPU)) {
 		enviarHeader(proceso->socketCPU, HeaderContinuarProceso);
 		send_w(proceso->socketCPU, serialSleep, sizeof(int));
 	}

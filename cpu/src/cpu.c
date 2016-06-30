@@ -383,7 +383,7 @@ void obtener_y_parsear() {
 	recibir_quantum_sleep();
 	if(!puedo_terminar()){
 		int tamanio;
-		usleep(quantum_sleep);
+		usleep(quantum_sleep*1000);
 		sentenciaPedida = string_new();
 		pedirYRecibirSentencia(&tamanio);
 		if(!hayOverflow()){

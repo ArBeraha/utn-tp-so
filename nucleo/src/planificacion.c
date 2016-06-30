@@ -88,7 +88,7 @@ void planificacionFIFO() {
 	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU)) {
 		 //Limpiamos las colas de procesos eliminados hasta encontrar uno que no lo este o se vacie
 		while (!queue_is_empty(colaListos)
-				&& !procesoExiste( (t_proceso*) queue_peek(colaListos)))
+				&& !procesoExiste( (t_proceso*) queue_peek(colaListos)) && ( (t_proceso*) queue_peek(colaListos))->estado!=READY)
 			queue_pop(colaListos);
 		// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
 		while (!queue_is_empty(colaCPU) && !clienteExiste( (int) queue_peek(colaCPU)))

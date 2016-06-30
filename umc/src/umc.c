@@ -624,10 +624,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 
 	case HeaderLiberarRecursosPagina:
 		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Pedido de liberar recursos" ANSI_COLOR_RESET ,idLog);
-		char* pidALiberar = malloc(sizeof(int));
-		read(cliente.socket , pidALiberar, sizeof(int));
-		finalizarPrograma(char4ToInt(pidALiberar));
-		free(pidALiberar);
+		finalizarPrograma(char4ToInt(recv_nowait_ws(cliente.socket,sizeof(int))));
 		break;
 
 	case HeaderTerminoProceso:

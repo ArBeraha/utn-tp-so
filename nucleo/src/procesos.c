@@ -36,6 +36,13 @@ void rechazarProceso(t_proceso* proceso) {
 
 	free(proceso);
 }
+void liberarRecursos(t_proceso* proceso){
+	enviarHeader(umc,HeaderLiberarRecursosPagina);
+		char* serialPID = intToChar4(proceso->PCB->PID);
+		send_w(umc,serialPID,sizeof(int));
+}
+
+
 HILO crearProceso(int consola) {
 	bool exploto = false;
 	t_proceso* proceso = malloc(sizeof(t_proceso));
@@ -55,12 +62,16 @@ HILO crearProceso(int consola) {
 			free(proceso);
 			return 0;
 		}
-
 		proceso->PCB->cantidad_paginas = ceil(
 				((double) strlen(codigo)) / ((double) tamanio_pagina));
-		if (!pedirPaginas(proceso, codigo) || proceso->abortado) {
+		if (!pedirPaginas(proceso, codigo)) {
 			rechazarProceso(proceso);
 		} else {
+			if (proceso->abortado){
+				liberarRecursos(proceso);
+				finalizarProceso(consola);
+				return 0;
+			}
 			asignarMetadataProceso(proceso, codigo);
 			MUTEXCLIENTES(clientes[consola].pid = consola);
 			pcb_main(proceso->PCB);

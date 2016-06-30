@@ -42,6 +42,7 @@ void planificarExpulsion(t_proceso* proceso) {
 
 	if (proceso->abortado){
 		pthread_mutex_unlock(&mutexClientes);
+		liberarRecursos(proceso);
 		finalizarProceso(proceso->consola);
 		pthread_mutex_lock(&mutexClientes);
 	}

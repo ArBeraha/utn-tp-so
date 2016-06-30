@@ -82,6 +82,7 @@ char* leerLargoYMensaje(int cliente);
 void enviarLargoYString(int cliente, char* mensaje);
 void enviarLargoYSerial(int cliente, int largo, char* mensaje);
 void enviarHeader(int cliente, int header);
+bool estaConectado(t_cliente cliente);
 
 #endif /* CLIENTE_SERVIDOR_H_ */
 

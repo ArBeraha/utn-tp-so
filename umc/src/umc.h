@@ -43,6 +43,7 @@
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
 pthread_mutex_t mutexClientes;
+
 #define MUTEXCLIENTES(CONTENIDO) \
 	MUTEX(CONTENIDO,mutexClientes);
 pthread_mutex_t mutexSwap;

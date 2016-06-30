@@ -458,6 +458,8 @@ int reservarPagina(int cantPaginasPedidas, int pid) {
 	return 1;
 }
 
+
+
 void pedidoLectura(t_cliente cliente){
 	devolverTodaLaMemoria();
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
@@ -491,16 +493,24 @@ void pedidoLectura(t_cliente cliente){
 
 	char* contenido = devolverPedidoPagina(pedidoLectura,cliente);
 
-	printf("Devolviendo lectura: ");
-	imprimirRegionMemoriaCodigo(contenido,pedidoLectura.cantBytes);
-	imprimir_serializacion(contenido,7);
-	send_w(cliente.socket,contenido,pedidoLectura.cantBytes);
+	if (estaConectado(cliente)){
+		printf("Devolviendo lectura: ");
+		imprimirRegionMemoriaCodigo(contenido,pedidoLectura.cantBytes);
+		imprimir_serializacion(contenido,pedidoLectura.cantBytes);
+		send_w(cliente.socket, contenido, pedidoLectura.cantBytes);
+	}
+	else
+		printf("Se interrumpió la lectura por desconexión\n");
 
 	free(pedidoSerializado);
 	free(pedidoCpu);
 	log_info(activeLogger, ANSI_COLOR_RED "[%d] Finalizo pedido de lectura" ANSI_COLOR_RESET,id);
-
 }
+
+
+
+
+
 
 void headerEscribirPagina(t_cliente cliente){
 	t_pedido* pedidoCpuEscritura = malloc(sizeof(t_pedido));

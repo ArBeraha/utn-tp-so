@@ -242,4 +242,7 @@ void enviarHeader(int cliente, int header){
 	free(serialHeader);
 }
 
-
+bool estaConectado(t_cliente cliente){
+	getpeername(cliente.socket , (struct sockaddr*)&cliente.addr , (socklen_t*)&cliente.addrlen);
+	return errno!=ENOTCONN;
+}

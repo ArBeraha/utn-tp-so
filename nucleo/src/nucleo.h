@@ -153,6 +153,7 @@ char* getScript(int consola,bool* exploto);
 // CPU
 void ingresarCPU(int cliente);
 // Procesos
+void liberarRecursos(t_proceso* proceso);
 HILO crearProceso(int consola);
 void rechazarProceso(t_proceso* proceso);
 void bloquearProceso(t_proceso* proceso);

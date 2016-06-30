@@ -369,10 +369,17 @@ void finalizarConsola(int cliente) {
 	if (proceso != NULL) {
 		proceso->abortado = true;
 		if (proceso->estado == READY) {
+			liberarRecursos(proceso);
 			finalizarProceso(cliente);
 		}
-		else if (proceso->estado == EXEC)
+		else if (proceso->estado == EXEC){
+			if (!clienteExiste(proceso->cpu)){
+				liberarRecursos(proceso);
+				finalizarProceso(cliente);
+			}
+			else
 			log_info(activeLogger,"PID:%d finalizará al terminar el quantum actual",proceso->PCB->PID);
+		}
 	}
 }
 void finalizarCPU(int cliente){

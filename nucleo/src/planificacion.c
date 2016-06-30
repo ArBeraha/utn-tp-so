@@ -41,10 +41,10 @@ void planificarExpulsion(t_proceso* proceso) {
 			continuarProceso(proceso);
 
 	if (proceso->abortado){
-		pthread_mutex_unlock(&mutexClientes);
+//		pthread_mutex_unlock(&mutexClientes);
 		liberarRecursos(proceso);
 		finalizarProceso(proceso->consola);
-		pthread_mutex_lock(&mutexClientes);
+//		pthread_mutex_lock(&mutexClientes);
 	}
 }
 void rafagaProceso(int cliente){
@@ -89,7 +89,7 @@ void planificacionFIFO() {
 	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU)) {
 		 //Limpiamos las colas de procesos eliminados hasta encontrar uno que no lo este o se vacie
 		while (!queue_is_empty(colaListos)
-				&& !procesoExiste( (t_proceso*) queue_peek(colaListos)) && ( (t_proceso*) queue_peek(colaListos))->estado!=READY)
+				&& (!procesoExiste( (t_proceso*) queue_peek(colaListos)) || ( (t_proceso*) queue_peek(colaListos))->estado!=READY))
 			queue_pop(colaListos);
 		// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
 		while (!queue_is_empty(colaCPU) && !clienteExiste( (int) queue_peek(colaCPU)))

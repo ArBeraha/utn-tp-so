@@ -69,7 +69,7 @@ HILO crearProceso(int consola) {
 //			MUTEXPROCESOS(list_add(listaProcesos, proceso));
 			cambiarEstado(proceso, READY);
 			pthread_mutex_unlock(&mutexPlanificacion);
-			log_info(activeLogger,ANSI_COLOR_GREEN "Creado PID:%d" ANSI_COLOR_RESET,consola);
+			log_info(activeLogger,ANSI_COLOR_GREEN "Creado PID:%d para la consola %d." ANSI_COLOR_RESET,proceso->PCB->PID,consola);
 		}
 		free(codigo);
 	}

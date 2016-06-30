@@ -411,11 +411,13 @@ void finalizarPrograma(int idPrograma){
 	char* serialIdPrograma = intToChar4(idPrograma);
 	send_w(swapServer,serialIdPrograma,sizeof(int));
 	pthread_mutex_unlock(&lock_accesoSwap);
-	sacarMarcosOcupados(idPrograma);
-	flushTlbDePid(idPrograma);
-	tabla_t* tabla = buscarTabla(idPrograma);
-	list_destroy((t_list*)tabla->listaPaginas);
-	list_remove(listaTablasPaginas,buscarPosicionTabla(idPrograma));
+	if (existePidEnListadeTablas(idPrograma)){
+		sacarMarcosOcupados(idPrograma);
+		flushTlbDePid(idPrograma);
+		tabla_t* tabla = buscarTabla(idPrograma);
+		list_destroy((t_list*)tabla->listaPaginas);
+		list_remove(listaTablasPaginas,buscarPosicionTabla(idPrograma));
+	}
 	free(serialIdPrograma);
 }
 
@@ -460,51 +462,60 @@ int reservarPagina(int cantPaginasPedidas, int pid) {
 
 
 
-void pedidoLectura(t_cliente cliente){
+void pedidoLectura(t_cliente cliente) {
 	devolverTodaLaMemoria();
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
 	char* pedidoSerializado = malloc(sizeof(t_pedido));
-	int id=0;
+	int id = 0;
 	id = clientes[cliente.indice].pid;
 
 	read(cliente.socket, pedidoSerializado, sizeof(t_pedido));
 
-	imprimir_serializacion(pedidoSerializado,12);
-	deserializar_pedido(pedidoCpu, pedidoSerializado);
+	if (existePidEnListadeTablas(id)) {
 
-	pedidoLectura_t pedidoLectura;
-	pedidoLectura.pid = id;
-	pedidoLectura.paginaRequerida = pedidoCpu->pagina;
-	pedidoLectura.offset = pedidoCpu->offset;
-	pedidoLectura.cantBytes = pedidoCpu->size;
+		imprimir_serializacion(pedidoSerializado, 12);
+		deserializar_pedido(pedidoCpu, pedidoSerializado);
 
-	log_info(activeLogger, "[%d] Realizando lectura de [Pag,Off,Bytes] = [%d,%d,%d]",id,pedidoLectura.paginaRequerida,pedidoLectura.offset,pedidoLectura.cantBytes);
+		pedidoLectura_t pedidoLectura;
+		pedidoLectura.pid = id;
+		pedidoLectura.paginaRequerida = pedidoCpu->pagina;
+		pedidoLectura.offset = pedidoCpu->offset;
+		pedidoLectura.cantBytes = pedidoCpu->size;
 
-	if(!existePaginaBuscadaEnTabla(pedidoCpu->pagina,buscarTabla(id))){
-		char* serialRespuesta = intToChar4(0);
-		send_w(cliente.socket, serialRespuesta,sizeof(int));
-		free(serialRespuesta);
-		return;
-	}else{
-		char* serialRespuesta = intToChar4(1);
-		send_w(cliente.socket, serialRespuesta,sizeof(int));
-		free(serialRespuesta);
+		log_info(activeLogger,
+				"[%d] Realizando lectura de [Pag,Off,Bytes] = [%d,%d,%d]", id,
+				pedidoLectura.paginaRequerida, pedidoLectura.offset,
+				pedidoLectura.cantBytes);
+
+		if (!existePaginaBuscadaEnTabla(pedidoCpu->pagina, buscarTabla(id))) {
+			char* serialRespuesta = intToChar4(0);
+			if (estaConectado(cliente))
+				send_w(cliente.socket, serialRespuesta, sizeof(int));
+			free(serialRespuesta);
+			return;
+		} else {
+			char* serialRespuesta = intToChar4(1);
+			if (estaConectado(cliente))
+				send_w(cliente.socket, serialRespuesta, sizeof(int));
+			free(serialRespuesta);
+		}
+
+		char* contenido = devolverPedidoPagina(pedidoLectura, cliente);
+
+		if (estaConectado(cliente)) {
+			printf("Devolviendo lectura: ");
+			imprimirRegionMemoriaCodigo(contenido, pedidoLectura.cantBytes);
+			imprimir_serializacion(contenido, pedidoLectura.cantBytes);
+			send_w(cliente.socket, contenido, pedidoLectura.cantBytes);
+		} else
+			printf("Se interrumpió la lectura por desconexión\n");
+
+		free(pedidoSerializado);
+		free(pedidoCpu);
+		log_info(activeLogger,
+				ANSI_COLOR_RED "[%d] Finalizo pedido de lectura" ANSI_COLOR_RESET,
+				id);
 	}
-
-	char* contenido = devolverPedidoPagina(pedidoLectura,cliente);
-
-	if (estaConectado(cliente)){
-		printf("Devolviendo lectura: ");
-		imprimirRegionMemoriaCodigo(contenido,pedidoLectura.cantBytes);
-		imprimir_serializacion(contenido,pedidoLectura.cantBytes);
-		send_w(cliente.socket, contenido, pedidoLectura.cantBytes);
-	}
-	else
-		printf("Se interrumpió la lectura por desconexión\n");
-
-	free(pedidoSerializado);
-	free(pedidoCpu);
-	log_info(activeLogger, ANSI_COLOR_RED "[%d] Finalizo pedido de lectura" ANSI_COLOR_RESET,id);
 }
 
 

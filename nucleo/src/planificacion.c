@@ -92,7 +92,7 @@ void planificacionFIFO() {
 				&& (!procesoExiste( (t_proceso*) queue_peek(colaListos)) || ( (t_proceso*) queue_peek(colaListos))->estado!=READY))
 			queue_pop(colaListos);
 		// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
-		while (!queue_is_empty(colaCPU) && !clienteExiste( (int) queue_peek(colaCPU)))
+		while (!queue_is_empty(colaCPU) && (!clienteExiste( (int) queue_peek(colaCPU)) || !estaConectado(clientes[(int) queue_peek(colaCPU)])))
 			queue_pop(colaCPU);
 
 		// Si no se vaciaron las listas entonces los primeros de ambas listas son validos
@@ -141,9 +141,11 @@ void ejecutarProceso(t_proceso* proceso, int cpu) {
 		int bytes = bytes_PCB(proceso->PCB);
 		char* serialPCB = malloc(bytes);
 		serializar_PCB(serialPCB, proceso->PCB);
-		enviarHeader(proceso->socketCPU,HeaderPCB);
-		enviarLargoYSerial(proceso->socketCPU, bytes, serialPCB);
-		continuarProceso(proceso);
+		if (estaConectado(clientes[proceso->cpu])){
+			enviarHeader(proceso->socketCPU,HeaderPCB);
+			enviarLargoYSerial(proceso->socketCPU, bytes, serialPCB);
+			continuarProceso(proceso);
+		}
 		free(serialPCB);
 	}
 }
@@ -165,10 +167,13 @@ void expulsarProceso(t_proceso* proceso) {
 void continuarProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	log_info(activeLogger,"Continuando PID:%d",proceso->PCB->PID);
-	enviarHeader(proceso->socketCPU, HeaderContinuarProceso);
-
 	char* serialSleep = intToChar4(config.queantum_sleep);
-	send_w(proceso->socketCPU,serialSleep,sizeof(int));
+	if (estaConectado(clientes[proceso->cpu])) {
+		enviarHeader(proceso->socketCPU, HeaderContinuarProceso);
+		send_w(proceso->socketCPU, serialSleep, sizeof(int));
+	}
+	else
+		printf("MUERTE POR DESC EN CONT\n\n");
 	free(serialSleep);
 }
 HILO bloqueo(t_bloqueo* info) {

@@ -103,7 +103,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 					pthread_mutex_unlock(&lock_accesoMemoria);
 
 					agregarATlb(paginaBuscada,pedido.pid);
-
+					mostrarTlb();
 //					log_info(activeLogger, "[%d][L] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
 
 					return contenido;
@@ -211,6 +211,7 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 					ponerBitModif1(pedido.pid,pedido.paginaRequerida);
 
 					agregarATlb(paginaBuscada,pedido.pid);
+					mostrarTlb();
 
 //					log_info(activeLogger, "[%d][E] Agregado a TLB [Pagina,Marco] = [%d,%d]",id,pedido.paginaRequerida,paginaBuscada->marcoUtilizado);
 
@@ -469,7 +470,7 @@ int reservarPagina(int cantPaginasPedidas, int pid) {
 
 
 void pedidoLectura(t_cliente cliente) {
-	devolverTodaLaMemoria();
+	devolverTodasLasPaginas();
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
 	char* pedidoSerializado = malloc(sizeof(t_pedido));
 	int id = 0;
@@ -479,8 +480,6 @@ void pedidoLectura(t_cliente cliente) {
 
 	if (estaConectado(cliente) && buscarTabla(id)!=NULL) {
 
-		imprimir_serializacion(pedidoSerializado, 12);
-		printf("ACA0 \n");
 		deserializar_pedido(pedidoCpu, pedidoSerializado);
 
 		pedidoLectura_t pedidoLectura;
@@ -488,39 +487,30 @@ void pedidoLectura(t_cliente cliente) {
 		pedidoLectura.paginaRequerida = pedidoCpu->pagina;
 		pedidoLectura.offset = pedidoCpu->offset;
 		pedidoLectura.cantBytes = pedidoCpu->size;
-		printf("ACA1 \n");
+
 		log_info(activeLogger,
 				"[%d] Realizando lectura de [Pag,Off,Bytes] = [%d,%d,%d]", id,
 				pedidoLectura.paginaRequerida, pedidoLectura.offset,
 				pedidoLectura.cantBytes);
 
 		if (!existePaginaBuscadaEnTabla(pedidoCpu->pagina, buscarTabla(id))) {
-			printf("ACA2A \n");
 			char* serialRespuesta = intToChar4(0);
 			if (estaConectado(cliente))
 				send_w(cliente.socket, serialRespuesta, sizeof(int));
 			free(serialRespuesta);
-			printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A    0\n\n\n\n\n ");
 			return;
 		}
 		else {
-			printf("ACA2B \n");
 			tabla_t* tabla = buscarTabla(id);
-			printf("ACA2C \n");
 			tablaPagina_t* pagina = list_get((t_list*)tabla->listaPaginas,pedidoLectura.paginaRequerida);
-			printf("ACA2D \n");
-			printf("Cant marc lib: %d \n",cantidadMarcosLibres());
-			printf("Cant pag en mem pid: %d \n",cantPaginasEnMemoriaDePid(id));
-			printf("Bit pres: %d \n",pagina->bitPresencia );
+
 			if(pagina->bitPresencia == 0 && cantidadMarcosLibres()==0 && cantPaginasEnMemoriaDePid(id)<config.marcos_x_proceso){
 				char* serialRespuesta = intToChar4(2);
 				if (estaConectado(cliente))
 				send_w(cliente.socket, serialRespuesta, sizeof(int));
 				free(serialRespuesta);
-				printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A    2\n\n\n\n\n ");
 				return;
 			}else{
-				printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A    1\n\n\n\n\n ");
 				char* serialRespuesta = intToChar4(1);
 				if (estaConectado(cliente))
 					send_w(cliente.socket, serialRespuesta, sizeof(int));
@@ -545,10 +535,6 @@ void pedidoLectura(t_cliente cliente) {
 				id);
 	}
 }
-
-
-
-
 
 
 void headerEscribirPagina(t_cliente cliente){
@@ -578,24 +564,18 @@ void headerEscribirPagina(t_cliente cliente){
 				if (estaConectado(cliente))
 					send_w(cliente.socket, serialRespuesta, sizeof(int));
 				free(serialRespuesta);
-				printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A    0\n\n\n\n\n ");
 				return;
 			}
 			else {
 				tabla_t* tabla = buscarTabla(id);
 				tablaPagina_t* pagina = list_get((t_list*)tabla->listaPaginas,pedidoCpuEscritura->pagina);
-				printf("Cant marc lib: %d \n",cantidadMarcosLibres());
-				printf("Cant pag en mem pid: %d \n",cantPaginasEnMemoriaDePid(id));
-				printf("Bit pres: %d \n",pagina->bitPresencia );
 				if(pagina->bitPresencia == 0 && cantidadMarcosLibres()==0 && cantPaginasEnMemoriaDePid(id)<config.marcos_x_proceso){
 					char* serialRespuesta = intToChar4(2);
 					if (estaConectado(cliente))
 					send_w(cliente.socket, serialRespuesta, sizeof(int));
 					free(serialRespuesta);
-					printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A   2\n\n\n\n\n ");
 					return;
 				}else{
-					printf("\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6666A   1\n\n\n\n\n ");
 					char* serialRespuesta = intToChar4(1);
 					if (estaConectado(cliente))
 						send_w(cliente.socket, serialRespuesta, sizeof(int));

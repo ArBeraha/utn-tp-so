@@ -15,7 +15,7 @@ HILO recibirComandos(){
 		size_t bufsize = 64;
 
 		printf(" \n \n");
-		printf("Funciones: 0.salir / 1.retardo / 2.dumpEstructuraMemoria / 3.dumpContenidoMemoria / 4.flushTlb / 5.flushMemory \n");
+		printf("Funciones: 0.salir / 1.retardo / 2.dumpEstructuraMemoria / 3.dumpContenidoMemoria / 4.flushTlb / 5.flushMemory / 6.MostrarTLB\n");
 		printf("Funcion: ");
 
 		getline(&selecc,&bufsize,stdin);
@@ -27,6 +27,7 @@ HILO recibirComandos(){
 			case 3: dumpContenidoMemoria();break;
 			case 4: flushTlb();break;
 			case 5: flushMemory();break;
+			case 6: mostrarTlb();break;
 			default: break;
 		}
 	}

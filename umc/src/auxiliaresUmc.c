@@ -383,8 +383,9 @@ void imprimirRegionMemoriaStackLogDump(char* region, int size){
 	int valor;
 	int paraLog = 0;
 	while(i<size){
-		if ((region[i]>32 && region[i]<200)){// || region[i]=='\n'
-			valor = char4ToInt(region+i);
+		valor = char4ToInt(region+i);
+		printf("VALOR: %d \n", valor);
+		if (valor>0 && valor <=100){
 			paraLog = concatenate(paraLog,valor);
 		}
 		i=i+4;

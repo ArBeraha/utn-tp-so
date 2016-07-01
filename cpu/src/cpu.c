@@ -12,7 +12,7 @@ bool puedo_terminar(){
 }
 
 bool hayOverflow(){
-	printf("Overflow: %d ..... 1 = OK", overflow);
+	printf("Overflow: %d ..... 1 = OK\n", overflow);
 	return overflow!=1;
 }
 bool noEsEnd(char* sentencia){
@@ -161,8 +161,7 @@ int obtener_offset_relativo(t_sentencia* fuente, t_sentencia* destino) {
 	return paginaInicio;
 }
 
-void sacarSaltoDeLinea(char* texto, int pos)
-{
+void sacarSaltoDeLinea(char* texto, int pos){
 	if(texto[pos-1]=='\n'){
 		texto[pos-1]='\0';
 	}
@@ -182,8 +181,6 @@ void recibirFragmentoDeSentencia(int size){
 		free(sentencia);
 	}
 }
-
-
 
 /**
  * Envia a UMC: pag, offest y tamaño, es decir, un t_pedido.
@@ -208,8 +205,10 @@ void enviar_solicitud(int pagina, int offset, int size) {
 			char* stackOverflowFlag = recv_waitall_ws(umc, sizeof(int));
 			overflow = char4ToInt(stackOverflowFlag);
 			free(stackOverflowFlag);
-			printf("UMC mando overflow = %d\n",overflow);
+
 			if (hayOverflow()) {
+
+				printf("UMC mando overflow = %d\n",overflow);
 				lanzar_excepcion_overflow(overflow);
 			}
 			free(solicitud);
@@ -308,7 +307,7 @@ void enviarPID(){
 }
 
 void recibirCantidadDePaginasDeCodigo(){
-	log_debug(debugLogger,"Recibiendo la cantidad de paginas de codigo de UMC.");
+	log_debug(debugLogger,"Recibiendo la cantidad de paginas de codigo de UMC...");
 	char* pags = recv_waitall_ws(umc,sizeof(int));
 	cantidadPaginasCodigo = char4ToInt(pags);
 	log_debug(debugLogger,"Recibida la cantidad de paginas de codigo |%d|.", cantidadPaginasCodigo);
@@ -443,15 +442,19 @@ void cargarConfig() {
 		config.DEBUG_LOG_ON_TESTS = false;
 }
 
-void inicializar() {
-	cargarConfig();
+void inicializar_flags(){
 	ejecutando = false;
 	terminar = false;
 	overflow = false;
 	pcbActual = NULL; //lo dejo en NULL por chequeos en otro lado.
+}
+
+void inicializar() {
+	cargarConfig();
 	crearLogs(string_from_format("cpu_%d", getpid()), "CPU", config.DEBUG_RAISE_LOG_LEVEL);
-	log_info(activeLogger, "Soy CPU de process ID %d.", getpid());
+	log_info(activeLogger, "Iniciando proceso CPU, PID: %d.", getpid());
 	inicializar_primitivas();
+	inicializar_flags();
 }
 
 void finalizar() {
@@ -522,8 +525,6 @@ int main() {
 
 	//conectarse a umc
 	establecerConexionConUMC();
-
-	pedir_tamanio_paginas();
 
 	//test con UMC
 	correrTestsUMC();

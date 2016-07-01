@@ -54,8 +54,8 @@ void flushMemory(){ //Pone a todas las paginas bit de modificacion en 1
 			unaPagina->bitModificacion=1;
 		}
 	}
-	devolverTodasLasPaginas();
 	pthread_mutex_unlock(&lock_accesoTabla);
+	devolverTodasLasPaginas();
 }
 
 void devolverTodasLasPaginas(){  //OK
@@ -70,6 +70,7 @@ void devolverTodasLasPaginas(){  //OK
 
 		int cantidadPaginasDeTabla = list_size((t_list*)unaTabla->listaPaginas);
 		int j;
+		log_info(dump, "TODAS LAS PAGINAS \n");
 
 		for(j=0;j<cantidadPaginasDeTabla;j++){
 
@@ -77,10 +78,11 @@ void devolverTodasLasPaginas(){  //OK
 			unaPagina = list_get((t_list*)unaTabla->listaPaginas,j);
 
 			printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d \n",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
-			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d \n",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
+			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d ",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
 		}
 	}
 	pthread_mutex_unlock(&lock_accesoTabla);
+	log_info(dump, "------------------------------- \n");
 }
 
 void devolverPaginasDePid(int pid){ //OK
@@ -93,13 +95,15 @@ void devolverPaginasDePid(int pid){ //OK
 
 			int cantidadPaginasDeTabla = list_size((t_list*)unaTabla->listaPaginas);
 			int i;
+			log_info(dump, "PAGINAS DE PID: %d \n", pid);
 
 			for(i=0;i<cantidadPaginasDeTabla;i++){
 				tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
 				unaPagina = list_get((t_list*)unaTabla->listaPaginas,i);
 				printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d \n",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
-				log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d \n",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
+				log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
 			}
+			log_info(dump, "------------------------------- \n");
 	}else{
 		printf("Ese pid no existe o no esta en uso! \n");
 	}
@@ -120,6 +124,7 @@ void devolverTodaLaMemoria(){
 
 		int cantidadPaginasDeTabla = list_size((t_list*)unaTabla->listaPaginas);
 		int j;
+		log_info(dump,"TODA LA MEMORIA \n");
 
 		for(j=0;j<cantidadPaginasDeTabla;j++){
 
@@ -128,34 +133,30 @@ void devolverTodaLaMemoria(){
 			//Hago un solo print f de las caracteristicas
 
 			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
+			log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
 			if(unaPagina->bitPresencia==1){
 				pthread_mutex_lock(&lock_accesoMemoria);
-				char* contenido = malloc(config.tamanio_marco+1);
-				memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
-				contenido[config.tamanio_marco]='\0';
+				char* contenido = malloc(config.tamanio_marco);
+				memcpy(contenido,memoria+(unaPagina->marcoUtilizado*config.tamanio_marco),config.tamanio_marco);
 				pthread_mutex_unlock(&lock_accesoMemoria);
 
-				if(j<cantidadPaginasDeTabla-paginas_stack){
-					imprimirRegionMemoriaCodigoConsola(contenido, config.tamanio_marco);
-
+				if(j<cantPaginasDePid(unaTabla->pid)-paginas_stack){
+					imprimirRegionMemoriaCodigoLogDump(contenido,config.tamanio_marco);
+					imprimirRegionMemoriaCodigoConsola(contenido,config.tamanio_marco);
 				}else{
-					imprimirRegionMemoriaStackConsola(contenido, config.tamanio_marco);
+					imprimirRegionMemoriaStackLogDump(contenido,config.tamanio_marco);
+					imprimirRegionMemoriaStackConsola(contenido,config.tamanio_marco);
 				}
+			}else{
+				printf("No esta en memoria");
+				log_info(dump,"No esta en memoria",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
 			}
-
-			pthread_mutex_lock(&lock_accesoMemoria);
-			char* contenido = malloc(config.tamanio_marco+1);
-			memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
-			contenido[config.tamanio_marco]='\0';
-			pthread_mutex_unlock(&lock_accesoMemoria);
-
-			log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: %s ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado,contenido);
-
 			printf("\n");
 		}
 	}
 	pthread_mutex_unlock(&lock_accesoTabla);
+	log_info(dump, "------------------------------- \n");
 	printf("\n");
 }
 
@@ -166,6 +167,7 @@ void devolverMemoriaDePid(int pid){
 	unaTabla = buscarTabla(pid);
 	int cantidadPaginasDeTabla = list_size((t_list*)unaTabla->listaPaginas);
 	int i;
+	log_info(dump,"MEMORIA DE PID: %d \n",pid);
 
 	for(i=0;i<cantidadPaginasDeTabla;i++){
 		tablaPagina_t* unaPagina;
@@ -174,28 +176,30 @@ void devolverMemoriaDePid(int pid){
 		if(unaPagina->bitPresencia==1){
 
 			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado);
+			log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
 			pthread_mutex_lock(&lock_accesoMemoria);
-			char* contenido = malloc(config.tamanio_marco+1);
-			memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
-			contenido[config.tamanio_marco]='\0';
+			char* contenido = malloc(config.tamanio_marco);
+			memcpy(contenido,memoria+(unaPagina->marcoUtilizado*config.tamanio_marco),config.tamanio_marco);
 			pthread_mutex_unlock(&lock_accesoMemoria);
-
-			printf("%s \n",contenido);
-			if(i<cantidadPaginasDeTabla-paginas_stack){
+														// C S S
+			if(i<cantPaginasDePid(pid)-paginas_stack){ // 0 1 2
 				imprimirRegionMemoriaCodigoConsola(contenido, config.tamanio_marco);
+				imprimirRegionMemoriaCodigoLogDump(contenido, config.tamanio_marco);
 			}else{
 				imprimirRegionMemoriaStackConsola(contenido, config.tamanio_marco);
+				imprimirRegionMemoriaStackLogDump(contenido, config.tamanio_marco);
 			}
 
 			printf("\n");
 		}
 		else{
 			printf("La pagina: %d del pid: %d no esta en memoria \n",unaPagina->nroPagina,pid);
+
 		}
 	}
 	printf("\n");
-
+	log_info(dump, "------------------------------- \n");
 	pthread_mutex_unlock(&lock_accesoTabla);
 }
 

@@ -28,6 +28,7 @@ void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la
 	enviarHeader(nucleo, HeaderTerminoProceso);
 	enviarHeader(umc, HeaderTerminoProceso);
 	pcb_destroy(pcbActual);
+	ejecutando = false;
 	pcbActual=NULL;
 }
 
@@ -476,6 +477,7 @@ void handler(int sign) {
 			finalizar(); //si se encuentra esperando y sin ejecutar, lo finalizo
 			enviarHeader(umc,headerCPUTerminada);
 			enviarHeader(nucleo,headerNoTermineQuantumPeroToma);
+
 		}else{
 			terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccion
 			log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");

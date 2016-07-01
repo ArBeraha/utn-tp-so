@@ -329,20 +329,33 @@ unsigned concatenate(unsigned x, unsigned y) {
     return x * pow + y;
 }
 
+//PARA UMC.LOG
+
 void imprimirRegionMemoriaStack(char* region, int size){
 	int i=0;
 	int valor;
-//	char* paraLog = malloc(size+1);
 	int paraLog = 0;
 	while(i<size){
 		valor = char4ToInt(region+i);
-//		paraLog[i]=valor;
 		paraLog = concatenate(paraLog,valor);
 		i=i+4;
 	}
-//	paraLog[size]='\0';
 	log_info(activeLogger,"%d",paraLog);
 }
+
+
+void imprimirRegionMemoriaCodigo(char* region, int size){
+    int i;
+    char* paraLog = malloc(size+1);
+    for(i=0;i<size;i++){
+            memcpy(paraLog+i,region+i,1);
+    }
+    paraLog[size]='\0';
+    log_info(activeLogger,"%s",paraLog);
+    free(paraLog);
+}
+
+//PARA CONSOLA - PANTALLA
 
 void imprimirRegionMemoriaStackConsola(char* region, int size){
 	int i=0;
@@ -354,19 +367,6 @@ void imprimirRegionMemoriaStackConsola(char* region, int size){
 	}
 }
 
-void imprimirRegionMemoriaCodigo(char* region, int size){
-    int i;
-    char* paraLog = malloc(size+1);
-    for(i=0;i<size;i++){
-//        if (region[i]>=32 || region[i]=='\n'){
-            memcpy(paraLog+i,region+i,1);
-//        }
-    }
-    paraLog[size]='\0';
-    log_info(activeLogger,"%s",paraLog);
-    free(paraLog);
-}
-
 void imprimirRegionMemoriaCodigoConsola(char* region, int size){
     int i;
     for(i=0;i<size;i++){
@@ -374,6 +374,37 @@ void imprimirRegionMemoriaCodigoConsola(char* region, int size){
             printf("%c",region[i]);
     }
 }
+
+
+
+
+
+//-- PARA DUMP.log
+
+void imprimirRegionMemoriaStackLogDump(char* region, int size){
+	int i=0;
+	int valor;
+	int paraLog = 0;
+	while(i<size){
+		valor = char4ToInt(region+i);
+		paraLog = concatenate(paraLog,valor);
+		i=i+4;
+	}
+	log_info(dump,"%d",paraLog);
+}
+
+void imprimirRegionMemoriaCodigoLogDump(char* region, int size){
+    int i;
+    char* paraLog = malloc(size+1);
+    for(i=0;i<size;i++){
+            memcpy(paraLog+i,region+i,1);
+    }
+    paraLog[size]='\0';
+    log_info(dump,"%s",paraLog);
+    free(paraLog);
+}
+
+//-- FIN DUMP
 
 void mostrarTlb(){
 	if(config.entradas_tlb){

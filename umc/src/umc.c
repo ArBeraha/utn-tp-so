@@ -763,10 +763,12 @@ void procesarHeader(t_cliente cliente, char* header) {
 // FUNCIONES: procesar las nuevas conexiones y crearles un hilo propio
 int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursivo
 
-	system("rm -rf *.log");
+	system("rm -rf Umc.log");
+	system("rm -rf dump");
 
 	crearLogs("Umc", "UMC", -1);
 	dump = log_create("dump", "UMC", false, LOG_LEVEL_INFO);
+
 	log_info(activeLogger,"Soy umc de process ID %d", getpid());
 	cargarCFG();
 	iniciarAtrrYMutexs(8, &mutexClientes,&mutexSwap,

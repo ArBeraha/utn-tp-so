@@ -12,7 +12,7 @@ bool puedo_terminar(){
 }
 
 bool hayOverflow(){
-	printf("Overflow: %d ..... 1 = OK\n", overflow);
+	printf("Overflow: %d ..... 1 = OK\n", overflow);  // todo sacar esto para la entrega
 	return overflow!=1;
 }
 bool noEsEnd(char* sentencia){
@@ -26,7 +26,9 @@ void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la
 		log_info(activeLogger,ANSI_COLOR_GREEN "El proceso ansisop ejecutó su última instrucción." ANSI_COLOR_RESET);
 	}
 	enviarHeader(nucleo, HeaderTerminoProceso);
-	enviarHeader(umc, HeaderTerminoProceso);
+	if(overflow!=2 && overflow!=0){
+		enviarHeader(umc, HeaderTerminoProceso);
+	}
 	pcb_destroy(pcbActual);
 	ejecutando = false;
 	pcbActual=NULL;
@@ -207,8 +209,7 @@ void enviar_solicitud(int pagina, int offset, int size) {
 			free(stackOverflowFlag);
 
 			if (hayOverflow()) {
-
-				printf("UMC mando overflow = %d\n",overflow);
+				printf("UMC mando overflow = %d\n",overflow); // todo sacar esto para la entrega
 				lanzar_excepcion_overflow(overflow);
 			}
 			free(solicitud);
@@ -272,7 +273,7 @@ void pedirUltimaSentencia(t_sentencia* sentenciaRelativa, int pagina, int longit
  */
 void pedirYRecibirSentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecutar
 	log_info(activeLogger, "Iniciando pedido de sentencia...");
-	imprimir_PCB(pcbActual);
+	//imprimir_PCB(pcbActual);
 	int paginaAPedir; // Lo inicializa obtener_sentencia_relativa
 	t_sentencia* sentenciaRelativa = obtener_sentencia_relativa(&paginaAPedir);
 	int longitud_restante = longitud_sentencia(sentenciaRelativa); //longitud de la sentencia que aun no pido
@@ -295,7 +296,6 @@ void pedirYRecibirSentencia(int* tamanio) {	//pedir al UMC la proxima sentencia 
 		paginaAPedir++;
 	}
 
-	log_info(activeLogger, "Pedido de sentencia finalizado.");
 	free(sentenciaRelativa);
 }
 
@@ -342,7 +342,7 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 void enviarPCB() {
 	log_debug(debugLogger, "Enviando PCB a Nucleo...");
 	int bytes = bytes_PCB(pcbActual);
-	imprimir_PCB(pcbActual);
+	//imprimir_PCB(pcbActual);
 	char* serialPCB = malloc(bytes);
 	serializar_PCB(serialPCB, pcbActual);
 

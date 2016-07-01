@@ -519,8 +519,10 @@ void pedidoLectura(t_cliente cliente) {
 			tablaPagina_t* pagina = list_get((t_list*)tabla->listaPaginas,pedidoLectura.paginaRequerida);
 			if(pagina->bitPresencia == 0 && cantidadMarcosLibres()==0 && cantPaginasEnMemoriaDePid(id)==0){
 				char* serialRespuesta = intToChar4(2);
-				if (estaConectado(cliente))
+				if (estaConectado(cliente)){
 					send_w(cliente.socket, serialRespuesta, sizeof(int));
+					printf("MANDE UN 2!\n"); // todo borrar
+				}
 			free(serialRespuesta);
 			log_warning(activeLogger, "[%d] No hay paginas disponibles para el proceso, rechazando",id);
 //			finalizarPrograma(id);
@@ -594,8 +596,10 @@ void headerEscribirPagina(t_cliente cliente){
 		tablaPagina_t* pagina = list_get((t_list*)tabla->listaPaginas,pedidoCpuEscritura->pagina);
 		if(pagina->bitPresencia == 0 && cantidadMarcosLibres()==0 && cantPaginasEnMemoriaDePid(id)==0){
 			char* serialRespuesta = intToChar4(2);
-			if (estaConectado(cliente))
+			if (estaConectado(cliente)){
 				send_w(cliente.socket, serialRespuesta, sizeof(int));
+				printf("MANDE UN 2!\n"); // todo borrar
+			}
 			free(serialRespuesta);
 			log_warning(activeLogger, "[%d] No hay paginas disponibles para el proceso, rechazando",id);
 			return;

@@ -322,30 +322,59 @@ void sacarMarcosOcupados(int idPrograma){
 	pthread_mutex_unlock(&lock_accesoTabla);
 }
 
+unsigned concatenate(unsigned x, unsigned y) {
+    unsigned pow = 10;
+    while(y >= pow)
+        pow *= 10;
+    return x * pow + y;
+}
+
 void imprimirRegionMemoriaStack(char* region, int size){
 	int i=0;
-	printf("(REGION STACK):");
+	int valor;
+//	char* paraLog = malloc(size+1);
+	int paraLog = 0;
+	while(i<size){
+		valor = char4ToInt(region+i);
+//		paraLog[i]=valor;
+		paraLog = concatenate(paraLog,valor);
+		printf("%d ************************************----------- \n", paraLog);
+		i=i+4;
+	}
+//	paraLog[size]='\0';
+	log_info(activeLogger,"%d",paraLog);
+	printf("%d ************************************ \n", paraLog);
+}
+
+void imprimirRegionMemoriaStackConsola(char* region, int size){
+	int i=0;
 	int valor;
 	while(i<size){
 		valor = char4ToInt(region+i);
 		printf("%d",valor);
 		i=i+4;
 	}
-	printf("\n");
 }
 
 void imprimirRegionMemoriaCodigo(char* region, int size){
     int i;
-    printf("(REGION CODIGO):");
     char* paraLog = malloc(size+1);
     for(i=0;i<size;i++){
-        if (region[i]>=32 || region[i]=='\n')
-            printf("%c",region[i]);
-            paraLog[i]=region[i];
+//        if (region[i]>=32 || region[i]=='\n'){
+            memcpy(paraLog+i,region+i,1);
+//        }
     }
     paraLog[size]='\0';
     log_info(activeLogger,"%s",paraLog);
     free(paraLog);
+}
+
+void imprimirRegionMemoriaCodigoConsola(char* region, int size){
+    int i;
+    for(i=0;i<size;i++){
+        if (region[i]>=32 || region[i]=='\n')
+            printf("%c",region[i]);
+    }
 }
 
 void mostrarTlb(){

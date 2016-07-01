@@ -24,11 +24,11 @@ void enviarASwap(int pid, tablaPagina_t* pagina){
 }
 
 HILO hiloDedicado(int indice) {
-	log_info(activeLogger, "Se creó un hilo dedicado");
+	log_info(activeLogger, "Se creo un hilo dedicado");
 	t_cliente clienteLocal; // Generamos una copia del cliente, no sirve para datos actualizables como el pid, solo para permanentes como socket e indice, para los demas campos consultar con mutex el vector de clientes
 	MUTEXCLIENTES(clienteLocal = clientes[indice]);
-	printf("SOCKET:%d\n",clienteLocal.socket);
-	printf("INDICE:%d\n",clienteLocal.indice);
+//	printf("SOCKET:%d\n",clienteLocal.socket);
+//	printf("INDICE:%d\n",clienteLocal.indice);
 	char* header = malloc(1);
 	while (recv(clienteLocal.socket, header, 1, MSG_WAITALL)>0){
 		MUTEXCLIENTES(procesarHeader(clienteLocal, header);)
@@ -51,7 +51,7 @@ void atenderHandshake(t_cliente cliente){
 		if (charToInt(handshake) == SOYNUCLEO){
 			// Acciones especificas de nucleo despues del handshake
 			log_info(activeLogger,
-					"Enviando tamaño de pagina a Nucleo");
+					"Enviando tamanio de pagina a Nucleo");
 			char* serialTamanio = intToChar4(config.tamanio_marco);
 			send_w(cliente.socket,serialTamanio,sizeof(int));
 			free(serialTamanio);

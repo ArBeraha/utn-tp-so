@@ -54,6 +54,7 @@ void flushMemory(){ //Pone a todas las paginas bit de modificacion en 1
 			unaPagina->bitModificacion=1;
 		}
 	}
+	devolverTodasLasPaginas();
 	pthread_mutex_unlock(&lock_accesoTabla);
 }
 
@@ -136,10 +137,10 @@ void devolverTodaLaMemoria(){
 				pthread_mutex_unlock(&lock_accesoMemoria);
 
 				if(j<cantidadPaginasDeTabla-paginas_stack){
-					imprimirRegionMemoriaCodigo(contenido, config.tamanio_marco);
+					imprimirRegionMemoriaCodigoConsola(contenido, config.tamanio_marco);
 
 				}else{
-					imprimirRegionMemoriaStack(contenido, config.tamanio_marco);
+					imprimirRegionMemoriaStackConsola(contenido, config.tamanio_marco);
 				}
 			}
 
@@ -181,10 +182,10 @@ void devolverMemoriaDePid(int pid){
 			pthread_mutex_unlock(&lock_accesoMemoria);
 
 			printf("%s \n",contenido);
-			if(i<=cantidadPaginasDeTabla-paginas_stack){
-				imprimirRegionMemoriaCodigo(contenido, config.tamanio_marco);
+			if(i<cantidadPaginasDeTabla-paginas_stack){
+				imprimirRegionMemoriaCodigoConsola(contenido, config.tamanio_marco);
 			}else{
-				imprimirRegionMemoriaStack(contenido, config.tamanio_marco);
+				imprimirRegionMemoriaStackConsola(contenido, config.tamanio_marco);
 			}
 
 			printf("\n");

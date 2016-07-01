@@ -78,7 +78,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
 
 		pthread_mutex_unlock(&lock_accesoMemoria);
-		imprimirRegionMemoriaCodigo(contenido,pedido.cantBytes);
+
 		return contenido;
 
 	}
@@ -175,8 +175,8 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 		ponerBitModif1(pedido.pid,pedido.paginaRequerida);
 
 		log_info(activeLogger, "[%d][E] Se almaceno: ",id);
-
-		if(pedido.paginaRequerida<=cantPaginasDePid(pedido.pid)- paginas_stack){
+																			     //C C S
+		if(pedido.paginaRequerida<cantPaginasDePid(pedido.pid)- paginas_stack){ // 0 1 2   1
 			imprimirRegionMemoriaCodigo(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
 		}else{
 			imprimirRegionMemoriaStack(memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
@@ -298,7 +298,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 				posicionPaginaSacada=sacarConModificado(pedido.pid);
 			}
 			else{
-				printf("Error sintaxis algoritmo: CLOCK o CLOCK_MODIFICADO");
+				log_error(activeLogger, "Error sintaxis algoritmo: CLOCK o CLOCK_MODIFICADO");
 			}
 
 		}
@@ -404,7 +404,7 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 	pthread_mutex_unlock(&lock_accesoSwap);
 
 	if (charToInt(header)==HeaderProcesoAgregado){
-		printf("Swap almaceno el script correctamente\n");
+		log_info(activeLogger, "[S] Swap almaceno el script correctamente");
 		return 1;
 	}else{
 		return 0;
@@ -483,7 +483,6 @@ void pedidoLectura(t_cliente cliente) {
 
 	if(config.mostrar_paginas){ devolverTodasLasPaginas(); printf("\n");}
 
-	devolverTodasLasPaginas();
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
 	char* pedidoSerializado = malloc(sizeof(t_pedido));
 	int id = 0;
@@ -534,18 +533,23 @@ void pedidoLectura(t_cliente cliente) {
 		char* contenido = devolverPedidoPagina(pedidoLectura, cliente);
 
 		if (estaConectado(cliente)) {
-			printf("Devolviendo lectura: ");
 			log_info(activeLogger,"[%d] Devolviendo lectura: ", id);
-			imprimirRegionMemoriaCodigo(contenido, pedidoLectura.cantBytes);
-			send_w(cliente.socket, contenido, pedidoLectura.cantBytes);
-		} else
-			printf("Se interrumpió la lectura por desconexión\n");
 
+			if(pedidoLectura.paginaRequerida<cantPaginasDePid(pedidoLectura.pid)- paginas_stack){ // 0 1 2   1
+				imprimirRegionMemoriaCodigo(contenido, pedidoLectura.cantBytes);
+			}else{
+				imprimirRegionMemoriaStack(contenido, pedidoLectura.cantBytes);
+			}
+
+			send_w(cliente.socket, contenido, pedidoLectura.cantBytes);
+		} else{
+			printf("Se interrumpió la lectura por desconexion\n");
+			log_error(activeLogger, "Se interrumpió la lectura por desconexion");
+
+		}
 		free(pedidoSerializado);
 		free(pedidoCpu);
-		log_info(activeLogger,
-				ANSI_COLOR_RED "[%d] Finalizo pedido de lectura" ANSI_COLOR_RESET,
-				id);
+		log_info(activeLogger,ANSI_COLOR_RED "[%d] Finalizo pedido de lectura" ANSI_COLOR_RESET,id);
 	}
 }
 
@@ -723,7 +727,6 @@ void procesarHeader(t_cliente cliente, char* header) {
 		clientes[cliente.indice].pid=char4ToInt(nuevoPid);
 		int verifNuevo;
 		verifNuevo = clientes[cliente.indice].pid;
-		printf("VERIFICO NUEVO : %d \n",verifNuevo);
 
 		if(viejoPid!=char4ToInt(nuevoPid)){
 			flushTlbDePid(viejoPid);
@@ -758,7 +761,7 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 
 	crearLogs("Umc", "UMC", -1);
 	dump = log_create("dump", "UMC", false, LOG_LEVEL_INFO);
-	log_info(activeLogger,"Soy umc de process ID %d.\n", getpid());
+	log_info(activeLogger,"Soy umc de process ID %d", getpid());
 	cargarCFG();
 	iniciarAtrrYMutexs(8, &mutexClientes,&mutexSwap,
 	&lock_accesoMemoria,
@@ -824,15 +827,15 @@ void crearMemoriaYTlbYTablaPaginas(){
 	tamanioMemoria = config.cantidad_marcos * config.tamanio_marco;
 	memoria = malloc(tamanioMemoria);
 	memset(memoria,'\0',tamanioMemoria);
-	log_info(activeLogger,"Creada la memoria\n");
+	log_info(activeLogger,"Creada la memoria");
 
 	tlb = malloc(config.entradas_tlb * sizeof(tlb_t));
 	inicializarTlb();
-	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).\n");
+	log_info(activeLogger,"Creada la TLB y rellenada con ceros (0).");
 
 	//Creo vector de marcos ocupados y lo relleno
 	vectorMarcosOcupados = malloc(sizeof(int) * config.cantidad_marcos);
-	log_info(activeLogger,"Creado el vector de marcos ocupados \n");
+	log_info(activeLogger,"Creado el vector de marcos ocupados");
 
 	memset(vectorMarcosOcupados,0,sizeof(int) * config.cantidad_marcos);
 

@@ -54,8 +54,8 @@ void flushMemory(){ //Pone a todas las paginas bit de modificacion en 1
 			unaPagina->bitModificacion=1;
 		}
 	}
-	devolverTodasLasPaginas();
 	pthread_mutex_unlock(&lock_accesoTabla);
+	devolverTodasLasPaginas();
 }
 
 void devolverTodasLasPaginas(){  //OK
@@ -77,7 +77,7 @@ void devolverTodasLasPaginas(){  //OK
 			tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
 			unaPagina = list_get((t_list*)unaTabla->listaPaginas,j);
 
-			printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d ",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
+			printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d \n",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
 			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d ",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
 		}
 	}

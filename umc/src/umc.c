@@ -36,20 +36,24 @@ void cargarCFG() {
 }
 
 char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
+//	char* resultado = malloc(config.tamanio_marco);
 	char* resultado = devolverBytes(pedido,cliente);
-	if(strcmp(resultado,"RELLAMAR")>0){
-		return resultado;
-	}else{
+	if(strcmp(resultado,"RELLAMAR")==0){
+		log_info(activeLogger, "[%d][L] Re-inicializando pedido de lectura por Page Fault",pedido.pid);
 		return devolverBytes(pedido,cliente);
+	}else{
+		return resultado;
 	}
 }
 
 char* almacenarBytesEnUnaPagina(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
+//	char* resultado = malloc(config.tamanio_marco);
 	char* resultado = almacenarBytes(pedido,buffer,cliente);
-	if(strcmp(resultado,"RELLAMAR")>0){ //SIGNIFICA QUE SON DISTINTOS
-		return resultado;
-	}else{
+	if(strcmp(resultado,"RELLAMAR")==0){ //SIGNIFICA QUE SON DISTINTOS
+		log_info(activeLogger, "[%d][E] Re-inicializando pedido de escritura por Page Fault",pedido.pid,pedido.paginaRequerida);
 		return almacenarBytes(pedido,buffer,cliente);
+	}else{
+		return resultado;
 	}
 }
 
@@ -65,6 +69,8 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 
 		char* contenido = malloc(pedido.cantBytes);
 
+		log_info(activeLogger, "[%d][L] TLB HIT. Se encontro en TLB para LECTURA [Pag,Off,Bytes] = [%d,%d,%d] en MARCO: %d",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
+
 		log_info(activeLogger, "[%d][L] Accediendo a MP",id);
 		usleep(retardoMemoria);
 
@@ -72,9 +78,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
 
 		pthread_mutex_unlock(&lock_accesoMemoria);
-
-		log_info(activeLogger, "[%d][L] Se encontro en TLB para LECTURA [Pag,Off,Bytes] = [%d,%d,%d] en MARCO: %d",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
-
+		imprimirRegionMemoriaCodigo(contenido,pedido.cantBytes);
 		return contenido;
 
 	}
@@ -89,7 +93,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 				tablaPagina_t* paginaBuscada = list_get((t_list*)tablaPaginaBuscada->listaPaginas, pedido.paginaRequerida);
 //SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
 
-				log_info(activeLogger, "[%d][L] Accediendo a MP",id);
+				log_info(activeLogger, "[%d][L] TLB MISS. Accediendo a MP",id);
 				usleep(retardoMemoria);
 
 				if(paginaBuscada->bitPresencia){
@@ -119,7 +123,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 
 					buscarEnSwap(pedido,cliente);
 
-					log_info(activeLogger, "[%d][L] -------------------------",id);
+					log_info(activeLogger, "[%d][L] -------------------------------",id);
 
 //					agregarATlb(paginaBuscada,pedido.pid);
 					return "RELLAMAR";
@@ -159,6 +163,8 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 		int pos = buscarEnTlb(pedido);
 
+		log_info(activeLogger, "[%d][E] TLB HIT. Se encontro en TLB para ESCRITURA [Pag,Off,Bytes] = [%d,%d,%d] en MARCO: %d",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
+
 		log_info(activeLogger, "[%d][E] Accediendo a MP",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
 		usleep(retardoMemoria);
 
@@ -168,7 +174,6 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 		ponerBitModif1(pedido.pid,pedido.paginaRequerida);
 
-		log_info(activeLogger, "[%d][E] Se encontro en TLB para ESCRITURA [Pag,Off,Bytes] = [%d,%d,%d] en MARCO: %d",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
 		log_info(activeLogger, "[%d][E] Se almaceno: ",id);
 
 		if(pedido.paginaRequerida<=cantPaginasDePid(pedido.pid)- paginas_stack){
@@ -191,7 +196,7 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 	//SI ES VALIDA Y ESTA EN MEMORIA DEVUELVO Y AGREGO A TLB
 
-				log_info(activeLogger, "[%d][E] Accediendo a MP",id);
+				log_info(activeLogger, "[%d][E] TLB MISS. Accediendo a MP",id);
 				usleep(retardoMemoria);
 
 				if(paginaBuscada->bitPresencia){
@@ -227,7 +232,7 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 //					agregarATlb(paginaBuscada,pedido.pid);
 					buscarEnSwap(pedido,cliente);
-					log_info(activeLogger, "[%d][E] -------------------------",id);
+					log_info(activeLogger, "[%d][E] -------------------------------",id);
 					return "RELLAMAR";
 //					if(pudo){
 //						log_info(activeLogger, "[%d][E] Se encontro en SWAP [Pag]=[%d] y se agrego a memoria. Realizando pedido de ESCRITURA nuevamente",id,pedido.paginaRequerida);
@@ -259,6 +264,7 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 	char* contenidoPagina = malloc(config.tamanio_marco);
 
 	pthread_mutex_lock(&lock_accesoSwap);
+
 	enviarHeader(swapServer,HeaderOperacionLectura);
 
 	send_w(swapServer,serialPID,sizeof(int));
@@ -271,7 +277,9 @@ int buscarEnSwap(pedidoLectura_t pedido, t_cliente cliente){
 
 	contenidoPagina = recv_waitall_ws(swapServer,config.tamanio_marco);
 
+	log_info(activeLogger, "[%d][E] Agregando a memoria la pagina buscada en SWAP: [Pag]=[%d]",pedido.pid,pedido.paginaRequerida);
 	agregarAMemoria(pedido,contenidoPagina,cliente);
+	log_info(activeLogger, "[%d][E] Finalizo la carga en memoria de la pagina buscada en SWAP: [Pag]=[%d]",pedido.pid,pedido.paginaRequerida);
 
 	return 1;
 }
@@ -428,6 +436,7 @@ void finalizarPrograma(int idPrograma){
 		list_remove(listaTablasPaginas,buscarPosicionTabla(idPrograma));
 //		close(buscarClientePorPid(idPrograma)->socket);
 	}
+	log_info(activeLogger,"[%d] Se finalizo el proceso",idPrograma);
 	free(serialIdPrograma);
 }
 
@@ -466,7 +475,6 @@ int reservarPagina(int cantPaginasPedidas, int pid) {
 		list_add_in_index((t_list*)tablaPag->listaPaginas, posicion, nuevaPag);
 		pthread_mutex_unlock(&lock_accesoTabla);
 	}
-
 	return 1;
 }
 
@@ -527,6 +535,7 @@ void pedidoLectura(t_cliente cliente) {
 
 		if (estaConectado(cliente)) {
 			printf("Devolviendo lectura: ");
+			log_info(activeLogger,"[%d] Devolviendo lectura: ", id);
 			imprimirRegionMemoriaCodigo(contenido, pedidoLectura.cantBytes);
 			send_w(cliente.socket, contenido, pedidoLectura.cantBytes);
 		} else
@@ -614,7 +623,7 @@ void operacionScript(t_cliente cliente) {
 	char* tamanioCodigoScript = malloc(sizeof(int));
 
 	read(cliente.socket, pidScript, 4);
-	log_info(activeLogger, ANSI_COLOR_GREEN "Pedido de inicilizacion de PID: %d " ANSI_COLOR_RESET,char4ToInt(pidScript));
+	log_info(activeLogger, ANSI_COLOR_GREEN "Pedido de inicializacion de PID: %d " ANSI_COLOR_RESET,char4ToInt(pidScript));
 	read(cliente.socket, cantidadDePaginasScript, 4);
 	read(cliente.socket, tamanioCodigoScript, 4);
 	char* codigoScript = malloc(char4ToInt(tamanioCodigoScript));
@@ -625,6 +634,7 @@ void operacionScript(t_cliente cliente) {
 
 		reservarPagina(char4ToInt(cantidadDePaginasScript), char4ToInt(pidScript));
 		reservarPagina(paginas_stack, char4ToInt(pidScript));
+		log_info(activeLogger,"[%d] Se inicializo el proceso",char4ToInt(pidScript));
 		char* serialRespuesta = intToChar(1);
 		send_w(cliente.socket, serialRespuesta,1);
 		free(serialRespuesta);
@@ -645,8 +655,8 @@ void procesarHeader(t_cliente cliente, char* header) {
 	// Segun el protocolo procesamos el header del mensaje recibido
 	// Ahora procesarHeader recibe un t_cliente!!!!! pero solo sirve para consultar los datos que no van a cambiar del cliente
 	// tales como el socket, el indice en el vector. Para otras cosas consultar clientes[cliente.indice] con mutex!
-	log_info(activeLogger, "Llego un mensaje con header %d",
-			charToInt(header));
+//	log_info(activeLogger, "Llego un mensaje con header %d",
+//			charToInt(header));
 	char* nuevoPid;
 	int idLog=0;
 	int viejoPid=0;
@@ -744,6 +754,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 // FUNCIONES: procesar las nuevas conexiones y crearles un hilo propio
 int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursivo
 
+	system("rm -rf *.log");
 
 	crearLogs("Umc", "UMC", -1);
 	dump = log_create("dump", "UMC", false, LOG_LEVEL_INFO);

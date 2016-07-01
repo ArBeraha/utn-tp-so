@@ -221,14 +221,14 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 					tlb[i].contadorTiempo = tiempo++;
 
 					pthread_mutex_unlock(&lock_accesoTlb);
-					log_info(activeLogger, "[%d] Agregado a TLB [Pagina,Marco] = [%d,%d]",pidParam,pedido.paginaRequerida,pagina->marcoUtilizado);
+					log_info(activeLogger, "[%d][T] Agregado a TLB [Pagina,Marco] = [%d,%d]",pidParam,pedido.paginaRequerida,pagina->marcoUtilizado);
 					return;
 				}
 			}
 			pthread_mutex_unlock(&lock_accesoTlb);
 			int pid=0,pag=0, marco=0;
 			reemplazarEntradaConLru(pagina,pidParam,&pid,&pag,&marco);
-			log_info(activeLogger, "[%d] Agregado a TLB [Pagina,Marco] = [%d,%d]. Habiendo reemplazado: [%d,%d,%d] [Pid,Pag,Marco] ",pidParam,pedido.paginaRequerida,pagina->marcoUtilizado,pid,pag,marco);
+			log_info(activeLogger, "[%d][T] Agregado a TLB [Pagina,Marco] = [%d,%d]. Habiendo reemplazado: [%d,%d,%d] [Pag,Marco,Pid] ",pidParam,pedido.paginaRequerida,pagina->marcoUtilizado,pag,marco,pid);
 		}
 	}
 	else{
@@ -335,13 +335,17 @@ void imprimirRegionMemoriaStack(char* region, int size){
 }
 
 void imprimirRegionMemoriaCodigo(char* region, int size){
-	int i;
-	printf("(REGION CODIGO):");
-	for(i=0;i<size;i++){
-//			putchar(region[i]);
-		if (region[i]>=32 || region[i]=='\n')
-			printf("%c",region[i]);
-	}
+    int i;
+    printf("(REGION CODIGO):");
+    char* paraLog = malloc(size+1);
+    for(i=0;i<size;i++){
+        if (region[i]>=32 || region[i]=='\n')
+            printf("%c",region[i]);
+            paraLog[i]=region[i];
+    }
+    paraLog[size]='\0';
+    log_info(activeLogger,"%s",paraLog);
+    free(paraLog);
 }
 
 void mostrarTlb(){

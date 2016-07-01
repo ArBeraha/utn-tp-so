@@ -376,9 +376,6 @@ void imprimirRegionMemoriaCodigoConsola(char* region, int size){
 }
 
 
-
-
-
 //-- PARA DUMP.log
 
 void imprimirRegionMemoriaStackLogDump(char* region, int size){
@@ -386,8 +383,10 @@ void imprimirRegionMemoriaStackLogDump(char* region, int size){
 	int valor;
 	int paraLog = 0;
 	while(i<size){
-		valor = char4ToInt(region+i);
-		paraLog = concatenate(paraLog,valor);
+		if ((region[i]>32 && region[i]<200)){// || region[i]=='\n'
+			valor = char4ToInt(region+i);
+			paraLog = concatenate(paraLog,valor);
+		}
 		i=i+4;
 	}
 	log_info(dump,"%d",paraLog);

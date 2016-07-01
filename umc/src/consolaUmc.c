@@ -70,7 +70,6 @@ void devolverTodasLasPaginas(){  //OK
 
 		int cantidadPaginasDeTabla = list_size((t_list*)unaTabla->listaPaginas);
 		int j;
-		log_info(dump, "------------------------------- \n");
 		log_info(dump, "TODAS LAS PAGINAS \n");
 
 		for(j=0;j<cantidadPaginasDeTabla;j++){
@@ -96,7 +95,6 @@ void devolverPaginasDePid(int pid){ //OK
 
 			int cantidadPaginasDeTabla = list_size((t_list*)unaTabla->listaPaginas);
 			int i;
-			log_info(dump, "------------------------------- \n");
 			log_info(dump, "PAGINAS DE PID: %d \n", pid);
 
 			for(i=0;i<cantidadPaginasDeTabla;i++){
@@ -126,7 +124,6 @@ void devolverTodaLaMemoria(){
 
 		int cantidadPaginasDeTabla = list_size((t_list*)unaTabla->listaPaginas);
 		int j;
-		log_info(dump, "------------------------------- \n");
 		log_info(dump,"TODA LA MEMORIA \n");
 
 		for(j=0;j<cantidadPaginasDeTabla;j++){
@@ -140,12 +137,11 @@ void devolverTodaLaMemoria(){
 
 			if(unaPagina->bitPresencia==1){
 				pthread_mutex_lock(&lock_accesoMemoria);
-				char* contenido = malloc(config.tamanio_marco+1);
-				memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
-				contenido[config.tamanio_marco]='\0';
+				char* contenido = malloc(config.tamanio_marco);
+				memcpy(contenido,memoria+(unaPagina->marcoUtilizado*config.tamanio_marco),config.tamanio_marco);
 				pthread_mutex_unlock(&lock_accesoMemoria);
 
-				if(j<cantidadPaginasDeTabla-paginas_stack){
+				if(j<cantPaginasDePid(unaTabla->pid)-paginas_stack){
 					imprimirRegionMemoriaCodigoLogDump(contenido,config.tamanio_marco);
 					imprimirRegionMemoriaCodigoConsola(contenido,config.tamanio_marco);
 				}else{
@@ -171,7 +167,6 @@ void devolverMemoriaDePid(int pid){
 	unaTabla = buscarTabla(pid);
 	int cantidadPaginasDeTabla = list_size((t_list*)unaTabla->listaPaginas);
 	int i;
-	log_info(dump, "------------------------------- \n");
 	log_info(dump,"MEMORIA DE PID: %d \n",pid);
 
 	for(i=0;i<cantidadPaginasDeTabla;i++){
@@ -184,12 +179,11 @@ void devolverMemoriaDePid(int pid){
 			log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
 			pthread_mutex_lock(&lock_accesoMemoria);
-			char* contenido = malloc(config.tamanio_marco+1);
-			memcpy(contenido,memoria+unaPagina->marcoUtilizado*config.tamanio_marco,config.tamanio_marco);
-			contenido[config.tamanio_marco]='\0';
+			char* contenido = malloc(config.tamanio_marco);
+			memcpy(contenido,memoria+(unaPagina->marcoUtilizado*config.tamanio_marco),config.tamanio_marco);
 			pthread_mutex_unlock(&lock_accesoMemoria);
 														// C S S
-			if(i<cantidadPaginasDeTabla-paginas_stack){ // 0 1 2
+			if(i<cantPaginasDePid(pid)-paginas_stack){ // 0 1 2
 				imprimirRegionMemoriaCodigoConsola(contenido, config.tamanio_marco);
 				imprimirRegionMemoriaCodigoLogDump(contenido, config.tamanio_marco);
 			}else{

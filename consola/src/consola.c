@@ -14,10 +14,9 @@ void cargarConfig(){
 	config.ipNucleo = config_get_string_value(configConsola, "IP_NUCLEO");
 //	config.DEBUG = config_get_int_value(configConsola, "DEBUG");
 //	config.DEBUG_LOG_OLD_REMOVE = config_get_int_value(configConsola, "DEBUG_LOG_OLD_REMOVE");
-//	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configConsola, "LOGGEAR_TODO");
+	config.DEBUG_RAISE_LOG_LEVEL = config_get_int_value(configConsola, "MOSTRAR_LOGS_EN_PANTALLA");
 	config.DEBUG = false;
 	config.DEBUG_LOG_OLD_REMOVE = false;
-	config.DEBUG_RAISE_LOG_LEVEL = 0;
 }
 
 void sacarSaltoDeLinea(char* texto) // TODO testear! Hice esta funcion desde el navegador xD
@@ -53,7 +52,7 @@ void conectarANucleo() {
 }
 
 void finalizar() {
-	log_info(activeLogger, "Fin exitoso.");
+	log_info(activeLogger, "Fin exitoso del mulo consola.");
 	destruirLogs();
 	// el fclose se hace apenas se deja de usar el archivo para poder correr 2 instancias del mismo proceso ansisop.
 	close(cliente);
@@ -62,7 +61,7 @@ void finalizar() {
 
 void procesarHeader(char *header) {
 	// Segun el protocolo procesamos el header del mensaje recibido
-	log_debug(debugLogger, "Llego un mensaje con header %d.", charToInt(header));
+	//log_debug(debugLogger, "Llego un mensaje con header %d.", charToInt(header));
 
 	switch (charToInt(header)) {
 
@@ -86,7 +85,6 @@ void procesarHeader(char *header) {
 
 	case HeaderConsolaFinalizarRechazado:
 		log_info(activeLogger,"Proceso ansisop rechazado.");
-		log_info(activeLogger,"Finalizando...");
 		finalizar();
 		break;
 
@@ -144,7 +142,7 @@ void escucharPedidos() {
 
 void realizarConexion() {
 	conectarANucleo();
-	log_info(activeLogger, "Conexion al nucleo correcta :).");
+	log_info(activeLogger, "Conexion al nucleo correcta.");
 	handshakear();
 	log_info(activeLogger, "Handshake finalizado exitosamente.");
 	log_debug(debugLogger, "Esperando algo para imprimir en pantalla.");
@@ -166,14 +164,14 @@ void cargarYEnviarArchivo() {
 	ssize_t read = getline(&line, &length, programa);
 
 	//Descarto la primera linea si es el hashbang!
-	if (line[0] == '#' && line[1] == '!') {
-		log_info(bgLogger, "Se leyó: |%s|", line);
-		log_info(bgLogger,
-				"No se pasa la linea anterior al nucleo por ser un hashbang.");
-		length = 0;
-		line = NULL;
-		read = getline(&line, &length, programa);
-	}
+//	if (line[0] == '#' && line[1] == '!') {
+//		log_info(bgLogger, "Se leyó: |%s|", line);
+//		log_info(bgLogger,
+//				"No se pasa la linea anterior al nucleo por ser un hashbang.");
+//		length = 0;
+//		line = NULL;
+//		read = getline(&line, &length, programa);
+//	}
 
 	while (read != -1) {
 		log_info(bgLogger, "Se leyó: |%s|", line);
@@ -201,13 +199,8 @@ void cargarYEnviarArchivo() {
 
 int main(int argc, char* argv[]) {
 	cargarConfig();
-	if (config.DEBUG_LOG_OLD_REMOVE) {
-		log_warning(warningLogger, "DEBUG_LOG_OLD_REMOVE esta en true!");
-		log_debug(debugLogger, "Borrando logs antiguos...");
-		system("rm -rfv *.log");
-	}
+
 	crearLogs(string_from_format("consola_%d", getpid()), "Consola", config.DEBUG_RAISE_LOG_LEVEL);
-	log_info(activeLogger, "Soy consola de process ID |%d|.", getpid());
 
 	if (config.DEBUG) {
 		warnDebug();
@@ -219,9 +212,9 @@ int main(int argc, char* argv[]) {
 		} else if (argc == 2) {
 			path = argv[1];
 		} else {
-			log_error(errorLogger, "Muchos parametros.");
+			log_error(errorLogger, "Muchos argumentos.");
 			log_info(activeLogger,
-					"No poner parametros o poner solo el nombre del archivo a abrir");
+					"No poner argumentos o poner solo el nombre del archivo a abrir");
 			exit(EXIT_FAILURE);
 		}
 	}

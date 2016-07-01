@@ -65,6 +65,8 @@ void establecerConexionConUMC() {
 	} else {
 		warnDebug();
 	}
+
+	pedir_tamanio_paginas();
 }
 void establecerConexionConNucleo() {
 	if(!config.DEBUG_IGNORE_NUCLEO){

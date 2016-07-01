@@ -85,7 +85,7 @@ void imprimirVariable(int cliente) {
 	t_proceso* proceso = obtenerProceso(cliente);
 	char* serialValor = malloc( sizeof(int));
 	read(proceso->socketCPU, serialValor, sizeof(int));
-	if (estaConectado(clientes[proceso->consola])){
+	if (estaConectadoV2(clientes[proceso->consola])){
 		enviarHeader(proceso->socketConsola, HeaderImprimirVariableConsola);
 		send_w(proceso->socketConsola, serialValor, sizeof(ansisop_var_t));
 	}
@@ -95,7 +95,7 @@ void imprimirVariable(int cliente) {
 void imprimirTexto(int cliente) {
 	t_proceso* proceso = obtenerProceso(cliente);
 	char* texto = leerLargoYMensaje(proceso->socketCPU);
-	if (estaConectado(clientes[proceso->consola])){
+	if (estaConectadoV2(clientes[proceso->consola])){
 		enviarHeader(proceso->socketConsola, HeaderImprimirTextoConsola);
 		enviarLargoYString(proceso->socketConsola, texto);
 	}

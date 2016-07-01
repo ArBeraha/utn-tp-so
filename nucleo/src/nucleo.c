@@ -300,6 +300,7 @@ void recibirFinalizacion(int cliente){
 
 void procesarHeader(int cliente, char *header) {
 	// mutexClientes SAFE
+	t_proceso* xxproceso;
 	log_info(activeLogger, "Procesando:" ANSI_COLOR_YELLOW "%s" ANSI_COLOR_RESET " Cliente:%d", headerToString(charToInt(header)),cliente);
 	clientes[cliente].atentido = true;
 
@@ -341,6 +342,10 @@ void procesarHeader(int cliente, char *header) {
 
 	case HeaderWait:
 		recibirWait(cliente);
+		break;
+
+	case headerNoTermineQuantumPeroToma: //TODO
+		printf("Me llego el header de cpu! \n\n\n\n");
 		break;
 
 	case headerTermineInstruccion:

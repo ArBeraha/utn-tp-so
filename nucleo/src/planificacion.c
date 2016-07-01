@@ -28,6 +28,10 @@ bool isclosed(int sock) {
   return n == 0;
 }
 
+bool estaConectadoV2(t_cliente cliente){
+	return !isclosed(cliente.socket);
+}
+
 static bool matrizEstados[5][5] = {
 //		     		NEW    READY  EXEC   BLOCK  EXIT
 		/* NEW 	 */{ false, true, false, false, true },
@@ -51,7 +55,7 @@ HILO planificar() {
 void planificarExpulsion(t_proceso* proceso) {
 	// mutexProcesos SAFE
 	// mutexPlanificacion SAFE
-	if (estaConectado(clientes[proceso->cpu])) {
+	if (estaConectadoV2(clientes[proceso->cpu])) {
 		if (proceso->estado == BLOCK) {
 			expulsarProceso(proceso);
 			return;
@@ -115,7 +119,7 @@ void planificacionFIFO() {
 				&& (!procesoExiste( (t_proceso*) queue_peek(colaListos)) || ( (t_proceso*) queue_peek(colaListos))->estado!=READY))
 			queue_pop(colaListos);
 		// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
-		while (!queue_is_empty(colaCPU) && (!clienteExiste( (int) queue_peek(colaCPU)) || !estaConectado(clientes[(int) queue_peek(colaCPU)])))
+		while (!queue_is_empty(colaCPU) && (!clienteExiste( (int) queue_peek(colaCPU)) || !estaConectadoV2(clientes[(int) queue_peek(colaCPU)])))
 			queue_pop(colaCPU);
 
 		// Si no se vaciaron las listas entonces los primeros de ambas listas son validos

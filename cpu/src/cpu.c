@@ -450,8 +450,8 @@ void inicializar() {
 void finalizar() {
 	log_info(activeLogger,"Finalizando proceso cpu...");
 	enviarHeader(umc,headerCPUTerminada);
-//	enviarHeader(nucleo,headerNoTermineQuantumPeroToma);
-//	desalojarProceso();
+	enviarHeader(nucleo,headerNoTermineQuantumPeroToma);
+	//desalojarProceso(); //TODO
 
 	close(nucleo);
 	close(umc);

@@ -290,7 +290,7 @@ void agregarAMemoria(pedidoLectura_t pedido, char* contenido, t_cliente cliente)
 	int id=0;
 	id=clientes[cliente.indice].pid;
 
-	if(cantPaginasEnMemoriaDePid(pedido.pid)>=config.marcos_x_proceso){
+	if(cantPaginasEnMemoriaDePid(pedido.pid)>=config.marcos_x_proceso || cantidadMarcosLibres()==0){
 		int posicionPaginaSacada=0;
 
 		if(strcmp(config.algoritmo_paginas,"CLOCK")==0){
@@ -515,21 +515,11 @@ void pedidoLectura(t_cliente cliente) {
 			return;
 		}
 		else {
-			tabla_t* tabla = buscarTabla(id);
-			tablaPagina_t* pagina = list_get((t_list*)tabla->listaPaginas,pedidoLectura.paginaRequerida);
-
-			if(pagina->bitPresencia == 0 && cantidadMarcosLibres()==0 && cantPaginasEnMemoriaDePid(id)<config.marcos_x_proceso){
-				char* serialRespuesta = intToChar4(2);
-				if (estaConectado(cliente))
-				send_w(cliente.socket, serialRespuesta, sizeof(int));
-				free(serialRespuesta);
-				return;
-			}else{
 				char* serialRespuesta = intToChar4(1);
 				if (estaConectado(cliente))
 					send_w(cliente.socket, serialRespuesta, sizeof(int));
 				free(serialRespuesta);
-			}
+
 		}
 
 		char* contenido = devolverPedidoPagina(pedidoLectura, cliente);
@@ -589,21 +579,11 @@ void headerEscribirPagina(t_cliente cliente){
 				return;
 			}
 			else {
-				tabla_t* tabla = buscarTabla(id);
-				tablaPagina_t* pagina = list_get((t_list*)tabla->listaPaginas,pedidoCpuEscritura->pagina);
-				if(pagina->bitPresencia == 0 && cantidadMarcosLibres()==0 && cantPaginasEnMemoriaDePid(id)<config.marcos_x_proceso){
-					char* serialRespuesta = intToChar4(2);
-					if (estaConectado(cliente))
+				char* serialRespuesta = intToChar4(1);
+				if (estaConectado(cliente))
 					send_w(cliente.socket, serialRespuesta, sizeof(int));
-					free(serialRespuesta);
-					return;
-				}else{
-					char* serialRespuesta = intToChar4(1);
-					if (estaConectado(cliente))
-						send_w(cliente.socket, serialRespuesta, sizeof(int));
-					free(serialRespuesta);
-				}
-			}
+				free(serialRespuesta);
+	}
 
 
 	read(cliente.socket, buffer, sizeof(int));

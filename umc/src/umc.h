@@ -60,6 +60,7 @@ typedef struct customConfig {
 	int tamanio_marco;
 	int mostrar_paginas;
 	int mostrar_tlb;
+	int mostrar_MemoriaAlFinalizar;
 
 	int entradas_tlb;
 	int retardo;

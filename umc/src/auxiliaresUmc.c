@@ -338,12 +338,10 @@ void imprimirRegionMemoriaStack(char* region, int size){
 		valor = char4ToInt(region+i);
 //		paraLog[i]=valor;
 		paraLog = concatenate(paraLog,valor);
-		printf("%d ************************************----------- \n", paraLog);
 		i=i+4;
 	}
 //	paraLog[size]='\0';
 	log_info(activeLogger,"%d",paraLog);
-	printf("%d ************************************ \n", paraLog);
 }
 
 void imprimirRegionMemoriaStackConsola(char* region, int size){

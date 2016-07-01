@@ -33,6 +33,8 @@ void cargarCFG() {
 	config.marcos_x_proceso = config_get_int_value(configUmc, "MARCOS_X_PROCESO");
 	config.mostrar_tlb = config_get_int_value(configUmc, "MOSTRAR_TLB");
 	config.mostrar_paginas = config_get_int_value(configUmc, "MOSTRAR_PAGINAS");
+	config.mostrar_MemoriaAlFinalizar = config_get_int_value(configUmc, "MOSTRAR_MEMALFINALIZ");
+
 }
 
 char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
@@ -710,14 +712,20 @@ void procesarHeader(t_cliente cliente, char* header) {
 
 	case HeaderTerminoProceso:
 		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Finalizo proceso de CPU, liberando estructuras" ANSI_COLOR_RESET ,idLog);
-		log_info(activeLogger, "[%d] -------- ANTES -----" ,idLog);
-		devolverTodasLasPaginas();
-		devolverTodaLaMemoria();
 
-		log_info(activeLogger, "[%d] -------- DESPUES -----",idLog);
+		if(config.mostrar_MemoriaAlFinalizar){
+			printf("-------- ANTES -------");
+			devolverTodasLasPaginas();
+			devolverTodaLaMemoria();
+		}
 		finalizarPrograma(idLog);
-		devolverTodasLasPaginas();
-		devolverTodaLaMemoria();
+
+		if(config.mostrar_MemoriaAlFinalizar){
+			printf("-------- DESPUES -------");
+			devolverTodasLasPaginas();
+			devolverTodaLaMemoria();
+		}
+
 		break;
 
 	case HeaderPID:
@@ -725,8 +733,6 @@ void procesarHeader(t_cliente cliente, char* header) {
 		nuevoPid = malloc(sizeof(int));
 		read(cliente.socket, nuevoPid, sizeof(int));
 		clientes[cliente.indice].pid=char4ToInt(nuevoPid);
-		int verifNuevo;
-		verifNuevo = clientes[cliente.indice].pid;
 
 		if(viejoPid!=char4ToInt(nuevoPid)){
 			flushTlbDePid(viejoPid);
@@ -734,7 +740,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 		}
 
 		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Cambio PID viejo: %d por nuevo: %d " ANSI_COLOR_RESET ,idLog,viejoPid,char4ToInt(nuevoPid));
-		devolverTodaLaMemoria();
+//		devolverTodaLaMemoria();
 		break;
 
 	case headerCPUTerminada:
@@ -778,8 +784,6 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 	log_info(activeLogger, "Conectando a SWAP ...");
 	conectarASwap();
 
-	crearHilo(&hiloRecibirComandos,(HILO)recibirComandos);
-
 	configurarServidorExtendido(&socketCPU, &direccionCPU, config.puerto_cpu,
 			&tamanioDireccionCPU, &activadoCPU);
 
@@ -788,6 +792,8 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 
 	inicializarClientes();
 	log_info(activeLogger, "Esperando conexiones CPU/NUCLEO...");
+
+	crearHilo(&hiloRecibirComandos,(HILO)recibirComandos);
 
 	while (1) {
 		FD_ZERO(&socketsParaLectura);

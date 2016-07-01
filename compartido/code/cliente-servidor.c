@@ -237,7 +237,7 @@ void enviarLargoYSerial(int sock, int largo, char* mensaje){
 }
 
 void enviarHeader(int cliente, int header){
-	printf("\n\n%s\n\n",headerToString(header));
+//	printf("\n\n%s\n\n",headerToString(header));
 	char* serialHeader = intToChar(header);
 	send_w(cliente,serialHeader,1);
 	free(serialHeader);

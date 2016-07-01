@@ -468,8 +468,14 @@ void finalizar() {
 void handler(int sign) {
 	if (sign == SIGUSR1) {
 		log_info(activeLogger, ANSI_COLOR_RED "Recibi SIGUSR1!" ANSI_COLOR_RESET);
-		terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccion
-		log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");
+
+		if(!ejecutando){
+			finalizar(); //si se encuentra esperando y sin ejecutar, lo finalizo
+
+		}else{
+			terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccion
+			log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");
+		}
 	}
 }
 

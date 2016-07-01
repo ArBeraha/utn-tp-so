@@ -74,6 +74,7 @@ typedef struct t_proceso {
 	int socketCPU;
 	int rafagas;
 	bool abortado;
+	bool sigusr1;
 } t_proceso;
 
 //t_proceso* procesos[MAXCLIENTS];
@@ -141,6 +142,7 @@ void procesarCambiosConfiguracion();
 void finalizarConsola(int cliente);
 void finalizarCPU(int cliente);
 void finalizarCliente(int cliente);
+void sigusr1(int cpu);
 // UMC
 bool pedirPaginas(t_proceso* proceso, char* codigo);
 void establecerConexionConUMC();
@@ -183,6 +185,8 @@ void ejecutarProceso(t_proceso* proceso, int cpu);
 void rafagaProceso(int cliente);
 bool procesoExiste(t_proceso* proceso);
 bool clienteExiste(int cliente);
+void limpiarColaListos();
+void limpiarColaCPU();
 // Primitivas
 void recibirSignal(int cliente);
 void recibirWait(int cliente);

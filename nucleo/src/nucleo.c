@@ -288,19 +288,18 @@ void atenderHandshake(int cliente){
 	free(header);
 	clientes[cliente].atentido = false;
 }
-void recibirFinalizacion(int cliente){
+void recibirFinalizacion(int cliente) {
 	t_proceso* proceso = obtenerProceso(cliente);
-	desasignarCPU(proceso);
-	if (procesoExiste(proceso)) {
+	if (proceso != NULL) {
 		if (!proceso->abortado)
 			finalizarProceso(cliente);
+		desasignarCPU(proceso);
+		clientes[cliente].atentido = false;
 	}
-	clientes[cliente].atentido=false;
 }
 
 void procesarHeader(int cliente, char *header) {
 	// mutexClientes SAFE
-	t_proceso* xxproceso;
 	log_info(activeLogger, "Procesando:" ANSI_COLOR_YELLOW "%s" ANSI_COLOR_RESET " Cliente:%d", headerToString(charToInt(header)),cliente);
 	clientes[cliente].atentido = true;
 
@@ -345,13 +344,7 @@ void procesarHeader(int cliente, char *header) {
 		break;
 
 	case headerNoTermineQuantumPeroToma:
-		xxproceso = obtenerProceso(cliente);
-		expulsarProceso(xxproceso);
-		log_info(activeLogger, "CPU:%d se desconectó.",cliente);
-		if (xxproceso!=NULL){
-			log_info(activeLogger, "PID:%d finalizará por desconexion de su CPU.",xxproceso->PCB->PID);
-		}
-		imprimir_PCB(xxproceso->PCB);
+		sigusr1(cliente);
 		break;
 
 	case headerTermineInstruccion:
@@ -374,6 +367,20 @@ void procesarHeader(int cliente, char *header) {
 		break;
 	}
 }
+
+void sigusr1(int cpu){
+	t_proceso* proceso = obtenerProceso(cpu);
+	log_info(activeLogger,"CPU:%d ha sido víctima de " ANSI_COLOR_RED "SIGUSR1" ANSI_COLOR_RESET,cpu);
+	if (proceso!=NULL){
+		proceso->sigusr1=true;
+	}
+	else{
+		quitarCliente(cpu);
+		limpiarColaCPU();
+	}
+	clientes[cpu].atentido=false;
+}
+
 void finalizarConsola(int cliente) {
 	log_info(activeLogger, "Consola:%d se desconectó.", cliente);
 	t_proceso* proceso = clientes[cliente].proceso;
@@ -396,10 +403,11 @@ void finalizarConsola(int cliente) {
 void finalizarCPU(int cliente){
 	log_info(activeLogger, "CPU:%d se desconectó.",cliente);
 	t_proceso* proceso = obtenerProceso(cliente);
-	if (proceso!=NULL){
+	if (proceso!=NULL && !proceso->sigusr1){
 		log_info(activeLogger, "PID:%d finalizará por desconexion de su CPU.",proceso->PCB->PID);
 		enviarHeader(proceso->socketConsola,HeaderConsolaFinalizarMuerteCPU);
 		return;}
+
 }
 void finalizarCliente(int cliente) {
 	switch (clientes[cliente].identidad) {

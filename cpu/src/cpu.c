@@ -474,10 +474,9 @@ void handler(int sign) {
 		log_info(activeLogger, ANSI_COLOR_RED "Recibi SIGUSR1!" ANSI_COLOR_RESET);
 
 		if(!ejecutando){
-			finalizar(); //si se encuentra esperando y sin ejecutar, lo finalizo
 			enviarHeader(umc,headerCPUTerminada);
 			enviarHeader(nucleo,headerNoTermineQuantumPeroToma);
-
+			finalizar(); //si se encuentra esperando y sin ejecutar, lo finalizo
 		}else{
 			terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccion
 			log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");

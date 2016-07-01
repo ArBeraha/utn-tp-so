@@ -51,6 +51,7 @@ HILO crearProceso(int consola) {
 	proceso->PCB->PID = procesos++;
 	proceso->estado = NEW;
 	proceso->consola = consola;
+	proceso->sigusr1=false;
 	MUTEXCLIENTES(clientes[consola].proceso=proceso);
 	MUTEXCLIENTES(proceso->socketConsola = clientes[consola].socket);
 	log_info(bgLogger,"Se esta intentando iniciar el proceso PID:%d",proceso->PCB->PID);

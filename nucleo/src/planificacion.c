@@ -105,6 +105,20 @@ bool clienteExiste(int cliente){
 	else
 		return false;
 }
+
+void limpiarColaListos(){
+	//Limpiamos las colas de procesos eliminados hasta encontrar uno que no lo este o se vacie
+	while (!queue_is_empty(colaListos)
+			&& (!procesoExiste( (t_proceso*) queue_peek(colaListos)) || ( (t_proceso*) queue_peek(colaListos))->estado!=READY))
+		queue_pop(colaListos);
+}
+
+void limpiarColaCPU(){
+	// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
+	while (!queue_is_empty(colaCPU) && (!clienteExiste( (int) queue_peek(colaCPU)) || !estaConectadoV2(clientes[(int) queue_peek(colaCPU)])))
+		queue_pop(colaCPU);
+}
+
 void planificacionFIFO() {
 	// mutexProcesos SAFE
 
@@ -114,13 +128,9 @@ void planificacionFIFO() {
 
 
 	while (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU)) {
-		 //Limpiamos las colas de procesos eliminados hasta encontrar uno que no lo este o se vacie
-		while (!queue_is_empty(colaListos)
-				&& (!procesoExiste( (t_proceso*) queue_peek(colaListos)) || ( (t_proceso*) queue_peek(colaListos))->estado!=READY))
-			queue_pop(colaListos);
-		// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
-		while (!queue_is_empty(colaCPU) && (!clienteExiste( (int) queue_peek(colaCPU)) || !estaConectadoV2(clientes[(int) queue_peek(colaCPU)])))
-			queue_pop(colaCPU);
+
+		limpiarColaListos();
+		limpiarColaCPU();
 
 		// Si no se vaciaron las listas entonces los primeros de ambas listas son validos
 		if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU)){
@@ -148,6 +158,7 @@ void asignarCPU(t_proceso* proceso, int cpu) {
 	cambiarEstado(proceso,EXEC);
 	proceso->cpu = cpu;
 	proceso->rafagas=0;
+	proceso->sigusr1=false;
 	MUTEXCLIENTES(clientes[cpu].proceso = proceso);
 	MUTEXCLIENTES(clientes[cpu].pid = proceso->PCB->PID);
 	MUTEXCLIENTES(proceso->socketCPU = clientes[cpu].socket);
@@ -155,10 +166,11 @@ void asignarCPU(t_proceso* proceso, int cpu) {
 void desasignarCPU(t_proceso* proceso) {
 	log_info(bgLogger, "Desasignando cpu:%d a pid:%d", proceso->cpu,
 			proceso->PCB->PID);
-	queue_push(colaCPU, (void*) proceso->cpu);
-	proceso->cpu = SIN_ASIGNAR;
+	if (!proceso->sigusr1)
+		queue_push(colaCPU, (void*) proceso->cpu);
 	clientes[proceso->cpu].proceso = NULL;
 	clientes[proceso->cpu].pid = -1;
+	proceso->cpu = SIN_ASIGNAR;
 }
 void ejecutarProceso(t_proceso* proceso, int cpu) {
 	// mutexProcesos SAFE

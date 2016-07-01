@@ -522,6 +522,7 @@ void pedidoLectura(t_cliente cliente) {
 				if (estaConectado(cliente))
 					send_w(cliente.socket, serialRespuesta, sizeof(int));
 			free(serialRespuesta);
+			log_warning(activeLogger, "[%d] No hay paginas disponibles para el proceso, rechazando",id);
 //			finalizarPrograma(id);
 			return;
 		}else{
@@ -596,6 +597,7 @@ void headerEscribirPagina(t_cliente cliente){
 			if (estaConectado(cliente))
 				send_w(cliente.socket, serialRespuesta, sizeof(int));
 			free(serialRespuesta);
+			log_warning(activeLogger, "[%d] No hay paginas disponibles para el proceso, rechazando",id);
 			return;
 	}else{
 		char* serialRespuesta = intToChar4(1);

@@ -198,6 +198,11 @@ void flushTlb();
 void flushTlbDePid(int pid);
 void sacarPosDeTlb(int pos);
 void flushMemory();
+void imprimirRegionMemoriaCodigoConsola(char* contenido,int size);
+void imprimirRegionMemoriaStackConsola(char* contenido,int size);
+void imprimirRegionMemoriaCodigoLogDump(char* contenido,int size);
+void imprimirRegionMemoriaStackLogDump(char* contenido,int size);
+
 HILO recibirComandos();
 
 void servidorCPUyNucleoExtendido();

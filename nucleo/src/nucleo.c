@@ -344,8 +344,14 @@ void procesarHeader(int cliente, char *header) {
 		recibirWait(cliente);
 		break;
 
-	case headerNoTermineQuantumPeroToma: //TODO
-		printf("Me llego el header de cpu! \n\n\n\n");
+	case headerNoTermineQuantumPeroToma:
+		xxproceso = obtenerProceso(cliente);
+		expulsarProceso(xxproceso);
+		log_info(activeLogger, "CPU:%d se desconectó.",cliente);
+		if (xxproceso!=NULL){
+			log_info(activeLogger, "PID:%d finalizará por desconexion de su CPU.",xxproceso->PCB->PID);
+		}
+		imprimir_PCB(xxproceso->PCB);
 		break;
 
 	case headerTermineInstruccion:

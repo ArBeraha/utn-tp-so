@@ -69,6 +69,7 @@ char* headerToString(header_t header) {
 		case HeaderEscrituraCorrecta: return "HeaderEscrituraCorrecta";
 		case HeaderEscrituraErronea: return "HeaderEscrituraErronea";
 		case HeaderProcesoNoEncontrado: return "HeaderProcesoNoEncontrado";
+		case headerNoTermineQuantumPeroToma: return "headerNoTermineQuantumPeroToma";
 		case HeaderPID: return "HeaderPID";
 	}
 	return "Header no definido";

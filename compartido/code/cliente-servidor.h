@@ -19,6 +19,7 @@
 #include <commons/string.h>
 #include <string.h>
 #include "serializacion.h"
+#include "header.h"
 
 #define MAXCLIENTS 300
 

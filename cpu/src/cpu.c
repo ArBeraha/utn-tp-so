@@ -7,7 +7,9 @@
 #include "cpu.h"
 
 
-
+bool puedo_terminar(){
+	return terminar && !ejecutando;
+}
 
 bool hayOverflow(){
 	printf("Overflow: %d ..... 1 = OK", overflow);
@@ -47,8 +49,11 @@ void informarInstruccionTerminada(char* sentencia) { /* NO SE LLAMA */
 	if(!noEsEnd(sentencia)){
 		finalizar_proceso(true);
 	}else{
-		enviarHeader(nucleo,headerTermineInstruccion);
-		log_debug(debugLogger,"Informé a nucleo del fin de una instrucción");
+		if(!terminar)
+		{
+			enviarHeader(nucleo,headerTermineInstruccion);
+			log_debug(debugLogger,"Informé a nucleo del fin de una instrucción");
+		}
 	}
 
 	// Acá nucleo tiene que mandarme el header que corresponda, segun si tengo que seguir ejecutando instrucciones o tengo que desalojar.
@@ -66,10 +71,6 @@ void desalojarProceso() {
 	enviarPCB();
 	ejecutando = false;
 	log_info(activeLogger, "Proceso desalojado.");
-}
-
-bool puedo_terminar(){
-	return terminar && !ejecutando;
 }
 
 /*--------FUNCIONES----------*/
@@ -271,6 +272,7 @@ void pedirUltimaSentencia(t_sentencia* sentenciaRelativa, int pagina, int longit
  */
 void pedirYRecibirSentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecutar
 	log_info(activeLogger, "Iniciando pedido de sentencia...");
+	imprimir_PCB(pcbActual);
 	int paginaAPedir; // Lo inicializa obtener_sentencia_relativa
 	t_sentencia* sentenciaRelativa = obtener_sentencia_relativa(&paginaAPedir);
 	int longitud_restante = longitud_sentencia(sentenciaRelativa); //longitud de la sentencia que aun no pido
@@ -340,6 +342,7 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 void enviarPCB() {
 	log_debug(debugLogger, "Enviando PCB a Nucleo...");
 	int bytes = bytes_PCB(pcbActual);
+	imprimir_PCB(pcbActual);
 	char* serialPCB = malloc(bytes);
 	serializar_PCB(serialPCB, pcbActual);
 
@@ -391,6 +394,9 @@ void obtener_y_parsear() {
 			free(sentenciaPedida);
 		}
 	}
+//	}else{
+//		enviarHeader(umc,headerCPUTerminada);
+//	}
 }
 
 /**
@@ -449,14 +455,11 @@ void inicializar() {
 
 void finalizar() {
 	log_info(activeLogger,"Finalizando proceso cpu...");
-	enviarHeader(umc,headerCPUTerminada);
-	enviarHeader(nucleo,headerNoTermineQuantumPeroToma);
-	//desalojarProceso(); //TODO
 
 	close(nucleo);
 	close(umc);
 
-	log_info(activeLogger,"CPU de PID finalizó correctamente.");
+	log_info(activeLogger,"CPU finalizó correctamente.");
 	destruirLogs();
 	exit(EXIT_SUCCESS);
 }
@@ -471,10 +474,12 @@ void handler(int sign) {
 
 		if(!ejecutando){
 			finalizar(); //si se encuentra esperando y sin ejecutar, lo finalizo
-
+			enviarHeader(umc,headerCPUTerminada);
+			enviarHeader(nucleo,headerNoTermineQuantumPeroToma);
 		}else{
 			terminar = true; //Setea el flag para que termine CPU al terminar de ejecutar la instruccion
 			log_info(activeLogger, "Esperando a que termine la ejecucion del programa actual...");
+			enviarHeader(nucleo,headerNoTermineQuantumPeroToma);
 		}
 	}
 }

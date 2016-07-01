@@ -510,16 +510,25 @@ void pedidoLectura(t_cliente cliente) {
 		if (!existePaginaBuscadaEnTabla(pedidoCpu->pagina, buscarTabla(id))) {
 			char* serialRespuesta = intToChar4(0);
 			if (estaConectado(cliente))
-				send_w(cliente.socket, serialRespuesta, sizeof(int));
+					send_w(cliente.socket, serialRespuesta, sizeof(int));
 			free(serialRespuesta);
 			return;
 		}
 		else {
-				char* serialRespuesta = intToChar4(1);
+			tabla_t* tabla = buscarTabla(id);
+			tablaPagina_t* pagina = list_get((t_list*)tabla->listaPaginas,pedidoLectura.paginaRequerida);
+			if(pagina->bitPresencia == 0 && cantidadMarcosLibres()==0 && cantPaginasEnMemoriaDePid(id)==0){
+				char* serialRespuesta = intToChar4(2);
 				if (estaConectado(cliente))
 					send_w(cliente.socket, serialRespuesta, sizeof(int));
-				free(serialRespuesta);
-
+			free(serialRespuesta);
+			return;
+		}else{
+			char* serialRespuesta = intToChar4(1);
+			if (estaConectado(cliente))
+				send_w(cliente.socket, serialRespuesta, sizeof(int));
+			free(serialRespuesta);
+			}
 		}
 
 		char* contenido = devolverPedidoPagina(pedidoLectura, cliente);
@@ -572,17 +581,27 @@ void headerEscribirPagina(t_cliente cliente){
 //	}
 
 	if (!existePaginaBuscadaEnTabla(pedidoCpuEscritura->pagina, buscarTabla(id))) {
-				char* serialRespuesta = intToChar4(0);
-				if (estaConectado(cliente))
-					send_w(cliente.socket, serialRespuesta, sizeof(int));
-				free(serialRespuesta);
-				return;
-			}
-			else {
-				char* serialRespuesta = intToChar4(1);
-				if (estaConectado(cliente))
-					send_w(cliente.socket, serialRespuesta, sizeof(int));
-				free(serialRespuesta);
+		char* serialRespuesta = intToChar4(0);
+		if (estaConectado(cliente))
+			send_w(cliente.socket, serialRespuesta, sizeof(int));
+		free(serialRespuesta);
+		return;
+	}
+	else {
+		tabla_t* tabla = buscarTabla(id);
+		tablaPagina_t* pagina = list_get((t_list*)tabla->listaPaginas,pedidoCpuEscritura->pagina);
+		if(pagina->bitPresencia == 0 && cantidadMarcosLibres()==0 && cantPaginasEnMemoriaDePid(id)==0){
+			char* serialRespuesta = intToChar4(2);
+			if (estaConectado(cliente))
+				send_w(cliente.socket, serialRespuesta, sizeof(int));
+			free(serialRespuesta);
+			return;
+	}else{
+		char* serialRespuesta = intToChar4(1);
+		if (estaConectado(cliente))
+			send_w(cliente.socket, serialRespuesta, sizeof(int));
+		free(serialRespuesta);
+		}
 	}
 
 

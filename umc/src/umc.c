@@ -522,7 +522,7 @@ void pedidoLectura(t_cliente cliente) {
 				if (estaConectado(cliente))
 					send_w(cliente.socket, serialRespuesta, sizeof(int));
 			free(serialRespuesta);
-			finalizarPrograma(id);
+//			finalizarPrograma(id);
 			return;
 		}else{
 			char* serialRespuesta = intToChar4(1);
@@ -766,7 +766,7 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 	system("rm -rf Umc.log");
 	system("rm -rf dump");
 
-	crearLogs("Umc", "UMC", -1);
+	crearLogs("Umc", "UMC", 1);
 	dump = log_create("dump", "UMC", false, LOG_LEVEL_INFO);
 
 	log_info(activeLogger,"Soy umc de process ID %d", getpid());

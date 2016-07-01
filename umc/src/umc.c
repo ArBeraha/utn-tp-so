@@ -735,7 +735,7 @@ void procesarHeader(t_cliente cliente, char* header) {
 		break;
 
 	case headerCPUTerminada:
-		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Chau CPU: %d -  No vuelvas :)  " ANSI_COLOR_RESET ,clientes[cliente.indice]);
+		log_info(activeLogger, ANSI_COLOR_GREEN  "[%d] Quitando CPU como cliente: %d" ANSI_COLOR_RESET ,clientes[cliente.indice]);
 		quitarCliente(cliente.indice);
 		break;
 

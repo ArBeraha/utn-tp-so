@@ -12,7 +12,7 @@ bool puedo_terminar(){
 }
 
 bool hayOverflow(){
-	printf("Overflow: %d ..... 1 = OK\n", overflow);  // todo sacar esto para la entrega
+	//printf("Overflow: %d ..... 1 = OK\n", overflow);  // todo sacar esto para la entrega
 	return overflow!=1;
 }
 bool noEsEnd(char* sentencia){
@@ -26,7 +26,7 @@ void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la
 		log_info(activeLogger,ANSI_COLOR_GREEN "El proceso ansisop ejecutó su última instrucción." ANSI_COLOR_RESET);
 	}
 	enviarHeader(nucleo, HeaderTerminoProceso);
-	if(overflow!=2 && overflow!=0){
+	if((overflow!=2 && overflow!=0) || normalmente){ //TODO le dejo marca a esto para ubicarlo rapido.
 		enviarHeader(umc, HeaderTerminoProceso);
 	}
 	pcb_destroy(pcbActual);
@@ -44,24 +44,6 @@ void setearPC(t_PCB* pcb, t_puntero_instruccion pc) {
 
 void incrementarPC(t_PCB* pcb) {
 	setearPC(pcb, (t_puntero_instruccion)((pcb->PC) + 1));
-}
-
-void informarInstruccionTerminada(char* sentencia) { /* NO SE LLAMA */
-
-	// Le aviso a nucleo que termino una instruccion, para que calcule cuanto quantum le queda al proceso ansisop.
-	if(!noEsEnd(sentencia)){
-		finalizar_proceso(true);
-	}else{
-		if(!terminar)
-		{
-			enviarHeader(nucleo,headerTermineInstruccion);
-			log_debug(debugLogger,"Informé a nucleo del fin de una instrucción");
-		}
-	}
-
-	// Acá nucleo tiene que mandarme el header que corresponda, segun si tengo que seguir ejecutando instrucciones o tengo que desalojar.
-	// Eso se procesa en otro lado, porque la ejeución de instrucciones esta anidada en un while
-	// por lo que no tengo que recibir el header aca
 }
 
 void loggearFinDePrimitiva(char* primitiva) {
@@ -209,7 +191,7 @@ void enviar_solicitud(int pagina, int offset, int size) {
 			free(stackOverflowFlag);
 
 			if (hayOverflow()) {
-				printf("UMC mando overflow = %d\n",overflow); // todo sacar esto para la entrega
+				//printf("UMC mando overflow = %d\n",overflow); // todo sacar esto para la entrega
 				lanzar_excepcion_overflow(overflow);
 			}
 			free(solicitud);
@@ -245,24 +227,33 @@ bool paginaCompleta(int longitud_restante) {
  * Pide una pagina entera a UMC
  */
 void pedirPaginaCompleta(int pagina) {
-	enviarHeader(umc, HeaderSolicitudSentencia);
-	enviar_solicitud(pagina, 0, tamanioPaginas);
-	recibirFragmentoDeSentencia(tamanioPaginas);
+	if (!hayOverflow()) {
+		enviarHeader(umc, HeaderSolicitudSentencia);
+		enviar_solicitud(pagina, 0, tamanioPaginas);
+		recibirFragmentoDeSentencia(tamanioPaginas);
+	}
 }
 
-void pedirPrimeraSentencia(t_sentencia* sentenciaRelativa, int pagina, int* longitud_restante) {
-	int tamanioPrimeraSentencia = minimo(*longitud_restante,
+void pedirPrimeraSentencia(t_sentencia* sentenciaRelativa, int pagina,
+		int* longitud_restante) {
+	if (!hayOverflow()) {
+		int tamanioPrimeraSentencia = minimo(*longitud_restante,
 				tamanioPaginas - sentenciaRelativa->offset_inicio); //llega hasta su final o hasta que se termine la pagina, lo mas pequeño
-	enviarHeader(umc, HeaderSolicitudSentencia);
-	enviar_solicitud(pagina, sentenciaRelativa->offset_inicio, tamanioPrimeraSentencia);
-	(*longitud_restante) -= tamanioPrimeraSentencia;
-	recibirFragmentoDeSentencia(tamanioPrimeraSentencia);
+		enviarHeader(umc, HeaderSolicitudSentencia);
+		enviar_solicitud(pagina, sentenciaRelativa->offset_inicio,
+				tamanioPrimeraSentencia);
+		(*longitud_restante) -= tamanioPrimeraSentencia;
+		recibirFragmentoDeSentencia(tamanioPrimeraSentencia);
+	}
 }
 
-void pedirUltimaSentencia(t_sentencia* sentenciaRelativa, int pagina, int longitud_restante){
-	enviarHeader(umc, HeaderSolicitudSentencia);
-	enviar_solicitud(pagina, 0, longitud_restante); //Desde el inicio, con tamaño identico a lo que me falta leer.
-	recibirFragmentoDeSentencia(longitud_restante);
+void pedirUltimaSentencia(t_sentencia* sentenciaRelativa, int pagina,
+		int longitud_restante) {
+	if (!hayOverflow()) {
+		enviarHeader(umc, HeaderSolicitudSentencia);
+		enviar_solicitud(pagina, 0, longitud_restante); //Desde el inicio, con tamaño identico a lo que me falta leer.
+		recibirFragmentoDeSentencia(longitud_restante);
+	}
 }
 
 /**

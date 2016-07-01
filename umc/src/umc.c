@@ -522,6 +522,7 @@ void pedidoLectura(t_cliente cliente) {
 				if (estaConectado(cliente))
 					send_w(cliente.socket, serialRespuesta, sizeof(int));
 			free(serialRespuesta);
+			finalizarPrograma(id);
 			return;
 		}else{
 			char* serialRespuesta = intToChar4(1);

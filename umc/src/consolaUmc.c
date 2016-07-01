@@ -76,9 +76,10 @@ void devolverTodasLasPaginas(){  //OK
 
 			tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
 			unaPagina = list_get((t_list*)unaTabla->listaPaginas,j);
-
-			printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d \n",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
-			log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d ",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
+			if(unaPagina->bitPresencia){
+				printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d \n",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
+				log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d ",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
+			}
 		}
 	}
 	pthread_mutex_unlock(&lock_accesoTabla);
@@ -100,8 +101,10 @@ void devolverPaginasDePid(int pid){ //OK
 			for(i=0;i<cantidadPaginasDeTabla;i++){
 				tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
 				unaPagina = list_get((t_list*)unaTabla->listaPaginas,i);
-				printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d \n",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
-				log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
+				if(unaPagina->bitPresencia){
+					printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d \n",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
+					log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitModificacion: %d, bitUso: %d",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitModificacion,unaPagina->bitUso);
+				}
 			}
 			log_info(dump, "------------------------------- \n");
 	}else{
@@ -132,10 +135,10 @@ void devolverTodaLaMemoria(){
 			unaPagina = list_get((t_list*)unaTabla->listaPaginas,j);
 			//Hago un solo print f de las caracteristicas
 
-			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
-			log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
 			if(unaPagina->bitPresencia==1){
+				printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
+				log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
 				pthread_mutex_lock(&lock_accesoMemoria);
 				char* contenido = malloc(config.tamanio_marco);
 				memcpy(contenido,memoria+(unaPagina->marcoUtilizado*config.tamanio_marco),config.tamanio_marco);
@@ -148,10 +151,11 @@ void devolverTodaLaMemoria(){
 					imprimirRegionMemoriaStackLogDump(contenido,config.tamanio_marco);
 					imprimirRegionMemoriaStackConsola(contenido,config.tamanio_marco);
 				}
-			}else{
-				printf("No esta en memoria");
-				log_info(dump,"No esta en memoria",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
 			}
+//			else{
+//				printf("No esta en memoria");
+//				log_info(dump,"No esta en memoria",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
+//			}
 			printf("\n");
 		}
 	}
@@ -193,10 +197,10 @@ void devolverMemoriaDePid(int pid){
 
 			printf("\n");
 		}
-		else{
-			printf("La pagina: %d del pid: %d no esta en memoria \n",unaPagina->nroPagina,pid);
-
-		}
+//		else{
+//			printf("La pagina: %d del pid: %d no esta en memoria \n",unaPagina->nroPagina,pid);
+//
+//		}
 	}
 	printf("\n");
 	log_info(dump, "------------------------------- \n");

@@ -77,6 +77,7 @@ customConfig_t config;
 bool terminar;						//flag para que el proceso sepa cuando terminar
 int overflow;
 bool ejecutando;
+bool variableInvalidaUsada;
 
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
 void informarInstruccionTerminada(char* sentencia);
@@ -104,7 +105,9 @@ void obtener_y_parsear();
 void lanzar_excepcion_overflow();
 bool esExcepcion(char* cad);
 void handler(int sign);
-
+bool hayOverflow();
+void pass();
+void finalizar_proceso_por_variable_invalida();
 // ***** Funciones de conexiones ***** //
 int getHandshake(int cli);
 void warnDebug();

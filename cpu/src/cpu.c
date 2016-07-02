@@ -26,7 +26,7 @@ void finalizar_proceso(bool normalmente){ //voy a esta funcion cuando ejecuto la
 		log_info(activeLogger,ANSI_COLOR_GREEN "El proceso ansisop ejecutó su última instrucción." ANSI_COLOR_RESET);
 	}
 	enviarHeader(nucleo, HeaderTerminoProceso);
-	if((overflow!=2 && overflow!=0) || normalmente){ //TODO le dejo marca a esto para ubicarlo rapido.
+	if((overflow!=2 && overflow!=0) || normalmente){
 		enviarHeader(umc, HeaderTerminoProceso);
 	}
 	pcb_destroy(pcbActual);
@@ -58,6 +58,7 @@ void desalojarProceso() {
 	log_info(activeLogger, "Proceso desalojado.");
 }
 
+void pass(){} //no borrar
 /*--------FUNCIONES----------*/
 void esperar_programas() {
 	log_debug(debugLogger, "Esperando programas de nucleo.");
@@ -72,7 +73,7 @@ void esperar_programas() {
 
 void procesarHeader(char *header) {
 
-	log_debug(debugLogger, "Llego el header: %s", headerToString(charToInt(header)));
+	//log_debug(debugLogger, "Llego el header: %s", headerToString(charToInt(header)));
 
 	switch (charToInt(header)) {
 
@@ -87,6 +88,7 @@ void procesarHeader(char *header) {
 		break;
 
 	case HeaderPCB:
+		variableInvalidaUsada = false;
 		overflow = 1;
 		obtenerPCB();
 		break;
@@ -95,6 +97,7 @@ void procesarHeader(char *header) {
 		if(!puedo_terminar()){
 			obtener_y_parsear();
 		}
+		variableInvalidaUsada = false;
 		break;
 
 	case HeaderDesalojarProceso:
@@ -153,7 +156,7 @@ void sacarSaltoDeLinea(char* texto, int pos){
 
 void recibirFragmentoDeSentencia(int size){
 	if(!hayOverflow()){
-		log_debug(debugLogger, "Recibiendo parte de una sentencia. Tamaño del fragmento: |%d|...", size);
+		//log_debug(debugLogger, "Recibiendo parte de una sentencia. Tamaño del fragmento: |%d|...", size);
 		char* serialSentencia = recv_waitall_ws(umc, size);
 		sacarSaltoDeLinea(serialSentencia, size);
 		char* sentencia = malloc(size+1);
@@ -263,7 +266,7 @@ void pedirUltimaSentencia(t_sentencia* sentenciaRelativa, int pagina,
  * t_pedido_n <---- Si no es la pagina completa, setea el offset fin correcto para no pedir de mas.
  */
 void pedirYRecibirSentencia(int* tamanio) {	//pedir al UMC la proxima sentencia a ejecutar
-	log_info(activeLogger, "Iniciando pedido de sentencia...");
+	//log_info(activeLogger, "Iniciando pedido de sentencia...");
 	//imprimir_PCB(pcbActual);
 	int paginaAPedir; // Lo inicializa obtener_sentencia_relativa
 	t_sentencia* sentenciaRelativa = obtener_sentencia_relativa(&paginaAPedir);
@@ -298,7 +301,7 @@ void enviarPID(){
 }
 
 void recibirCantidadDePaginasDeCodigo(){
-	log_debug(debugLogger,"Recibiendo la cantidad de paginas de codigo de UMC...");
+	//log_debug(debugLogger,"Recibiendo la cantidad de paginas de codigo de UMC...");
 	char* pags = recv_waitall_ws(umc,sizeof(int));
 	cantidadPaginasCodigo = char4ToInt(pags);
 	log_debug(debugLogger,"Recibida la cantidad de paginas de codigo |%d|.", cantidadPaginasCodigo);
@@ -320,7 +323,7 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 	ejecutando = true;
 
 	pcbActual=malloc(sizeof(t_PCB));
-	log_debug(debugLogger, "Recibiendo PCB...");
+	//log_debug(debugLogger, "Recibiendo PCB...");
 	char* serialPCB = leerLargoYMensaje(nucleo);
 	log_debug(debugLogger, "PCB recibido!");
 	deserializar_PCB(pcbActual, serialPCB);
@@ -331,7 +334,7 @@ void obtenerPCB() {		//recibo el pcb que me manda nucleo
 }
 
 void enviarPCB() {
-	log_debug(debugLogger, "Enviando PCB a Nucleo...");
+	//log_debug(debugLogger, "Enviando PCB a Nucleo...");
 	int bytes = bytes_PCB(pcbActual);
 	//imprimir_PCB(pcbActual);
 	char* serialPCB = malloc(bytes);
@@ -352,12 +355,15 @@ void parsear(char* const sentencia) {
 
 	if(noEsEnd(sentencia)){
 		analizadorLinea(sentencia, &funciones, &funcionesKernel);
+		if(variableInvalidaUsada){return;}
+
 		log_info(activeLogger, "PC actualizado a |%d|",pcbActual->PC);
 		enviarHeader(nucleo,headerTermineInstruccion);
 		log_debug(debugLogger,"Informé a nucleo del fin de una instrucción");
 	}
-	else
+	else{
 		finalizar_proceso(true);
+	}
 }
 /**
  * Recibo la sentencia previamente pedida.
@@ -385,9 +391,6 @@ void obtener_y_parsear() {
 			free(sentenciaPedida);
 		}
 	}
-//	}else{
-//		enviarHeader(umc,headerCPUTerminada);
-//	}
 }
 
 /**
@@ -433,9 +436,21 @@ void cargarConfig() {
 		config.DEBUG_LOG_ON_TESTS = false;
 }
 
+void finalizar_proceso_por_variable_invalida(){
+	log_info(activeLogger,ANSI_COLOR_RED "terminando la ejecución del programa actual." ANSI_COLOR_RESET);
+	enviarHeader(nucleo, HeaderTerminoProceso);
+	enviarHeader(umc, HeaderTerminoProceso);
+	pcb_destroy(pcbActual);
+	ejecutando = false;
+	variableInvalidaUsada=true;
+	pcbActual=NULL;
+	log_info(activeLogger,ANSI_COLOR_RED "Proceso terminado!" ANSI_COLOR_RESET);
+}
+
 void inicializar_flags(){
 	ejecutando = false;
 	terminar = false;
+	variableInvalidaUsada=false;
 	overflow = false;
 	pcbActual = NULL; //lo dejo en NULL por chequeos en otro lado.
 }

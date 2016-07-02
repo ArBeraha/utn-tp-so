@@ -52,7 +52,7 @@ void conectarANucleo() {
 }
 
 void finalizar() {
-	log_info(activeLogger, "Fin exitoso del mulo consola.");
+	log_info(activeLogger, "Consola finalizada.");
 	destruirLogs();
 	// el fclose se hace apenas se deja de usar el archivo para poder correr 2 instancias del mismo proceso ansisop.
 	close(cliente);

@@ -18,7 +18,9 @@
  * Directiva 1
  */
 t_puntero definir_variable(t_nombre_variable variable) {
-
+	if(variableInvalidaUsada){
+		goto fin;
+	}
 	t_pedido* direccion = stack_next_pedido(stack, tamanioPaginas);
 	t_stack_item* head = stack_pop(stack);
 	char* cadena = charToString((char)variable);
@@ -37,6 +39,8 @@ t_puntero definir_variable(t_nombre_variable variable) {
 
 	loggearFinDePrimitiva("Definir_variable");
 	return head->posicion;
+
+	fin: return 0;
 }
 
 
@@ -44,7 +48,9 @@ t_puntero definir_variable(t_nombre_variable variable) {
  * Directiva 2
  */
 t_puntero obtener_posicion_de(t_nombre_variable variable) {
-	log_info(activeLogger, "Obtener posicion de |%c|.", variable);
+	if(variableInvalidaUsada){goto fin;}
+
+	//log_info(activeLogger, "Obtener posicion de |%c|.", variable);
 	t_puntero posicionAbsoluta = 0; //no sacar esta inicializacion por el if de abajo
 	t_pedido* posicionRelativa;
 	char* cadena = charToString((char)variable);
@@ -54,26 +60,30 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 		posicionRelativa = (t_pedido*)dictionary_get(head->identificadores,cadena);
 		break;
 	case PARAMETRO:
-		posicionRelativa = (t_pedido*)list_get(head->argumentos,nombreToInt(variable)); //fixme: si rompe, sumarle 1 a la posicion.
+		posicionRelativa = (t_pedido*)list_get(head->argumentos,nombreToInt(variable));
 		break;
 	case NOEXISTE:
 		posicionAbsoluta = -1;
 		break;
 	}
 
-	if (posicionAbsoluta >= 0) {
+	if (posicionAbsoluta != (t_puntero)-1) {
 		posicionAbsoluta = posicionRelativa->pagina*tamanioPaginas + posicionRelativa->offset;
 		log_info(activeLogger,
 				"Se encontro la variable |%c| en la posicion: absoluta |%d|.", variable,
 				posicionAbsoluta);
 	} else {
 		log_info(activeLogger, "No se encontro la variable |%c|.", variable);
+		finalizar_proceso_por_variable_invalida();
+		goto fin;
 	}
 
 
 	free(cadena);
 	loggearFinDePrimitiva("obtener_posicion_de");
 	return posicionAbsoluta;
+
+	fin: return 0;
 }
 
 
@@ -81,8 +91,10 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
  * Directiva 3
  */
 t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de la variable de direccion
+	if(variableInvalidaUsada){goto fin;}
+
 	t_valor_variable valor;
-	log_info(activeLogger, "Obtener valor de la posicion absoluta |%d|.", direccion);
+	//log_info(activeLogger, "Obtener valor de la posicion absoluta |%d|.", direccion);
 
 	enviarHeader(umc, HeaderPedirValorVariable);
 	enviar_direccion_umc(direccion); // esto chequea q no haya overflow
@@ -101,6 +113,7 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 		lanzar_excepcion_overflow(overflow);
 	}
 	return 0;
+	fin: return 0;
 }
 
 
@@ -108,6 +121,8 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
  * Directiva 4
  */
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
+	if(variableInvalidaUsada){goto fin;}
+
 	log_info(activeLogger, "Asignando en la posicion |%d| el valor |%d|", direccion_variable, valor);
 
 	enviarHeader(umc,HeaderAsignarValor);
@@ -122,6 +137,8 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	}else{
 		lanzar_excepcion_overflow(overflow);
 	}
+	return;
+	fin: pass();
 }
 
 
@@ -129,7 +146,9 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
  * Directiva 5 ^
  */
 t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartida) { // Pido a Nucleo el valor de la variable
-	log_info(activeLogger, "Obtener valor de variable compartida |%s|.",nombreVarCompartida);
+	if(variableInvalidaUsada){goto fin;}
+
+	//log_info(activeLogger, "Obtener valor de variable compartida |%s|.",nombreVarCompartida);
 	t_valor_variable valorVarCompartida;
 	int nameSize = strlen(nombreVarCompartida) + 1;
 
@@ -142,12 +161,13 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
 	char* value = recv_waitall_ws(nucleo, sizeof(int));
 	valorVarCompartida = char4ToInt(value);
 
-	log_info(activeLogger, "Valor obtenido: |%s| vale |%d|.",nombreVarCompartida, valorVarCompartida);
+	log_info(activeLogger, "Valor de la compartida |%s|, es: |%d|.",nombreVarCompartida, valorVarCompartida);
 	free(value);
 	free(sizeSerializado);
 
 	loggearFinDePrimitiva("Obtener_valor_compartida");
 	return valorVarCompartida;
+	fin: return 0;
 }
 
 
@@ -155,9 +175,11 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
  * Directiva 6 ^
  */
 t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartida, t_valor_variable valorVarCompartida) {
-	log_info(activeLogger, //envio el nombre de la variable
-			"Asignar el valor |%d| a la variable compartida |%s|.",
-			valorVarCompartida, nombreVarCompartida);
+	if(variableInvalidaUsada){goto fin;}
+
+	//log_info(activeLogger, //envio el nombre de la variable
+//			"Asignar el valor |%d| a la variable compartida |%s|.",
+//			valorVarCompartida, nombreVarCompartida);
 
 	//envio el header, el tamaño del nombre y el nombre
 	enviarHeader(nucleo, HeaderAsignarValorVariableCompartida);
@@ -174,6 +196,7 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 
 	loggearFinDePrimitiva("asignar_valor_compartida");
 	return valorVarCompartida;
+	fin: return 0;
 }
 
 
@@ -181,6 +204,7 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
  * Directiva 7
  */
 void irAlLabel(t_nombre_etiqueta etiqueta) {
+	if(variableInvalidaUsada){goto fin;}
 
 	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
 	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
@@ -188,8 +212,8 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 
 		posicionPrimeraInstrUtil = obtenerPosicionLabel(etiqueta);
 
-		log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
-				etiqueta, posicionPrimeraInstrUtil);
+//		log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
+//				etiqueta, posicionPrimeraInstrUtil);
 
 	} else {
 
@@ -199,12 +223,17 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	}
 	setearPC(pcbActual, posicionPrimeraInstrUtil);
 	loggearFinDePrimitiva("ir_al_label");
+	return;
+
+	fin: pass();
 }
 
 /**
  * Directiva 8
  */
 void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar) {
+	if(variableInvalidaUsada){goto fin;}
+
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
 	t_puntero_instruccion posicionFuncion =  obtenerPosicionLabel(nombreFuncion);
 
@@ -218,12 +247,16 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar)
 
 	setearPC(pcbActual, posicionFuncion);
 	loggearFinDePrimitiva("llamar_con_retorno");
+	return;
+	fin: pass();
 }
 
 /**
  * Directiva 9
  */
 void retornar(t_valor_variable variable) {
+	if(variableInvalidaUsada){goto fin;}
+
 	t_stack_item* head = stack_pop(stack);
 	t_puntero_instruccion retorno = head->posicionRetorno;
 	log_info(activeLogger,
@@ -234,6 +267,8 @@ void retornar(t_valor_variable variable) {
 	stack_item_destroy(head);
 	setearPC(pcbActual, retorno);
 	loggearFinDePrimitiva("Retornar");
+	return;
+	fin: pass();
 }
 
 
@@ -241,6 +276,8 @@ void retornar(t_valor_variable variable) {
  * Directiva 10
  */
 void imprimir_variable(t_valor_variable valor) { //la nueva version del enunciado solo pasa el valor, no el nombre
+	if(variableInvalidaUsada){goto fin;}
+
 	log_info(activeLogger, "Imprimir |%d|", valor);
 
 	enviarHeader(nucleo,HeaderImprimirVariableNucleo);
@@ -249,6 +286,8 @@ void imprimir_variable(t_valor_variable valor) { //la nueva version del enunciad
 
 	free(valorSerializado); //hacer intToChar4 en el send produce memory leaks, porque al terminar al funcion queda memoria desreferenciada que nunca se libera.
 	loggearFinDePrimitiva("Imprimir");
+	return;
+	fin: pass();
 }
 
 
@@ -256,8 +295,9 @@ void imprimir_variable(t_valor_variable valor) { //la nueva version del enunciad
  * Directiva 11
  */
 void imprimir_texto(char* texto) {
+	if(variableInvalidaUsada){goto fin;}
 
-	log_debug(debugLogger, "Enviando a nucleo la cadena: |%s|...", texto);
+	//log_debug(debugLogger, "Enviando a nucleo la cadena: |%s|...", texto);
 
 	enviarHeader(nucleo, HeaderImprimirTextoNucleo);
 
@@ -267,6 +307,8 @@ void imprimir_texto(char* texto) {
 
 
 	loggearFinDePrimitiva("Imprimir texto");
+	return;
+	fin: pass();
 }
 
 
@@ -274,23 +316,22 @@ void imprimir_texto(char* texto) {
  * Directiva 12 ^
  */
 void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) {
-	log_info(activeLogger,"Informar a nucleo que el programa quiere usar |%s| durante |%d| unidades de tiempo",
-			dispositivo, tiempoUsoDispositivo);
+	if(variableInvalidaUsada){goto fin;}
 
 	enviarHeader(nucleo,HeaderEntradaSalida);
 
 	enviarLargoYString(nucleo,dispositivo);				//envio la cadena
-// 	QUIEN HIZO ESTO QUERIA MATARME DEL DISGUSTO
 
-//	char* time = intToChar(tiempoUsoDispositivo);							//envio el tiempo
-//	send_w(nucleo,time,strlen(time));
-//	free(time);
+	log_info(activeLogger,"Informe a nucleo que el programa quiere usar |%s| durante |%d| unidades de tiempo",
+			dispositivo, tiempoUsoDispositivo);
 
 	char* time = intToChar4(tiempoUsoDispositivo);
 	send_w(nucleo,time,sizeof(int));
 	free(time);
 
 	loggearFinDePrimitiva("Entrada-Salida");
+	return;
+	fin: pass();
 }
 
 
@@ -298,7 +339,9 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) 
  * Directiva 13
  */
 void wait_semaforo(t_nombre_semaforo identificador_semaforo) {
-	log_info(activeLogger, "Comunicar nucleo de hacer wait con semaforo: |%s|",
+	if(variableInvalidaUsada){goto fin;}
+
+	log_info(activeLogger, "Wait con semaforo: |%s|",
 			identificador_semaforo);
 
 	enviarHeader(nucleo,HeaderWait);
@@ -307,6 +350,8 @@ void wait_semaforo(t_nombre_semaforo identificador_semaforo) {
 	//Si el proceso no pudiese seguir, nucleo al bloquearlo lo para con un header enviado a procesarHeader.
 
 	loggearFinDePrimitiva("wait");
+	return;
+	fin: pass();
 }
 
 
@@ -314,14 +359,17 @@ void wait_semaforo(t_nombre_semaforo identificador_semaforo) {
  * Directiva 14
  */
 void signal_semaforo(t_nombre_semaforo identificador_semaforo) {
-	log_info(activeLogger,"Comunicar nucleo de hacer signal con semaforo: |%s|",identificador_semaforo);
+	if(variableInvalidaUsada){goto fin;}
+
+	log_info(activeLogger,"Signal con semaforo: |%s|",identificador_semaforo);
 
 	enviarHeader(nucleo,HeaderSignal);
 
 	enviarLargoYString(nucleo,identificador_semaforo);
 
-
 	loggearFinDePrimitiva("Signal");
+	return;
+	fin: pass();
 }
 
 /* ------ Funciones para usar con el parser ----- */

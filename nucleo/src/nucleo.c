@@ -386,7 +386,7 @@ void finalizarConsola(int cliente) {
 	t_proceso* proceso = clientes[cliente].proceso;
 	if (proceso != NULL) {
 		proceso->abortado = true;
-		if (proceso->estado == READY) {
+		if (proceso->estado == READY || proceso->estado == BLOCK) {
 			liberarRecursos(proceso);
 			finalizarProceso(cliente);
 		}

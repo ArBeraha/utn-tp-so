@@ -61,13 +61,11 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 		break;
 	case PARAMETRO:
 		posicionRelativa = (t_pedido*)list_get(head->argumentos,nombreToInt(variable));
-		printf("%d   %d  %d\n\n\n\n\n",posicionRelativa->pagina,posicionRelativa->offset,posicionRelativa->size);
 		break;
 	case NOEXISTE:
 		posicionAbsoluta = -1;
 		break;
 	}
-	imprimir_PCB(pcbActual);
 
 	if (posicionAbsoluta != (t_puntero)-1) {
 		posicionAbsoluta = posicionRelativa->pagina*tamanioPaginas + posicionRelativa->offset;

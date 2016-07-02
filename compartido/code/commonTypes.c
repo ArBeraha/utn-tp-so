@@ -150,7 +150,7 @@ void imprimir_PCB(t_PCB* pcb){
 	printf("\t\t\t[Fin Identificadores]\n");
 	printf("\t\t\tPosicion:%d\n",item->posicion);
 	printf("\t\t\tPosicionRetorno:%d\n",item->posicionRetorno);
-	printf("\t\t\tvalorRetorno:(%d,%d,%d)\n",item->valorRetorno.pagina, item->valorRetorno.offset,item->valorRetorno.size);
+	//printf("\t\t\tvalorRetorno:(%d,%d,%d)\n",item->valorRetorno.pagina, item->valorRetorno.offset,item->valorRetorno.size);
 	printf("\t\t[Fin Stack Item]\n");
 	};
 	printf("\t[Fin Stack]\n");

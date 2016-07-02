@@ -22,7 +22,7 @@ t_puntero definir_variable(t_nombre_variable variable) {
 		goto fin;
 	}
 	t_pedido* direccion = stack_next_pedido(stack, tamanioPaginas);
-	t_stack_item* head = stack_pop(stack);
+	t_stack_item* head = stack_head(stack);
 	char* cadena = charToString((char)variable);
 
 	if(esParametro(variable))
@@ -32,13 +32,13 @@ t_puntero definir_variable(t_nombre_variable variable) {
 		dictionary_put(head->identificadores, cadena, (void*) direccion); //agrego el caracter a una cadena
 	}
 
-	stack_push(stack, head);
+	//stack_push(stack, head);
 //	head->posicion = stack_size(stack) - 1; // si size es 1 -> pos = 0. Se calcula con el elemento ya agregado!
 
 	free(cadena);
 
 	loggearFinDePrimitiva("Definir_variable");
-	return head->posicion;
+	return direccion->pagina*tamanioPaginas+direccion->offset;
 
 	fin: return 0;
 }
@@ -61,11 +61,13 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 		break;
 	case PARAMETRO:
 		posicionRelativa = (t_pedido*)list_get(head->argumentos,nombreToInt(variable));
+		printf("%d   %d  %d\n\n\n\n\n",posicionRelativa->pagina,posicionRelativa->offset,posicionRelativa->size);
 		break;
 	case NOEXISTE:
 		posicionAbsoluta = -1;
 		break;
 	}
+	imprimir_PCB(pcbActual);
 
 	if (posicionAbsoluta != (t_puntero)-1) {
 		posicionAbsoluta = posicionRelativa->pagina*tamanioPaginas + posicionRelativa->offset;
@@ -102,7 +104,7 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 	if(!hayOverflow()){
 		char* valorRecibido = recv_waitall_ws(umc, sizeof(int)); //recibo el valor de UMC
 		valor = char4ToInt(valorRecibido);
-		log_info(activeLogger, "La variable de la dirección fue |%d| dereferenciada! Su valor es |%d|.",
+		log_info(activeLogger, "La variable de la dirección |%d| fue dereferenciada! Su valor es |%d|.",
 					direccion, valor);
 
 		free(valorRecibido);
@@ -112,7 +114,6 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 	}else{
 		lanzar_excepcion_overflow(overflow);
 	}
-	return 0;
 	fin: return 0;
 }
 

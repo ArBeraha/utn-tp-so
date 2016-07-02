@@ -15,7 +15,7 @@ HILO recibirComandos(){
 		size_t bufsize = 64;
 
 		printf(" \n \n");
-		printf("Funciones: 0.salir / 1.retardo / 2.dumpEstructuraMemoria / 3.dumpContenidoMemoria / 4.flushTlb / 5.flushMemory / 6.MostrarTLB\n");
+		printf("Funciones: 0.salir / 1.retardo / 2.dumpEstructuraMemoria / 3.dumpContenidoMemoria / 4.flushTlb / 5.flushMemory / 6.MostrarTLB / 7.TodasPagsEnMemoria\n");
 		printf("Funcion: ");
 
 		getline(&selecc,&bufsize,stdin);
@@ -28,6 +28,7 @@ HILO recibirComandos(){
 			case 4: flushTlb();break;
 			case 5: flushMemory();break;
 			case 6: mostrarTlb();break;
+			case 7: devolverTodasLasPaginas(0);
 			default: break;
 		}
 	}
@@ -55,10 +56,10 @@ void flushMemory(){ //Pone a todas las paginas bit de modificacion en 1
 		}
 	}
 	pthread_mutex_unlock(&lock_accesoTabla);
-	devolverTodasLasPaginas();
+	devolverTodasLasPaginas(0);
 }
 
-void devolverTodasLasPaginas(){  //OK
+void devolverTodasLasPaginas(int soloPresencia){  //OK
 	pthread_mutex_lock(&lock_accesoTabla);
 	int cantidadTablas = list_size(listaTablasPaginas);
 	int i;
@@ -76,7 +77,11 @@ void devolverTodasLasPaginas(){  //OK
 
 			tablaPagina_t* unaPagina = malloc(sizeof(tablaPagina_t));
 			unaPagina = list_get((t_list*)unaTabla->listaPaginas,j);
-			if(unaPagina->bitPresencia){
+			if(unaPagina->bitPresencia && soloPresencia){
+				printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d \n",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
+				log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d ",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
+			}
+			if(soloPresencia==0){
 				printf("Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d \n",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
 				log_info(dump, "Pid: %d, Pag: %d, Marco: %d, bitPresencia: %d, bitUso: %d, bitModificacion: %d ",unaTabla->pid,unaPagina->nroPagina,unaPagina->marcoUtilizado,unaPagina->bitPresencia,unaPagina->bitUso,unaPagina->bitModificacion);
 			}
@@ -232,7 +237,7 @@ void dumpEstructuraMemoria(){ //Devuelve todas las tablas de paginas o de un sol
 	switch(seleccion){
 		case 0:
 			printf("\n");
-			devolverTodasLasPaginas();
+			devolverTodasLasPaginas(1);
 			break;
 		case 1:
 			printf("De que PID desea listar las paginas? \n");

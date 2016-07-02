@@ -343,13 +343,21 @@ void limpiarEstructuras() {
 // Funciones para el manejo de Paginas
 void escribirPagina(int numeroPagina, char* contenidoPagina) {
 	memcpy(archivo + numeroPagina * config.tamanio_pagina, contenidoPagina, config.tamanio_pagina);
-	log_info(activeLogger,  "Se escribio el marco:%d el contenido:%s" ,numeroPagina,contenidoPagina);
+	char* aux = malloc(config.tamanio_pagina+1);
+	memcpy(aux,contenidoPagina,config.tamanio_pagina);
+	aux[config.tamanio_pagina]='\0';
+	log_info(activeLogger,  "Se escribio el marco:%d el contenido:%s" ,numeroPagina,aux);
+	free(aux);
 }
 char* leerPagina(int numeroPagina) {
 	char* str = malloc(config.tamanio_pagina);
+	char* aux = malloc(config.tamanio_pagina+1);
 	memcpy(str, archivo + numeroPagina * config.tamanio_pagina,
 			config.tamanio_pagina);
-	log_info(activeLogger, "Se leyo el marco:%d el contenido:%s",numeroPagina,str);
+	memcpy(aux,str,config.tamanio_pagina);
+	aux[config.tamanio_pagina]='\0';
+	log_info(activeLogger, "Se leyo el marco:%d el contenido:%s",numeroPagina,aux);
+	free(aux);
 	return str;
 }
 void imprimirPagina(int numeroPagina) {

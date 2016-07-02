@@ -61,6 +61,7 @@ typedef struct customConfig {
 	int mostrar_paginas;
 	int mostrar_tlb;
 	int mostrar_MemoriaAlFinalizar;
+	int mostrar_paginas_todas;
 
 	int entradas_tlb;
 	int retardo;

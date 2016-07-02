@@ -34,7 +34,7 @@ void cargarCFG() {
 	config.mostrar_tlb = config_get_int_value(configUmc, "MOSTRAR_TLB");
 	config.mostrar_paginas = config_get_int_value(configUmc, "MOSTRAR_PAGINAS");
 	config.mostrar_MemoriaAlFinalizar = config_get_int_value(configUmc, "MOSTRAR_MEMALFINALIZ");
-
+	config.mostrar_paginas_todas = config_get_int_value(configUmc, "MOSTRAR_PAGINAS_TODAS");
 }
 
 char* devolverPedidoPagina(pedidoLectura_t pedido, t_cliente cliente){
@@ -483,7 +483,7 @@ int reservarPagina(int cantPaginasPedidas, int pid) {
 
 void pedidoLectura(t_cliente cliente) {
 
-	if(config.mostrar_paginas){ devolverTodasLasPaginas(); printf("\n");}
+	if(config.mostrar_paginas){ devolverTodasLasPaginas(1); printf("\n");} else if(config.mostrar_paginas_todas){devolverTodasLasPaginas(0);}
 
 	t_pedido* pedidoCpu = malloc(sizeof(t_pedido));
 	char* pedidoSerializado = malloc(sizeof(t_pedido));
@@ -561,7 +561,7 @@ void pedidoLectura(t_cliente cliente) {
 
 void headerEscribirPagina(t_cliente cliente){
 
-	if(config.mostrar_paginas){ devolverTodasLasPaginas(); printf("\n");}
+	if(config.mostrar_paginas){ devolverTodasLasPaginas(1); printf("\n");} else if(config.mostrar_paginas_todas){devolverTodasLasPaginas(0);}
 
 	t_pedido* pedidoCpuEscritura = malloc(sizeof(t_pedido));
 	char* pedidoSerializadoEscritura = malloc(sizeof(t_pedido));
@@ -772,7 +772,7 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 	system("rm -rf Umc.log");
 	system("rm -rf dump");
 
-	crearLogs("Umc", "UMC", 1);
+	crearLogs("Umc", "UMC", -1);
 	dump = log_create("dump", "UMC", false, LOG_LEVEL_INFO);
 
 	log_info(activeLogger,"Soy umc de process ID %d", getpid());

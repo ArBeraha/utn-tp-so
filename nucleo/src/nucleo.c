@@ -214,7 +214,7 @@ void crearIOs() {
 	int i = 0;
 	while (config.io_ids[i] != '\0') {
 		t_IO* io = malloc(sizeof(t_IO));
-		io->retardo = atoi(config.ioSleep[i]);
+		io->retardo = atoi(config.ioSleep[i])*1000;
 		io->cola = queue_create();
 		io->estado = INACTIVE;
 		dictionary_put(tablaIO, config.io_ids[i], io);

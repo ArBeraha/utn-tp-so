@@ -27,8 +27,8 @@ void cargarCFG() {
 			"CANTIDAD_PAGINAS");
 	config.tamanio_pagina = config_get_int_value(configSwap, "TAMANIO_PAGINA");
 	config.retardo_compactacion = config_get_int_value(configSwap,
-			"RETARDO_COMPACTACION");
-	config.retardo_acceso = config_get_int_value(configSwap, "RETARDO_ACCESO");
+			"RETARDO_COMPACTACION")*1000;
+	config.retardo_acceso = config_get_int_value(configSwap, "RETARDO_ACCESO")*1000;
 	log_info(activeLogger, "Archivo de configuracion cargado.\n");
 }
 void crear_archivo() {

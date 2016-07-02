@@ -424,12 +424,33 @@ void finalizarCliente(int cliente) {
 	quitarCliente(cliente);
 }
 
+
+void hayLectura(int value) {
+  fd_set rfd;
+  FD_ZERO(&rfd);
+  FD_SET(umc, &rfd);
+  FD_SET(socketConsola, &rfd);
+  FD_SET(socketCPU, &rfd);
+  FD_SET(cambiosConfiguracion, &rfd);
+
+  select(value+1, &rfd, 0, 0, NULL);
+  int i;
+  for (i = 0; i < getMaxClients(); i++) {
+  			pthread_mutex_lock(&mutexClientes);
+  			if (tieneLectura(clientes[i].socket)) {
+  				pthread_mutex_unlock(&mutexClientes);
+  				return;
+  			}
+  			pthread_mutex_unlock(&mutexClientes);
+  	 }
+}
 int main(void) {
 	system("clear");
 	int i;
 	char header[1];
 	inicializar();
 	procesos=0;
+nice(15);
 
 	log_info(activeLogger, "Esperando conexiones ...");
 	while (1) {
@@ -445,7 +466,7 @@ int main(void) {
 						cambiosConfiguracion :
 						((socketConsola > socketCPU) ? socketConsola : socketCPU);
 		MUTEXCLIENTES(incorporarClientes());
-
+		//hayLectura(mayorDescriptor+1);
 		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, &espera);
 		if (tieneLectura(socketConsola))
 			MUTEXCLIENTES(procesarNuevasConexionesExtendido(&socketConsola));

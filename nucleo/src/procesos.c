@@ -52,6 +52,9 @@ HILO crearProceso(int consola) {
 	proceso->estado = NEW;
 	proceso->consola = consola;
 	proceso->sigusr1=false;
+	proceso->semaforo = NULL;
+	printf("EL SEMAFORO ES %s",proceso->semaforo);
+	proceso->io = NULL;
 	MUTEXCLIENTES(clientes[consola].proceso=proceso);
 	MUTEXCLIENTES(proceso->socketConsola = clientes[consola].socket);
 	log_info(bgLogger,"Se esta intentando iniciar el proceso PID:%d",proceso->PCB->PID);
@@ -88,11 +91,30 @@ HILO crearProceso(int consola) {
 	return proceso;
 }
 
+t_queue* queue_remove(t_queue* queue, void* toRemove){
+	t_queue* queueNew = queue_create();
+	while(!queue_is_empty(queue)){
+		void* data = queue_pop(queue);
+		if (data!=toRemove)
+			queue_push(queueNew,data);
+	}
+	queue_destroy(queue);
+	return queueNew;
+}
+
 void finalizarProceso(int cliente) {
 	t_proceso* proceso = obtenerProceso(cliente);
 	log_info(activeLogger,ANSI_COLOR_RED "Finalizando PID:%d" ANSI_COLOR_RESET,proceso->PCB->PID);
 	cambiarEstado(proceso,EXIT);
-	//MUTEXPROCESOS(list_remove_by_value(listaProcesos, (void*) PID));
+
+	if (proceso->io!=NULL){
+		t_IO* io = dictionary_get(tablaIO,proceso->io);
+		io->cola = queue_remove(io->cola,proceso);
+	}
+	if (proceso->semaforo!=NULL){
+		t_semaforo* sem = dictionary_get(tablaSEM,proceso->semaforo);
+		sem->cola = queue_remove(sem->cola,proceso);
+	}
 }
 void destruirProceso(t_proceso* proceso) {
 	// mutexProcesos SAFE
@@ -136,23 +158,26 @@ void bloquearProcesoIO(int cliente, char* IO, int tiempo) {
 		info->IO = (t_IO*) dictionary_get(tablaIO, IO);
 		info->proceso = proceso;
 		info->tiempo = tiempo;
+		proceso->io=string_duplicate(IO);
 		queue_push((info->IO)->cola,(t_bloqueo*) info);
 	} else{
 		log_error(activeLogger, "El IO solicitado no existe");
 		proceso->abortado=true;
 	}
-	dictionary_iterator(tablaIO,imprimirColasIO);
+	dictionary_iterator(tablaIO,(void*) imprimirColasIO);
 }
 void bloquearProcesoSem(int cliente, char* semid) {
 	if (dictionary_has_key(tablaSEM, semid)) {
 		log_info(activeLogger, "Añadiendo el Proceso a la cola del Semaforo");
 		t_proceso* proceso = obtenerProceso(cliente);
 		bloquearProceso(proceso);
+		proceso->semaforo=string_duplicate(semid);
+		printf("EL SEMAFORO ES %s",proceso->semaforo);
 		queue_push(((t_semaforo*) dictionary_get(tablaSEM, semid))->cola,
 				proceso);
 	} else
 		log_error(activeLogger, "El Semaforo solicitado no existe");
-	dictionary_iterator(tablaSEM,imprimirColasSemaforos);
+	dictionary_iterator(tablaSEM,(void*) imprimirColasSemaforos);
 }
 void bloquearProceso(t_proceso* proceso) {
 	log_info(activeLogger,"Bloqueando proceso pid:%d",proceso->PCB->PID);
@@ -161,6 +186,8 @@ void bloquearProceso(t_proceso* proceso) {
 void desbloquearProceso(t_proceso* proceso) {
 	log_info(activeLogger,"Desbloqueando proceso pid:%d",proceso->PCB->PID);
 	cambiarEstado(proceso,READY);
+	proceso->io=NULL;
+	proceso->semaforo=NULL;
 }
 void asignarMetadataProceso(t_proceso* p, char* codigo) {
 	int i;

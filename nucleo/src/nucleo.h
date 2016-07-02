@@ -75,6 +75,8 @@ typedef struct t_proceso {
 	int rafagas;
 	bool abortado;
 	bool sigusr1;
+	char* io;
+	char* semaforo;
 } t_proceso;
 
 //t_proceso* procesos[MAXCLIENTS];

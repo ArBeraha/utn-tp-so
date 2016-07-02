@@ -28,7 +28,7 @@ cd ..
 cd swap
 cd Debug
 cd code
-sed -i 's/\/home\/utnso\/workspace\/tp-2016-1c-Con-16-bits-me-hago-alto-kernelo/\.\.\/\.\./g' subdir.mk
+sed -i 's/\/home\/utnso\/workspace\/tp-2016-1c-Con-16-bits-me-hago-alto-kernel/\.\.\/\.\./g' subdir.mk
 cd ..
 cd ..
 cd ..

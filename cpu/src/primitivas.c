@@ -28,8 +28,10 @@ t_puntero definir_variable(t_nombre_variable variable) {
 	if(esParametro(variable))
 	{
 		list_add(head->argumentos,(void*)direccion);
+		log_info(activeLogger,"Agregado parametro %c al nivel actual stack", variable);
 	}else{
 		dictionary_put(head->identificadores, cadena, (void*) direccion); //agrego el caracter a una cadena
+		log_info(activeLogger,"Agregada la variable %c a al nivel actual stack", variable);
 	}
 
 	//stack_push(stack, head);
@@ -70,10 +72,10 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
 	if (posicionAbsoluta != (t_puntero)-1) {
 		posicionAbsoluta = posicionRelativa->pagina*tamanioPaginas + posicionRelativa->offset;
 		log_info(activeLogger,
-				"Se encontro la variable |%c| en la posicion: absoluta |%d|.", variable,
+				"Se encontro la variable |%c| en el stack, su posicion es: |%d|.", variable,
 				posicionAbsoluta);
 	} else {
-		log_info(activeLogger, "No se encontro la variable |%c|.", variable);
+		log_info(activeLogger, "No se encontro la variable |%c| en el stack.", variable);
 		finalizar_proceso_por_variable_invalida();
 		goto fin;
 	}
@@ -122,7 +124,7 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	if(flagMeSalteoTodoConGoto){goto fin;}
 
-	log_info(activeLogger, "Asignando en la posicion |%d| el valor |%d|", direccion_variable, valor);
+	log_info(activeLogger, "Asignando en la posicion de memoria |%d| el valor |%d|", direccion_variable, valor);
 
 	enviarHeader(umc,HeaderAsignarValor);
 	enviar_direccion_umc(direccion_variable); // esto chequea q no haya overflow
@@ -205,14 +207,14 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
 void irAlLabel(t_nombre_etiqueta etiqueta) {
 	if(flagMeSalteoTodoConGoto){goto fin;}
 
-	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
+//	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
 	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
 	if (existeLabel(etiqueta)) {
 
 		posicionPrimeraInstrUtil = obtenerPosicionLabel(etiqueta);
 
-//		log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
-//				etiqueta, posicionPrimeraInstrUtil);
+		log_info(activeLogger, "La etiqueta |%s| existe y tiene posición |%d|.",
+				etiqueta, posicionPrimeraInstrUtil);
 
 	} else {
 
@@ -263,7 +265,6 @@ void retornar(t_valor_variable variable) {
 	t_stack_item* head = stack_pop(stack);
 	t_puntero_instruccion retorno = head->posicionRetorno;
 
-	printf("ACA LLEGO UN VALOR DE RETORNO = %d",variable);
 	enviarHeader(umc,HeaderAsignarValor);
 	enviar_solicitud(head->valorRetorno.pagina,head->valorRetorno.offset,head->valorRetorno.size);
 	char* valorSerializado = intToChar4(variable);
@@ -313,7 +314,7 @@ void imprimir_texto(char* texto) {
 
 	enviarLargoYString(nucleo, texto);
 
-	log_debug(debugLogger, "Se envio a nucleo la cadena: |%s|.", texto);
+	log_debug(debugLogger, "Imprimir texto: se envio a nucleo la cadena: |%s|.", texto);
 
 
 	loggearFinDePrimitiva("Imprimir texto");
@@ -332,7 +333,7 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) 
 
 	enviarLargoYString(nucleo,dispositivo);				//envio la cadena
 
-	log_info(activeLogger,"Informe a nucleo que el programa quiere usar |%s| durante |%d| unidades de tiempo",
+	log_info(activeLogger,"Informe a nucleo que el programa quiere usar el dispositivo de E/S |%s| durante |%d| unidades de tiempo",
 			dispositivo, tiempoUsoDispositivo);
 
 	char* time = intToChar4(tiempoUsoDispositivo);

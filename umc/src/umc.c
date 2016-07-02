@@ -397,7 +397,6 @@ int inicializarPrograma(int idPrograma, char* contenido,int cantPaginas){
 	send_w(swapServer,serialCantidadPaginasTotales,sizeof(int));
 	send_w(swapServer,serialCantidadPaginas,sizeof(int));
 
-
 	free(serialPID);
 	free(serialCantidadPaginasTotales);
 	free(serialCantidadPaginas);
@@ -565,7 +564,6 @@ void pedidoLectura(t_cliente cliente) {
 
 
 void headerEscribirPagina(t_cliente cliente){
-
 
 	if(config.mostrar_paginas){ devolverTodasLasPaginas(1); printf("\n");} else if(config.mostrar_paginas_todas){devolverTodasLasPaginas(0);}
 

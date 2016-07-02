@@ -141,7 +141,7 @@ void bloquearProcesoIO(int cliente, char* IO, int tiempo) {
 		log_error(activeLogger, "El IO solicitado no existe");
 		proceso->abortado=true;
 	}
-
+	dictionary_iterator(tablaIO,imprimirColasIO);
 }
 void bloquearProcesoSem(int cliente, char* semid) {
 	if (dictionary_has_key(tablaSEM, semid)) {
@@ -152,6 +152,7 @@ void bloquearProcesoSem(int cliente, char* semid) {
 				proceso);
 	} else
 		log_error(activeLogger, "El Semaforo solicitado no existe");
+	dictionary_iterator(tablaSEM,imprimirColasSemaforos);
 }
 void bloquearProceso(t_proceso* proceso) {
 	log_info(activeLogger,"Bloqueando proceso pid:%d",proceso->PCB->PID);

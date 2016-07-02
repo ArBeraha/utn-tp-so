@@ -78,6 +78,7 @@ typedef struct t_proceso {
 } t_proceso;
 
 //t_proceso* procesos[MAXCLIENTS];
+char* strCola;
 
 typedef struct t_IO {
 	int retardo;
@@ -205,4 +206,12 @@ int test_nucleo();
 void test_cicloDeVidaProcesos();
 void test_obtenerMetadata();
 
+// Imprimir
+void queue_iterate(t_queue* self, void (*closure)(void*));
+void imprimirPIDenCola(t_proceso* procesoEnCola);
+void imprimirBloqueo(t_bloqueo* bloqueo);
+void imprimirColasIO(char* key, t_IO* io);
+void imprimirColasSemaforos(char* key, t_semaforo* sem);
+void imprimirColaListos();
+void imprimirColas();
 #endif /* NUCLEO_H_ */

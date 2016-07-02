@@ -112,7 +112,47 @@ void limpiarColaListos(){
 			&& (!procesoExiste( (t_proceso*) queue_peek(colaListos)) || ( (t_proceso*) queue_peek(colaListos))->estado!=READY))
 		queue_pop(colaListos);
 }
-
+void queue_iterate(t_queue* self, void (*closure)(void*)) {
+	t_link_element *element = self->elements->head;
+	while (element != NULL) {
+		closure(element->data);
+		element = element->next;
+	}
+}
+void imprimirPIDenCola(t_proceso* procesoEnCola){
+	// Iterator
+	char* new = string_from_format("PID:%d ",procesoEnCola->PCB->PID);
+	string_append(&strCola,new);
+	free(new);
+}
+void imprimirBloqueo(t_bloqueo* bloqueo){
+	// Iterator
+	imprimirPIDenCola(bloqueo->proceso);
+}
+void imprimirColasIO(char* key, t_IO* io){
+	// Iterator
+	strCola = string_new();
+	queue_iterate(io->cola,(void*) imprimirBloqueo);
+	log_info(activeLogger,"Cola Bloqueados IO %s=[%s]",key,strCola);
+	free(strCola);
+}
+void imprimirColasSemaforos(char* key, t_semaforo* sem){
+	// Iterator
+	strCola = string_new();
+	queue_iterate(sem->cola,(void*) imprimirPIDenCola);
+	log_info(activeLogger,"Cola Bloqueados Semaforo %s=[%s]",key,strCola);
+	free(strCola);
+}
+void imprimirColaListos(){
+	strCola = string_new();
+	queue_iterate(colaListos,(void*) imprimirPIDenCola);
+	log_info(activeLogger,"Cola Listos =[%s]",strCola);
+	free(strCola);
+}
+void imprimirColas(){
+	dictionary_iterator(tablaSEM,(void*) imprimirColasSemaforos);
+	dictionary_iterator(tablaIO,(void*) imprimirColasIO);
+}
 void limpiarColaCPU(){
 	// Limpiamos las colas de clientes desconectados hasta encontrar uno que no lo este o se vacie
 	while (!queue_is_empty(colaCPU) && (!clienteExiste( (int) queue_peek(colaCPU)) || !estaConectadoV2(clientes[(int) queue_peek(colaCPU)])))
@@ -135,8 +175,10 @@ void planificacionFIFO() {
 		// Si no se vaciaron las listas entonces los primeros de ambas listas son validos
 		if (!queue_is_empty(colaListos) && !queue_is_empty(colaCPU)){
 			log_info(activeLogger,"[Planificando] Disponibles PID y CPU");
+			imprimirColaListos();
 			ejecutarProceso((t_proceso*) queue_pop(colaListos),
-					(int) queue_pop(colaCPU));}
+					(int) queue_pop(colaCPU));
+		}
 
 		// Si por lo menos una lista no se vacio repetir el proceso
 	}

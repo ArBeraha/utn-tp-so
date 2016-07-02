@@ -433,7 +433,6 @@ int main(void) {
 
 	log_info(activeLogger, "Esperando conexiones ...");
 	while (1) {
-
 		FD_ZERO(&socketsParaLectura);
 		FD_SET(umc, &socketsParaLectura);
 		FD_SET(socketConsola, &socketsParaLectura);

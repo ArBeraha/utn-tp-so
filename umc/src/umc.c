@@ -521,7 +521,6 @@ void pedidoLectura(t_cliente cliente) {
 				char* serialRespuesta = intToChar4(2);
 				if (estaConectado(cliente)){
 					send_w(cliente.socket, serialRespuesta, sizeof(int));
-					printf("MANDE UN 2!\n"); // todo borrar
 				}
 			free(serialRespuesta);
 			log_warning(activeLogger, "[%d] No hay paginas disponibles para el proceso, rechazando",id);
@@ -561,6 +560,7 @@ void pedidoLectura(t_cliente cliente) {
 
 void headerEscribirPagina(t_cliente cliente){
 
+
 	if(config.mostrar_paginas){ devolverTodasLasPaginas(1); printf("\n");} else if(config.mostrar_paginas_todas){devolverTodasLasPaginas(0);}
 
 	t_pedido* pedidoCpuEscritura = malloc(sizeof(t_pedido));
@@ -598,7 +598,6 @@ void headerEscribirPagina(t_cliente cliente){
 			char* serialRespuesta = intToChar4(2);
 			if (estaConectado(cliente)){
 				send_w(cliente.socket, serialRespuesta, sizeof(int));
-				printf("MANDE UN 2!\n"); // todo borrar
 			}
 			free(serialRespuesta);
 			log_warning(activeLogger, "[%d] No hay paginas disponibles para el proceso, rechazando",id);

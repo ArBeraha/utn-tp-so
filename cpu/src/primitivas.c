@@ -18,7 +18,7 @@
  * Directiva 1
  */
 t_puntero definir_variable(t_nombre_variable variable) {
-	if(variableInvalidaUsada){
+	if(flagMeSalteoTodoConGoto){
 		goto fin;
 	}
 	t_pedido* direccion = stack_next_pedido(stack, tamanioPaginas);
@@ -48,7 +48,7 @@ t_puntero definir_variable(t_nombre_variable variable) {
  * Directiva 2
  */
 t_puntero obtener_posicion_de(t_nombre_variable variable) {
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	//log_info(activeLogger, "Obtener posicion de |%c|.", variable);
 	t_puntero posicionAbsoluta = 0; //no sacar esta inicializacion por el if de abajo
@@ -91,7 +91,7 @@ t_puntero obtener_posicion_de(t_nombre_variable variable) {
  * Directiva 3
  */
 t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de la variable de direccion
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	t_valor_variable valor;
 	//log_info(activeLogger, "Obtener valor de la posicion absoluta |%d|.", direccion);
@@ -121,7 +121,7 @@ t_valor_variable dereferenciar(t_puntero direccion) { // Pido a UMC el valor de 
  * Directiva 4
  */
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	log_info(activeLogger, "Asignando en la posicion |%d| el valor |%d|", direccion_variable, valor);
 
@@ -146,7 +146,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
  * Directiva 5 ^
  */
 t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartida) { // Pido a Nucleo el valor de la variable
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	//log_info(activeLogger, "Obtener valor de variable compartida |%s|.",nombreVarCompartida);
 	t_valor_variable valorVarCompartida;
@@ -175,7 +175,7 @@ t_valor_variable obtener_valor_compartida(t_nombre_compartida nombreVarCompartid
  * Directiva 6 ^
  */
 t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartida, t_valor_variable valorVarCompartida) {
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	//log_info(activeLogger, //envio el nombre de la variable
 //			"Asignar el valor |%d| a la variable compartida |%s|.",
@@ -204,7 +204,7 @@ t_valor_variable asignar_valor_compartida(t_nombre_compartida nombreVarCompartid
  * Directiva 7
  */
 void irAlLabel(t_nombre_etiqueta etiqueta) {
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	log_info(activeLogger, "Ir a la etiqueta |%s|.", etiqueta);
 	t_puntero_instruccion posicionPrimeraInstrUtil = -1;
@@ -232,7 +232,7 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
  * Directiva 8
  */
 void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar) {
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	log_info(activeLogger, "Llamar a funcion |%s|.", nombreFuncion);
 	t_puntero_instruccion posicionFuncion =  obtenerPosicionLabel(nombreFuncion);
@@ -255,7 +255,7 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar)
  * Directiva 9
  */
 void retornar(t_valor_variable variable) {
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	t_stack_item* head = stack_pop(stack);
 	t_puntero_instruccion retorno = head->posicionRetorno;
@@ -276,7 +276,7 @@ void retornar(t_valor_variable variable) {
  * Directiva 10
  */
 void imprimir_variable(t_valor_variable valor) { //la nueva version del enunciado solo pasa el valor, no el nombre
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	log_info(activeLogger, "Imprimir |%d|", valor);
 
@@ -295,7 +295,7 @@ void imprimir_variable(t_valor_variable valor) { //la nueva version del enunciad
  * Directiva 11
  */
 void imprimir_texto(char* texto) {
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	//log_debug(debugLogger, "Enviando a nucleo la cadena: |%s|...", texto);
 
@@ -316,7 +316,7 @@ void imprimir_texto(char* texto) {
  * Directiva 12 ^
  */
 void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) {
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	enviarHeader(nucleo,HeaderEntradaSalida);
 
@@ -339,7 +339,7 @@ void entrada_salida(t_nombre_dispositivo dispositivo, int tiempoUsoDispositivo) 
  * Directiva 13
  */
 void wait_semaforo(t_nombre_semaforo identificador_semaforo) {
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	log_info(activeLogger, "Wait con semaforo: |%s|",
 			identificador_semaforo);
@@ -359,7 +359,7 @@ void wait_semaforo(t_nombre_semaforo identificador_semaforo) {
  * Directiva 14
  */
 void signal_semaforo(t_nombre_semaforo identificador_semaforo) {
-	if(variableInvalidaUsada){goto fin;}
+	if(flagMeSalteoTodoConGoto){goto fin;}
 
 	log_info(activeLogger,"Signal con semaforo: |%s|",identificador_semaforo);
 

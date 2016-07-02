@@ -88,8 +88,9 @@ void procesarHeader(char *header) {
 		break;
 
 	case HeaderPCB:
-		variableInvalidaUsada = false;
+		flagMeSalteoTodoConGoto = false;
 		overflow = 1;
+		runOverflowException=true;
 		obtenerPCB();
 		break;
 
@@ -97,7 +98,7 @@ void procesarHeader(char *header) {
 		if(!puedo_terminar()){
 			obtener_y_parsear();
 		}
-		variableInvalidaUsada = false;
+		flagMeSalteoTodoConGoto = false;
 		break;
 
 	case HeaderDesalojarProceso:
@@ -355,7 +356,7 @@ void parsear(char* const sentencia) {
 
 	if(noEsEnd(sentencia)){
 		analizadorLinea(sentencia, &funciones, &funcionesKernel);
-		if(variableInvalidaUsada){return;}
+		if(flagMeSalteoTodoConGoto){return;}
 
 		log_info(activeLogger, "PC actualizado a |%d|",pcbActual->PC);
 		enviarHeader(nucleo,headerTermineInstruccion);
@@ -397,18 +398,24 @@ void obtener_y_parsear() {
  * Lanza excepcion por stack overflow y termina el proceso.
  */
 void lanzar_excepcion_overflow(int flagDeUmc){
-	switch(flagDeUmc){
-	case 0: log_info(activeLogger,ANSI_COLOR_RED "Stack overflow! se intentó leer una dirección inválida." ANSI_COLOR_RESET);
-			break;
-	case 2:  log_info(activeLogger,ANSI_COLOR_RED "No hay marcos suficientes para el proceso." ANSI_COLOR_RESET);
-			break;
-	default: printf("LLEGO CUALQUIER COSA\n");
+	if(runOverflowException){
+		switch(flagDeUmc){
+		case 0: log_info(activeLogger,ANSI_COLOR_RED "Stack overflow! se intentó leer una dirección inválida." ANSI_COLOR_RESET);
+				break;
+		case 2:  log_info(activeLogger,ANSI_COLOR_RED "No hay marcos suficientes para el proceso." ANSI_COLOR_RESET);
+				break;
+		default: printf("LLEGO CUALQUIER COSA\n");
+		}
+		log_info(activeLogger,"terminada la ejecución del programa actual.");
+
+		finalizar_proceso(false);
+
+		log_info(activeLogger,"Proceso terminado!");
+		runOverflowException=false;
+		flagMeSalteoTodoConGoto=true;
+	}else{
+		//runOverflowException=true;
 	}
-	log_info(activeLogger,"terminada la ejecución del programa actual.");
-
-	finalizar_proceso(false);
-
-	log_info(activeLogger,"Proceso terminado!");
 }
 
 // ***** Funciones de inicializacion y finalizacion ***** //
@@ -442,15 +449,16 @@ void finalizar_proceso_por_variable_invalida(){
 	enviarHeader(umc, HeaderTerminoProceso);
 	pcb_destroy(pcbActual);
 	ejecutando = false;
-	variableInvalidaUsada=true;
+	flagMeSalteoTodoConGoto=true;
 	pcbActual=NULL;
 	log_info(activeLogger,ANSI_COLOR_RED "Proceso terminado!" ANSI_COLOR_RESET);
 }
 
 void inicializar_flags(){
 	ejecutando = false;
+	runOverflowException=true;
 	terminar = false;
-	variableInvalidaUsada=false;
+	flagMeSalteoTodoConGoto=false;
 	overflow = false;
 	pcbActual = NULL; //lo dejo en NULL por chequeos en otro lado.
 }

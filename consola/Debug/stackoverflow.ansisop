@@ -7,7 +7,6 @@ end
 
 function f
 	variables a, r
-	io HDD1 5
 	a=$0+1
 	print a
 	r <- g a
@@ -15,10 +14,9 @@ end
 
 function g
 	variables a, r
-	io HDD1 1
 	a=$0+1
 	print a
-	t <- f a
+	r <- f a
 end
 
 

@@ -77,7 +77,8 @@ customConfig_t config;
 bool terminar;						//flag para que el proceso sepa cuando terminar
 int overflow;
 bool ejecutando;
-bool variableInvalidaUsada;
+bool runOverflowException;
+bool flagMeSalteoTodoConGoto;
 
 /*----- Operaciones sobre el PC y avisos por quantum -----*/
 void informarInstruccionTerminada(char* sentencia);

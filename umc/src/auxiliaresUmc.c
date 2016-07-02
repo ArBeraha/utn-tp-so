@@ -67,7 +67,7 @@ void cambiarUltimaPosicion(int pidParam, int ultima){
 
 
 int estaEnTlb(pedidoLectura_t pedido){
-	pthread_mutex_lock(&lock_accesoTlb);
+//	pthread_mutex_lock(&lock_accesoTlb);
 	int i;
 
 	for(i=0;i<config.entradas_tlb; i++){
@@ -76,12 +76,12 @@ int estaEnTlb(pedidoLectura_t pedido){
 			return 1;
 		}
 	}
-	pthread_mutex_unlock(&lock_accesoTlb);
+//	pthread_mutex_unlock(&lock_accesoTlb);
 	return 0;
 }
 
 int buscarEnTlb(pedidoLectura_t pedido){ //Repito codigo, i know, pero esta soluc no funciona para las dos, porque si se encuentra el pedido en tlb[0] y retornas 'i', "no estaria en tlb" cuando si
-	pthread_mutex_lock(&lock_accesoTlb);
+//	pthread_mutex_lock(&lock_accesoTlb);
 	int i;
 	for(i=0;i<config.entradas_tlb; i++){
 		if(tlb[i].pid==pedido.pid && tlb[i].pagina==pedido.paginaRequerida){
@@ -90,7 +90,7 @@ int buscarEnTlb(pedidoLectura_t pedido){ //Repito codigo, i know, pero esta solu
 			return i;
 		}
 	}
-	pthread_mutex_unlock(&lock_accesoTlb);
+//	pthread_mutex_unlock(&lock_accesoTlb);
 	return 0;
 }
 
@@ -209,9 +209,10 @@ void agregarATlb(tablaPagina_t* pagina,int pidParam){
 		pedido.offset=0;
 		pedido.cantBytes=0;
 
+		pthread_mutex_lock(&lock_accesoTlb);
 		if(estaEnTlb(pedido)==0){
 			int i;
-			pthread_mutex_lock(&lock_accesoTlb);
+//			pthread_mutex_lock(&lock_accesoTlb);
 			for(i=0;i<config.entradas_tlb;i++){
 				if(tlb[i].pid==-1){
 					//Se encontro un espacio libre en la tlb, se va a guardar ahi
@@ -262,10 +263,12 @@ void sacarDeMemoria(tablaPagina_t* pagina, int pid){
 	pedidoFalso.pid = pid;
 	pedidoFalso.paginaRequerida = pagina->nroPagina;
 
+	pthread_mutex_lock(&lock_accesoTlb);
 	if(estaEnTlb(pedidoFalso)){
 		int pos = buscarEnTlb(pedidoFalso);
 		sacarPosDeTlb(pos);
 	}
+	pthread_mutex_unlock(&lock_accesoTlb);
 }
 
 int cantPaginasDePid(int pid){

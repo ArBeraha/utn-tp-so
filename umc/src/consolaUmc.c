@@ -22,6 +22,7 @@ HILO recibirComandos(){
 		funcion = atoi(selecc);
 
 		switch(funcion){
+			case 0: break;
 			case 1: fRetardo(); break;
 			case 2: dumpEstructuraMemoria();break;
 			case 3: dumpContenidoMemoria();break;
@@ -32,12 +33,13 @@ HILO recibirComandos(){
 			default: break;
 		}
 	}
-	while(funcion!=0);
+	while(funcion!=9);
 	return 0;
 }
 
 void flushTlb(){
 	inicializarTlb();
+	mostrarTlb();
 }
 void flushMemory(){ //Pone a todas las paginas bit de modificacion en 1
 	pthread_mutex_lock(&lock_accesoTabla);
@@ -142,8 +144,8 @@ void devolverTodaLaMemoria(){
 
 
 			if(unaPagina->bitPresencia==1){
-				printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
-				log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
+				printf("\nPid: %d, Pag: %d, Marco: %d, Contenido: ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
+				log_info(dump,"\nPid: %d, Pag: %d, Marco: %d, Contenido: ",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
 				pthread_mutex_lock(&lock_accesoMemoria);
 				char* contenido = malloc(config.tamanio_marco);
 				memcpy(contenido,memoria+(unaPagina->marcoUtilizado*config.tamanio_marco),config.tamanio_marco);
@@ -161,7 +163,6 @@ void devolverTodaLaMemoria(){
 //				printf("No esta en memoria");
 //				log_info(dump,"No esta en memoria",unaTabla->pid, unaPagina->nroPagina,unaPagina->marcoUtilizado);
 //			}
-			printf("\n");
 		}
 	}
 	pthread_mutex_unlock(&lock_accesoTabla);
@@ -184,8 +185,8 @@ void devolverMemoriaDePid(int pid){
 
 		if(unaPagina->bitPresencia==1){
 
-			printf("Pid: %d, Pag: %d, Marco: %d, Contenido: ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado);
-			log_info(dump,"Pid: %d, Pag: %d, Marco: %d, Contenido: ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado);
+			printf("\nPid: %d, Pag: %d, Marco: %d, Contenido: ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado);
+			log_info(dump,"\nPid: %d, Pag: %d, Marco: %d, Contenido: ",pid,unaPagina->nroPagina,unaPagina->marcoUtilizado);
 
 			pthread_mutex_lock(&lock_accesoMemoria);
 			char* contenido = malloc(config.tamanio_marco);
@@ -199,8 +200,6 @@ void devolverMemoriaDePid(int pid){
 				imprimirRegionMemoriaStackConsola(contenido, config.tamanio_marco);
 				imprimirRegionMemoriaStackLogDump(contenido, config.tamanio_marco);
 			}
-
-			printf("\n");
 		}
 //		else{
 //			printf("La pagina: %d del pid: %d no esta en memoria \n",unaPagina->nroPagina,pid);

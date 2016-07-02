@@ -64,11 +64,13 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 //SI ESTA EN TLB DEVUELVO
 	int id = 0;
 	id = clientes[cliente.indice].pid;
-
+	pthread_mutex_lock(&lock_accesoTlb);
 	if(estaEnTlb(pedido) && config.entradas_tlb){
 
 		int pos = buscarEnTlb(pedido);
+		int marcoUtilizado = tlb[pos].marcoUtilizado;
 
+		pthread_mutex_unlock(&lock_accesoTlb);
 		char* contenido = malloc(pedido.cantBytes);
 
 		log_info(activeLogger, "[%d][L] TLB HIT. Se encontro en TLB para LECTURA [Pag,Off,Bytes] = [%d,%d,%d] en MARCO: %d",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
@@ -77,7 +79,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 		usleep(retardoMemoria);
 
 		pthread_mutex_lock(&lock_accesoMemoria);
-		memcpy(contenido,memoria+tlb[pos].marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
+		memcpy(contenido,memoria+marcoUtilizado*config.tamanio_marco+pedido.offset, pedido.cantBytes);
 
 		pthread_mutex_unlock(&lock_accesoMemoria);
 
@@ -86,6 +88,7 @@ char* devolverBytes(pedidoLectura_t pedido, t_cliente cliente){
 	}
 //SINO, ME FIJO QUE SEA VALIDA LA PETICION
 	else{
+		pthread_mutex_unlock(&lock_accesoTlb);
 		if(existePidEnListadeTablas(pedido.pid)){ //Si existe la tabla de paginas dentro de la lista
 			pthread_mutex_lock(&lock_accesoTabla);
 			tabla_t* tablaPaginaBuscada = buscarTabla(pedido.pid);
@@ -160,10 +163,12 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 
 	int id =0;
 	id=clientes[cliente.indice].pid;
-
+	pthread_mutex_lock(&lock_accesoTlb);
 	if(estaEnTlb(pedido) && config.entradas_tlb){
 
 		int pos = buscarEnTlb(pedido);
+		int marcoUtilizado = tlb[pos].marcoUtilizado;
+		pthread_mutex_unlock(&lock_accesoTlb);
 
 		log_info(activeLogger, "[%d][E] TLB HIT. Se encontro en TLB para ESCRITURA [Pag,Off,Bytes] = [%d,%d,%d] en MARCO: %d",id,pedido.paginaRequerida,pedido.offset,pedido.cantBytes,tlb[pos].marcoUtilizado);
 
@@ -171,7 +176,7 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 		usleep(retardoMemoria);
 
 		pthread_mutex_lock(&lock_accesoMemoria);
-		memcpy(memoria+(tlb[pos].marcoUtilizado*config.tamanio_marco)+pedido.offset, buffer, pedido.cantBytes);
+		memcpy(memoria+(marcoUtilizado*config.tamanio_marco)+pedido.offset, buffer, pedido.cantBytes);
 		pthread_mutex_unlock(&lock_accesoMemoria);
 
 		ponerBitModif1(pedido.pid,pedido.paginaRequerida);
@@ -187,6 +192,7 @@ char* almacenarBytes(pedidoLectura_t pedido, char* buffer,t_cliente cliente){
 		return "1";
 	}
 	else{
+		pthread_mutex_unlock(&lock_accesoTlb);
 		if(existePidEnListadeTablas(pedido.pid)){
 			pthread_mutex_lock(&lock_accesoTabla);
 			tabla_t* tablaPaginaBuscada = buscarTabla(pedido.pid);
@@ -771,7 +777,7 @@ int main(void) { //campo pid a tabla paginas, y en vez de list_get buscarRecursi
 	system("rm -rf Umc.log");
 	system("rm -rf dump");
 
-	crearLogs("Umc", "UMC", 1);
+	crearLogs("Umc", "UMC", -1);
 	dump = log_create("dump", "UMC", false, LOG_LEVEL_INFO);
 
 	log_info(activeLogger,"Soy umc de process ID %d", getpid());

@@ -237,6 +237,10 @@ void llamar_con_retorno(t_nombre_etiqueta nombreFuncion,t_puntero dondeRetornar)
 	t_puntero_instruccion posicionFuncion =  obtenerPosicionLabel(nombreFuncion);
 
 	t_stack_item* newHead = stack_item_create();
+
+	newHead->valorRetorno.pagina = (int)(dondeRetornar/tamanioPaginas) + cantidadPaginasCodigo;
+	newHead->valorRetorno.offset = dondeRetornar % tamanioPaginas;
+	newHead->valorRetorno.size = sizeof(int);
 	//newHead->argumentos El parser llama a definir variable y se ocupa de esto
 	//newHead->identificadores no tiene nada por ahora. Se va llenando en otras primitivas, a medida que se declaren variables locales.
 	newHead->posicionRetorno = pcbActual->PC; //dondeRetornar;
@@ -258,6 +262,13 @@ void retornar(t_valor_variable variable) {
 
 	t_stack_item* head = stack_pop(stack);
 	t_puntero_instruccion retorno = head->posicionRetorno;
+
+	printf("ACA LLEGO UN VALOR DE RETORNO = %d",variable);
+	enviarHeader(umc,HeaderAsignarValor);
+	enviar_solicitud(head->valorRetorno.pagina,head->valorRetorno.offset,head->valorRetorno.size);
+	char* valorSerializado = intToChar4(variable);
+	send_w(umc, valorSerializado, sizeof(t_valor_variable)); //envio el valor de la variable
+
 	log_info(activeLogger,
 			"Se va a cambiar el PC de |%d| a |%d| debido a la directiva 'retornar'.",
 			pcbActual->PC, retorno);

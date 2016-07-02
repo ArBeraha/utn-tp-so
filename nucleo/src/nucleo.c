@@ -116,8 +116,6 @@ void inicializar() {
 	crearLogs("Nucleo", "Nucleo",0);
 //	testear(test_serializacion);
 	log_info(activeLogger, "INICIALIZANDO");
-	espera.tv_sec = 2;
-	espera.tv_usec = 500000;
 	tamanio_pagina=100;
 	listaProcesos = list_create();
 	colaCPU = queue_create();
@@ -444,13 +442,18 @@ void hayLectura(int value) {
   			pthread_mutex_unlock(&mutexClientes);
   	 }
 }
+
+void reiniciarTimeout(){
+	espera.tv_sec = 1;
+	espera.tv_usec = 5	;
+}
 int main(void) {
 	system("clear");
 	int i;
 	char header[1];
 	inicializar();
 	procesos=0;
-nice(15);
+//	nice(15);
 
 	log_info(activeLogger, "Esperando conexiones ...");
 	while (1) {
@@ -467,6 +470,7 @@ nice(15);
 						((socketConsola > socketCPU) ? socketConsola : socketCPU);
 		MUTEXCLIENTES(incorporarClientes());
 		//hayLectura(mayorDescriptor+1);
+		reiniciarTimeout();
 		select(mayorDescriptor + 1, &socketsParaLectura, NULL, NULL, &espera);
 		if (tieneLectura(socketConsola))
 			MUTEXCLIENTES(procesarNuevasConexionesExtendido(&socketConsola));

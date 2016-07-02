@@ -150,7 +150,7 @@ void operacionIniciarProceso(){
 	serialPagina = recv_waitall_ws(cliente,sizeof(int));
 	serialPaginasCodigo = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
-	log_info(activeLogger, "Se recibio inicializacion del pid:%d",pid);
+	log_info(activeLogger, ANSI_COLOR_YELLOW "Se recibio inicializacion del pid:%d" ANSI_COLOR_RESET,pid);
 	int paginas = char4ToInt(serialPagina);
 	int paginasCodigo = char4ToInt(serialPaginasCodigo);
 	t_infoProceso* proceso = asignarEspacioANuevoProceso(pid, paginas);
@@ -164,8 +164,8 @@ void operacionIniciarProceso(){
 		free(pagina);
 	}
 	if (proceso!=NULL)
-	log_info(activeLogger,"Recibidas todas las paginas de codigo");
-	else log_info(activeLogger, "Paginas rechazadas por falta de espacio");
+	log_info(activeLogger, ANSI_COLOR_GREEN "Recibidas todas las paginas de codigo" ANSI_COLOR_RESET);
+	else log_info(activeLogger, ANSI_COLOR_RED "Paginas rechazadas por falta de espacio" ANSI_COLOR_RESET);
 
 	free(serialPID);
 	free(serialPagina);
@@ -180,7 +180,7 @@ void operacionEscritura(){
 	serialPagina = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
 	int pagina = char4ToInt(serialPagina);
-	log_info(activeLogger, "Se recibio escritura del pid:%d pagina:%d",pid,pagina);
+	log_info(activeLogger, ANSI_COLOR_YELLOW "Se recibio escritura del pid:%d pagina:%d" ANSI_COLOR_RESET,pid,pagina);
 	contenido = recv_waitall_ws(cliente,config.tamanio_pagina);
 	escribirPagina(buscarProcesoSegunPID(pid)->posPagina+pagina,contenido);
 	usleep(config.retardo_acceso);//TODO DESCOMENTAR PARA CUANDO SE PRUEBE EN SERIO
@@ -197,7 +197,7 @@ void operacionLectura(){
 	serialPagina = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
 	int pagina = char4ToInt(serialPagina);
-	log_info(activeLogger, "Se recibio lectura del pid:%d pagina:%d",pid,pagina);
+	log_info(activeLogger, ANSI_COLOR_YELLOW "Se recibio lectura del pid:%d pagina:%d" ANSI_COLOR_RESET ,pid,pagina);
 	char* contenido = leerPagina(
 		buscarProcesoSegunPID(pid)->posPagina
 			+ pagina);
@@ -214,7 +214,7 @@ void operacionFinalizar(){
 	char* serialPID = malloc(sizeof(int));
 	serialPID = recv_waitall_ws(cliente,sizeof(int));
 	int pid = char4ToInt(serialPID);
-	log_info(activeLogger, "Se recibio finalizacion del pid:%d",pid);
+	log_info(activeLogger, ANSI_COLOR_YELLOW "Se recibio finalizacion del pid:%d" ANSI_COLOR_RESET,pid);
     finalizarProceso(pid);
 	free(serialPID);
 }
@@ -343,7 +343,7 @@ void limpiarEstructuras() {
 // Funciones para el manejo de Paginas
 void escribirPagina(int numeroPagina, char* contenidoPagina) {
 	memcpy(archivo + numeroPagina * config.tamanio_pagina, contenidoPagina, config.tamanio_pagina);
-	log_info(activeLogger, "Se escribio el marco:%d el contenido:%s",numeroPagina,contenidoPagina);
+	log_info(activeLogger,  "Se escribio el marco:%d el contenido:%s" ,numeroPagina,contenidoPagina);
 }
 char* leerPagina(int numeroPagina) {
 	char* str = malloc(config.tamanio_pagina);
@@ -408,8 +408,8 @@ void finalizarProceso(int pid) {
 			limpiarPosiciones(espacio, proceso->posPagina,
 					proceso->cantidadDePaginas);
 			list_remove_and_destroy_element(espacioUtilizado, i, free);
-			log_info(activeLogger,
-					"El programa %d - Pagina Inicial:%d Tamanio:%d Eliminado correctamente.",
+			log_info(activeLogger, ANSI_COLOR_GREEN
+					"El programa %d - Pagina Inicial:%d Tamanio:%d Eliminado correctamente." ANSI_COLOR_RESET,
 					pid, proceso->posPagina, proceso->cantidadDePaginas);
 			break;
 		}
